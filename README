@@ -2,9 +2,8 @@
 
 REQUIREMENTS
 
-Linux
-OpenGGSN was developed and tested using Redhat 7.1 and Redhat
-7.2. It should run also on other Linux distributions as well as
+Linux OpenGGSN was developed and tested using Redhat 7.1, 7.2 and
+8.0. It should run also on other Linux distributions as well as
 FreeBSD and Solaris, but this is untested. Please tell me of any
 testing results.
 
@@ -53,7 +52,8 @@ Start the ggsn as root using the command:
   ggsn --fg -c examples/ggsn.conf -l 10.20.30.40 --statedir .
 
 This will run the ggsn in foreground using the local interface
-10.20.30.40. Of cause you can use sgsnemu to test the GGSN.
+10.20.30.40. If you don't have a GSM network available for testing you
+can use sgsnemu to test the GGSN.
 
 
 SUPPORT
@@ -72,7 +72,7 @@ OpenGGSN provides 3 components:
 
 gtplib
 This library contains all functionality relating to the GTP
-protocol. Use this libraty if you want to implement your own
+protocol. Use this library if you want to implement your own
 GSN. Currently gtplib supports GTPv0. At the moment no interface
 documentation is available for download.
 
@@ -196,29 +196,29 @@ examples/ggsn.conf for the format of this file.
 
 Start the ggsn as root using the command:
 
-  ggsn -c examples/ggsn.conf --fg -l 10.20.30.40 --net 192.168.0.0 --mask 255.255.0.0 
+  ggsn -c examples/ggsn.conf --fg -l 10.20.30.40 --net 192.168.0.0/24 --dynip 192.168.0.0/24
 
 First a tun network interface will be created. In the above example
 the network interface address is 192.168.0.0 and the mask is
-255.255.0.0. You can check that this interface is up by using
+255.255.255.0. You can check that this interface is up by using
 ifconfig.
 
 After tun has been successfully established the ggsn will wait for GTP
 create PDP context requests on the local interface
-10.20.30.40. Currently all requests are excepted, and no password,
-username or APN validation is performed. 
+10.20.30.40. Currently all requests are accepted, and no password,
+username or APN validation is performed.
 
 When receiving a create PDP context request a dynamic IP address will
-be allocated from the address pool determined by --net and --mask. In
-the above example the first allocated address will be 192.168.0.1,
-followed by 192.168.0.2 and so on. The request is confirmed by sending
-a create PDP context response message to the peer (SGSN).
+be allocated from the address pool determined by --dynip. In the above
+example the first allocated address will be 192.168.0.1, followed by
+192.168.0.2 and so on. The request is confirmed by sending a create
+PDP context response message to the peer (SGSN).
 
 Now IP packets will be forwarded between the tun network interface and
 the established GTP tunnel. In order to allow users to access the
 external network routing needs to be set up. If private addresses are
-are used you need to configure network address translation. See the
-Linux Networking HOWTO for details.
+used you need to configure network address translation. See the Linux
+Networking HOWTO for details.
 
 Remember to enable routing: echo 1 > /proc/sys/net/ipv4/ip_forward
 
@@ -279,7 +279,7 @@ testing. Also note that you are establishing a connection to the Gi
 network, so please be carefull not to route internet traffic onto the
 GPRS core network! Assuming you know what you are doing:
 
-     sgsnemu --fg --listen 10.20.30.50 --remote 10.20.30.40 --dns 10.20.38.51 --timelimit 10 --contexts 1 --apn internet --imsi 240011234567890 --msisdn 46702123456 --net 192.168.0.0 --mask 255.255.255.0 --createif
+     sgsnemu --fg --listen 10.20.30.50 --remote 10.20.30.40 --dns 10.20.38.51 --timelimit 10 --contexts 1 --apn internet --imsi 240011234567890 --msisdn 46702123456 --createif --defaultroute
 
 sgsnemu will print something like the following on the screen:
 
@@ -306,10 +306,9 @@ sgsnemu will print something like the following on the screen:
 
 
 Now a context is established to the remote GGSN. The IP address of the
-context is 192.168.0.1. If you specified the correct --net and --mask
-you should be able to ping a known address on the Gi network of the
-roaming partner. You should even be able to do web browsing through
-the PDP context.
+context is 192.168.0.1. You should be able to ping a known address on
+the Gi network of the roaming partner. You should even be able to do
+web browsing through the PDP context.
 
 Note however that you probably need to adjust your routing tables, so
 that you make sure that all GRX traffic is routed to the GPRS core

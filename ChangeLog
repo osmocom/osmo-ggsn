@@ -1,3 +1,27 @@
+2003-04-11: Jens Jakobsen <jj@openggsn.org>
+	Added -ggdb to gtp, sgsnemu and ggsn makefiles in order to include
+	debugging information.
+
+	Added ippool.c and ippool.h to ggsn. This allow for generic
+	allocation of dynamic ip addresses based on a <net>/<mask>
+	description of ip address space. The same files are also used in
+	sgsnemu, but only for hashing IP addresses. At the same time the
+	corresponding functionality is removed from pdp.c.
+	
+	Added syserr.h and syserr.c to ggsn and sgsnemu. These files allow
+	writing to syslog with file name and line number. Later this
+	should also be introduced in gtp.
+
+	Added support for DNS protocol configuration options in ggsn for
+	create context response. This allow the MS to setup DNS
+	configuration correctly.
+
+	tun.c and tun.h have been updated to allow setting interface IP
+	addresses and routes by means of ioctl and netlink. This allow
+	sgsnemu to allocate an interface IP address for each context
+	established.
+
+
 2003-01-29: Jens Jakobsen <jj@openggsn.org>
 	Added -L../gtp to sgsnemu and ggsn makefiles so that make will
 	work without an installed libgtp.

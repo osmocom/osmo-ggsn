@@ -7,8 +7,12 @@ Version 0.6b
    * Absolute path to ifconfig and route in ggsn and sgsnemu
    * Absolute path to gtp library in ggsn/Makefile.am and ggsn/Makefile.am
    * Compiles with gengetopt 2.8 (Thanks to Lorenzo Bettini
-     <lorenzo.bettini@penteres.it>
-
+     <lorenzo.bettini@penteres.it>)
+   * sgsnemu is now able to handle several contexts and allocate
+     interface IP addresses for each context.
+   * ggsn now support protocol configuration option DNS
+     addresses. This allow mobile stations to set up DNS based on
+     information configured in the ggsn.
 
 Version 0.5
 
