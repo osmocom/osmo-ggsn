@@ -4,6 +4,15 @@ OPENGGSN NEWS
 OpenGGSN - Gateway GPRS Support Node
 Copyright (C) 2002, 2003, 2004 Mondru AB.
 
+
+Version 0.83
+============
+
+* Added selection mode and charging characteristics option to sgsnemu.
+* Bug fixes on charging characteristics and PPP PCO length.(Thanks to
+  Loic Bernable	<leto@vilya.org>).
+* Improved Solaris support, hash table bugfix and improved logging.
+
 Version 0.82
 ============
 

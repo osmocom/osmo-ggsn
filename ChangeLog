@@ -1,3 +1,19 @@
+2004-09-11: Jens Jakobsen <jj@openggsn.org>
+	Added selection mode option to sgsnemu.
+	Added charging characteristics option to sgsnemu.
+
+	Only include charging characteristics in create PDP context
+	request is if flags are set. (Thanks to Loic Bernable
+	<leto@vilya.org>).
+
+	PPP PCO length bug fix. (Thanks to Loic Bernable
+	<leto@vilya.org>).
+
+	IP pool hash table bugfix and improved logging.
+	
+	Improved configure.in and Makefile.am for compilation under
+	Solaris. New config.sub and config.guess.
+	
 2004-04-28: Jens Jakobsen <jj@openggsn.org>
 	Improved Solaris support. OpenGGSN now correctly initializes
 	tun/tap driver under Solaris. As a consequence the ggsn network
