@@ -73,7 +73,9 @@ VERSION = @VERSION@
 
 bin_PROGRAMS = sgsnemu
 
-CFLAGS = -O2 -fno-builtin -Wall -ansi -DSBINDIR='"$(sbindir)"' -lgtp
+LDFLAGS = -Wl,--rpath -Wl,/usr/local/lib
+
+CFLAGS = -O2 -D_GNU_SOURCE -fno-builtin -Wall -ansi -DSBINDIR='"$(sbindir)"' -lgtp
 
 sgsnemu_SOURCES = sgsnemu.c tun.c tun.h cmdline.c cmdline.h
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
@@ -83,7 +85,6 @@ PROGRAMS =  $(bin_PROGRAMS)
 
 DEFS = @DEFS@ -I. -I$(srcdir) 
 CPPFLAGS = @CPPFLAGS@
-LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
 sgsnemu_OBJECTS =  sgsnemu.o tun.o cmdline.o
 sgsnemu_LDADD = $(LDADD)
@@ -334,9 +335,6 @@ all-redirect all-am all installdirs mostlyclean-generic \
 distclean-generic clean-generic maintainer-clean-generic clean \
 mostlyclean distclean maintainer-clean
 
-
-cmdline.c: cmdline.ggo
-	gengetopt < cmdline.ggo --unamed-opts --conf-parser
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
