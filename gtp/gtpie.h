@@ -1,16 +1,11 @@
 /* 
  *  OpenGGSN - Gateway GPRS Support Node
- *  Copyright (C) 2002 Mondru AB.
+ *  Copyright (C) 2002, 2003, 2004 Mondru AB.
  * 
  *  The contents of this file may be used under the terms of the GNU
  *  General Public License Version 2, provided that the above copyright
  *  notice and this permission notice is included in all copies or
  *  substantial portions of the software.
- * 
- *  The initial developer of the original code is
- *  Jens Jakobsen <jj@openggsn.org>
- * 
- *  Contributor(s):
  * 
  */
 

@@ -1,16 +1,11 @@
 /* 
  *  OpenGGSN - Gateway GPRS Support Node
- *  Copyright (C) 2002 Mondru AB.
+ *  Copyright (C) 2002, 2003, 2004 Mondru AB.
  * 
  *  The contents of this file may be used under the terms of the GNU
  *  General Public License Version 2, provided that the above copyright
  *  notice and this permission notice is included in all copies or
  *  substantial portions of the software.
- * 
- *  The initial developer of the original code is
- *  Jens Jakobsen <jj@openggsn.org>
- * 
- *  Contributor(s):
  * 
  */
 
@@ -27,6 +22,10 @@
 #define _GNU_SOURCE 1
 #endif
 
+#include "../config.h"
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif
 
 #include <syslog.h>
 #include <stdio.h>
@@ -48,7 +47,6 @@
 
 /* #include <stdint.h>  ISO C99 types */
 
-#include "../config.h"
 #include "pdp.h"
 #include "gtp.h"
 #include "gtpie.h"
@@ -407,7 +405,7 @@ int gtp_req(struct gsn_t *gsn, int version, struct pdp_t *pdp,
   memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
   addr.sin_addr = *inetaddr;
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__APPLE__)
   addr.sin_len = sizeof(addr);
 #endif
 
@@ -766,7 +764,7 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
   addr.sin_family = AF_INET;
   addr.sin_addr = *listen;  /* Same IP for user traffic and signalling*/
   addr.sin_port = htons(GTP0_PORT);
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__APPLE__)
   addr.sin_len = sizeof(addr);
 #endif
   
@@ -787,7 +785,7 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
   addr.sin_family = AF_INET;
   addr.sin_addr = *listen;  /* Same IP for user traffic and signalling*/
   addr.sin_port = htons(GTP1C_PORT);
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__APPLE__)
   addr.sin_len = sizeof(addr);
 #endif
   
@@ -808,7 +806,7 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
   addr.sin_family = AF_INET;
   addr.sin_addr = *listen;  /* Same IP for user traffic and signalling*/
   addr.sin_port = htons(GTP1U_PORT);
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__APPLE__)
   addr.sin_len = sizeof(addr);
 #endif
   
@@ -2944,7 +2942,7 @@ int gtp_data_req(struct gsn_t *gsn, struct pdp_t* pdp,
 
   memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__APPLE__)
   addr.sin_len = sizeof(addr);
 #endif
 

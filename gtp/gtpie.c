@@ -7,11 +7,6 @@
  *  notice and this permission notice is included in all copies or
  *  substantial portions of the software.
  * 
- *  The initial developer of the original code is
- *  Jens Jakobsen <jj@openggsn.org>
- * 
- *  Contributor(s):
- * 
  */
 
 /*
@@ -30,6 +25,12 @@
  *  - gtpie_gettv: Copies tv information element. Return 0 on success.
  *
  */
+
+#include <../config.h>
+
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif
 
 #include <stdio.h>
 #include <sys/types.h>

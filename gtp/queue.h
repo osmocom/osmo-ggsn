@@ -7,11 +7,6 @@
  *  notice and this permission notice is included in all copies or
  *  substantial portions of the software.
  * 
- *  The initial developer of the original code is
- *  Jens Jakobsen <jj@openggsn.org>
- * 
- *  Contributor(s):
- * 
  */
 
 /*
@@ -22,15 +17,15 @@
 #ifndef _QUEUE_H
 #define _QUEUE_H
 
-#define QUEUE_DEBUG 0    /* Print debug information */
+#define QUEUE_DEBUG 0     /* Print debug information */
 
-#define QUEUE_SIZE 1024  /* Size of retransmission queue */
+#define QUEUE_SIZE 1024   /* Size of retransmission queue */
 #define QUEUE_HASH_SIZE 65536 /* Size of hash table (2^16) */
 
 struct qmsg_t {           /* Holder for queued packets */
   int state;              /* 0=empty, 1=full */
   uint16_t seq;           /* The sequence number */
-  uint8_t type;          /* The type of packet */
+  uint8_t type;           /* The type of packet */
   void *cbp;              /* Application specific pointer */
   union gtp_packet p;     /* The packet stored */
   int l;                  /* Length of the packet */

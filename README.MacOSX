@@ -1,0 +1,33 @@
+OpenGGSN/Mac OS X notes
+
+Mac OS X support is experimental, please test and report bugs. The
+Mac OS X port is tested on Mac OS X 10.3.5, but may also work on
+other versions.
+
+1. Compiling
+
+Everything should be straight-forward.  Create a separate
+build directory,  run ../openggsn/configure and then make.
+If you have problems with configure, execute
+
+$ aclocal && automake && autoheader && autoconf
+
+and then again configure and make.
+
+2. Kernel extensions
+
+You need to add a tunnel kernel extension to your kernel.
+The one I've used is available at 
+http://www-user.rhrk.uni-kl.de/~nissler/tuntap/
+but there are others.  If you want to compile that from
+sources (instead of using the binary installer), you
+will also need kernel sources from opensource.apple.com.
+
+3. Known problems
+
+None.
+
+--
+
+Pekka Nikander <pekka.nikander@nomadiclab.com>
+

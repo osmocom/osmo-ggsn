@@ -7,11 +7,6 @@
  *  notice and this permission notice is included in all copies or
  *  substantial portions of the software.
  * 
- *  The initial developer of the original code is
- *  Jens Jakobsen <jj@openggsn.org>
- * 
- *  Contributor(s):
- * 
  */
 
 #ifndef _PDP_H

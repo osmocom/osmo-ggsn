@@ -1,16 +1,11 @@
 /* 
  *  OpenGGSN - Gateway GPRS Support Node
- *  Copyright (C) 2002 Mondru AB.
+ *  Copyright (C) 2002, 2003, 2004 Mondru AB.
  * 
  *  The contents of this file may be used under the terms of the GNU
  *  General Public License Version 2, provided that the above copyright
  *  notice and this permission notice is included in all copies or
  *  substantial portions of the software.
- * 
- *  The initial developer of the original code is
- *  Jens Jakobsen <jj@openggsn.org>
- * 
- *  Contributor(s):
  * 
  */
 
@@ -217,7 +212,7 @@ union gtp_packet {
   struct gtp0_packet        gtp0;
   struct gtp1_packet_short  gtp1s;
   struct gtp1_packet_long   gtp1l;
-} __attribute__((packed)) h;
+} __attribute__((packed));
 
 
 
