@@ -35,7 +35,6 @@ option  "pwd"         p "Login password"                 string default="hemmeli
 option  "createif"    - "Create local network interface" flag   off
 option  "ipup"        - "Script to run after link-up"    string no
 option  "ipdown"      - "Script to run after link-down"  string no
-option  "defaultroute" - "Add default route after link-up" flag   off
 option  "net"         - "Network"                        string default="0.0.0.0" no
 option  "mask"        - "Network mask"                   string default="0.0.0.0" no
 

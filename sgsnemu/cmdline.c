@@ -63,7 +63,6 @@ cmdline_parser_print_help (void)
   printf("              --createif         Create local network interface (default=off)\n");
   printf("              --ipup=STRING      Script to run after link-up\n");
   printf("              --ipdown=STRING    Script to run after link-down\n");
-  printf("              --defaultroute     Add default route after link-up (default=off)\n");
   printf("              --net=STRING       Network (default='0.0.0.0')\n");
   printf("              --mask=STRING      Network mask (default='0.0.0.0')\n");
   printf("              --pinghost=STRING  Ping remote host\n");
@@ -115,7 +114,6 @@ cmdline_parser (int argc, char * const *argv, struct gengetopt_args_info *args_i
   args_info->createif_given = 0 ;
   args_info->ipup_given = 0 ;
   args_info->ipdown_given = 0 ;
-  args_info->defaultroute_given = 0 ;
   args_info->net_given = 0 ;
   args_info->mask_given = 0 ;
   args_info->pinghost_given = 0 ;
@@ -143,7 +141,6 @@ cmdline_parser (int argc, char * const *argv, struct gengetopt_args_info *args_i
   args_info->createif_flag = 0;\
   args_info->ipup_arg = NULL; \
   args_info->ipdown_arg = NULL; \
-  args_info->defaultroute_flag = 0;\
   args_info->net_arg = strdup("0.0.0.0") ;\
   args_info->mask_arg = strdup("0.0.0.0") ;\
   args_info->pinghost_arg = NULL; \
@@ -186,7 +183,6 @@ cmdline_parser (int argc, char * const *argv, struct gengetopt_args_info *args_i
         { "createif",	0, NULL, 0 },
         { "ipup",	1, NULL, 0 },
         { "ipdown",	1, NULL, 0 },
-        { "defaultroute",	0, NULL, 0 },
         { "net",	1, NULL, 0 },
         { "mask",	1, NULL, 0 },
         { "pinghost",	1, NULL, 0 },
@@ -438,19 +434,6 @@ cmdline_parser (int argc, char * const *argv, struct gengetopt_args_info *args_i
               }
             args_info->ipdown_given = 1;
             args_info->ipdown_arg = strdup (optarg);
-            break;
-          }
-          /* Add default route after link-up.  */
-          else if (strcmp (long_options[option_index].name, "defaultroute") == 0)
-          {
-            if (args_info->defaultroute_given)
-              {
-                fprintf (stderr, "%s: `--defaultroute' option given more than once\n", PACKAGE);
-                clear_args ();
-                exit (EXIT_FAILURE);
-              }
-            args_info->defaultroute_given = 1;
-            args_info->defaultroute_flag = !(args_info->defaultroute_flag);
             break;
           }
           /* Network.  */
@@ -897,15 +880,6 @@ cmdline_parser_configfile (char * const filename, struct gengetopt_args_info *ar
                                filename, line_num);
                       exit (EXIT_FAILURE);
                     }
-                }
-              continue;
-            }
-          if (!strcmp(fopt, "defaultroute"))
-            {
-              if (override || !args_info->defaultroute_given)
-                {
-                  args_info->defaultroute_given = 1;
-                  args_info->defaultroute_flag = !(args_info->defaultroute_flag);
                 }
               continue;
             }

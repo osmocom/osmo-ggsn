@@ -39,7 +39,6 @@ struct gengetopt_args_info
   int createif_flag;	/* Create local network interface (default=off).  */
   char * ipup_arg;	/* Script to run after link-up.  */
   char * ipdown_arg;	/* Script to run after link-down.  */
-  int defaultroute_flag;	/* Add default route after link-up (default=off).  */
   char * net_arg;	/* Network (default='0.0.0.0').  */
   char * mask_arg;	/* Network mask (default='0.0.0.0').  */
   char * pinghost_arg;	/* Ping remote host.  */
@@ -69,7 +68,6 @@ struct gengetopt_args_info
   int createif_given ;	/* Whether createif was given.  */
   int ipup_given ;	/* Whether ipup was given.  */
   int ipdown_given ;	/* Whether ipdown was given.  */
-  int defaultroute_given ;	/* Whether defaultroute was given.  */
   int net_given ;	/* Whether net was given.  */
   int mask_given ;	/* Whether mask was given.  */
   int pinghost_given ;	/* Whether pinghost was given.  */
