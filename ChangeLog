@@ -1,0 +1,19 @@
+2003-01-29: Jens Jakobsen <jj@openggsn.org>
+	Added -L../gtp to sgsnemu and ggsn makefiles so that make will
+	work without an installed libgtp.
+
+	Added sgsnemu check to check for valid pointer when deleting tun.
+
+	Removed enabling of ip_forward = 1 from ggsn.c and sgsnemu. From a
+	security point of view it was not very good that openggsn
+	automatically enabled routing.
+
+	Added ipup, ipdown and createif to sgsnemu/cmdline.ggo. Now
+	sgsnemu will set up default route and then execute ipup script
+	after tun device has been set up. After tun has been deleted the
+	ipdown script is executed.
+
+	Added support for ping to sgsnemu.
+
+	Added ipup and ipdown to ggsn/cmdline.ggo.
+	
