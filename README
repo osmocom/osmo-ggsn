@@ -12,8 +12,8 @@ Tun
 Both ggsn and sgsnemu uses the tun package. You need at least tun
 version 1.1. See http://vtun.sourceforge.net/tun/ for instructions on
 installation. Tun is included in the kernel from early version 2.4, so
-you will not normally need to install it. For Redhat 7.1 and 7.2 you
-do however need to do the following:
+you will not normally need to install it. For Redhat 7.1, 7.2 and 8.0
+you do however need to do the following:
 mkdir /dev/net
 mknod /dev/net/tun c 10 200
 Add this line to /etc/modules.conf: alias char-major-10-200 tun 
@@ -21,23 +21,30 @@ depmod -a
 
 
 COMPILATION and INSTALLATION
-./configure
-cd gtp
-make
-make install
-cd ..
-make
-make install
-Add /usr/local/lib to /etc/ld.so.conf
-Run ldconfig
 
+1 ./configure
+2 cd gtp
+3 make
+4 make install
+5 cd ..
+6 make
+7 make install
+8 Add /usr/local/lib to /etc/ld.so.conf
+9 Run ldconfig
+
+You need to be root in order to install the package, but not in order
+to compile.
+
+Steps 2 to 5 are only needed the first time you install the
+package. Most likely steps 8 and 9 can be omitted as the path to
+libgtp is now included in Makefile.am for sgsnemu and ggsn.
 
 RUNNING
 
 sgsnemu
 Edit the configuration file sgsnemu.conf found under
 openggsn/examples. Use sgsnemu -h for a list of available options.
-Start the emulator using the command:
+Start the emulator as root using the command:
 
   sgsnemu -c examples/sgsnemu.conf -l 10.20.30.50 -r 10.20.30.40
 
@@ -51,7 +58,7 @@ network analysator such as ethereal to monitor the traffic.
 ggsn
 Edit the configuration file ggsn.conf found under
 openggsn/examples. Use sgsnemu -h for a list of available options.
-Start the ggsn using the command:
+Start the ggsn as root using the command:
 
   ggsn --fg -c examples/ggsn.conf -l 10.20.30.40 --statedir .
 
@@ -101,8 +108,8 @@ TUN  (http://vtun.sourceforge.net/tun/)
 Both ggsn and sgsnemu uses the tun package. You need at least tun
 version 1.1. See the above web page for instructions on
 installation. Tun is included in the kernel from early version 2.4, so
-you will not normally need to install it. For Redhat 7.1 and 7.2 you
-do however need to do the following:
+you will not normally need to install it. For Redhat 7.1, 7.2 and 8.0
+you do however need to do the following:
 mkdir /dev/net
 mknod /dev/net/tun c 10 200
 Add the following line to /etc/modules.conf: alias char-major-10-200 tun 
@@ -126,26 +133,51 @@ gengetopt < cmdline.ggo --conf-parser
 
 *** Compilation and Installation ***
 
-To generate everything:
-See http://sources.redhat.com/autobook/autobook/autobook_25.html#SEC25
- 1 edit configure.in
- 2 run aclocal
- 3 run autoheader
-   (run automake --add-missing)
- 4 run automake
- 5 run autoconf
- 6 run ./configure
- 7 rin make clean
- 8 run make
-   (First time you run make it will complain that it can not find gtp.
-    Ignore the warning, gtp will get installed when you run make install)
- 9 run make install
-10 Add /usr/local/lib to /etc/ld.so.conf
-11 run ldconfig
+SETTING UP AUTOTOOLS
+
+You do not need to perform this step if you are only going to compile
+the package:
+
+0 Get version from somewhere: Script to extract version from configure.ac
+1 Copy the latest config.guess and config.sub from ftp://ftp.gnu.org/gnu/config
+2 Run autoscan and copy configure.scan to configure.ac
+3 Add/edit the following lines in configure.ac:
+	AC_INIT(openggsn, 0.52, jj@openggsn.org)
+	AC_CONFIG_SRCDIR([gtp/gtp.c])
+	AM_CONFIG_HEADER([config.h])
+	AC_PROG_LIBTOOL
+	AM_PROG_LIBTOOL
+	AM_INIT_AUTOMAKE()
+4 libtoolize --automake --copy
+  (ads copy of ltmain.sh)
+5 aclocal
+6 autoheader
+7 automake --add-missing
+  (Ads link to missing, install-sh, depcomp)
+8 automake
+9 autoconf
+
+The above will initialise the project to the current version of
+autotools (As installed in RedHat 8.0). See
+http://sources.redhat.com/autobook/autobook/autobook_25.html#SEC25 
+for details on autotools.
 
 
-On RedHat add /usr/local/lib to /etc/ld.so.conf
-http://www.dwheeler.com/program-library/Program-Library-HOWTO/shared-libraries.html
+COMPILATION AND INSTALLATION
+
+ 1 ./configure
+ 2 make clean
+ 3 cd gtp
+ 4 make
+ 5 make install (as root)
+ 6 cd ..
+   (Step 3 to 6 you only need to run the first time to install libgtp)
+ 7 make
+ 8 make install (as root)
+ 9 Add /usr/local/lib to /etc/ld.so.conf
+10 run ldconfig
+   (Step 9 and 10 are not required as path to libgtp is included in Makefile)
+
 
 *** Running ggsn ***
 
