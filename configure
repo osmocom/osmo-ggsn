@@ -461,7 +461,7 @@ echo > confdefs.h
 
 # A filename unique to this package, relative to the directory that
 # configure is in, which we can look for to find out if srcdir is correct.
-ac_unique_file=gtp/gtp.c ggsn/ggsn.c sgsnemu/sgsnemu.c
+ac_unique_file=gtp/gtp.c
 
 # Find the source files, if location was not specified.
 if test -z "$srcdir"; then
@@ -2256,7 +2256,7 @@ fi
 
 PACKAGE=OpenGGSN
 
-VERSION=0.5
+VERSION=0.51
 
 if test "`cd $srcdir && pwd`" != "`pwd`" && test -f $srcdir/config.status; then
   { echo "configure: error: source directory already configured; run "make distclean" there first" 1>&2; exit 1; }

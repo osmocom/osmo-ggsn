@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(gtp/gtp.c ggsn/ggsn.c sgsnemu/sgsnemu.c)
+AC_INIT(gtp/gtp.c)
 
 dnl Checks for programs.
 AC_PROG_AWK
@@ -27,6 +27,6 @@ AC_PROG_GCC_TRADITIONAL
 AC_FUNC_VFORK
 AC_CHECK_FUNCS(select socket strdup strerror strtoul)
 
-AM_INIT_AUTOMAKE(OpenGGSN,0.5)
+AM_INIT_AUTOMAKE(OpenGGSN,0.51)
 
 AC_OUTPUT(doc/Makefile po/Makefile intl/Makefile Makefile tests/Makefile src/Makefile gtp/Makefile ggsn/Makefile sgsnemu/Makefile)
