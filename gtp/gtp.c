@@ -1062,13 +1062,13 @@ extern int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
     gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_NSAPI, 
 	      pdp->nsapi);
 
-
     if (pdp->secondary) /* Secondary PDP Context Activation Procedure */
       gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_NSAPI, 
 		linked_pdp->nsapi);
-    
-    gtpie_tv2(&packet, &length, GTP_MAX, GTPIE_CHARGING_C,
-	      pdp->cch_pdp);
+
+    if (pdp->cch_pdp) /* Only include charging if flags are set */
+      gtpie_tv2(&packet, &length, GTP_MAX, GTPIE_CHARGING_C, 
+		pdp->cch_pdp);
   }
 
   /* TODO 
