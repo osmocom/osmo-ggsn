@@ -97,8 +97,8 @@
 #define GTPCAUSE_REQ_IMEI                   1 /* Request IMEI */
 #define GTPCAUSE_REQ_IMSI_IMEI              2 /* Request IMSI and IMEI */
 #define GTPCAUSE_NO_ID_NEEDED               3 /* No identity needed */
-#define GTPCAUSE_MS_REFUSES                 4 /* MS refuses */
-#define GTPCAUSE_MS_NOT_RESP                5 /* MS is not GPRS responding */
+#define GTPCAUSE_MS_REFUSES_X               4 /* MS refuses */
+#define GTPCAUSE_MS_NOT_RESP_X              5 /* MS is not GPRS responding */
 #define GTPCAUSE_006                        6 /* For future use 6-48 */
 #define GTPCAUSE_049                       49 /* Cause values reserved for GPRS charging protocol use (See GTP' in GSM 12.15) 49-63 */
 #define GTPCAUSE_064                       64 /* For future use 64-127 */
