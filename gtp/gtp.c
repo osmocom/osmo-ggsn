@@ -1349,15 +1349,15 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 				   GTPCAUSE_MAN_IE_MISSING);
       }
     }
-  }
 
-  /* NSAPI (mandatory) */
-  if (gtpie_gettv1(ie, GTPIE_NSAPI, 0, &pdp->nsapi)) {
-    gsn->missing++;
-    gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
-		"Missing mandatory information field");
-    return gtp_create_pdp_resp(gsn, version, pdp, 
-			       GTPCAUSE_MAN_IE_MISSING);
+    /* NSAPI (mandatory) */
+    if (gtpie_gettv1(ie, GTPIE_NSAPI, 0, &pdp->nsapi)) {
+      gsn->missing++;
+      gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
+		  "Missing mandatory information field");
+      return gtp_create_pdp_resp(gsn, version, pdp, 
+				 GTPCAUSE_MAN_IE_MISSING);
+    }
   }
   
   
