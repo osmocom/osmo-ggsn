@@ -353,6 +353,12 @@ int tun_setaddr(struct tun_t *this,
 #ifdef __linux__
   ifr.ifr_netmask.sa_family = AF_INET;
 #endif
+#ifdef __FreeBSD__
+  ((struct sockaddr_in *) &ifr.ifr_addr)->sin_len = 
+    sizeof (struct sockaddr_in);
+  ((struct sockaddr_in *) &ifr.ifr_dstaddr)->sin_len = 
+    sizeof (struct sockaddr_in);
+#endif
   strncpy(ifr.ifr_name, this->devname, IFNAMSIZ);
   ifr.ifr_name[IFNAMSIZ-1] = 0; /* Make sure to terminate */
 
@@ -394,9 +400,13 @@ int tun_setaddr(struct tun_t *this,
 
   if (netmask) { /* Set the netmask */
     this->netmask.s_addr = netmask->s_addr;
-#if defined(__sun__) | defined(__FreeBSD__)
+#if defined(__sun__)
+    /* TODO: This should probably be ifr_addr */
     ((struct sockaddr_in *) &ifr.ifr_dstaddr)->sin_addr.s_addr = 
-      dstaddr->s_addr;
+      netmask->s_addr;
+#elif defined(__FreeBSD__)
+    ((struct sockaddr_in *) &ifr.ifr_addr)->sin_addr.s_addr = 
+      netmask->s_addr;
 #else
     ((struct sockaddr_in *) &ifr.ifr_netmask)->sin_addr.s_addr = 
       netmask->s_addr;
@@ -463,6 +473,9 @@ int tun_new(struct tun_t **tun)
 #ifdef __sun__
   int if_fd, ppa = -1;
   static int ip_fd = 0;
+#elif defined(__FreeBSD__)
+  char devname[IFNAMSIZ+5]; /* "/dev/" + ifname */
+  int devnum;
 #else
   struct ifreq ifr;
 #endif
@@ -540,10 +553,28 @@ int tun_new(struct tun_t **tun)
 
   close (if_fd);
   
-  sprintf((*tun)->devname, "tun%d", ppa);
+  snprintf((*tun)->devname, sizeof((*tun)->devname), "tun%d", ppa);
+  (*tun)->devname[sizeof((*tun)->devname)] = 0;
   
 #endif
-  
+ 
+#ifdef __FreeBSD__
+  /* Find suitable device */
+  for (devnum = 0; devnum < 255; devnum++) { /* TODO 255 */ 
+    snprintf(devname, sizeof(devname), "/dev/tun%d", devnum);
+    devname[sizeof(devname)] = 0;
+    if (((*tun)->fd = open(devname, O_RDWR)) >= 0) break;
+    if (errno != EBUSY) break;
+  } 
+  if ((*tun)->fd < 0) {
+    sys_err(LOG_ERR, __FILE__, __LINE__, errno, "Can't find tunnel device");
+    return -1;
+  }
+
+  snprintf((*tun)->devname, sizeof((*tun)->devname), "tun%d", devnum);
+  (*tun)->devname[sizeof((*tun)->devname)] = 0;
+#endif
+
   return 0;
 }
 
