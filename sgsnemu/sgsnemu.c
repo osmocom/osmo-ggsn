@@ -791,6 +791,8 @@ int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause) {
     }
     else {
       state = 0;
+      pdp_freepdp(iph->pdp);
+      iph->pdp = NULL;
       return EOF;
     }
   }
@@ -798,11 +800,15 @@ int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause) {
   if (cause != 128) {
     printf("Received create PDP context response. Cause value: %d\n", cause);
     state = 0;
+    pdp_freepdp(iph->pdp);
+    iph->pdp = NULL;
     return EOF; /* Not what we expected */
   }
 
   if (pdp_euaton(&pdp->eua, &addr)) {
     printf("Received create PDP context response. Cause value: %d\n", cause);
+    pdp_freepdp(iph->pdp);
+    iph->pdp = NULL;
     state = 0;
     return EOF; /* Not a valid IP address */
   }
@@ -943,7 +949,9 @@ int main(int argc, char **argv)
     printf("Setting up PDP context #%d\n", n);
     iparr[n].inuse = 1; /* TODO */
 
-    /* Allocated here. Cleaned up in gtp.c:*/
+    /* Allocated here. */
+    /* If create context failes we have to deallocate ourselves. */
+    /* Otherwise it is deallocated gy gtplib */
     pdp_newpdp(&pdp, options.imsi, n, NULL); 
 
     pdp->peer = &iparr[n];
