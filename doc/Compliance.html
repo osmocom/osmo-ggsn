@@ -1,0 +1,919 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta content="text/html; charset=ISO-8859-1"
+ http-equiv="content-type">
+  <title>Compliance</title>
+</head>
+<body>
+<h1>Protocol Compliance List</h1>
+OpenGGSN supports both GTP0 (GSM 09.60) and GTP1 (3GPP 29.060). In the
+following tables the support of each individual message type is
+detailed. The numbers before each feature indicates the relevant
+section in the standard.<br>
+<h2>GSM 09.60 (GTPv0)<br>
+</h2>
+<table style="text-align: left; width: 100%;" border="1" cellspacing="2"
+ cellpadding="2">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top; font-weight: bold;">Feature<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; font-weight: bold;">gtplib<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; font-weight: bold;">ggsn<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; font-weight: bold;">sgsnemu<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; font-weight: bold;">notes<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">7.4
+Path Management Messages</span><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.4.1 Echo Request</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.4.2 Echo Response<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.4.3 Version Not Supported<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">7.5
+Tunnel Management Messages</span><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.1 Create PDP Context Request<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.2 Create PDP Context Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.3 Update PDP Context Request</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.4 Update PDP Context Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.5 Delete PDP Context Request</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.6 Delete PDP Context Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.7 Create AA PDP Context
+Request</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.8 Create AA PDP Context
+Response<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.9 Delete AA PDP Context
+Request</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.10 Delete AA PDP Context
+Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.11 Error Indication<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.12 PDU Notification Request<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.13 PDU Notification Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.14 PDU Notification Reject
+Request</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.15 PDU Notification Reject
+Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">7.6
+Location Management Messages</span><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.6.1 Send Routeing Information
+for GPRS Request<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.6.2 Send Routeing Information
+for GPRS Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.6.3 Failure Report Request<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.6.3 Failure Report Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.6.5 Note MS GPRS Present
+Request<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.6.6 Note MS GPRS Present
+Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">7.5
+Mobility Management Messages</span><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.1 Identification Request<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable<br>
+      </td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.2 Identification Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.3 SGSN Context Request<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.4 SGSN Context Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.5 SGSN Context Acknowledge</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+<h2>3GPP 29.060 (GTPv1)<br>
+</h2>
+<table cellpadding="2" cellspacing="2" border="1"
+ style="text-align: left; width: 100%;">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top; font-weight: bold;">Feature<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; font-weight: bold;">gtplib<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; font-weight: bold;">ggsn<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; font-weight: bold;">sgsnemu<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; font-weight: bold;">notes<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">7.2
+Path Management Messages</span><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.2.1 Echo Request</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.2.2 Echo Response<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.2.3 Version Not Supported<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.2.4 Supported Extension
+Headers Notification<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">7.3
+Tunnel Management Messages</span><br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);"><br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);"><br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);"><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.3.1 Create PDP Context Request<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td style="vertical-align: top; text-align: center;">1<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.3.2 Create PDP Context Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.3.3 Update PDP Context Request</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;">1<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.3.4 Update PDP Context Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.3.5 Delete PDP Context Request</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.3.6 Delete PDP Context Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.3.7 Error Indication<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(51, 255, 51);">Supported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.3.8 PDU Notification Request<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.3.9 PDU Notification Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.3.10 PDU Notification Reject
+Request</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.3.10 PDU Notification Reject
+Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">7.4
+Location Management Messages</span><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.4.1 Send Routeing Information
+for GPRS Request<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.4.2 Send Routeing Information
+for GPRS Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.4.3 Failure Report Request<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.4.3 Failure Report Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.4.5 Note MS GPRS Present
+Request<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.4.6 Note MS GPRS Present
+Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">7.5
+Mobility Management Messages</span><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.1 Identification Request<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable<br>
+      </td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.2 Identification Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.3 SGSN Context Request<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.4 SGSN Context Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.5 SGSN Context Acknowledge</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.6 Forward Relocation Request<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.7 Forward Relocation Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.8 Forward Relocation Complete</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.9 Relocation Cancel Request<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.10 Relocation Cancel Response</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.11 Forward Relocation
+Complete Acknowledge<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.12 Forward SRNS Context
+Acknowledge</td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">7.5.13 Forward SRNS Context<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 204, 204);">Unsupported</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;">Not
+applicable</td>
+      <td style="vertical-align: top; text-align: center;"><br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+<h2>Notes</h2>
+1) The "Secondary PDP Context Activation
+Procedure" is not supported.
+<p style="margin-bottom: 0in;"><br>
+</p>
+<br>
+<br>
+</body>
+</html>
