@@ -25,6 +25,29 @@
 #define hton32(x) htonl(x)
 #define ntoh32(x) ntohl(x)
 
+#if BYTE_ORDER == LITTLE_ENDIAN
+static __inline u_int64_t
+hton64(u_int64_t q)
+{
+        register u_int32_t u, l;
+        u = q >> 32;
+        l = (u_int32_t) q;
+
+        return htonl(u) | ((u_int64_t)htonl(l) << 32);
+}
+
+#define ntoh64(_x)        hton64(_x)
+
+#elif BYTE_ORDER == BIG_ENDIAN
+
+#define hton64(_x)        (_x)
+#define ntoh64(_x)        hton64(_x)
+
+#else
+#error  "Please fix <machine/endian.h>"
+#endif
+
+
 #define GTPIE_SIZE 256          /* Max number of information elements */
 #define GTPIE_MAX  0xffff       /* Max length of information elements */
 #define GTPIE_MAX_TV 28         /* Max length of type value pair */
@@ -90,52 +113,6 @@
 #define GTPIE_CHARGING_ADDR 251 /* Charging Gateway Address */
 /* 252-254 Reserved for the GPRS charging protocol (see GTP' in GSM 12.15) */
 #define GTPIE_PRIVATE       255 /* Private Extension */
-
-/* GTP information element cause codes from 29.060 v3.9.0 7.7 */
-/*                                                            */
-#define GTPCAUSE_REQ_IMSI                   0 /* Request IMSI */
-#define GTPCAUSE_REQ_IMEI                   1 /* Request IMEI */
-#define GTPCAUSE_REQ_IMSI_IMEI              2 /* Request IMSI and IMEI */
-#define GTPCAUSE_NO_ID_NEEDED               3 /* No identity needed */
-#define GTPCAUSE_MS_REFUSES_X               4 /* MS refuses */
-#define GTPCAUSE_MS_NOT_RESP_X              5 /* MS is not GPRS responding */
-#define GTPCAUSE_006                        6 /* For future use 6-48 */
-#define GTPCAUSE_049                       49 /* Cause values reserved for GPRS charging protocol use (See GTP' in GSM 12.15) 49-63 */
-#define GTPCAUSE_064                       64 /* For future use 64-127 */
-#define GTPCAUSE_ACC_REQ                  128 /* Request accepted */
-#define GTPCAUSE_129                      129 /* For future use 129-176 */
-#define GTPCAUSE_177                      177 /* Cause values reserved for GPRS charging protocol use (See GTP' In GSM 12.15) 177-191 */
-#define GTPCAUSE_NON_EXIST                192 /* Non-existent */
-#define GTPCAUSE_INVALID_MESSAGE          193 /* Invalid message format */
-#define GTPCAUSE_IMSI_NOT_KNOWN           194 /* IMSI not known */
-#define GTPCAUSE_MS_DETACHED              195 /* MS is GPRS detached */
-#define GTPCAUSE_MS_NOT_RESP              196 /* MS is not GPRS responding */
-#define GTPCAUSE_MS_REFUSES               197 /* MS refuses */
-#define GTPCAUSE_198                      198 /* For future use */
-#define GTPCAUSE_NO_RESOURCES             199 /* No resources available */
-#define GTPCAUSE_NOT_SUPPORTED            200 /* Service not supported */
-#define GTPCAUSE_MAN_IE_INCORRECT         201 /* Mandatory IE incorrect */
-#define GTPCAUSE_MAN_IE_MISSING           202 /* Mandatory IE missing */
-#define GTPCAUSE_OPT_IE_INCORRECT         203 /* Optional IE incorrect */
-#define GTPCAUSE_SYS_FAIL                 204 /* System failure */
-#define GTPCAUSE_ROAMING_REST             205 /* Roaming Restriction */
-#define GTPCAUSE_PTIMSI_MISMATCH          206 /* P-TMSI signature mismatch */
-#define GTPCAUSE_CONN_SUSP                207 /* GPRS connection suspended */
-#define GTPCAUSE_AUTH_FAIL                208 /* Authentication failure */
-#define GTPCAUSE_USER_AUTH_FAIL           209 /* User authentication failed */
-#define GTPCAUSE_CONTEXT_NOT_FOUND        210 /* Context not found */
-#define GTPCAUSE_ADDR_OCCUPIED            211 /* All dynamic PDP addresses are occupied */
-#define GTPCAUSE_NO_MEMORY                212 /* No memory is available */
-#define GTPCAUSE_RELOC_FAIL               213 /* Relocation failure */
-#define GTPCAUSE_UNKNOWN_MAN_EXTHEADER    214 /* Unknown mandatory extension header */
-#define GTPCAUSE_SEM_ERR_TFT              215 /* Semantic error in the TFT operation */
-#define GTPCAUSE_SYN_ERR_TFT              216 /* Syntactic error in the TFT operation */
-#define GTPCAUSE_SEM_ERR_FILTER           217 /* Semantic errors in packet filter(s) */
-#define GTPCAUSE_SYN_ERR_FILTER           218 /* Syntactic errors in packet filter(s) */
-#define GTPCAUSE_MISSING_APN              219 /* Missing or unknown APN*/
-#define GTPCAUSE_UNKNOWN_PDP              220 /* Unknown PDP address or PDP type */
-#define GTPCAUSE_221                      221 /* For Future Use 221-240 */
-#define GTPCAUSE_241                      241 /* Cause Values Reserved For Gprs Charging Protocol Use (See Gtp' In Gsm 12.15) 241-255 */
 
 
 /* GTP information element structs in network order */
@@ -267,8 +244,11 @@ extern int gtpie_gettv2(union gtpie_member* ie[], int type, int instance,
 			uint16_t *dst);
 extern int gtpie_gettv4(union gtpie_member* ie[], int type, int instance, 
 			uint32_t *dst);
+extern int gtpie_gettv8(union gtpie_member* ie[], int type, int instance, 
+			uint64_t *dst);
 
-extern int gtpie_decaps(union gtpie_member* ie[], void *pack, unsigned len);
+extern int gtpie_decaps(union gtpie_member* ie[], int version,
+			void *pack, unsigned len);
 extern int gtpie_encaps(union gtpie_member* ie[], void *pack, unsigned *len);
 extern int gtpie_encaps2(union gtpie_member ie[], int size,
 		  void *pack, unsigned *len);

@@ -123,6 +123,7 @@ struct pdp_t {
   struct ul255_t apn_sub;/* The APN received from the HLR. */
   struct ul255_t apn_use;/* The APN Network Identifier currently used. */
   uint8_t     nsapi;    /* Network layer Service Access Point Identifier. (4 bit) */
+  uint8_t     linked_nsapi;  /* (Linked NSAPI) (4 bit) */
   uint16_t    ti;       /* Transaction Identifier. (4 or 12 bit) */
 
   uint32_t    teic_own; /* (Own Tunnel Endpoint Identifier Control) */
@@ -136,7 +137,7 @@ struct pdp_t {
   uint16_t    flrc;     /* (Remote gn/gp Flow Label Control, gtp0) */
   uint16_t    flru;     /* (Remote gn/gp Flow Label Data I, gtp0) */
 
-  struct ul_t tft;      /* Traffic flow template. */
+  struct ul255_t tft;   /* Traffic flow template. */
   /*struct ul16_t sgsnc;  * The IP address of the SGSN currently serving this MS. (Control plane) */
   /*struct ul16_t sgsnu;  * The IP address of the SGSN currently serving this MS. (User plane) */
   /*struct ul16_t ggsnc;  * The IP address of the GGSN currently used. (Control plane) */
@@ -173,7 +174,15 @@ struct pdp_t {
   struct ul255_t pco_req;  /* Requested packet control options. */
   struct ul255_t pco_neg;  /* Negotiated packet control options. */
   uint32_t    selmode;  /* Selection mode. */
-  uint64_t    tid;      /* (Combination of imsi and nsapi) */
+
+  /* Additional parameters used by library */
+
+  int         version;  /* Protocol version currently in use. 0 or 1 */
+
+  uint64_t    tid;      /* Combination of imsi and nsapi */
+  u_int16_t   seq;      /* Sequence number of last request */
+  struct sockaddr_in sa_peer; /* Address of last request */
+  int fd;               /* File descriptor request was received on */
 };
 
 
@@ -185,12 +194,15 @@ int pdp_freepdp(struct pdp_t *pdp);
 int pdp_getpdp(struct pdp_t **pdp);
 
 int pdp_getgtp0(struct pdp_t **pdp, uint16_t fl);
-int pdp_getgtp1(struct pdp_t **pdp, uint32_t teid);
+int pdp_getgtp1(struct pdp_t **pdp, uint32_t tei);
+
+int pdp_getimsi(struct pdp_t **pdp, uint64_t imsi, uint8_t nsapi);
 
 int pdp_tidhash(uint64_t tid);
 int pdp_tidset(struct pdp_t *pdp, uint64_t tid);
 int pdp_tiddel(struct pdp_t *pdp);
 int pdp_tidget(struct pdp_t **pdp, uint64_t tid);
+
 
 /*
 int pdp_iphash(void* ipif, struct ul66_t *eua);

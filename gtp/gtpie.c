@@ -79,6 +79,14 @@ int gtpie_tv4(void *p, int *length, int size, u_int8_t t, u_int32_t v) {
   return 0;
 }
 
+int gtpie_tv8(void *p, int *length, int size, u_int8_t t, u_int64_t v) {
+  if ((*length + 9) >= size) return 1;
+  ((union gtpie_member*) (p + *length))->tv8.t = hton8(t);
+  ((union gtpie_member*) (p + *length))->tv8.v = hton64(v);
+  *length += 9;
+  return 0;
+}
+
 int gtpie_getie(union gtpie_member* ie[], int type, int instance) {
   int j;
   for (j=0; j< GTPIE_SIZE; j++) {
@@ -157,7 +165,18 @@ int gtpie_gettv4(union gtpie_member* ie[], int type, int instance,
   return 0;
 }
 
-int gtpie_decaps(union gtpie_member* ie[], void *pack, unsigned len) {
+int gtpie_gettv8(union gtpie_member* ie[], int type, int instance, 
+		 uint64_t *dst){
+  int ien;
+  ien = gtpie_getie(ie, type, instance);
+  if (ien>=0)
+    *dst = ntoh64(ie[ien]->tv8.v);
+  else
+    return EOF;
+  return 0;
+}
+
+int gtpie_decaps(union gtpie_member* ie[], int version, void *pack, unsigned len) {
   int i;
   int j = 0;
   unsigned char *p;
@@ -175,9 +194,9 @@ int gtpie_decaps(union gtpie_member* ie[], void *pack, unsigned len) {
 	printf("%02x ", (unsigned char)*(char *)(p+i));
 	if (!((i+1)%16)) printf("\n");
       };
-    printf("\n");
+      printf("\n");
     }
-
+    
     switch (*p) {
     case GTPIE_CAUSE:             /* TV GTPIE types with value length 1 */
     case GTPIE_REORDER:
@@ -194,14 +213,26 @@ int gtpie_decaps(union gtpie_member* ie[], void *pack, unsigned len) {
       if (j<GTPIE_SIZE) {
 	ie[j] = (union gtpie_member*) p;
 	if (GTPIE_DEBUG) printf("GTPIE TV1 found. Type %d, value %d\n", 
-	       ie[j]->tv1.t, ie[j]->tv1.v);
+				ie[j]->tv1.t, ie[j]->tv1.v);
 	p+= 1 + 1;
 	j++;
       }
       break;
-    case GTPIE_FL_DI:           /* TV GTPIE types with value length 2 */
+    case GTPIE_FL_DI:           /* TV GTPIE types with value length 2 or 4 */
     case GTPIE_FL_C:
-    case GTPIE_PFI:  
+      if (version != 0) {
+	if (j<GTPIE_SIZE) {     /* GTPIE_TEI_DI & GTPIE_TEI_C with length 4 */
+	  /* case GTPIE_TEI_DI: gtp1 */
+	  /* case GTPIE_TEI_C:  gtp1 */
+	  ie[j] = (union gtpie_member*) p;
+	  if (GTPIE_DEBUG) printf("GTPIE TV 4 found. Type %d, value %d\n",
+				  ie[j]->tv4.t, ie[j]->tv4.v);
+	  p+= 1 + 4;
+	  j++;
+	}
+	break;
+      }
+    case GTPIE_PFI:             /* TV GTPIE types with value length 2 */
     case GTPIE_CHARGING_C:
     case GTPIE_TRACE_REF:
     case GTPIE_TRACE_TYPE:
@@ -227,9 +258,9 @@ int gtpie_decaps(union gtpie_member* ie[], void *pack, unsigned len) {
     case GTPIE_TLLI:            /* TV GTPIE types with value length 4 */
     case GTPIE_P_TMSI:
     case GTPIE_CHARGING_ID:
+      /* case GTPIE_TEI_DI: Handled by GTPIE_FL_DI */
+      /* case GTPIE_TEI_C:  Handled by GTPIE_FL_DI */
       if (j<GTPIE_SIZE) {
-	/*    case GTPIE_TEI_DI: gtp1 */
-	/*    case GTPIE_TEI_C: gtp1 */
 	ie[j] = (union gtpie_member*) p;
 	if (GTPIE_DEBUG) printf("GTPIE TV 4 found. Type %d, value %d\n",
 				ie[j]->tv4.t, ie[j]->tv4.v);

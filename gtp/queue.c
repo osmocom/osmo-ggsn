@@ -77,6 +77,8 @@ int queue_seqset(struct queue_t *queue, struct qmsg_t *qmsg,
   if (QUEUE_DEBUG) printf("End queue_seqset\n");
   return 0;
 }
+
+
 int queue_seqdel(struct queue_t *queue, struct qmsg_t *qmsg) {
   int hash = queue_seqhash(&qmsg->peer, qmsg->seq);
   struct qmsg_t *qmsg2;
@@ -234,14 +236,14 @@ int queue_seqget(struct queue_t *queue, struct qmsg_t **qmsg,
 }
 
 int queue_freemsg_seq(struct queue_t *queue, struct sockaddr_in *peer, 
-		      uint16_t seq, uint8_t *type, void **aid) {
+		      uint16_t seq, uint8_t *type, void **cbp) {
   struct qmsg_t *qmsg;
   if (queue_seqget(queue, &qmsg, peer, seq)) {
-    *aid = NULL;
+    *cbp = NULL;
     *type = 0;
     return EOF;
   }
-  *aid = qmsg->aid;
+  *cbp = qmsg->cbp;
   *type = qmsg->type;
   if (queue_freemsg(queue, qmsg)) {
     return EOF;

@@ -109,12 +109,15 @@ int encaps_printf(void *p, void *packet, unsigned len)
 
 int delete_context(struct pdp_t *pdp) {
   if (debug) printf("Deleting PDP context\n");
-  ippool_freeip(ippool, (struct ippoolm_t *) pdp->peer);
+  if (pdp->peer)
+    ippool_freeip(ippool, (struct ippoolm_t *) pdp->peer);
+  else
+    sys_err(LOG_ERR, __FILE__, __LINE__, 0, "Peer not defined!");
   return 0;
 }
 
 
-int create_context(struct pdp_t *pdp) {
+int create_context_ind(struct pdp_t *pdp) {
   struct in_addr addr;
   struct ippoolm_t *member;
 
@@ -126,12 +129,16 @@ int create_context(struct pdp_t *pdp) {
   memcpy(pdp->qos_neg0, pdp->qos_req0, sizeof(pdp->qos_neg));
   memcpy(&pdp->pco_neg, &pco, sizeof(pdp->pco_neg));
 
+  memcpy(pdp->qos_neg.v, pdp->qos_req.v, pdp->qos_req.l); /* TODO */
+  pdp->qos_neg.l = pdp->qos_req.l;
+  
   if (pdp_euaton(&pdp->eua, &addr)) {
     addr.s_addr = 0; /* Request dynamic */
   }
 
   if (ippool_newip(ippool, &member, &addr)) {
-    return EOF; /* Allready in use, or no more available */
+    gtp_create_context_resp(gsn, pdp, GTPCAUSE_NO_RESOURCES);
+    return 0; /* Allready in use, or no more available */
   }
 
   pdp_ntoeua(&member->addr, &pdp->eua);
@@ -139,6 +146,7 @@ int create_context(struct pdp_t *pdp) {
   pdp->ipif = tun; /* TODO */
   member->peer = pdp;
 
+  gtp_create_context_resp(gsn, pdp, GTPCAUSE_ACC_REQ);
   return 0; /* Success */
 }
 
@@ -157,7 +165,7 @@ int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len) {
   }
   
   if (ipm->peer) /* Check if a peer protocol is defined */
-    gtp_gpdu(gsn, (struct pdp_t*) ipm->peer, pack, len);
+    gtp_data_req(gsn, (struct pdp_t*) ipm->peer, pack, len);
   return 0;
 }
 
@@ -368,11 +376,13 @@ int main(int argc, char **argv)
 	    "Failed to create gtp");
     exit(1);
   }
-  if (gsn->fd > maxfd) maxfd = gsn->fd;
+  if (gsn->fd0 > maxfd) maxfd = gsn->fd0;
+  if (gsn->fd1c > maxfd) maxfd = gsn->fd1c;
+  if (gsn->fd1u > maxfd) maxfd = gsn->fd1u;
 
-  gtp_set_cb_gpdu(gsn, encaps_tun);
+  gtp_set_cb_data_ind(gsn, encaps_tun);
   gtp_set_cb_delete_context(gsn, delete_context);
-  gtp_set_cb_create_context(gsn, create_context);
+  gtp_set_cb_create_context_ind(gsn, create_context_ind);
 
 
   /* Create a tunnel interface */
@@ -396,7 +406,9 @@ int main(int argc, char **argv)
 	
     FD_ZERO(&fds);
     if (tun) FD_SET(tun->fd, &fds);
-    FD_SET(gsn->fd, &fds);
+    FD_SET(gsn->fd0, &fds);
+    FD_SET(gsn->fd1c, &fds);
+    FD_SET(gsn->fd1u, &fds);
     
     gtp_retranstimeout(gsn, &idleTime);
     switch (select(maxfd + 1, &fds, NULL, NULL, &idleTime)) {
@@ -417,9 +429,15 @@ int main(int argc, char **argv)
       sys_err(LOG_ERR, __FILE__, __LINE__, 0,
 	      "TUN read failed (fd)=(%d)", tun->fd);
     }
-
-    if (FD_ISSET(gsn->fd, &fds))
-      gtp_decaps(gsn);
+    
+    if (FD_ISSET(gsn->fd0, &fds))
+      gtp_decaps0(gsn);
+    
+    if (FD_ISSET(gsn->fd1c, &fds))
+      gtp_decaps1c(gsn);
+    
+    if (FD_ISSET(gsn->fd1u, &fds))
+      gtp_decaps1u(gsn);
     
   }
 

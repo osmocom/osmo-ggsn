@@ -739,7 +739,7 @@ int create_ping(void *gsn, struct pdp_t *pdp,
   pack.checksum = ~sum;
 
   ntransmitted++;
-  return gtp_gpdu(gsn, pdp, &pack, 28 + datasize);
+  return gtp_data_req(gsn, pdp, &pack, 28 + datasize);
 }
 		
 
@@ -771,7 +771,7 @@ int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len) {
   }
   
   if (ipm->pdp) /* Check if a peer protocol is defined */
-    gtp_gpdu(gsn, ipm->pdp, pack, len);
+    gtp_data_req(gsn, ipm->pdp, pack, len);
   return 0;
 }
 
@@ -818,13 +818,13 @@ int delete_pdp_conf(struct pdp_t *pdp, int cause) {
   return 0;
 }
 
-int echo_conf(struct pdp_t *pdp, int cause) {
-  if (cause <0) {
+int echo_conf(int recovery) {
+  if (recovery <0) {
     printf("Echo request timed out\n");
     state = 0; 
   }
   else
-    printf("Received echo response.\n");
+    printf("Received echo response\n");
   return 0;
 }
 
@@ -832,7 +832,7 @@ int conf(int type, int cause, struct pdp_t* pdp, void *aid) {
   /* if (cause < 0) return 0; Some error occurred. We don't care */
   switch (type) {
   case GTP_ECHO_REQ:
-    return echo_conf(pdp, cause);
+    return echo_conf(cause);
   case GTP_CREATE_PDP_REQ:
     if (cause !=128) return 0; /* Request not accepted. We don't care */
     return create_pdp_conf(pdp, cause);
@@ -878,14 +878,16 @@ int main(int argc, char **argv)
 	    "Failed to create gtp");
     exit(1);
   }
-  if (gsn->fd > maxfd) maxfd = gsn->fd;
+  if (gsn->fd0 > maxfd) maxfd = gsn->fd0;
+  if (gsn->fd1c > maxfd) maxfd = gsn->fd1c;
+  if (gsn->fd1u > maxfd) maxfd = gsn->fd1u;
 
   gtp_set_cb_delete_context(gsn, delete_context);
   gtp_set_cb_conf(gsn, conf);
   if (options.createif) 
-    gtp_set_cb_gpdu(gsn, encaps_tun);
+    gtp_set_cb_data_ind(gsn, encaps_tun);
   else
-    gtp_set_cb_gpdu(gsn, encaps_ping);
+    gtp_set_cb_data_ind(gsn, encaps_ping);
 
   if (options.createif) {
     printf("Setting up interface\n");
@@ -907,7 +909,8 @@ int main(int argc, char **argv)
 
   /* See if anybody is there */
   printf("Sending off echo request\n");
-  gtp_echo_req(gsn, &options.remote); /* See if remote is alive ? */
+  gtp_echo_req(gsn, 1, NULL, &options.remote); /* See if remote is alive ? */
+  gtp_echo_req(gsn, 0, NULL, &options.remote); /* See if remote is alive ? */
 
   for(n=0; n<options.contexts; n++) {
     printf("Setting up PDP context #%d\n", n);
@@ -927,6 +930,11 @@ int main(int argc, char **argv)
     else {
       memcpy(pdp->qos_req0, options.qos.v, options.qos.l);
     }
+
+    /* TODO */
+    pdp->qos_req.l = 4;
+    pdp->qos_req.v[0] = 0x00;
+    memcpy(pdp->qos_req.v+1, options.qos.v, options.qos.l);
     
     pdp->selmode = 0x01; /* MS provided APN, subscription not verified */
     
@@ -964,9 +972,11 @@ int main(int argc, char **argv)
       memcpy(pdp->pco_req.v, options.pco.v, options.pco.l);
     }
     
+    pdp->version = 1; /* First try with version 1 */
+
     /* Create context */
     /* We send this of once. Retransmissions are handled by gtplib */
-    gtp_create_context(gsn, pdp, NULL, &options.remote);
+    gtp_create_context_req(gsn, pdp, NULL, &options.remote);
   }    
 
   state = 1;  /* Enter wait_connection state */
@@ -1015,7 +1025,7 @@ int main(int argc, char **argv)
       for(n=0; n<options.contexts; n++) {
 	/* Delete context */
 	printf("Disconnecting PDP context #%d\n", n);
-	gtp_delete_context(gsn, iparr[n].pdp, NULL);
+	gtp_delete_context_req(gsn, iparr[n].pdp, NULL);
 	if ((options.pinghost.s_addr !=0) && ntransmitted) ping_finish();
       }
     }
@@ -1041,7 +1051,9 @@ int main(int argc, char **argv)
 
     FD_ZERO(&fds);
     if (tun) FD_SET(tun->fd, &fds);
-    FD_SET(gsn->fd, &fds);
+    FD_SET(gsn->fd0, &fds);
+    FD_SET(gsn->fd1c, &fds);
+    FD_SET(gsn->fd1u, &fds);
     
     gtp_retranstimeout(gsn, &idleTime);
     ping_timeout(&idleTime);
@@ -1066,9 +1078,14 @@ int main(int argc, char **argv)
 	      "TUN decaps failed");
     }
     
-    if (FD_ISSET(gsn->fd, &fds))
-      gtp_decaps(gsn);
-    
+    if (FD_ISSET(gsn->fd0, &fds))
+      gtp_decaps0(gsn);
+
+    if (FD_ISSET(gsn->fd1c, &fds))
+      gtp_decaps1c(gsn);
+
+    if (FD_ISSET(gsn->fd1u, &fds))
+      gtp_decaps1u(gsn);
   }
   
   gtp_free(gsn); /* Clean up the gsn instance */

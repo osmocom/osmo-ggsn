@@ -128,7 +128,7 @@ int pdp_newpdp(struct pdp_t **pdp, uint64_t imsi, uint8_t nsapi,
       (*pdp)->fllc     = (uint16_t) n;
       (*pdp)->fllu     = (uint16_t) n;
       (*pdp)->teic_own = (uint32_t) n;
-      (*pdp)->teic_own = (uint32_t) n;
+      (*pdp)->teid_own = (uint32_t) n;
       pdp_tidset(*pdp, pdp_gettid(imsi, nsapi));
       return 0;
     }
@@ -225,6 +225,11 @@ int pdp_tidget(struct pdp_t **pdp, uint64_t tid) {
   }
   if (PDP_DEBUG) printf("Begin pdp_tidget. Not found\n");
   return EOF; /* End of linked list and not found */
+}
+
+int pdp_getimsi(struct pdp_t **pdp, uint64_t imsi, uint8_t nsapi) {
+  return pdp_tidget(pdp, 
+		    (imsi & 0x0fffffffffffffff) + ((uint64_t)nsapi << 60));
 }
 
 /*

@@ -30,10 +30,11 @@
 struct qmsg_t {           /* Holder for queued packets */
   int state;              /* 0=empty, 1=full */
   uint16_t seq;           /* The sequence number */
-  u_int8_t type;         /* The type of packet */
-  void *aid;              /* Application specific pointer */
+  u_int8_t type;          /* The type of packet */
+  void *cbp;              /* Application specific pointer */
   union gtp_packet p;     /* The packet stored */
   int l;                  /* Length of the packet */
+  int fd;                 /* Socket packet was sent to / received from */
   struct sockaddr_in peer;/* Address packet was sent to / received from */
   struct qmsg_t *seqnext; /* Pointer to next in sequence hash list */
   int next;               /* Pointer to the next in queue. -1: Last */
@@ -70,7 +71,7 @@ int queue_seqget(struct queue_t *queue, struct qmsg_t **qmsg,
 		 struct sockaddr_in  *peer, uint16_t seq);
 /* Free message based on sequence number */
 int queue_freemsg_seq(struct queue_t *queue, struct sockaddr_in *peer,
-		      uint16_t seq, uint8_t *type, void **aid);
+		      uint16_t seq, uint8_t *type, void **cbp);
 
 
 #endif	/* !_QUEUE_H */
