@@ -238,6 +238,11 @@ int ippool_new(struct ippool_t **this, char *dyn,  char *stat,
     if (ippool_aton(&addr, &mask, dyn, 0))
       return -1; /* Failed to parse dynamic pool */
 
+    /* Set IPPOOL_NOGATEWAY if IPPOOL_NODESTADDR is set */
+    if (flags & IPPOOL_NODESTADDR) {
+      flags |= IPPOOL_NOGATEWAY;
+    }
+
     /* Set IPPOOL_NONETWORK if IPPOOL_NOGATEWAY is set */
     if (flags & IPPOOL_NOGATEWAY) {   
       flags |= IPPOOL_NONETWORK;
@@ -248,6 +253,8 @@ int ippool_new(struct ippool_t **this, char *dyn,  char *stat,
     if (flags & IPPOOL_NONETWORK)   /* Exclude network address from pool */
       dynsize--;
     if (flags & IPPOOL_NOGATEWAY)   /* Exclude gateway address from pool */
+      dynsize--;
+    if (flags & IPPOOL_NODESTADDR)  /* Exclude destination address from pool */
       dynsize--;
     if (flags & IPPOOL_NOBROADCAST) /* Exclude broadcast address from pool */
       dynsize--;
@@ -305,7 +312,9 @@ int ippool_new(struct ippool_t **this, char *dyn,  char *stat,
   (*this)->lastdyn = NULL;
   for (i = 0; i<dynsize; i++) {
 
-    if (flags & IPPOOL_NOGATEWAY)
+    if (flags & IPPOOL_NODESTADDR)
+      (*this)->member[i].addr.s_addr = htonl(ntohl(addr.s_addr) + i + 3);
+    else if (flags & IPPOOL_NOGATEWAY)
       (*this)->member[i].addr.s_addr = htonl(ntohl(addr.s_addr) + i + 2);
     else if (flags & IPPOOL_NONETWORK)
       (*this)->member[i].addr.s_addr = htonl(ntohl(addr.s_addr) + i + 1);

@@ -619,6 +619,8 @@ int tun_new(struct tun_t **tun)
 #elif defined(__sun__)
   int if_fd, ppa = -1;
   static int ip_fd = 0;
+  int muxid;
+  struct ifreq ifr;
 
 #else
 #error  "Unknown platform!"
@@ -696,8 +698,8 @@ int tun_new(struct tun_t **tun)
 
 #elif defined(__sun__)
 
-  if( (ip_fd = open("/dev/ip", O_RDWR, 0)) < 0){
-    sys_err(LOG_ERR, __FILE__, __LINE__, errno, "Can't open /dev/ip");
+  if( (ip_fd = open("/dev/udp", O_RDWR, 0)) < 0){
+    sys_err(LOG_ERR, __FILE__, __LINE__, errno, "Can't open /dev/udp");
     return -1;
   }
   
@@ -708,28 +710,28 @@ int tun_new(struct tun_t **tun)
   
   /* Assign a new PPA and get its unit number. */
   if( (ppa = ioctl((*tun)->fd, TUNNEWPPA, -1)) < 0){
-    syslog(LOG_ERR, "Can't assign new interface");
+    sys_err(LOG_ERR, __FILE__, __LINE__, errno, "Can't assign new interface");
     return -1;
   }
   
   if( (if_fd = open("/dev/tun", O_RDWR, 0)) < 0){
-    syslog(LOG_ERR, "Can't open /dev/tun (2)");
+    sys_err(LOG_ERR, __FILE__, __LINE__, errno, "Can't open /dev/tun (2)");
     return -1;
   }
   if(ioctl(if_fd, I_PUSH, "ip") < 0){
-    syslog(LOG_ERR, "Can't push IP module");
+    sys_err(LOG_ERR, __FILE__, __LINE__, errno, "Can't push IP module");
     return -1;
   }
   
   /* Assign ppa according to the unit number returned by tun device */
   if(ioctl(if_fd, IF_UNITSEL, (char *)&ppa) < 0){
-    syslog(LOG_ERR, "Can't set PPA %d", ppa);
+    sys_err(LOG_ERR, __FILE__, __LINE__, errno, "Can't set PPA %d", ppa);
     return -1;
   }
 
   /* Link the two streams */
-  if(ioctl(ip_fd, I_LINK, if_fd) < 0){
-    syslog(LOG_ERR, "Can't link TUN device to IP");
+  if ((muxid = ioctl(ip_fd, I_LINK, if_fd)) < 0) {
+    sys_err(LOG_ERR, __FILE__, __LINE__, errno, "Can't link TUN device to IP");
     return -1;
   }
 
@@ -737,6 +739,20 @@ int tun_new(struct tun_t **tun)
   
   snprintf((*tun)->devname, sizeof((*tun)->devname), "tun%d", ppa);
   (*tun)->devname[sizeof((*tun)->devname)] = 0;
+
+  memset(&ifr, 0, sizeof(ifr));
+  strcpy(ifr.ifr_name, (*tun)->devname);
+  ifr.ifr_ip_muxid = muxid;
+  
+  if (ioctl(ip_fd, SIOCSIFMUXID, &ifr) < 0) {
+    ioctl(ip_fd, I_PUNLINK, muxid);
+    sys_err(LOG_ERR, __FILE__, __LINE__, errno, "Can't set multiplexor id");
+    return -1;
+  }
+  
+  /*  if (fcntl (fd, F_SETFL, O_NONBLOCK) < 0)
+      msg (M_ERR, "Set file descriptor to non-blocking failed"); */
+
   return 0;
 
 #else
@@ -767,6 +783,9 @@ int tun_set_cb_ind(struct tun_t *this,
 
 int tun_decaps(struct tun_t *this)
 {
+
+#if defined(__linux__) || defined (__FreeBSD__)
+
   unsigned char buffer[PACKET_MAX];
   int status;
   
@@ -779,11 +798,45 @@ int tun_decaps(struct tun_t *this)
     return this->cb_ind(this, buffer, status);
 
   return 0;
+
+#elif defined (__sun__)
+
+  unsigned char buffer[PACKET_MAX];
+  struct strbuf sbuf;
+  int f = 0;
+  
+  sbuf.maxlen = PACKET_MAX;      
+  sbuf.buf = buffer;
+  if (getmsg(this->fd, NULL, &sbuf, &f) < 0) {
+    sys_err(LOG_ERR, __FILE__, __LINE__, errno, "getmsg() failed");
+    return -1;
+  }
+
+  if (this->cb_ind)
+    return this->cb_ind(this, buffer, sbuf.len);
+
+  return 0;
+  
+#endif
+
 }
+
 
 int tun_encaps(struct tun_t *tun, void *pack, unsigned len)
 {
+
+#if defined(__linux__) || defined (__FreeBSD__)
+
   return write(tun->fd, pack, len);
+
+#elif defined (__sun__)
+
+  struct strbuf sbuf;
+  sbuf.len = len;      
+  sbuf.buf = pack;
+  return putmsg(tun->fd, NULL, &sbuf, 0);
+
+#endif
 }
 
 int tun_runscript(struct tun_t *tun, char* script) {

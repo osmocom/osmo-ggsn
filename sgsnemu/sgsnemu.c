@@ -87,7 +87,7 @@ int echoversion = 1;            /* First try this version */
 struct {
   int debug;                      /* Print debug messages */
   int createif;                   /* Create local network interface */
-  struct in_addr net, mask;       /* Network interface       */
+  struct in_addr netaddr, destaddr, net, mask;   /* Network interface  */
   char *ipup, *ipdown;            /* Filename of scripts */
   int defaultroute;               /* Set up default route */
   struct in_addr pinghost;        /* Remote ping host    */
@@ -218,26 +218,26 @@ int process_options(int argc, char **argv) {
   if (cmdline_parser (argc, argv, &args_info) != 0)
     return -1;
   if (args_info.debug_flag) {
-    printf("remote: %s\n", args_info.remote_arg);
-    printf("listen: %s\n", args_info.listen_arg);
-    printf("conf: %s\n", args_info.conf_arg);
+    if (args_info.remote_arg) printf("remote: %s\n", args_info.remote_arg);
+    if (args_info.listen_arg) printf("listen: %s\n", args_info.listen_arg);
+    if (args_info.conf_arg) printf("conf: %s\n", args_info.conf_arg);
     printf("debug: %d\n", args_info.debug_flag);
-    printf("imsi: %s\n", args_info.imsi_arg);
+    if (args_info.imsi_arg) printf("imsi: %s\n", args_info.imsi_arg);
     printf("qos: %#08x\n", args_info.qos_arg);
-    printf("apn: %s\n", args_info.apn_arg);
-    printf("msisdn: %s\n", args_info.msisdn_arg);
-    printf("uid: %s\n", args_info.uid_arg);
-    printf("pwd: %s\n", args_info.pwd_arg);
-    printf("pidfile: %s\n", args_info.pidfile_arg);
-    printf("statedir: %s\n", args_info.statedir_arg);
-    printf("dns: %s\n", args_info.dns_arg);
+    if (args_info.apn_arg) printf("apn: %s\n", args_info.apn_arg);
+    if (args_info.msisdn_arg) printf("msisdn: %s\n", args_info.msisdn_arg);
+    if (args_info.uid_arg) printf("uid: %s\n", args_info.uid_arg);
+    if (args_info.pwd_arg) printf("pwd: %s\n", args_info.pwd_arg);
+    if (args_info.pidfile_arg) printf("pidfile: %s\n", args_info.pidfile_arg);
+    if (args_info.statedir_arg) printf("statedir: %s\n", args_info.statedir_arg);
+    if (args_info.dns_arg) printf("dns: %s\n", args_info.dns_arg);
     printf("contexts: %d\n", args_info.contexts_arg);
     printf("timelimit: %d\n", args_info.timelimit_arg);
     printf("createif: %d\n", args_info.createif_flag);
-    printf("ipup: %s\n", args_info.ipup_arg);
-    printf("ipdown: %s\n", args_info.ipdown_arg);
+    if (args_info.ipup_arg) printf("ipup: %s\n", args_info.ipup_arg);
+    if (args_info.ipdown_arg) printf("ipdown: %s\n", args_info.ipdown_arg);
     printf("defaultroute: %d\n", args_info.defaultroute_flag);
-    printf("pinghost: %s\n", args_info.pinghost_arg);
+    if (args_info.pinghost_arg) printf("pinghost: %s\n", args_info.pinghost_arg);
     printf("pingrate: %d\n", args_info.pingrate_arg);
     printf("pingsize: %d\n", args_info.pingsize_arg);
     printf("pingcount: %d\n", args_info.pingcount_arg);
@@ -251,26 +251,26 @@ int process_options(int argc, char **argv) {
       return -1;
     if (args_info.debug_flag) {
       printf("cmdline_parser_configfile\n");
-      printf("remote: %s\n", args_info.remote_arg);
-      printf("listen: %s\n", args_info.listen_arg);
-      printf("conf: %s\n", args_info.conf_arg);
+      if (args_info.remote_arg) printf("remote: %s\n", args_info.remote_arg);
+      if (args_info.listen_arg) printf("listen: %s\n", args_info.listen_arg);
+      if (args_info.conf_arg) printf("conf: %s\n", args_info.conf_arg);
       printf("debug: %d\n", args_info.debug_flag);
-      printf("imsi: %s\n", args_info.imsi_arg);
+      if (args_info.imsi_arg) printf("imsi: %s\n", args_info.imsi_arg);
       printf("qos: %#08x\n", args_info.qos_arg);
-      printf("apn: %s\n", args_info.apn_arg);
-      printf("msisdn: %s\n", args_info.msisdn_arg);
-      printf("uid: %s\n", args_info.uid_arg);
-      printf("pwd: %s\n", args_info.pwd_arg);
-      printf("pidfile: %s\n", args_info.pidfile_arg);
-      printf("statedir: %s\n", args_info.statedir_arg);
-      printf("dns: %s\n", args_info.dns_arg);
+      if (args_info.apn_arg) printf("apn: %s\n", args_info.apn_arg);
+      if (args_info.msisdn_arg) printf("msisdn: %s\n", args_info.msisdn_arg);
+      if (args_info.uid_arg) printf("uid: %s\n", args_info.uid_arg);
+      if (args_info.pwd_arg) printf("pwd: %s\n", args_info.pwd_arg);
+      if (args_info.pidfile_arg) printf("pidfile: %s\n", args_info.pidfile_arg);
+      if (args_info.statedir_arg) printf("statedir: %s\n", args_info.statedir_arg);
+      if (args_info.dns_arg) printf("dns: %s\n", args_info.dns_arg);
       printf("contexts: %d\n", args_info.contexts_arg);
       printf("timelimit: %d\n", args_info.timelimit_arg);
       printf("createif: %d\n", args_info.createif_flag);
-      printf("ipup: %s\n", args_info.ipup_arg);
-      printf("ipdown: %s\n", args_info.ipdown_arg);
+      if (args_info.ipup_arg) printf("ipup: %s\n", args_info.ipup_arg);
+      if (args_info.ipdown_arg) printf("ipdown: %s\n", args_info.ipdown_arg);
       printf("defaultroute: %d\n", args_info.defaultroute_flag);
-      printf("pinghost: %s\n", args_info.pinghost_arg);
+      if (args_info.pinghost_arg) printf("pinghost: %s\n", args_info.pinghost_arg);
       printf("pingrate: %d\n", args_info.pingrate_arg);
       printf("pingsize: %d\n", args_info.pingsize_arg);
       printf("pingcount: %d\n", args_info.pingcount_arg);
@@ -495,10 +495,21 @@ int process_options(int argc, char **argv) {
 	      "Invalid network address: %s!", args_info.net_arg);
       exit(1);
     }
+
+#if defined (__sun__)
+    options.netaddr.s_addr = htonl(ntohl(options.net.s_addr) + 1);
+    options.destaddr.s_addr = htonl(ntohl(options.net.s_addr) + 1);
+#else
+    options.netaddr.s_addr = options.net.s_addr;
+    options.destaddr.s_addr = options.net.s_addr;
+#endif
+
   }
   else {
     options.net.s_addr = 0;
     options.mask.s_addr = 0;
+    options.netaddr.s_addr = 0;
+    options.destaddr.s_addr = 0;
   }
 
   /* ipup */
@@ -1067,11 +1078,11 @@ int main(int argc, char **argv)
 
   if ((options.createif) && (options.net.s_addr)) {
     /* printf("Setting up interface and routing\n");*/
-    tun_addaddr(tun, &options.net,  &options.net, &options.mask);
+    tun_addaddr(tun, &options.netaddr,  &options.destaddr, &options.mask);
     if (options.defaultroute) {
       struct in_addr rm;
       rm.s_addr = 0;
-      tun_addroute(tun, &rm,  &options.net, &rm);
+      tun_addroute(tun, &rm, &options.destaddr, &rm);
     }
     if (options.ipup) tun_runscript(tun, options.ipup);
   }

@@ -60,7 +60,7 @@
 int maxfd = 0;	                /* For select()            */
 
 struct in_addr listen_;
-struct in_addr net, mask;       /* Network interface       */
+struct in_addr netaddr, destaddr, net, mask;  /* Network interface       */
 struct in_addr dns1, dns2;      /* PCO DNS address         */
 char *ipup, *ipdown;            /* Filename of scripts     */
 int debug;                      /* Print debug output      */
@@ -184,7 +184,9 @@ int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len) {
   struct tun_packet_t *iph = (struct tun_packet_t*) pack;
   
   dst.s_addr = iph->dst;
-  
+
+  if (debug) printf("Received packet from tun!\n");
+
   if (ippool_getip(ippool, &ipm, &dst)) {
     if (debug) printf("Received packet with no destination!!!\n");
     return 0;
@@ -196,7 +198,7 @@ int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len) {
 }
 
 int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len) {
-  /*  printf("encaps_tun. Packet received: forwarding to tun\n");*/
+  if (debug) printf("encaps_tun. Packet received: forwarding to tun\n");
   return tun_encaps((struct tun_t*) pdp->ipif, pack, len);
 }
 
@@ -231,18 +233,18 @@ int main(int argc, char **argv)
     exit(1);
   if (args_info.debug_flag) {
     printf("listen: %s\n", args_info.listen_arg);
-    printf("conf: %s\n", args_info.conf_arg);
+    if (args_info.conf_arg) printf("conf: %s\n", args_info.conf_arg);
     printf("fg: %d\n", args_info.fg_flag);
     printf("debug: %d\n", args_info.debug_flag);
     printf("qos: %#08x\n", args_info.qos_arg);
-    printf("apn: %s\n", args_info.apn_arg);
-    printf("net: %s\n", args_info.net_arg);
-    printf("dynip: %s\n", args_info.dynip_arg);
-    printf("statip: %s\n", args_info.statip_arg);
-    printf("ipup: %s\n", args_info.ipup_arg);
-    printf("ipdown: %s\n", args_info.ipdown_arg);
-    printf("pidfile: %s\n", args_info.pidfile_arg);
-    printf("statedir: %s\n", args_info.statedir_arg);
+    if (args_info.apn_arg) printf("apn: %s\n", args_info.apn_arg);
+    if (args_info.net_arg) printf("net: %s\n", args_info.net_arg);
+    if (args_info.dynip_arg) printf("dynip: %s\n", args_info.dynip_arg);
+    if (args_info.statip_arg) printf("statip: %s\n", args_info.statip_arg);
+    if (args_info.ipup_arg) printf("ipup: %s\n", args_info.ipup_arg);
+    if (args_info.ipdown_arg) printf("ipdown: %s\n", args_info.ipdown_arg);
+    if (args_info.pidfile_arg) printf("pidfile: %s\n", args_info.pidfile_arg);
+    if (args_info.statedir_arg) printf("statedir: %s\n", args_info.statedir_arg);
     printf("timelimit: %d\n", args_info.timelimit_arg);
   }
 
@@ -257,14 +259,14 @@ int main(int argc, char **argv)
     printf("fg: %d\n", args_info.fg_flag);
     printf("debug: %d\n", args_info.debug_flag);
     printf("qos: %#08x\n", args_info.qos_arg);
-    printf("apn: %s\n", args_info.apn_arg);
-    printf("net: %s\n", args_info.net_arg);
-    printf("dynip: %s\n", args_info.dynip_arg);
-    printf("statip: %s\n", args_info.statip_arg);
-    printf("ipup: %s\n", args_info.ipup_arg);
-    printf("ipdown: %s\n", args_info.ipdown_arg);
-    printf("pidfile: %s\n", args_info.pidfile_arg);
-    printf("statedir: %s\n", args_info.statedir_arg);
+    if (args_info.apn_arg) printf("apn: %s\n", args_info.apn_arg);
+    if (args_info.net_arg) printf("net: %s\n", args_info.net_arg);
+    if (args_info.dynip_arg) printf("dynip: %s\n", args_info.dynip_arg);
+    if (args_info.statip_arg) printf("statip: %s\n", args_info.statip_arg);
+    if (args_info.ipup_arg) printf("ipup: %s\n", args_info.ipup_arg);
+    if (args_info.ipdown_arg) printf("ipdown: %s\n", args_info.ipdown_arg);
+    if (args_info.pidfile_arg) printf("pidfile: %s\n", args_info.pidfile_arg);
+    if (args_info.statedir_arg) printf("statedir: %s\n", args_info.statedir_arg);
     printf("timelimit: %d\n", args_info.timelimit_arg);
   }
 
@@ -304,6 +306,8 @@ int main(int argc, char **argv)
 	      "Invalid network address: %s!", args_info.net_arg);
       exit(1);
     }
+    netaddr.s_addr = htonl(ntohl(net.s_addr) + 1);
+    destaddr.s_addr = htonl(ntohl(net.s_addr) + 1);
   }
   else {
     sys_err(LOG_ERR, __FILE__, __LINE__, 0,
@@ -314,7 +318,7 @@ int main(int argc, char **argv)
   /* dynip                                                        */
   if (!args_info.dynip_arg) {
     if (ippool_new(&ippool, args_info.net_arg, NULL, 1, 0,
-		   IPPOOL_NONETWORK | IPPOOL_NOBROADCAST)) {
+		   IPPOOL_NONETWORK | IPPOOL_NOGATEWAY | IPPOOL_NOBROADCAST)) {
       sys_err(LOG_ERR, __FILE__, __LINE__, 0,
 	      "Failed to allocate IP pool!");
       exit(1);
@@ -322,7 +326,7 @@ int main(int argc, char **argv)
   }
   else {
     if (ippool_new(&ippool, args_info.dynip_arg, NULL, 1 ,0,
-		   IPPOOL_NONETWORK | IPPOOL_NOBROADCAST)) {
+		   IPPOOL_NONETWORK | IPPOOL_NOGATEWAY | IPPOOL_NOBROADCAST)) {
       sys_err(LOG_ERR, __FILE__, __LINE__, 0,
 	      "Failed to allocate IP pool!");
       exit(1);
@@ -450,16 +454,26 @@ int main(int argc, char **argv)
 
 
   /* Create a tunnel interface */
+  if (debug) printf("Creating tun interface\n");
   if (tun_new((struct tun_t**) &tun)) {
     sys_err(LOG_ERR, __FILE__, __LINE__, 0,
 	    "Failed to create tun");
+    if (debug) printf("Failed to create tun\n");
     exit(1);
   }
 
-  tun_setaddr(tun, &net,  &net, &mask);
+  if (debug) printf("Setting tun IP address\n");
+  if (tun_setaddr(tun, &netaddr, &destaddr, &mask)) {
+    sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+	    "Failed to set tun IP address");
+    if (debug) printf("Failed to set tun IP address\n");
+    exit(1);
+  }
+
+
   tun_set_cb_ind(tun, cb_tun_ind);
   if (tun->fd > maxfd) maxfd = tun->fd;
-
+  
   if (ipup) tun_runscript(tun, ipup);
 
   /******************************************************************/
