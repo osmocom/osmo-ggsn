@@ -152,7 +152,7 @@ int create_context_ind(struct pdp_t *pdp) {
   pdp->eua.l=0; /* TODO: Indicates dynamic IP */
 
   /* ulcpy(&pdp->qos_neg, &pdp->qos_req, sizeof(pdp->qos_req.v)); */
-  memcpy(pdp->qos_neg0, pdp->qos_req0, sizeof(pdp->qos_neg));
+  memcpy(pdp->qos_neg0, pdp->qos_req0, sizeof(pdp->qos_req0));
   memcpy(&pdp->pco_neg, &pco, sizeof(pdp->pco_neg));
 
   memcpy(pdp->qos_neg.v, pdp->qos_req.v, pdp->qos_req.l); /* TODO */
