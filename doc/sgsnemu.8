@@ -1,0 +1,330 @@
+
+.\" * OpenGGSN - Gateway GPRS Support Node
+.\" * Copyright (C) 2002, 2003 Mondru AB.
+.\" * 
+.\" * The contents of this file may be used under the terms of the GNU
+.\" * General Public License Version 2, provided that the above copyright
+.\" * notice and this permission notice is included in all copies or
+.\" * substantial portions of the software.
+.\" * 
+.\" * The initial developer of the original code is
+.\" * Jens Jakobsen <jj@openggsn.org>
+.\" * 
+.\" * Contributor(s):
+.\" * 
+.\" Manual page for ggsn
+.\" SH section heading
+.\" SS subsection heading
+.\" LP paragraph
+.\" IP indented paragraph
+.\" TP hanging label
+
+.TH sgsnemu 8 "July 2003"
+.SH NAME
+sgsnemu \- Serving GPRS Support Node Emulator
+.SH SYNOPSIS
+.B sgsnemu
+\-\-help
+
+.B sgsnemu
+\-\-version
+
+.B sgsnemu
+[
+.BI \-\-debug
+] [
+.BI \-\-conf " file"
+] [
+.BI \-\-pidfile " file"
+] [
+.BI \-\-statedir " file" 
+] [ 
+.BI \-\-dns " host"
+] [ 
+.BI \-\-listen " host" 
+] [
+.BI \-\-remote " host"
+] [
+.BI \-\-contexts " num"
+] [
+.BI \-\-timelimit " seconds" 
+] [
+.BI \-\-apn " apn"
+] [
+.BI \-\-imsi " imsi"
+] [
+.BI \-\-msisdn " msisdn"
+] [
+.BI \-\-qos " qos"
+] [
+.BI \-\-uid " uid"
+] [
+.BI \-\-pwd " pwd"
+] [
+.BI \-\-createif
+] [
+.BI \-\-defaultroute
+] [
+.BI \-\-ipup " script" 
+] [
+.BI \-\-ipdown " script" 
+] [
+.BI \-\-pinghost " host"
+] [
+.BI \-\-pingrate " num"
+] [
+.BI \-\-pingsize " num"
+] [
+.BI \-\-pingcount " num"
+]
+.SH DESCRIPTION
+.B sgsnemu
+is part of the 
+.B OpenGGSN
+project, and implements a Serving GPRS Support Node (SGSN)
+emulator. It can be used for testing Gateway GPRS Support Nodes
+(GGSNs), GPRS core networks as well as GPRS roaming connections.
+
+The GPRS functionality and protocols has been standardised by the
+Third Generation Partnership Project (3GPP). According to the 3GPP
+specifications an SGSN has several interfaces.
+.B sgsnemu
+implements the Gn/Gp interface which is used towards GGSNs.
+
+The Gn/Gp interface can be seen as the uplink interface of the
+SGSN. It is used for communicating with a GGSN which is typically
+connected to the Internet. The Gn/Gp interface uses the GPRS tunneling
+protocol (GTP). User data packets (typically IP packets) are tunneled
+over GTP, which again uses UDP over IP.
+
+
+.B sgsnemu 
+will establish a number of connections to the GGSN. An internal ping
+facility will transmit ping requests through the established
+connections. Alternatively a local network interface can be
+created. In this case
+.B sgsnemu
+will forward packets between the local network interface and the
+established connections on the Gn/Gp interface.
+
+.B sgsnemu
+uses the 
+.B TUN/TAP driver
+for the local interface. A tun network interface is established for
+each connection established to the GGSN.
+
+Runtime errors are reported using the
+.B syslogd (8)
+facility.
+
+
+.SH OPTIONS
+.TP
+.BI --help
+Print help and exit.
+
+.TP
+.BI --version
+Print version and exit.
+
+.TP
+.BI --debug
+Run in debug mode (default = off)
+
+.TP
+.BI --conf " file"
+Read configuration 
+.I file
+where each line corresponds to one command line option, but with the
+leading '--' removed. Command line options override the options given
+in the configuration file.
+
+.TP
+.BI --pidfile " file"
+Filename of process id 
+.I file
+(default = ./sgsnemu.pid)
+
+.TP
+.BI --statedir " path"
+.I path
+to directory of nonvolatile data (default = ./)
+
+.TP
+.BI --dns " host"
+DNS server to use for APN lookups. If omitted the default system DNS
+configuration will be used.
+
+.TP
+.BI --listen " host"
+Local interface IP address to use for the Gn/Gp interface. If omitted
+.B sgsnemu
+will listen to any IP address.
+
+.TP
+.BI --remote " host"
+GGSN 
+.I host
+to connect to. If DNS is setup correctly it should be possible to
+specify the access point name (APN) as the remote host.
+
+.TP
+.BI --contexts " num"
+Number of contexts to establish. (default = 1)
+
+.TP
+.BI --timelimit " seconds"
+Exit 
+.b sgsnemu
+after 
+.I seconds.
+Used for debugging.
+
+.TP
+.BI --apn " apn"
+.I apn
+to use when connecting to the GGSN (default = internet). APN is an
+abbreviation of Access Point Name.
+
+.TP
+.BI --imsi " imsi"
+.I imsi
+to use when connecting to the GGSN (default = 240010123456789). IMSI
+is an abbreviation of International Mobile Subscriber Identity. Must
+be exactly 15 digits.
+
+.TP
+.BI --msisdn " msisdn"
+.I msisdn
+to use when connecting to the GGSN (default = 46702123456). MSISDN is
+an abbreviation of International Mobile Integrated Services Digital
+Network. Effectly a phone number in international format without the
+leading 00 or 011.
+
+.TP
+.BI --qos " qos"
+.I qos
+to use when connecting to the GGSN (default = 0x0b921f). QoS is an
+abbreviation of Quality of Service. See 3GPP specification 09.60 for
+the format of this string.
+
+.TP
+.BI --uid " uid"
+User ID to send to GGSN as protocol configuration option.
+
+.TP
+.BI --pwd " pws"
+Password to send to GGSN as protocol configuration option.
+
+.TP
+.BI --createif
+Create a local tun interface. This interface will be used for
+forwarding packets to and from the Gn/Gp interface. Use with caution
+as the Gn/Gp interface is normally be routed to the Internet by the
+GGSN.
+
+.TP
+.BI --defaultroute
+Create a defaultroute to the local tun interface.
+
+.TP
+.BI --ipup " script"
+Script executed after the tun network interface has been brought up.
+Executed with the following parameters: <devicename> <ip address>
+
+.TP
+.BI --ipdown " script"
+Script executed after the tun network interface has been taken down.
+Executed with the following parameters: <devicename> <ip address>
+
+.TP
+.BI --pinghost " host"
+Ping
+.I host
+through the Gn/GP interface. Ping statistics are reported much like
+done by the original ping program. Use this facility for performance
+test of GGSNs.
+
+.TP
+.BI --pingrate " num"
+Number of ping requests per second (default = 1)
+
+.TP
+.BI --pingsize " num"
+The size of each ping requests in octets (default = 56)
+
+
+.TP
+.BI --pingcount " num"
+Number of ping requests to send (default = 0). A value of 0 (zero)
+indicates infinite.
+
+.TP
+.BI --pingquiet
+Do not print information for each packet received (default = off). Is
+quite usefull for high pingrates.
+
+
+.SH FILES
+.I sgsnemu.conf
+.RS
+The configuration file for
+.B sgsnemu.
+.RE
+.I .sgsnemu.pid
+.RS
+Process ID file.
+.RE
+.I ./
+.RS
+Directory holding nonvolatile data.
+.RE
+
+.SH BUGS
+Report all bugs to the OpenGGSN bug tracking list at 
+.I http://sourceforge.net/projects/sgsnemu/
+
+
+.SH "SEE ALSO"
+.BR ggsn (8), 
+.BR syslog (8)
+
+.SH NOTES 
+.LP
+
+Besides the long options documented in this man page
+.B sgsnemu
+also accepts a number of short options with the same functionality. Use
+.B sgsnemu --help
+for a full list of all the available options.
+
+The TUN/TAP driver is required for proper operation of
+.B sgsnemu. 
+For linux kernels later than 2.4.7 the TUN/TAP driver is included in
+the kernel, but typically needs to be loaded manually with
+.B modprobe tun.
+For automatic loading the line
+.B alias char-major-10-200 tun
+can be added to
+.B /etc/modules.conf.
+For other platforms see
+.I http://vtun.sourceforge.net/tun/
+for information on how to install and configure the tun driver.
+
+.B sgsnemu 
+uses the GPRS Tunneling Protocol (GTP) as specified by the Third
+Generation Partnership Project (3GPP). 3GPP protocols specifications
+can be found at
+.I http://www.3gpp.org
+
+.SH COPYRIGHT
+
+Copyright (C) 2002, 2003 by Mondru AB.
+
+The contents of this file may be used under the terms of the GNU
+General Public License Version 2, provided that the above copyright
+notice and this permission notice is included in all copies or
+substantial portions of the software.
+
+.SH AUTHORS
+Jens Jakobsen <jj@openggsn.org>
