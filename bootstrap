@@ -1,5 +1,12 @@
 #! /bin/sh
 
+# bootstrap - Execute relevant autotools scripts 
+
+# After running this script the directory is ready for distribution as
+# a tarball.
+
+# It should also be executed before checking milestones into CVS.
+
 aclocal
 autoheader
 touch config.h.in
@@ -7,3 +14,9 @@ automake
 autoconf
 ./configure
 make clean
+
+rm config.status
+rm libtool
+rm -r autom4te.cache/
+rm aclocal.m4
+
