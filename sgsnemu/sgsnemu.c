@@ -83,6 +83,7 @@ int state = 0;
 struct gsn_t *gsn = NULL;       /* GSN instance */
 struct tun_t *tun = NULL;       /* TUN instance */
 int maxfd = 0;	                /* For select() */
+int echoversion = 1;            /* First try this version */
 
 /* Struct with local versions of gengetopt options */
 struct {
@@ -836,9 +837,20 @@ int delete_pdp_conf(struct pdp_t *pdp, int cause) {
 }
 
 int echo_conf(int recovery) {
-  if (recovery <0) {
-    printf("Echo request timed out\n");
-    state = 0; 
+
+  if (recovery < 0) {
+    printf("Echo Request timed out\n");
+    if (echoversion == 1) {
+      printf("Retrying with version 0\n");
+      echoversion = 0;
+      gtp_echo_req(gsn, echoversion, NULL, &options.remote);
+      state = 1;  /* Enter wait_connection state */
+      return 0;
+    }
+    else {
+      state = 0;
+      return EOF;
+    }
   }
   else
     printf("Received echo response\n");
@@ -925,8 +937,7 @@ int main(int argc, char **argv)
 
   /* See if anybody is there */
   printf("Sending off echo request\n");
-  gtp_echo_req(gsn, 1, NULL, &options.remote); /* See if remote is alive ? */
-  gtp_echo_req(gsn, 0, NULL, &options.remote); /* See if remote is alive ? */
+  gtp_echo_req(gsn, echoversion, NULL, &options.remote); /* Is remote alive? */
 
   for(n=0; n<options.contexts; n++) {
     printf("Setting up PDP context #%d\n", n);
