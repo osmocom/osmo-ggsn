@@ -37,13 +37,13 @@ start() {
 	# echo 1 > /proc/sys/net/ipv4/ip_forward
 
 	# Check for runtime directory of nonvolatile data
-	if [ ! -d  /var/run/ggsn ]; then
-	  mkdir /var/run/ggsn
+	if [ ! -d  /var/lib/ggsn ]; then
+	  mkdir /var/lib/ggsn
 	fi
 
 	# Check for GTP restart counter
-	if [ ! -d  /var/run/ggsn/gsn_restart ]; then
-	  echo 0 > /var/run/ggsn/gsn_restart
+	if [ ! -d  /var/lib/ggsn/gsn_restart ]; then
+	  echo 0 > /var/lib/ggsn/gsn_restart
 	fi
 
 
