@@ -21,11 +21,8 @@ option  "statedir"    - "Directory of nonvolatile data"  string default="./" no
 option  "dns"         - "DNS Server to use"              string no
 option  "listen"      l "Local interface"                string no
 option  "remote"      r "Remote host"                    string no
-option  "net"         n "Network"                        string default="192.168.0.0" no
-option  "mask"        - "Network mask"                   string default="255.255.255.0" no
 
 option  "contexts"    - "Number of contexts"             int    default="1" no
-option  "static"      - "Allocate static tun ifterface"  flag   off
 option  "timelimit"   - "Exit after timelimit seconds"   int default="0" no
 
 option  "apn"         a "Access point name"              string default="internet" no
@@ -34,4 +31,17 @@ option  "msisdn"      m "Mobile Station ISDN number"     string default="4670212
 option  "qos"         q "Requested quality of service"   int    default="0x0b921f" no
 option  "uid"         u "Login user ID"                  string default="mig" no
 option  "pwd"         p "Login password"                 string default="hemmelig" no
+
+option  "createif"    - "Create local network interface" flag   off
+option  "ipup"        - "Script to run after link-up"    string no
+option  "ipdown"      - "Script to run after link-down"  string no
+option  "defaultroute" - "Add default route after link-up" flag   off
+option  "net"         - "Network"                        string default="0.0.0.0" no
+option  "mask"        - "Network mask"                   string default="0.0.0.0" no
+
+option  "pinghost"    - "Ping remote host"               string no
+option  "pingrate"    - "Number of ping req per second"  int default="1" no
+option  "pingsize"    - "Number of ping data bytes"      int default="56" no
+option  "pingcount"   - "Number of ping req to send"     int default="0" no
+option  "pingquiet"   - "Do not print ping packet info"  flag off
 

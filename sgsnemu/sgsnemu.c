@@ -41,6 +41,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
+#include <sys/time.h>
 #include <net/if.h>
 #include <features.h>
 #include <errno.h>
@@ -55,6 +56,8 @@
 #include "../gtp/gtp.h"
 #include "cmdline.h"
 
+#define SGSNEMU_BUFSIZE 1024
+
 /* State variable      */
 /* 0: Idle             */
 /* 1: Wait_connect     */
@@ -68,21 +71,273 @@ struct tun_t *tun;              /* TUN instance            */
 struct tun_t *tun1, *tun2;      /* TUN instance for client */
 int tun_fd1 = -1;		/* Network file descriptor */
 int tun_fd2 = -1;		/* Network file descriptor */
-struct in_addr net, mask;       /* Network interface       */
-int stattun;                    /* Allocate static tun     */
 
+/* Variables matching program configuration parameters */
 int debug;                      /* Print debug messages */
+struct in_addr net, mask;       /* Network interface       */
+int createif;                   /* Create local network interface */
+char *ipup, *ipdown;            /* Filename of scripts */
+int defaultroute;               /* Set up default route    */
+struct in_addr pinghost;        /* Remote ping host    */
+int pingrate, pingsize, pingcount, pingquiet;
+struct in_addr listen_, remote;
+struct in_addr dns;
+int contexts;                   /* Number of contexts to create */
+int timelimit;                  /* Number of seconds to be connected */
 
-int encaps_printf(void *p, void *packet, unsigned len)
-{
+
+/* Definitions to use for PING. Most of the ping code was derived from */
+/* the original ping program by Mike Muuss                             */
+
+/* IP header and ICMP echo header */
+#define CREATEPING_MAX  2048
+#define CREATEPING_IP     20
+#define CREATEPING_ICMP    8
+
+struct ip_ping {
+  u_int8_t ipver;               /* Type and header length*/
+  u_int8_t tos;                 /* Type of Service */
+  u_int16_t length;             /* Total length */
+  u_int16_t fragid;             /* Identifier */
+  u_int16_t offset;             /* Flags and fragment offset */
+  u_int8_t ttl;                 /* Time to live */
+  u_int8_t protocol;            /* Protocol */
+  u_int16_t ipcheck;            /* Header checksum */
+  u_int32_t src;                /* Source address */
+  u_int32_t dst;                /* Destination */
+  u_int8_t type;                /* Type and header length*/
+  u_int8_t code;                /* Code */
+  u_int16_t checksum;           /* Header checksum */
+  u_int16_t ident;              /* Identifier */
+  u_int16_t seq;                /* Sequence number */
+  u_int8_t data[CREATEPING_MAX]; /* Data */
+} __attribute__((packed));
+
+/* Statistical values for ping */
+int nreceived = 0;
+int ntreceived = 0;
+int ntransmitted = 0;
+int tmin = 999999999;
+int tmax = 0;
+int tsum = 0;
+
+
+int encaps_printf(struct pdp_t *pdp, void *pack, unsigned len) {
   int i;
   printf("The packet looks like this:\n");
   for( i=0; i<len; i++) {
-    printf("%02x ", (unsigned char)*(char *)(packet+i));
+    printf("%02x ", (unsigned char)*(char *)(pack+i));
     if (!((i+1)%16)) printf("\n");
   };
-  printf("\n"); 
+  printf("\n");
+  return 0;
 }
+
+char * print_ipprot(int t) {
+  switch (t) {
+  case  1: return "ICMP";
+  case  6: return "TCP";
+  case 17: return "UDP";
+  default: return "Unknown";
+  };
+}
+
+
+char * print_icmptype(int t) {
+  static char *ttab[] = {
+    "Echo Reply",
+    "ICMP 1",
+    "ICMP 2",
+    "Dest Unreachable",
+    "Source Quench",
+    "Redirect",
+    "ICMP 6",
+    "ICMP 7",
+    "Echo",
+    "ICMP 9",
+    "ICMP 10",
+    "Time Exceeded",
+    "Parameter Problem",
+    "Timestamp",
+    "Timestamp Reply",
+    "Info Request",
+    "Info Reply"
+  };
+  if( t < 0 || t > 16 )
+    return("OUT-OF-RANGE");  
+  return(ttab[t]);
+}
+
+/* Print out statistics when at the end of ping sequence */
+int ping_finish()
+{
+  printf("\n");
+  printf("\n----%s PING Statistics----\n", inet_ntoa(pinghost));
+  printf("%d packets transmitted, ", ntransmitted );
+  printf("%d packets received, ", nreceived );
+  if (ntransmitted) {
+    if( nreceived > ntransmitted)
+      printf("-- somebody's printing up packets!");
+    else
+      printf("%d%% packet loss", 
+	     (int) (((ntransmitted-nreceived)*100) /
+		    ntransmitted));
+  }
+  printf("\n");
+  if (debug) printf("%d packets received in total\n", ntreceived );
+  if (nreceived  && tsum)
+    printf("round-trip (ms)  min/avg/max = %.3f/%.3f/%.3f\n\n",
+	   tmin/1000.0,
+	   tsum/1000.0/nreceived,
+	   tmax/1000.0 );
+  ntransmitted = 0;
+  return 0;
+}
+
+/* Handle a received ping packet. Print out line and update statistics. */
+int encaps_ping(struct pdp_t *pdp, void *pack, unsigned len) {
+  struct timezone tz;
+  struct timeval tv;
+  struct timeval *tp;
+  struct ip_ping *pingpack = pack;
+  struct in_addr src;
+  int triptime;
+
+  src.s_addr = pingpack->src;
+
+  gettimeofday(&tv, &tz);
+  if (debug) printf("%d.%6d ", (int) tv.tv_sec, (int) tv.tv_usec);
+
+  if (len < CREATEPING_IP + CREATEPING_ICMP) {
+    printf("packet too short (%d bytes) from %s\n", len,
+	   inet_ntoa(src));
+    return 0;
+  }
+
+  ntreceived++;
+  if (pingpack->protocol != 1) {
+    if (!pingquiet) printf("%d bytes from %s: ip_protocol=%d (%s)\n",
+	   len, inet_ntoa(src), pingpack->protocol, 
+	   print_ipprot(pingpack->protocol));
+    return 0;
+  }
+
+  if (pingpack->type != 0) {
+    if (!pingquiet) printf("%d bytes from %s: icmp_type=%d (%s) icmp_code=%d\n",
+	   len, inet_ntoa(src), pingpack->type, 
+	   print_icmptype(pingpack->type), pingpack->code);
+    return 0;
+  }
+
+  nreceived++;
+  if (!pingquiet) printf("%d bytes from %s: icmp_seq=%d", len,
+	 inet_ntoa(src), ntohs(pingpack->seq));
+
+  if (len >= sizeof(struct timeval) + CREATEPING_IP + CREATEPING_ICMP) {
+    gettimeofday(&tv, &tz);
+    tp = (struct timeval *) pingpack->data;
+    if( (tv.tv_usec -= tp->tv_usec) < 0 )   {
+      tv.tv_sec--;
+      tv.tv_usec += 1000000;
+    }
+    tv.tv_sec -= tp->tv_sec;
+
+    triptime = tv.tv_sec*1000000+(tv.tv_usec);
+    tsum += triptime;
+    if( triptime < tmin )
+      tmin = triptime;
+    if( triptime > tmax )
+      tmax = triptime;
+
+    if (!pingquiet) printf(" time=%.3f ms\n", triptime/1000.0);
+
+  } 
+  else
+    if (!pingquiet) printf("\n");
+  return 0;
+}
+
+/* Create a new ping packet and send it off to peer. */
+int create_ping(void *gsn, struct pdp_t *pdp,
+		struct in_addr *dst, int seq, int datasize) {
+
+  struct ip_ping pack;
+  u_int16_t *p = (u_int16_t *) &pack;
+  u_int8_t  *p8 = (u_int8_t *) &pack;
+  struct in_addr src;
+  int n;
+  long int sum = 0;
+  int count = 0;
+
+  struct timezone tz;
+  struct timeval *tp = (struct timeval *) &p8[CREATEPING_IP + CREATEPING_ICMP];
+
+  if (datasize > CREATEPING_MAX) {
+    fprintf(stderr, "%s: Ping size to large: %d!\n", 
+	    PACKAGE, datasize);
+    syslog(LOG_ERR, "Ping size to large: %d!", 
+	   datasize);
+    exit(1);
+  }
+
+  memcpy(&src, &(pdp->eua.v[2]), 4); /* Copy a 4 byte address */
+
+  pack.ipver  = 0x45;
+  pack.tos    = 0x00;
+  pack.length = htons(CREATEPING_IP + CREATEPING_ICMP + datasize);
+  pack.fragid = 0x0000;
+  pack.offset = 0x0040;
+  pack.ttl    = 0x40;
+  pack.protocol = 0x01;
+  pack.ipcheck = 0x0000;
+  pack.src = src.s_addr;
+  pack.dst = dst->s_addr;
+  pack.type = 0x08;
+  pack.code = 0x00;
+  pack.checksum = 0x0000;
+  pack.ident = 0x0000;
+  pack.seq = htons(seq);
+
+  /* Generate ICMP payload */
+  p8 = (u_int8_t *) &pack + CREATEPING_IP + CREATEPING_ICMP;
+  for (n=0; n<(datasize); n++) p8[n] = n;
+
+  if (datasize >= sizeof(struct timeval)) 
+    gettimeofday(tp, &tz);
+
+  /* Calculate IP header checksum */
+  p = (u_int16_t *) &pack;
+  count = CREATEPING_IP;
+  sum = 0;
+  while (count>1) {
+    sum += *p++;
+    count -= 2;
+  }
+  while (sum>>16) 
+    sum = (sum & 0xffff) + (sum >> 16);
+  pack.ipcheck = ~sum;
+
+
+  /* Calculate ICMP checksum */
+  count = CREATEPING_ICMP + datasize; /* Length of ICMP message */
+  sum = 0;
+  p = (u_int16_t *) &pack;
+  p += CREATEPING_IP / 2;
+  while (count>1) {
+    sum += *p++;
+    count -= 2;
+  }
+  if (count>0)
+    sum += * (unsigned char *) p;
+  while (sum>>16) 
+    sum = (sum & 0xffff) + (sum >> 16);
+  pack.checksum = ~sum;
+
+  ntransmitted++;
+
+  return gtp_gpdu(gsn, pdp, &pack, 28 + datasize);
+}
+		
 
 /* Used to write process ID to file. Assume someone else will delete */
 void log_pid(char *pidfile) {
@@ -98,77 +353,9 @@ void log_pid(char *pidfile) {
   fclose(file);
 }
 
-
-int create_tun() {
-  char buf[1024];
-  char snet[100], smask[100];
-
-  if ((tun_fd = tun_newtun((struct tun_t**) &tun)) > maxfd)
-    maxfd = tun_fd;
-
-  if (tun_fd == -1) {
-    printf("Failed to open tun\n");
-    exit(1);
-  }
-
-  strncpy(snet, inet_ntoa(net), 100);
-  strncpy(smask, inet_ntoa(mask), 100);
-
-  sprintf(buf, "/sbin/ifconfig %s %s mtu 1450 netmask %s",
-	  tun->devname, snet, smask);
-  if (debug) printf("%s\n", buf);
-  system(buf);
-
-  system("echo 1 > /proc/sys/net/ipv4/ip_forward");
-  
-  return 0;
-}
-
-int getip(struct pdp_t *pdp, void* ipif, struct ul66_t *eua,
-	  struct in_addr *net, struct in_addr *mask) {
-  struct in_addr addr;
-  uint32_t ip_start, ip_end, ip_cur;
-  struct pdp_t *pdp_;
-  struct ul66_t eua_;
-
-  printf("Begin getip %d %d %2x%2x%2x%2x\n", (unsigned)ipif, eua->l, 
-	 eua->v[2],eua->v[3],eua->v[4],eua->v[5]);
-
-  ip_start = ntoh32(net->s_addr & mask->s_addr);
-  ip_end   = ntoh32(hton32(ip_start) | ~mask->s_addr);
-
-  /* By convention the first address is the network address, and the last */
-  /* address is the broadcast address. This way two IP addresses are "lost" */
-  ip_start++; 
-  
-  if (eua->l == 0) { /* No address supplied. Find one that is available! */
-    /* This routine does linear search. In order to support millions of 
-     * addresses we should instead keep a linked list of available adresses */
-    for (ip_cur = ip_start; ip_cur < ip_end; ip_cur++) {
-      addr.s_addr = hton32(ip_cur);
-      pdp_ntoeua(&addr, &eua_);
-      if (pdp_ipget(&pdp_, ipif, &eua_) == -1) {
-	pdp_ntoeua(&addr, &pdp->eua);
-	pdp->ipif = ipif;
-	return 0;
-      };
-    }
-    return EOF; /* No addresses available */
-  }
-  else { /* Address supplied */
-    if (pdp_ipget(&pdp_, ipif, eua) == -1) {
-      pdp->ipif = ipif;
-      pdp->eua.l = eua->l;
-      memcpy(pdp->eua.v, eua->v, eua->l);
-      return 0;
-    }
-    else return EOF; /* Specified address not available */
-  }
-}
-
 int delete_context(struct pdp_t *pdp) {
-
-  if (!stattun) {
+  char buf[SGSNEMU_BUFSIZE];
+  if ((createif) && (pdp->ipif!=0)) {
     tun_freetun((struct tun_t*) pdp->ipif);
     
     /* Clean up locally */
@@ -181,26 +368,37 @@ int delete_context(struct pdp_t *pdp) {
       tun_fd2=-1;
     }
   }
+  
+  if (ipdown) {
+    /* system("ipdown /dev/tun0 192.168.0.10"); */
+    snprintf(buf, sizeof(buf), "%s %s %hu.%hu.%hu.%hu",
+	     ipdown,
+	     ((struct tun_t*) pdp->ipif)->devname,
+	     pdp->eua.v[2], pdp->eua.v[3], pdp->eua.v[4], pdp->eua.v[5]);
+    if (debug) printf("%s\n", buf);
+    system(buf);
+  }
 
   pdp_ipdel(pdp);
   return 0;
 }
 
 int create_pdp_conf(struct pdp_t *pdp, int cause) {
-  char buf[1024];
+  char buf[SGSNEMU_BUFSIZE];
+  char snet[SGSNEMU_BUFSIZE];
+  char smask[SGSNEMU_BUFSIZE];
 
   printf("Received create PDP context response. Cause value: %d\n", cause);
   if ((cause == 128) && (pdp->eua.l == 6)) {
-
-
-    if (stattun) {
+    
+    if (!createif) {
       pdp->ipif = tun1;
     }
     else {
       printf("Setting up interface and routing\n");
       if ((tun_fd = tun_newtun((struct tun_t**) &pdp->ipif)) > maxfd)
 	maxfd = tun_fd;
-
+      
       /* HACK: Only support select of up to two tun interfaces */
       if (NULL == tun1) {
 	tun1 = pdp->ipif;
@@ -212,21 +410,43 @@ int create_pdp_conf(struct pdp_t *pdp, int cause) {
       }
       
       /*system("/sbin/ifconfig tun0 192.168.0.10");*/
-      sprintf(buf, "/sbin/ifconfig %s %hu.%hu.%hu.%hu", 
+      snprintf(buf, sizeof(buf), "/sbin/ifconfig %s %hu.%hu.%hu.%hu", 
 	      ((struct tun_t*) pdp->ipif)->devname,
 	      pdp->eua.v[2], pdp->eua.v[3], pdp->eua.v[4], pdp->eua.v[5]);
-      printf(buf);  printf("\n");
+      /* if (debug) */ printf("%s\n", buf);
       system(buf);
+
+      /* system("route add -host 192.168.0.10 dev tun0"); */
+      /* It seams as if we do not need to set up a route to a p-t-p interface
+	 snprintf(buf, sizeof(buf), 
+	       "/sbin/route add -host %hu.%hu.%hu.%hu dev %s",
+	      pdp->eua.v[2], pdp->eua.v[3], pdp->eua.v[4], pdp->eua.v[5],
+	      ((struct tun_t*) pdp->ipif)->devname);
+	 if (debug) printf("%s\n", buf);
+      system(buf);*/
+
+      if (defaultroute) {
+	strncpy(snet, inet_ntoa(net), sizeof(snet));
+	strncpy(smask, inet_ntoa(mask), sizeof(smask));
+	/* system("route add -net 0.0.0.0 netmask 0.0.0.0 gw 192.168.0.1"); */
+	snprintf(buf, sizeof(buf), 
+		 "/sbin/route add -net %s netmask %s gw %hu.%hu.%hu.%hu", 
+		snet, smask,
+		pdp->eua.v[2], pdp->eua.v[3], pdp->eua.v[4], pdp->eua.v[5]);
+	/* if (debug) */ printf("%s\n", buf);
+	system(buf);
+      }
+
+      if (ipup) {
+	/* system("ipup /dev/tun0 192.168.0.10"); */
+	snprintf(buf, sizeof(buf), "%s %s %hu.%hu.%hu.%hu",
+		ipup,
+		((struct tun_t*) pdp->ipif)->devname,
+		pdp->eua.v[2], pdp->eua.v[3], pdp->eua.v[4], pdp->eua.v[5]);
+	if (debug) printf("%s\n", buf);
+	system(buf);
+      }
       
-      
-      /*system("route add -net 192.168.0.0 netmask 255.255.255.0 gw 192.168.0.10");*/
-      sprintf(buf, "/sbin/route add -net %hu.%hu.%hu.0 netmask 255.255.255.0 gw %hu.%hu.%hu.%hu", 
-	      pdp->eua.v[2], pdp->eua.v[3], pdp->eua.v[4],
-	      pdp->eua.v[2], pdp->eua.v[3], pdp->eua.v[4], pdp->eua.v[5]);
-      printf(buf);  printf("\n");
-      system(buf);
-      
-      system("echo 1 > /proc/sys/net/ipv4/ip_forward");
     }
     
     pdp_ipset(pdp, pdp->ipif, &pdp->eua);
@@ -242,30 +462,17 @@ int create_pdp_conf(struct pdp_t *pdp, int cause) {
   return 0;
 }
 
-
-int create_pdp_ind(struct pdp_t *pdp) {
-
-  printf("Received create PDP context request\n");
-
-  pdp->eua.l=0; /* TODO: Indicates dynamic IP */
-
-  /* ulcpy(&pdp->qos_neg, &pdp->qos_req, sizeof(pdp->qos_req.v)); */
-  memcpy(pdp->qos_neg0, pdp->qos_req0, sizeof(pdp->qos_neg));
-
-  getip(pdp, &tun, &pdp->eua, &net, &mask);
-  pdp_ipset(pdp, pdp->ipif, &pdp->eua);
-
-  return 0; /* Success */
-}
-
-
 int delete_pdp_conf(struct pdp_t *pdp, int cause) {
   printf("Received delete PDP context response. Cause value: %d\n", cause);
+  state = 0; /* Idle */
   return 0;
 }
 
 int echo_conf(struct pdp_t *pdp, int cause) {
-  printf("Received echo response. Cause value: %d\n", cause);
+  if (cause <0)
+    printf("Echo request timed out\n");
+  else
+    printf("Received echo response.\n");
   return 0;
 }
 
@@ -298,7 +505,7 @@ int encaps_gtp_client(void *gsn, struct tun_t *tun, void *pack, unsigned len) {
     return gtp_gpdu((struct gsn_t*) gsn, pdp, pack, len);
   }
   else {
-    printf("Received packet with no destination!!!\n");
+    printf("Received packet without a valid source address!!!\n");
     return 0;
   }
 }
@@ -313,27 +520,18 @@ int main(int argc, char **argv)
   /* gengeopt declarations */
   struct gengetopt_args_info args_info;
 
-  /* function-local options */
 
   struct hostent *host;
-
-  struct in_addr listen, remote;
-  struct in_addr dns;
-
   int gtpfd = -1;		/* Network file descriptor */
   struct gsn_t *gsn;            /* GSN instance            */
-
   fd_set fds;			/* For select() */
   struct timeval idleTime;	/* How long to select() */
-
-  struct pdp_t *pdp[2];
-	
+  struct pdp_t *pdp[50];
   int n; /* For counter */
+  int starttime;                /* Time program was started */
+  int pingseq = 0;              /* Ping sequence counter */
 
-  int contexts; /* Number of contexts to create */
-  int timelimit; /* Number of seconds to be connected */
-  int starttime; /* Time program was started */
-
+  /* function-local options */
   struct ul_t imsi, qos, apn, msisdn;
   unsigned char qosh[3], imsih[8], apnh[256], msisdnh[256];
   struct ul255_t pco;
@@ -357,14 +555,22 @@ int main(int argc, char **argv)
     printf("msisdn: %s\n", args_info.msisdn_arg);
     printf("uid: %s\n", args_info.uid_arg);
     printf("pwd: %s\n", args_info.pwd_arg);
-    printf("static: %d\n", args_info.static_flag);
-    printf("net: %s\n", args_info.net_arg);
-    printf("mask: %s\n", args_info.mask_arg);
     printf("pidfile: %s\n", args_info.pidfile_arg);
     printf("statedir: %s\n", args_info.statedir_arg);
     printf("dns: %s\n", args_info.dns_arg);
     printf("contexts: %d\n", args_info.contexts_arg);
     printf("timelimit: %d\n", args_info.timelimit_arg);
+    printf("createif: %d\n", args_info.createif_flag);
+    printf("ipup: %s\n", args_info.ipup_arg);
+    printf("ipdown: %s\n", args_info.ipdown_arg);
+    printf("defaultroute: %d\n", args_info.defaultroute_flag);
+    printf("net: %s\n", args_info.net_arg);
+    printf("mask: %s\n", args_info.mask_arg);
+    printf("pinghost: %s\n", args_info.pinghost_arg);
+    printf("pingrate: %d\n", args_info.pingrate_arg);
+    printf("pingsize: %d\n", args_info.pingsize_arg);
+    printf("pingcount: %d\n", args_info.pingcount_arg);
+    printf("pingquiet: %d\n", args_info.pingquiet_flag);
   }
 
   /* Try out our new parser */
@@ -385,21 +591,29 @@ int main(int argc, char **argv)
       printf("msisdn: %s\n", args_info.msisdn_arg);
       printf("uid: %s\n", args_info.uid_arg);
       printf("pwd: %s\n", args_info.pwd_arg);
-      printf("static: %d\n", args_info.static_flag);
-      printf("net: %s\n", args_info.net_arg);
-      printf("mask: %s\n", args_info.mask_arg);
       printf("pidfile: %s\n", args_info.pidfile_arg);
       printf("statedir: %s\n", args_info.statedir_arg);
       printf("dns: %s\n", args_info.dns_arg);
       printf("contexts: %d\n", args_info.contexts_arg);
       printf("timelimit: %d\n", args_info.timelimit_arg);
+      printf("createif: %d\n", args_info.createif_flag);
+      printf("ipup: %s\n", args_info.ipup_arg);
+      printf("ipdown: %s\n", args_info.ipdown_arg);
+      printf("defaultroute: %d\n", args_info.defaultroute_flag);
+      printf("net: %s\n", args_info.net_arg);
+      printf("mask: %s\n", args_info.mask_arg);
+      printf("pinghost: %s\n", args_info.pinghost_arg);
+      printf("pingrate: %d\n", args_info.pingrate_arg);
+      printf("pingsize: %d\n", args_info.pingsize_arg);
+      printf("pingcount: %d\n", args_info.pingcount_arg);
+      printf("pingquiet: %d\n", args_info.pingquiet_flag);
     }
   }
 
   /* Handle each option */
 
   /* foreground                                                   */
-  /* If flag not given run as a daemon                            */
+  /* If fg flag not given run as a daemon                            */
   if (!args_info.fg_flag)
     {
       closelog(); 
@@ -422,7 +636,7 @@ int main(int argc, char **argv)
   }
 
   /* dns                                                          */
-  /* If no dns option is given use system         default         */
+  /* If no dns option is given use system default                 */
   /* Do hostname lookup to translate hostname to IP address       */
   printf("\n");
   if (args_info.dns_arg) {
@@ -457,8 +671,8 @@ int main(int argc, char **argv)
       exit(1);
     }
     else {
-      memcpy(&listen.s_addr, host->h_addr, host->h_length);
-      printf("Local IP address is:   %s (%s)\n", args_info.listen_arg, inet_ntoa(listen));
+      memcpy(&listen_.s_addr, host->h_addr, host->h_length);
+      printf("Local IP address is:   %s (%s)\n", args_info.listen_arg, inet_ntoa(listen_));
     }
   }
   else {
@@ -494,30 +708,6 @@ int main(int argc, char **argv)
   }
 
 
-  /* net                                                          */
-  /* Store net as in_addr                                         */
-  if (args_info.net_arg) {
-    if (!inet_aton(args_info.net_arg, &net)) {
-      fprintf(stderr, "%s: Invalid network address: %s!\n", 
-	      PACKAGE, args_info.net_arg);
-      syslog(LOG_ERR, "Invalid network address: %s!", 
-	     args_info.net_arg);
-      exit(1);
-    }
-  }
-
-  /* mask                                                         */
-  /* Store mask as in_addr                                        */
-  if (args_info.mask_arg) {
-    if (!inet_aton(args_info.mask_arg, &mask)) {
-      fprintf(stderr, "%s: Invalid network mask: %s!\n", 
-	      PACKAGE, args_info.mask_arg);
-      syslog(LOG_ERR, "Invalid network mask: %s!", 
-	     args_info.mask_arg);
-      exit(1);
-    }
-  }
-
   /* imsi                                                            */
   if (strlen(args_info.imsi_arg)!=15) {
     printf("Invalid IMSI\n");
@@ -551,6 +741,10 @@ int main(int argc, char **argv)
   qos.v[0] = ((args_info.qos_arg) >> 16) & 0xff;
   
   /* contexts                                                        */
+  if (args_info.contexts_arg>16) {
+    printf("Contexts has to be less than 16\n");
+    exit(1);
+  }
   contexts = args_info.contexts_arg;
 
   /* Timelimit                                                       */
@@ -607,27 +801,76 @@ int main(int argc, char **argv)
   pco.v[9+strlen(args_info.uid_arg)] = strlen(args_info.pwd_arg);
   memcpy(&pco.v[10+strlen(args_info.uid_arg)], args_info.pwd_arg, strlen(args_info.pwd_arg));
   
-  /* static */
-  stattun = args_info.static_flag;
+  /* createif */
+  createif = args_info.createif_flag;
+
+  /* ipup */
+  ipup = args_info.ipup_arg;
+
+  /* ipdown */
+  ipdown = args_info.ipdown_arg;
+
+  /* defaultroute */
+  defaultroute = args_info.defaultroute_flag;
+
+  /* net                                                          */
+  /* Store net as in_addr                                         */
+  if (args_info.net_arg) {
+    if (!inet_aton(args_info.net_arg, &net)) {
+      fprintf(stderr, "%s: Invalid network address: %s!\n", 
+	      PACKAGE, args_info.net_arg);
+      syslog(LOG_ERR, "Invalid network address: %s!", 
+	     args_info.net_arg);
+      exit(1);
+    }
+  }
+
+  /* mask                                                         */
+  /* Store mask as in_addr                                        */
+  if (args_info.mask_arg) {
+    if (!inet_aton(args_info.mask_arg, &mask)) {
+      fprintf(stderr, "%s: Invalid network mask: %s!\n", 
+	      PACKAGE, args_info.mask_arg);
+      syslog(LOG_ERR, "Invalid network mask: %s!", 
+	     args_info.mask_arg);
+      exit(1);
+    }
+  }
+
+  /* pinghost                                                         */
+  /* Store ping host as in_addr                                   */
+  if (args_info.pinghost_arg) {
+    if (!inet_aton(args_info.pinghost_arg, &pinghost)) {
+      fprintf(stderr, "%s: Invalid ping host: %s!\n", 
+	      PACKAGE, args_info.pinghost_arg);
+      syslog(LOG_ERR, "Invalid ping host: %s!", 
+	     args_info.pinghost_arg);
+      exit(1);
+    }
+  }
+
+  /* Other ping parameters                                        */
+  pingrate = args_info.pingrate_arg;
+  pingsize = args_info.pingsize_arg;
+  pingcount = args_info.pingcount_arg;
+  pingquiet = args_info.pingquiet_flag;
 
   printf("\nInitialising GTP library\n");
-  if ((gtpfd = gtp_new(&gsn, args_info.statedir_arg,  &listen)) > maxfd)
+  if ((gtpfd = gtp_new(&gsn, args_info.statedir_arg,  &listen_)) > maxfd)
     maxfd = gtpfd;
 
   if ((gtpfd = gtp_fd(gsn)) > maxfd)
     maxfd = gtpfd;
     
-  gtp_set_cb_gpdu(gsn, encaps_tun);
+  if (createif) 
+    gtp_set_cb_gpdu(gsn, encaps_tun);
+  else
+    gtp_set_cb_gpdu(gsn, encaps_ping);
+	
   gtp_set_cb_delete_context(gsn, delete_context);
   
   gtp_set_cb_conf(gsn, conf);
   printf("Done initialising GTP library\n\n");
-  
-  if (stattun) {
-    create_tun();
-    tun1 = tun;
-    tun_fd1 = tun1->fd;
-  }
 
   /* See if anybody is there */
   printf("Sending off echo request\n");
@@ -660,9 +903,9 @@ int main(int argc, char **argv)
     }
     
     pdp[n]->gsnlc.l = 4;
-    memcpy(pdp[n]->gsnlc.v, &listen, 4);
+    memcpy(pdp[n]->gsnlc.v, &listen_, 4);
     pdp[n]->gsnlu.l = 4;
-    memcpy(pdp[n]->gsnlu.v, &listen, 4);
+    memcpy(pdp[n]->gsnlu.v, &listen_, 4);
     
     if (msisdn.l > sizeof(pdp[n]->msisdn.v)) {
       exit(1);
@@ -691,12 +934,13 @@ int main(int argc, char **argv)
 
   printf("Waiting for response from ggsn........\n\n");
 
-  
+
   /******************************************************************/
   /* Main select loop                                               */
   /******************************************************************/
 
-  while (((starttime + timelimit + 10) > time(NULL)) || (0 == timelimit)) {
+  while ((((starttime + timelimit + 10) > time(NULL)) 
+	 || (0 == timelimit)) && (state!=0)) {
 
     /* Take down client connections at some stage */
     if (((starttime + timelimit) <= time(NULL)) && (0 != timelimit) && (2 == state)) {
@@ -705,8 +949,22 @@ int main(int argc, char **argv)
 	/* Delete context */
 	printf("Disconnecting PDP context #%d\n", n);
 	if (gtpfd != -1) gtp_delete_context(gsn, pdp[n], NULL);
+	if ((pinghost.s_addr !=0) && ntransmitted) ping_finish();
       }
+}
+
+
+    /* Ping */
+    while ((2 == state) && (pinghost.s_addr !=0) && 
+	((pingseq < pingcount) || (pingcount == 0)) &&
+	(starttime + pingseq/pingrate) <= time(NULL)) {
+      create_ping(gsn, pdp[pingseq % contexts],
+		  &pinghost, pingseq++, pingsize);
     }
+
+    if (ntransmitted && pingcount && nreceived >= pingcount)
+      ping_finish();
+
 
     FD_ZERO(&fds);
     if (tun_fd1 != -1) FD_SET(tun_fd1, &fds);
@@ -714,6 +972,12 @@ int main(int argc, char **argv)
     if (gtpfd != -1) FD_SET(gtpfd, &fds);
     
     gtp_retranstimeout(gsn, &idleTime);
+
+    if ((pinghost.s_addr !=0) && 
+	((idleTime.tv_sec !=0) || (idleTime.tv_usec !=0))) {
+      idleTime.tv_sec = 0;
+      idleTime.tv_usec = 1000000 / pingrate;
+    }
 
     switch (select(maxfd + 1, &fds, NULL, NULL, &idleTime)) {
     case -1:
@@ -740,15 +1004,15 @@ int main(int argc, char **argv)
 
     if (gtpfd != -1 && FD_ISSET(gtpfd, &fds) && 
 	gtp_decaps(gsn) < 0) {
-      syslog(LOG_ERR, "GTP read failed (gre)=(%d)", gtpfd);
+      syslog(LOG_ERR, "GTP read failed (gtpfd)=(%d)", gtpfd);
     }
     
     
-    }
+  }
 
   gtp_free(gsn); /* Clean up the gsn instance */
   
-  return 1;
+  return 0;
   
 }
 
