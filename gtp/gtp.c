@@ -688,7 +688,8 @@ static void log_restart(struct gsn_t *gsn) {
 
 	/* We try to open file. On failure we will later try to create file */
 	if (!(f = fopen(filename, "r"))) {
-	  gtp_err(LOG_ERR, __FILE__, __LINE__, "fopen(path=%s, mode=%s) failed: Error = %s", filename, "r", strerror(errno));
+
+	  gtp_err(LOG_ERR, __FILE__, __LINE__, "State information file (%s) not found. Creating new file.", filename);
 	}
 	else {
 	  umask(i);

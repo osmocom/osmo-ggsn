@@ -78,7 +78,7 @@ struct iphash_t *iphash[MAXCONTEXTS];
 /* 3: Done                       */
 /* 4: Wait_disconnect            */
 /* 5: Disconnected               */
-int state = 0;                  
+int state = 0;
 
 struct gsn_t *gsn = NULL;       /* GSN instance */
 struct tun_t *tun = NULL;       /* TUN instance */
@@ -787,7 +787,6 @@ int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause) {
       printf("Retrying with version 0\n");
       iph->pdp->version = 0;
       gtp_create_context_req(gsn, iph->pdp, iph, &options.remote);
-      state = 1;  /* Enter wait_connection state */
       return 0;
     }
     else {
@@ -844,7 +843,6 @@ int echo_conf(int recovery) {
       printf("Retrying with version 0\n");
       echoversion = 0;
       gtp_echo_req(gsn, echoversion, NULL, &options.remote);
-      state = 1;  /* Enter wait_connection state */
       return 0;
     }
     else {
@@ -852,8 +850,10 @@ int echo_conf(int recovery) {
       return EOF;
     }
   }
-  else
+  else {
     printf("Received echo response\n");
+    if (!options.contexts) state = 5;
+  }
   return 0;
 }
 

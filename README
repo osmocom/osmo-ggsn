@@ -67,7 +67,7 @@ file. A sample file is provided in examples/sgsnemu.conf.
 Edit the configuration file ggsn.conf found under openggsn/examples.
 Start the ggsn as root using the command:
 
-ggsn --fg -c examples/ggsn.conf -l 10.0.0.40 --statedir .
+ggsn --fg -c examples/ggsn.conf -l 10.0.0.40 --statedir ./
 
 This will run the ggsn in foreground using the local interface
 10.0.0.40. If you don't have a GSM network available for testing you
