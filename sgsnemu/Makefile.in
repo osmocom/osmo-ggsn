@@ -1,6 +1,6 @@
-# Makefile.in generated automatically by automake 1.4 from Makefile.am
+# Makefile.in generated automatically by automake 1.4-p5 from Makefile.am
 
-# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
+# Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
 # This Makefile.in is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
@@ -63,30 +63,35 @@ AS = @AS@
 AWK = @AWK@
 CC = @CC@
 DLLTOOL = @DLLTOOL@
+ECHO = @ECHO@
+EXEEXT = @EXEEXT@
 LIBTOOL = @LIBTOOL@
 LN_S = @LN_S@
 MAKEINFO = @MAKEINFO@
 OBJDUMP = @OBJDUMP@
+OBJEXT = @OBJEXT@
 PACKAGE = @PACKAGE@
 RANLIB = @RANLIB@
+STRIP = @STRIP@
 VERSION = @VERSION@
 
 bin_PROGRAMS = sgsnemu
 
 LDFLAGS = -Wl,--rpath -Wl,/usr/local/lib
 
-CFLAGS = -O2 -D_GNU_SOURCE -fno-builtin -Wall -ansi -DSBINDIR='"$(sbindir)"' -lgtp
+CFLAGS = -O2 -D_GNU_SOURCE -fno-builtin -Wall -ansi -DSBINDIR='"$(sbindir)"' -lgtp -L../gtp
 
 sgsnemu_SOURCES = sgsnemu.c tun.c tun.h cmdline.c cmdline.h
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
+bin_PROGRAMS =  sgsnemu$(EXEEXT)
 PROGRAMS =  $(bin_PROGRAMS)
 
 
 DEFS = @DEFS@ -I. -I$(srcdir) 
 CPPFLAGS = @CPPFLAGS@
 LIBS = @LIBS@
-sgsnemu_OBJECTS =  sgsnemu.o tun.o cmdline.o
+sgsnemu_OBJECTS =  sgsnemu.$(OBJEXT) tun.$(OBJEXT) cmdline.$(OBJEXT)
 sgsnemu_LDADD = $(LDADD)
 sgsnemu_DEPENDENCIES = 
 sgsnemu_LDFLAGS = 
@@ -107,7 +112,7 @@ OBJECTS = $(sgsnemu_OBJECTS)
 
 all: all-redirect
 .SUFFIXES:
-.SUFFIXES: .S .c .lo .o .s
+.SUFFIXES: .S .c .lo .o .obj .s
 $(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
 	cd $(top_srcdir) && $(AUTOMAKE) --gnu sgsnemu/Makefile
 
@@ -141,6 +146,11 @@ uninstall-binPROGRAMS:
 	  rm -f $(DESTDIR)$(bindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
 	done
 
+# FIXME: We should only use cygpath when building on Windows,
+# and only if it is available.
+.c.obj:
+	$(COMPILE) -c `cygpath -w $<`
+
 .s.o:
 	$(COMPILE) -c $<
 
@@ -149,6 +159,7 @@ uninstall-binPROGRAMS:
 
 mostlyclean-compile:
 	-rm -f *.o core *.core
+	-rm -f *.$(OBJEXT)
 
 clean-compile:
 
@@ -173,8 +184,8 @@ distclean-libtool:
 
 maintainer-clean-libtool:
 
-sgsnemu: $(sgsnemu_OBJECTS) $(sgsnemu_DEPENDENCIES)
-	@rm -f sgsnemu
+sgsnemu$(EXEEXT): $(sgsnemu_OBJECTS) $(sgsnemu_DEPENDENCIES)
+	@rm -f sgsnemu$(EXEEXT)
 	$(LINK) $(sgsnemu_LDFLAGS) $(sgsnemu_OBJECTS) $(sgsnemu_LDADD) $(LIBS)
 
 tags: TAGS
