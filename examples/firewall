@@ -1,0 +1,48 @@
+#!/bin/sh
+#
+# Firewall script for GGSN
+#
+# Uses $IFGN (eth0) as the Gn interface (Gn) and
+# $IFGI (eth1) as the Gi interface.
+#
+# SUMMARY
+# * All connections originating from GGSN are allowed.
+# * Incoming ssh, GTPv0 and GTPv1 is allowed on the Gn interface.
+# * Incoming ssh is allowed on the Gi interface.
+# * Forwarding is allowed to and from the Gi interface, but disallowed
+#   to and from the Gn interface.
+# * Masquerede on Gi interface.
+
+IPTABLES="/sbin/iptables"
+IFGN="eth0"
+IFGI="eth1"
+
+$IPTABLES -P INPUT DROP
+$IPTABLES -P FORWARD ACCEPT
+$IPTABLES -P OUTPUT ACCEPT
+
+#Allow related and established on all interfaces (input)
+$IPTABLES -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+#Allow releated, established, GTP and ssh on $IFGN. Reject everything else.
+$IPTABLES -A INPUT -i $IFGN -p tcp -m tcp --dport 22 --syn -j ACCEPT
+$IPTABLES -A INPUT -i $IFGN -p udp -m udp --dport 2123 -j ACCEPT
+$IPTABLES -A INPUT -i $IFGN -p udp -m udp --dport 2152 -j ACCEPT
+$IPTABLES -A INPUT -i $IFGN -p udp -m udp --dport 3386 -j ACCEPT
+$IPTABLES -A INPUT -i $IFGN -j REJECT
+
+#Allow related, established and ssh. Drop everything else.
+$IPTABLES -A INPUT -i $IFGI -p tcp -m tcp --dport 22 --syn -j ACCEPT
+$IPTABLES -A INPUT -i $IFGI -j DROP
+
+# Masquerade everything going out on $IFGI
+$IPTABLES -t nat -A POSTROUTING -o $IFGI -j MASQUERADE
+
+#Allow everything on loopback interface.
+$IPTABLES -A INPUT -i lo -j ACCEPT
+
+# Drop everything to and from $IFGN (forward)
+$IPTABLES -A FORWARD -i $IFGN -j DROP
+$IPTABLES -A FORWARD -o $IFGN -j DROP
+
+

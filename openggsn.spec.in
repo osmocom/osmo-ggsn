@@ -67,6 +67,7 @@ make clean
 %doc examples/ggsn.conf
 %doc examples/sgsnemu.conf
 %doc examples/ggsn.init
+%doc examples/firewall
 %doc /usr/man/man8/ggsn.8.gz
 %doc /usr/man/man8/sgsnemu.8.gz
 
