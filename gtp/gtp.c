@@ -1046,15 +1046,13 @@ extern int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
     if (!pdp->teic_confirmed) 
       gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_TEI_C,
 		pdp->teic_own);
-  }
 
-  gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_NSAPI, 
-	    pdp->nsapi);
+    gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_NSAPI, 
+	      pdp->nsapi);
 
 
-  if (pdp->version == 1) {
     if (pdp->secondary) /* Secondary PDP Context Activation Procedure */
-      gtpie_tv1(packet.gtp1l.p, &length, GTP_MAX, GTPIE_NSAPI, 
+      gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_NSAPI, 
 		linked_pdp->nsapi);
     
     gtpie_tv2(&packet, &length, GTP_MAX, GTPIE_CHARGING_C,
