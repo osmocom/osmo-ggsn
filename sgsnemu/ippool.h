@@ -48,7 +48,7 @@ struct ippool_t {
   int hashmask;                  /* Bitmask for calculating hash */
   struct ippoolm_t **hash;       /* Hashsize array of pointer to member */
   struct ippoolm_t *firstdyn;    /* Pointer to first free dynamic member */
-  struct ippoolm_t *lastdyn;     /* Pointer to last free dyanmic member */
+  struct ippoolm_t *lastdyn;     /* Pointer to last free dynamic member */
   struct ippoolm_t *firststat;   /* Pointer to first free static member */
   struct ippoolm_t *laststat;    /* Pointer to last free static member */
 };
@@ -86,7 +86,7 @@ extern int ippool_getip(struct ippool_t *this, struct ippoolm_t **member,
 /* Get an IP address. If addr = 0.0.0.0 get a dynamic IP address. Otherwise
    check to see if the given address is available */
 extern int ippool_newip(struct ippool_t *this, struct ippoolm_t **member,
-			struct in_addr *addr);
+			struct in_addr *addr, int statip);
 
 /* Return a previously allocated IP address */
 extern int ippool_freeip(struct ippool_t *this, struct ippoolm_t *member);

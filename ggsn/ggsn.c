@@ -160,7 +160,7 @@ int create_context_ind(struct pdp_t *pdp) {
     addr.s_addr = 0; /* Request dynamic */
   }
 
-  if (ippool_newip(ippool, &member, &addr)) {
+  if (ippool_newip(ippool, &member, &addr, 0)) {
     gtp_create_context_resp(gsn, pdp, GTPCAUSE_NO_RESOURCES);
     return 0; /* Allready in use, or no more available */
   }
