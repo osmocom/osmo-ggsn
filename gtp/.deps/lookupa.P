@@ -1,3 +1,0 @@
-lookupa.lo lookupa.o : lookupa.c lookupa.h
-lookupa.c :
-lookupa.h :
