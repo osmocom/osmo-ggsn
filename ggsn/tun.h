@@ -44,6 +44,7 @@ struct tun_t {
   struct in_addr dstaddr;
   struct in_addr netmask;
   int addrs;             /* Number of allocated IP addresses */
+  int routes;            /* One if we allocated an automatic route */
   char devname[IFNAMSIZ];/* Name of the tun device */
   int (*cb_ind) (struct tun_t *tun, void *pack, unsigned len);
 };

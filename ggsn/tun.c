@@ -492,19 +492,21 @@ int tun_setaddr(struct tun_t *this,
 
   /* TODO: How does it work on Solaris? */
 
+  tun_sifflags(this, IFF_UP | IFF_RUNNING);
+
 #if defined(__FreeBSD__) || defined (__APPLE__)
-  tun_sifflags(this, IFF_UP | IFF_RUNNING); /* TODO */
-  return tun_addroute(this, addr, addr, netmask);
-#else
-  return tun_sifflags(this, IFF_UP | IFF_RUNNING); 
+  tun_addroute(this, dstaddr, addr, netmask);
+  this->routes = 1;
 #endif
 
+  return 0;
 }
 
-int tun_addroute(struct tun_t *this,
-		 struct in_addr *dst,
-		 struct in_addr *gateway,
-		 struct in_addr *mask)
+int tun_route(struct tun_t *this,
+	      struct in_addr *dst,
+	      struct in_addr *gateway,
+	      struct in_addr *mask,
+	      int delete)
 {
 
 
@@ -531,16 +533,26 @@ int tun_addroute(struct tun_t *this,
   ((struct sockaddr_in *) &r.rt_dst)->sin_addr.s_addr = dst->s_addr;
   ((struct sockaddr_in *) &r.rt_gateway)->sin_addr.s_addr = gateway->s_addr;
   ((struct sockaddr_in *) &r.rt_genmask)->sin_addr.s_addr = mask->s_addr;
-
-  if (ioctl(fd, SIOCADDRT, (void *) &r) < 0) {   /* SIOCDELRT */
-    sys_err(LOG_ERR, __FILE__, __LINE__, errno,
-	    "ioctl(SIOCADDRT) failed");
-    close(fd);
-    return -1;
+  
+  if (delete) {
+    if (ioctl(fd, SIOCDELRT, (void *) &r) < 0) {
+      sys_err(LOG_ERR, __FILE__, __LINE__, errno,
+	      "ioctl(SIOCDELRT) failed");
+      close(fd);
+      return -1;
+    }
+  }
+  else {
+    if (ioctl(fd, SIOCADDRT, (void *) &r) < 0) {
+      sys_err(LOG_ERR, __FILE__, __LINE__, errno,
+	      "ioctl(SIOCADDRT) failed");
+      close(fd);
+      return -1;
+    }
   }
   close(fd);
   return 0;
-
+  
 #elif defined(__FreeBSD__) || defined (__APPLE__)
 
 struct {
@@ -565,7 +577,12 @@ struct {
  
  rtm->rtm_msglen = sizeof(req);
  rtm->rtm_version = RTM_VERSION;
- rtm->rtm_type = RTM_ADD;
+ if (delete) {
+   rtm->rtm_type = RTM_DELETE;
+ }
+ else {
+   rtm->rtm_type = RTM_ADD;
+ }
  rtm->rtm_flags = RTF_UP | RTF_GATEWAY | RTF_STATIC;  /* TODO */
  rtm->rtm_addrs = RTA_DST | RTA_GATEWAY | RTA_NETMASK;
  rtm->rtm_pid = getpid();      
@@ -602,6 +619,23 @@ struct {
 
 }
 
+int tun_addroute(struct tun_t *this,
+		 struct in_addr *dst,
+		 struct in_addr *gateway,
+		 struct in_addr *mask)
+{
+  return tun_route(this, dst, gateway, mask, 0);
+}
+
+int tun_delroute(struct tun_t *this,
+		 struct in_addr *dst,
+		 struct in_addr *gateway,
+		 struct in_addr *mask)
+{
+  return tun_route(this, dst, gateway, mask, 1);
+}
+
+
 int tun_new(struct tun_t **tun)
 {
 
@@ -631,6 +665,7 @@ int tun_new(struct tun_t **tun)
   
   (*tun)->cb_ind = NULL;
   (*tun)->addrs = 0;
+  (*tun)->routes = 0;
   
 #if defined(__linux__)
   /* Open the actual tun device */
@@ -761,6 +796,11 @@ int tun_new(struct tun_t **tun)
 
 int tun_free(struct tun_t *tun)
 {
+
+  if (tun->routes) {
+    tun_delroute(tun, &tun->dstaddr, &tun->addr, &tun->netmask);
+  }
+
   if (close(tun->fd)) {
     sys_err(LOG_ERR, __FILE__, __LINE__, errno, "close() failed");
   }
