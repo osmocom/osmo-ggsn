@@ -180,6 +180,7 @@ int pdp_tidset(struct pdp_t *pdp, uint64_t tid) {
   struct pdp_t *pdp2;
   struct pdp_t *pdp_prev = NULL;
   if (PDP_DEBUG) printf("Begin pdp_tidset tid = %llx\n", tid);
+  pdp->tidnext = NULL;
   pdp->tid = tid;
   for (pdp2 = hashtid[hash]; pdp2; pdp2 = pdp2->tidnext)
     pdp_prev = pdp2;
@@ -202,12 +203,12 @@ int pdp_tiddel(struct pdp_t *pdp) {
 	hashtid[hash] = pdp2->tidnext;
       else 
 	pdp_prev->tidnext = pdp2->tidnext;
-      if (PDP_DEBUG) printf("End pdp_tidset: PDP found\n");
+      if (PDP_DEBUG) printf("End pdp_tiddel: PDP found\n");
       return 0;
     }
     pdp_prev = pdp2;
   }
-  if (PDP_DEBUG) printf("End pdp_tidset: PDP not found\n");
+  if (PDP_DEBUG) printf("End pdp_tiddel: PDP not found\n");
   return EOF; /* End of linked list and not found */
 }
 
@@ -241,6 +242,7 @@ int pdp_ipset(struct pdp_t *pdp, void* ipif, struct ul66_t *eua) {
 			eua->v[2], eua->v[3], 
 			eua->v[4], eua->v[5]);
 
+  pdp->ipnext = NULL;
   pdp->ipif = ipif;
   pdp->eua.l = eua->l;
   memcpy(pdp->eua.v, eua->v, eua->l);
