@@ -416,7 +416,7 @@ int gtp_req(struct gsn_t *gsn, int version, struct pdp_t *pdp,
     packet->gtp0.h.length = hton16(len - GTP0_HEADER_SIZE);
     packet->gtp0.h.seq = hton16(gsn->seq_next);
     if (pdp)
-      packet->gtp0.h.tid = (pdp->imsi & 0x0fffffffffffffff) + 
+      packet->gtp0.h.tid = (pdp->imsi & 0x0fffffffffffffffull) + 
 	((uint64_t)pdp->nsapi << 60);
     if (pdp && ((packet->gtp0.h.type == GTP_GPDU) ||
 		(packet->gtp0.h.type == GTP_ERROR)))
@@ -1226,8 +1226,8 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
   memset(pdp, 0, sizeof(struct pdp_t));
 
   if (version == 0) {
-    pdp->imsi = ((union gtp_packet*)pack)->gtp0.h.tid & 0x0fffffffffffffff;
-    pdp->nsapi = (((union gtp_packet*)pack)->gtp0.h.tid & 0xf000000000000000) >> 60;
+    pdp->imsi = ((union gtp_packet*)pack)->gtp0.h.tid & 0x0fffffffffffffffull;
+    pdp->nsapi = (((union gtp_packet*)pack)->gtp0.h.tid & 0xf000000000000000ull) >> 60;
   }
 
   pdp->seq = seq;
@@ -1899,8 +1899,8 @@ int gtp_update_pdp_ind(struct gsn_t *gsn, int version,
   /* For GTP1 we must use imsi and nsapi if imsi is present. Otherwise */
   /* we have to use the tunnel endpoint identifier */
   if (version == 0) {
-    imsi = ((union gtp_packet*)pack)->gtp0.h.tid & 0x0fffffffffffffff;
-    nsapi = (((union gtp_packet*)pack)->gtp0.h.tid & 0xf000000000000000) >> 60;
+    imsi = ((union gtp_packet*)pack)->gtp0.h.tid & 0x0fffffffffffffffull;
+    nsapi = (((union gtp_packet*)pack)->gtp0.h.tid & 0xf000000000000000ull) >> 60;
     
     /* Find the context in question */
     if (pdp_getimsi(&pdp, imsi, nsapi)) {
