@@ -663,6 +663,8 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 
   (*gsn)->gsnc = *listen;
   (*gsn)->gsnu = *listen;
+
+  (*gsn)->mode = mode;
     
   memset(&addr, 0, sizeof(addr));
   
