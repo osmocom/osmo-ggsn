@@ -959,7 +959,8 @@ int main(int argc, char **argv)
 	((pingseq < pingcount) || (pingcount == 0)) &&
 	(starttime + pingseq/pingrate) <= time(NULL)) {
       create_ping(gsn, pdp[pingseq % contexts],
-		  &pinghost, pingseq++, pingsize);
+		  &pinghost, pingseq, pingsize);
+      pingseq++;
     }
 
     if (ntransmitted && pingcount && nreceived >= pingcount)
