@@ -936,7 +936,7 @@ int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause) {
 #ifdef HAVE_INET_ATON
     inet_aton("255.255.255.255", &m);
 #else
-    m.s_addr = INADDR_NONE;
+    m.s_addr = -1;
 #endif
     /* printf("Setting up interface and routing\n");*/
     tun_addaddr(tun, &addr,  &addr, &m);
