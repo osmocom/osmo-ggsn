@@ -2,13 +2,21 @@ OPENGGSN NEWS
 =============
 
 OpenGGSN - Gateway GPRS Support Node
-Copyright (C) 2002, 2003 Mondru AB.
+Copyright (C) 2002, 2003, 2004 Mondru AB.
+
+Version 0.81
+============
+
+ * Initial FreeBSD port (Thanks to Pavel Andreev <pavel.andreev@hp.com>).
+ * IMSI '1111' bugfix (Thanks to Pavel Andreev <pavel.andreev@hp.com>).
 
 Version 0.8
 ===========
 
  * Support for compilation under Solaris.
  * Iptables firewall script.
+ * New options for sgsnemu
+
 
 Version 0.7
 ===========

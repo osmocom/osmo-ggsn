@@ -1,3 +1,11 @@
+2004-01-19: Jens Jakobsen <jj@openggsn.org>
+	Initial FreeBSD port (Thanks to	Pavel Andreev <pavel.andreev@hp.com>).
+
+	IMSI bugfix. The IMSI encoding used by create PDP context was
+	missing the leading '1111' to indicate that the 16'nd digit was
+	unused. (Thanks to Pavel Andreev <pavel.andreev@hp.com>).
+	
+
 2004-01-15: Jens Jakobsen <jj@openggsn.org>
 	Added iptables firewall script.
 	
