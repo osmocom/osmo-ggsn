@@ -1,0 +1,41 @@
+OpenGGSN/Solaris notes
+======================
+
+Solaris support is experimental, please test and report bugs. The
+Solaris port is tested under Solaris 8.
+
+Compiling
+---------
+
+You need to edit the following line in ggsn/Makefile.in and
+sgsnemu/Makefile.in:
+
+LDFLAGS = -Wl,--rpath -Wl,/usr/local/lib @EXEC_LDFLAGS@
+
+should be changed to:
+
+LDFLAGS =  -lresolv -lsocket -lnsl @EXEC_LDFLAGS@ 
+
+After this you install by the following commands:
+./configure
+make
+make install
+
+
+TUN
+---
+
+You might or might not need to install the tun driver manually. For
+general information about tun see http://vtun.sourceforge.net/tun/
+
+
+Known problems
+--------------
+
+Currently multiple IP addresses on the same network interface is not
+implemented for Solaris.
+
+Currently routing table manipulation is not implemented for
+Solaris. You have to set the routes manually after you start ggsn or
+sgsnemu.
+
