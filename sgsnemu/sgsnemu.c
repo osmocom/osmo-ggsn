@@ -374,7 +374,9 @@ int process_options(int argc, char **argv) {
     printf("Invalid IMSI\n");
     return -1;
   }
-  options.imsi  = ((uint64_t) (args_info.imsi_arg[ 0]-48));
+
+  options.imsi  = 0xf000000000000000;
+  options.imsi |= ((uint64_t) (args_info.imsi_arg[ 0]-48));
   options.imsi |= ((uint64_t) (args_info.imsi_arg[ 1]-48)) <<  4;
   options.imsi |= ((uint64_t) (args_info.imsi_arg[ 2]-48)) <<  8;
   options.imsi |= ((uint64_t) (args_info.imsi_arg[ 3]-48)) << 12;
@@ -654,6 +656,8 @@ int imsi_add(uint64_t src, uint64_t *dst, int add) {
     *dst += (i64 % 10);
     i64 = i64 / 10;
   }
+
+  *dst |= 0xf000000000000000;
 
   return 0;
 

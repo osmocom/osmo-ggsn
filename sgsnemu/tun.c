@@ -56,6 +56,9 @@
 #include <net/if.h>
 #include <net/if_tun.h>
 /*#include "sun_if_tun.h"*/
+#elif defined (__FreeBSD__)
+#include <net/if.h>
+#include <net/if_tun.h>
 #endif
 
 
@@ -347,7 +350,7 @@ int tun_setaddr(struct tun_t *this,
   memset (&ifr, '\0', sizeof (ifr));
   ifr.ifr_addr.sa_family = AF_INET;
   ifr.ifr_dstaddr.sa_family = AF_INET;
-#ifndef __sun__
+#ifdef __linux__
   ifr.ifr_netmask.sa_family = AF_INET;
 #endif
   strncpy(ifr.ifr_name, this->devname, IFNAMSIZ);
@@ -391,7 +394,7 @@ int tun_setaddr(struct tun_t *this,
 
   if (netmask) { /* Set the netmask */
     this->netmask.s_addr = netmask->s_addr;
-#ifdef __sun__
+#if defined(__sun__) | defined(__FreeBSD__)
     ((struct sockaddr_in *) &ifr.ifr_dstaddr)->sin_addr.s_addr = 
       dstaddr->s_addr;
 #else
@@ -417,8 +420,8 @@ int tun_addroute(struct tun_t *this,
 		 struct in_addr *mask)
 {
 
-  /* TODO: Learn how to set routing table on sun */
-#ifndef __sun__
+  /* TODO: Learn how to set routing table on sun and FreeBSD */
+#ifdef __linux__
 
   struct rtentry r;
   int fd;
@@ -457,11 +460,11 @@ int tun_addroute(struct tun_t *this,
 int tun_new(struct tun_t **tun)
 {
 
-#ifndef __sun__
-  struct ifreq ifr;
-#else
+#ifdef __sun__
   int if_fd, ppa = -1;
   static int ip_fd = 0;
+#else
+  struct ifreq ifr;
 #endif
   
   if (!(*tun = calloc(1, sizeof(struct tun_t)))) {

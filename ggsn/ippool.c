@@ -14,6 +14,7 @@
  * 
  */
 
+#include <sys/types.h>
 #include <netinet/in.h> /* in_addr */
 #include <stdlib.h>     /* calloc */
 #include <stdio.h>      /* sscanf */

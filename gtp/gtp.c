@@ -407,6 +407,9 @@ int gtp_req(struct gsn_t *gsn, int version, struct pdp_t *pdp,
   memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
   addr.sin_addr = *inetaddr;
+#ifdef __FreeBSD__
+  addr.sin_len = sizeof(addr);
+#endif
 
   if ((packet->flags & 0xe0) == 0x00) { /* Version 0 */
     addr.sin_port = htons(GTP0_PORT);
@@ -763,6 +766,9 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
   addr.sin_family = AF_INET;
   addr.sin_addr = *listen;  /* Same IP for user traffic and signalling*/
   addr.sin_port = htons(GTP0_PORT);
+#ifdef __FreeBSD__
+  addr.sin_len = sizeof(addr);
+#endif
   
   if (bind((*gsn)->fd0, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
     (*gsn)->err_socket++;
@@ -781,6 +787,9 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
   addr.sin_family = AF_INET;
   addr.sin_addr = *listen;  /* Same IP for user traffic and signalling*/
   addr.sin_port = htons(GTP1C_PORT);
+#ifdef __FreeBSD__
+  addr.sin_len = sizeof(addr);
+#endif
   
   if (bind((*gsn)->fd1c, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
     (*gsn)->err_socket++;
@@ -799,6 +808,9 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
   addr.sin_family = AF_INET;
   addr.sin_addr = *listen;  /* Same IP for user traffic and signalling*/
   addr.sin_port = htons(GTP1U_PORT);
+#ifdef __FreeBSD__
+  addr.sin_len = sizeof(addr);
+#endif
   
   if (bind((*gsn)->fd1u, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
     (*gsn)->err_socket++;
@@ -2932,6 +2944,10 @@ int gtp_data_req(struct gsn_t *gsn, struct pdp_t* pdp,
 
   memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
+#ifdef __FreeBSD__
+  addr.sin_len = sizeof(addr);
+#endif
+
   memcpy(&addr.sin_addr, pdp->gsnru.v,pdp->gsnru.l); /* TODO range check */
 
   if (pdp->version == 0) {
