@@ -185,16 +185,7 @@ int ippool_aton(struct in_addr *addr, struct in_addr *mask,
 	     &m1, &m2, &m3, &m4);
   switch (c) {
   case 4:
-    if (a1 == 0 && a2 == 0 && a3 == 0 && a4 == 0) /* Full Internet */
-      mask->s_addr = 0x00000000;
-    else if (a2 == 0 && a3 == 0 && a4 == 0)       /* class A */
-      mask->s_addr = htonl(0xff000000);
-    else if (a3 == 0 && a4 == 0)	          /* class B */
-      mask->s_addr = htonl(0xffff0000);
-    else if (a4 == 0)	                          /* class C */
-      mask->s_addr = htonl(0xffffff00);
-    else
-      mask->s_addr = 0xffffffff;
+    mask->s_addr = 0xffffffff;
     break;
   case 5:
     if (m1 < 0 || m1 > 32) {
@@ -245,10 +236,17 @@ int ippool_new(struct ippool_t **this, char *dyn,  char *stat,
   else {
     if (ippool_aton(&addr, &mask, dyn, 0))
       return -1; /* Failed to parse dynamic pool */
+
+    /* Set IPPOOL_NONETWORK if IPPOOL_NOGATEWAY is set */
+    if (flags & IPPOOL_NOGATEWAY) {   
+      flags |= IPPOOL_NONETWORK;
+    }
     
     m = ntohl(mask.s_addr);
     dynsize = ((~m)+1);
     if (flags & IPPOOL_NONETWORK)   /* Exclude network address from pool */
+      dynsize--;
+    if (flags & IPPOOL_NOGATEWAY)   /* Exclude gateway address from pool */
       dynsize--;
     if (flags & IPPOOL_NOBROADCAST) /* Exclude broadcast address from pool */
       dynsize--;
@@ -306,11 +304,13 @@ int ippool_new(struct ippool_t **this, char *dyn,  char *stat,
   (*this)->lastdyn = NULL;
   for (i = 0; i<dynsize; i++) {
 
-    if (flags & IPPOOL_NONETWORK)
+    if (flags & IPPOOL_NOGATEWAY)
+      (*this)->member[i].addr.s_addr = htonl(ntohl(addr.s_addr) + i + 2);
+    else if (flags & IPPOOL_NONETWORK)
       (*this)->member[i].addr.s_addr = htonl(ntohl(addr.s_addr) + i + 1);
     else
       (*this)->member[i].addr.s_addr = htonl(ntohl(addr.s_addr) + i);
-
+    
     (*this)->member[i].inuse = 0;
 
     /* Insert into list of unused */
