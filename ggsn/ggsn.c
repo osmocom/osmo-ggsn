@@ -90,7 +90,7 @@ void log_pid(char *pidfile) {
   fclose(file);
 }
 
-#ifdef __sun__
+#if defined(_sun__)
 int daemon(int nochdir, int noclose) {
   int fd;
 

@@ -343,22 +343,28 @@ int tun_addaddr(struct tun_t *this,
 
   /* TODO: Is this needed on FreeBSD? */
   if (!this->addrs) /* Use ioctl for first addr to make ping work */
-    return tun_setaddr(this, addr, dstaddr, netmask);
+    return tun_setaddr(this, addr, dstaddr, netmask); /* TODO dstaddr */
 
   memset(&areq, 0, sizeof(areq));
 
   /* Set up interface name */
   strncpy(areq.ifra_name, this->devname, IFNAMSIZ);
-  ifr.ifr_name[IFNAMSIZ-1] = 0; /* Make sure to terminate */
+  areq.ifra_name[IFNAMSIZ-1] = 0; /* Make sure to terminate */
 
-  ((struct sockaddr_in) areq.ifra_addr).sin_family = AF_INET;
-  ((struct sockaddr_in) areq.ifra_addr).sin_len = sizeof(areq.ifra_addr);
-  ((struct sockaddr_in) areq.ifra_addr).sin_addr.s_addr = addr->s_addr;
+  ((struct sockaddr_in*) &areq.ifra_addr)->sin_family = AF_INET;
+  ((struct sockaddr_in*) &areq.ifra_addr)->sin_len = sizeof(areq.ifra_addr);
+  ((struct sockaddr_in*) &areq.ifra_addr)->sin_addr.s_addr = addr->s_addr;
 
-  ((struct sockaddr_in) areq.ifra_mask).sin_family = AF_INET;
-  ((struct sockaddr_in) areq.ifra_mask).sin_len    = sizeof(areq.ifra_mask);
-  ((struct sockaddr_in) areq.ifra_mask).sin_addr.s_addr = netmask->s_addr;
+  ((struct sockaddr_in*) &areq.ifra_mask)->sin_family = AF_INET;
+  ((struct sockaddr_in*) &areq.ifra_mask)->sin_len    = sizeof(areq.ifra_mask);
+  ((struct sockaddr_in*) &areq.ifra_mask)->sin_addr.s_addr = netmask->s_addr;
 
+  /* For some reason FreeBSD uses ifra_broadcast for specifying dstaddr */
+  ((struct sockaddr_in*) &areq.ifra_broadaddr)->sin_family = AF_INET;
+  ((struct sockaddr_in*) &areq.ifra_broadaddr)->sin_len = 
+    sizeof(areq.ifra_broadaddr);
+  ((struct sockaddr_in*) &areq.ifra_broadaddr)->sin_addr.s_addr = 
+    dstaddr->s_addr;
 
   /* Create a channel to the NET kernel. */
   if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
@@ -607,6 +613,8 @@ int tun_new(struct tun_t **tun)
 #elif defined(__FreeBSD__)
   char devname[IFNAMSIZ+5]; /* "/dev/" + ifname */
   int devnum;
+  struct ifaliasreq areq;
+  int fd;
 
 #elif defined(__sun__)
   int if_fd, ppa = -1;
@@ -663,6 +671,27 @@ int tun_new(struct tun_t **tun)
 
   snprintf((*tun)->devname, sizeof((*tun)->devname), "tun%d", devnum);
   (*tun)->devname[sizeof((*tun)->devname)] = 0;
+
+  /* The tun device we found might have "old" IP addresses allocated */
+  /* We need to delete those. This problem is not present on Linux */
+
+  memset(&areq, 0, sizeof(areq));
+
+  /* Set up interface name */
+  strncpy(areq.ifra_name, (*tun)->devname, IFNAMSIZ);
+  areq.ifra_name[IFNAMSIZ-1] = 0; /* Make sure to terminate */
+
+  /* Create a channel to the NET kernel. */
+  if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+    sys_err(LOG_ERR, __FILE__, __LINE__, errno,
+	    "socket() failed");
+    return -1;
+  }
+  
+  /* Delete any IP addresses until SIOCDIFADDR fails */
+  while (ioctl(fd, SIOCDIFADDR, (void *) &areq) != -1);
+
+  close(fd);
   return 0;
 
 #elif defined(__sun__)

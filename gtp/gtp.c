@@ -407,7 +407,7 @@ int gtp_req(struct gsn_t *gsn, int version, struct pdp_t *pdp,
   memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
   addr.sin_addr = *inetaddr;
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__)
   addr.sin_len = sizeof(addr);
 #endif
 
@@ -766,7 +766,7 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
   addr.sin_family = AF_INET;
   addr.sin_addr = *listen;  /* Same IP for user traffic and signalling*/
   addr.sin_port = htons(GTP0_PORT);
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__)
   addr.sin_len = sizeof(addr);
 #endif
   
@@ -787,7 +787,7 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
   addr.sin_family = AF_INET;
   addr.sin_addr = *listen;  /* Same IP for user traffic and signalling*/
   addr.sin_port = htons(GTP1C_PORT);
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__)
   addr.sin_len = sizeof(addr);
 #endif
   
@@ -808,7 +808,7 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
   addr.sin_family = AF_INET;
   addr.sin_addr = *listen;  /* Same IP for user traffic and signalling*/
   addr.sin_port = htons(GTP1U_PORT);
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__)
   addr.sin_len = sizeof(addr);
 #endif
   
@@ -2944,7 +2944,7 @@ int gtp_data_req(struct gsn_t *gsn, struct pdp_t* pdp,
 
   memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__)
   addr.sin_len = sizeof(addr);
 #endif
 
@@ -2965,7 +2965,8 @@ int gtp_data_req(struct gsn_t *gsn, struct pdp_t* pdp,
     if (len > sizeof (union gtp_packet) - sizeof(struct gtp0_header)) {
       gsn->err_memcpy++;
       gtp_err(LOG_ERR, __FILE__, __LINE__, 
-	      "Memcpy failed");
+	      "Memcpy failed: %d > %d", len,
+	      sizeof (union gtp_packet) - sizeof(struct gtp0_header));
       return EOF;
     }
     memcpy(packet.gtp0.p, pack, len); /* TODO Should be avoided! */
@@ -2985,7 +2986,8 @@ int gtp_data_req(struct gsn_t *gsn, struct pdp_t* pdp,
     if (len > sizeof (union gtp_packet) - sizeof(struct gtp1_header_long)) {
       gsn->err_memcpy++;
       gtp_err(LOG_ERR, __FILE__, __LINE__, 
-	      "Memcpy failed");
+	      "Memcpy failed: %d > %d", len,
+	      sizeof (union gtp_packet) - sizeof(struct gtp0_header));
       return EOF;
     }
     memcpy(packet.gtp1l.p, pack, len); /* TODO Should be avoided! */
