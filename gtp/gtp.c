@@ -48,6 +48,7 @@
 
 #include <stdint.h> /* ISO C99 types */
 
+#include "../config.h"
 #include "pdp.h"
 #include "gtp.h"
 #include "gtpie.h"
