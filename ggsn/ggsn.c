@@ -61,6 +61,7 @@ int maxfd = 0;	                /* For select() */
 int tun_fd = -1;		/* Network file descriptor */
 struct tun_t *tun;              /* TUN instance            */
 struct in_addr net, mask;       /* Network interface       */
+char *ipup, *ipdown;            /* Filename of scripts */
 int debug;                      /* Print debug output */
 
 
@@ -175,16 +176,26 @@ int create_tun() {
     exit(1);
   }
 
-  strncpy(snet, inet_ntoa(net), 100);
-  strncpy(smask, inet_ntoa(mask), 100);
+  strncpy(snet, inet_ntoa(net), sizeof(snet)); 
+  snet[sizeof(snet)-1] = 0;
+  strncpy(smask, inet_ntoa(mask), sizeof(smask));
+  smask[sizeof(smask)-1] = 0;
 
-  sprintf(buf, "/sbin/ifconfig %s %s mtu 1450 netmask %s",
+  snprintf(buf, sizeof(buf), "/sbin/ifconfig %s %s mtu 1450 netmask %s",
 	  tun->devname, snet, smask);
+  buf[sizeof(buf)-1] = 0;
   if (debug) printf("%s\n", buf);
   system(buf);
 
-  system("echo 1 > /proc/sys/net/ipv4/ip_forward");
-  
+  if (ipup) {
+    /* system("ipup /dev/tun0 192.168.0.10"); */
+    snprintf(buf, sizeof(buf), "%s %s %s %s",
+	     ipup, tun->devname, snet, smask);
+    buf[sizeof(buf)-1] = 0;
+    if (debug) printf("%s\n", buf);
+    system(buf);
+  }
+
   return 0;
 }
 
@@ -249,6 +260,8 @@ int main(int argc, char **argv)
     printf("apn: %s\n", args_info.apn_arg);
     printf("net: %s\n", args_info.net_arg);
     printf("mask: %s\n", args_info.mask_arg);
+    printf("ipup: %s\n", args_info.ipup_arg);
+    printf("ipdown: %s\n", args_info.ipdown_arg);
     printf("pidfile: %s\n", args_info.pidfile_arg);
     printf("statedir: %s\n", args_info.statedir_arg);
     printf("timelimit: %d\n", args_info.timelimit_arg);
@@ -268,6 +281,8 @@ int main(int argc, char **argv)
     printf("apn: %s\n", args_info.apn_arg);
     printf("net: %s\n", args_info.net_arg);
     printf("mask: %s\n", args_info.mask_arg);
+    printf("ipup: %s\n", args_info.ipup_arg);
+    printf("ipdown: %s\n", args_info.ipdown_arg);
     printf("pidfile: %s\n", args_info.pidfile_arg);
     printf("statedir: %s\n", args_info.statedir_arg);
     printf("timelimit: %d\n", args_info.timelimit_arg);
@@ -342,6 +357,12 @@ int main(int argc, char **argv)
     }
   }
 
+  /* ipup */
+  ipup = args_info.ipup_arg;
+
+  /* ipdown */
+  ipdown = args_info.ipdown_arg;
+
   /* Timelimit                                                       */
   timelimit = args_info.timelimit_arg;
   starttime = time(NULL);
@@ -354,14 +375,14 @@ int main(int argc, char **argv)
   qos.v[0] = ((args_info.qos_arg) >> 16) & 0xff;
   
   /* apn                                                             */
-  if (strlen(args_info.apn_arg)>255) {
+  if (strlen(args_info.apn_arg)>(sizeof(apnh)-1)) {
     printf("invalid APN\n");
     exit(1);
   }
   apn.l = strlen(args_info.apn_arg) + 1;
   apn.v = apnh;
   apn.v[0] = (char) strlen(args_info.apn_arg);
-  strncpy(&apn.v[1], args_info.apn_arg, 255);
+  strncpy(&apn.v[1], args_info.apn_arg, (sizeof(apnh)-1));
 
   if (debug) printf("gtpclient: Initialising GTP tunnel\n");
   
@@ -410,11 +431,11 @@ int main(int argc, char **argv)
 
     if (gtpfd != -1 && FD_ISSET(gtpfd, &fds) && 
 	gtp_decaps(gsn) < 0) {
-      syslog(LOG_ERR, "GTP read failed (gre)=(%d)", gtpfd);
+      syslog(LOG_ERR, "GTP read failed (gtpfd)=(%d)", gtpfd);
     }
     
     
-    }
+  }
 
   gtp_free(gsn);
   
