@@ -58,9 +58,10 @@ context. If successful it will create a local interface and set up
 routing. Now you should be able to ping through the connection. Use a
 network analysator such as ethereal to monitor the traffic.
 
-sgsnemu -h will show a list of available options. "-c sgsnemu.conf"
-use sgsnemu.conf as a configuration file. A sample file is provided in
-examples/sgsnemu.conf.
+sgsnemu -h will show a list of available options. 
+
+sgsnemu -c sgsnemu.conf will use sgsnemu.conf as a configuration
+file. A sample file is provided in examples/sgsnemu.conf.
 
 *ggsn*
 Edit the configuration file ggsn.conf found under openggsn/examples.
@@ -83,7 +84,8 @@ Features
 ========
 
 OpenGGSN is an open source implementation of GPRS Support Nodes
-(GSNs). It implements the GPRS tunneling protocol (GTP) version 0.
+(GSNs). It implements the GPRS tunneling protocol (GTP) version 0 and
+version 1.
 
 OpenGGSN provides 3 components:
  * gtplib
@@ -93,8 +95,9 @@ OpenGGSN provides 3 components:
 *gtplib*
 This library contains all functionality relating to the GTP
 protocol. Use this library if you want to implement your own
-GSN. Currently gtplib supports GTPv0. At the moment no interface
-documentation is available for download.
+GSN. gtplib supports both GTPv0 (GSM 09.60) and GTPv1 (3GPP
+29.060). At the moment no interface documentation is available for
+download.
 
 *ggsn*
 The ggsn implements a Gateway GPRS Support Node. The GGSN is a small
@@ -108,7 +111,9 @@ with your own fancy VPN, management and charging functionality.
 This application emulates a Serving GPRS Support Node (SGSN). sgsnemu
 enables you to test your 3GPP core network without the need to invest
 in a 3G radio access network. An important application of sgsnemu is
-the testing of roaming connectivity through a GPRS roaming exchange.
+the testing of roaming connectivity through a GPRS roaming
+exchange. sgsnemu will first attempt to use GTPv1. If unsuccessful it
+will fallback to GTPv0.
 
 
 Performance
@@ -182,7 +187,7 @@ the package:
 2. Copy the latest config.guess and config.sub from ftp://ftp.gnu.org/gnu/config
 3. Run autoscan and copy configure.scan to configure.in
 4. Add/edit the following lines in configure.in:
-   - AC_INIT(openggsn, 0.52, jj@openggsn.org)
+   - AC_INIT(openggsn, 0.70, jj@openggsn.org)
    - AC_CONFIG_SRCDIR([gtp/gtp.c])
    - AM_CONFIG_HEADER([config.h])
    - AC_PROG_LIBTOOL
@@ -247,7 +252,7 @@ examples/ggsn.conf for the format of this file.
 
 Start the ggsn as root using the command:
 
-  ggsn -c examples/ggsn.conf --fg -l 10.0.0.40 --net 192.168.0.0/24 --dynip 192.168.0.0/24
+ggsn -c examples/ggsn.conf --fg -l 10.0.0.40 --net 192.168.0.0/24 --dynip 192.168.0.0/24
 
 First a tun network interface will be created. In the above example
 the network interface address is 192.168.0.0 and the mask is
@@ -300,7 +305,7 @@ subnet mask and default route. See the Linux Networking HOWTO for
 details.
 4. Launch sgsnemu with something like:
 
-     sgsnemu --listen 10.0.0.50 --remote 10.0.0.40 --dns 10.20.38.51 --timelimit 10 --contexts 0 
+sgsnemu --listen 10.0.0.50 --remote 10.0.0.40 --dns 10.20.38.51 --timelimit 10 --contexts 0 
 
 sgsnemu will print something like the following on the screen:
 
@@ -340,7 +345,7 @@ testing. Also note that you are establishing a connection to the Gi
 network, so please be carefull not to route internet traffic onto the
 GPRS core network! Assuming you know what you are doing:
 
-     sgsnemu --listen 10.0.0.50 --remote 10.0.0.40 --dns 10.20.38.51 --timelimit 10 --contexts 1 --apn internet --imsi 240011234567890 --msisdn 46702123456 --createif --defaultroute
+sgsnemu --listen 10.0.0.50 --remote 10.0.0.40 --dns 10.20.38.51 --timelimit 10 --contexts 1 --apn internet --imsi 240011234567890 --msisdn 46702123456 --createif --defaultroute
 
 sgsnemu will print something like the following on the screen:
 

@@ -4,6 +4,15 @@ OPENGGSN NEWS
 OpenGGSN - Gateway GPRS Support Node
 Copyright (C) 2002, 2003 Mondru AB.
 
+Version 0.7
+===========
+
+ * Support for GTP1. Currently without support for the secondary pdp
+   context activation procedure.
+ * sgsnemu will first attempt to use GTP1. If that fails it will
+   fallback to using GTP0.
+ * Standards compliance document.
+
 Version 0.6
 ===========
 

@@ -1,3 +1,23 @@
+2003-10-22: Jens Jakobsen <jj@openggsn.org>
+	Support for GTP1. Currently without support for the secondary pdp
+	context activation procedure.
+
+	sgsnemu will first attempt to use GTP1. If that fails it will
+	proceed with GTP0.
+
+	Various gtplib API changes to allow support for GTP1.
+
+	gtplib now listens to 3 separate UDP ports: GTP0, GTP1 control
+	plane and GTP1 user plane. A socket for each port has to be
+	included in the application select loop.
+
+	gtplib now verifies that messages are valid for the particular
+	type of support node. As an example a received Create PDP Context
+	Request message is not allowed for an SGSN.
+
+	Standards compliance document.
+
+	
 2003-07-07: Jens Jakobsen <jj@openggsn.org>
 	Added spec.in file for building binary RPM packages. Now openggsn
 	will install binaries, man pages as well as scripts.
