@@ -77,7 +77,7 @@ int debug;                      /* Print debug messages */
 struct in_addr net, mask;       /* Network interface       */
 int createif;                   /* Create local network interface */
 char *ipup, *ipdown;            /* Filename of scripts */
-int defaultroute;               /* Set up default route    */
+/* int defaultroute;               /* Set up default route    */
 struct in_addr pinghost;        /* Remote ping host    */
 int pingrate, pingsize, pingcount, pingquiet;
 struct in_addr listen_, remote;
@@ -425,7 +425,7 @@ int create_pdp_conf(struct pdp_t *pdp, int cause) {
 	 if (debug) printf("%s\n", buf);
       system(buf);*/
 
-      if (defaultroute) {
+      /*if (defaultroute) {*/
 	strncpy(snet, inet_ntoa(net), sizeof(snet));
 	strncpy(smask, inet_ntoa(mask), sizeof(smask));
 	/* system("route add -net 0.0.0.0 netmask 0.0.0.0 gw 192.168.0.1"); */
@@ -435,7 +435,7 @@ int create_pdp_conf(struct pdp_t *pdp, int cause) {
 		pdp->eua.v[2], pdp->eua.v[3], pdp->eua.v[4], pdp->eua.v[5]);
 	/* if (debug) */ printf("%s\n", buf);
 	system(buf);
-      }
+	/*}*/
 
       if (ipup) {
 	/* system("ipup /dev/tun0 192.168.0.10"); */
@@ -563,7 +563,7 @@ int main(int argc, char **argv)
     printf("createif: %d\n", args_info.createif_flag);
     printf("ipup: %s\n", args_info.ipup_arg);
     printf("ipdown: %s\n", args_info.ipdown_arg);
-    printf("defaultroute: %d\n", args_info.defaultroute_flag);
+    /*printf("defaultroute: %d\n", args_info.defaultroute_flag);*/
     printf("net: %s\n", args_info.net_arg);
     printf("mask: %s\n", args_info.mask_arg);
     printf("pinghost: %s\n", args_info.pinghost_arg);
@@ -599,7 +599,7 @@ int main(int argc, char **argv)
       printf("createif: %d\n", args_info.createif_flag);
       printf("ipup: %s\n", args_info.ipup_arg);
       printf("ipdown: %s\n", args_info.ipdown_arg);
-      printf("defaultroute: %d\n", args_info.defaultroute_flag);
+      /*printf("defaultroute: %d\n", args_info.defaultroute_flag);*/
       printf("net: %s\n", args_info.net_arg);
       printf("mask: %s\n", args_info.mask_arg);
       printf("pinghost: %s\n", args_info.pinghost_arg);
@@ -810,8 +810,8 @@ int main(int argc, char **argv)
   /* ipdown */
   ipdown = args_info.ipdown_arg;
 
-  /* defaultroute */
-  defaultroute = args_info.defaultroute_flag;
+  /* defaultroute 
+  defaultroute = args_info.defaultroute_flag;*/
 
   /* net                                                          */
   /* Store net as in_addr                                         */
