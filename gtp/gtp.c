@@ -1554,6 +1554,8 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
     gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
 		"Invalid message format");
     if (gsn->cb_conf) gsn->cb_conf(type, EOF, pdp, cbp);
+    if (gsn->cb_delete_context) gsn->cb_delete_context(pdp);
+    pdp_freepdp(pdp);
     return EOF;
   }
 
@@ -1563,6 +1565,8 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
     gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
 		"Missing mandatory information field");
     if (gsn->cb_conf) gsn->cb_conf(type, EOF, pdp, cbp);
+    if (gsn->cb_delete_context) gsn->cb_delete_context(pdp);
+    pdp_freepdp(pdp);
     return EOF;
   }
 
@@ -1586,6 +1590,8 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 	gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
 		    "Missing conditional information field");
 	if (gsn->cb_conf) gsn->cb_conf(type, EOF, pdp, cbp);
+	if (gsn->cb_delete_context) gsn->cb_delete_context(pdp);
+	pdp_freepdp(pdp);
 	return EOF;
       }
     }
@@ -1594,6 +1600,8 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
       gsn->missing++;
       gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
 		  "Missing conditional information field");
+      if (gsn->cb_delete_context) gsn->cb_delete_context(pdp);
+      pdp_freepdp(pdp);
       if (gsn->cb_conf) gsn->cb_conf(type, EOF, pdp, cbp);
       return EOF;
     }
@@ -1604,6 +1612,8 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 	gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
 		    "Missing conditional information field");
 	if (gsn->cb_conf) gsn->cb_conf(type, EOF, pdp, cbp);
+	if (gsn->cb_delete_context) gsn->cb_delete_context(pdp);
+	pdp_freepdp(pdp);
 	return EOF;
       }
     
@@ -1612,6 +1622,8 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 	gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
 		    "Missing conditional information field");
 	if (gsn->cb_conf) gsn->cb_conf(type, EOF, pdp, cbp);
+	if (gsn->cb_delete_context) gsn->cb_delete_context(pdp);
+	pdp_freepdp(pdp);
 	return EOF;
       }
     }
@@ -1622,6 +1634,8 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 	gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
 		    "Missing conditional information field");
 	if (gsn->cb_conf) gsn->cb_conf(type, EOF, pdp, cbp);
+	if (gsn->cb_delete_context) gsn->cb_delete_context(pdp);
+	pdp_freepdp(pdp);
 	return EOF;
       }
     
@@ -1630,6 +1644,8 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 	gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
 		    "Missing conditional information field");
 	if (gsn->cb_conf) gsn->cb_conf(type, EOF, pdp, cbp);
+	if (gsn->cb_delete_context) gsn->cb_delete_context(pdp);
+	pdp_freepdp(pdp);
 	return EOF;
       }
     }
@@ -1639,6 +1655,8 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
       gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
 		  "Missing conditional information field");
       if (gsn->cb_conf) gsn->cb_conf(type, EOF, pdp, cbp);
+      if (gsn->cb_delete_context) gsn->cb_delete_context(pdp);
+      pdp_freepdp(pdp);
     }
     
     if (gtpie_gettlv(ie, GTPIE_EUA, 0, &pdp->eua.l,
@@ -1647,6 +1665,8 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
       gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
 		  "Missing conditional information field");
       if (gsn->cb_conf) gsn->cb_conf(type, EOF, pdp, cbp);
+      if (gsn->cb_delete_context) gsn->cb_delete_context(pdp);
+      pdp_freepdp(pdp);
       return EOF;
     }
     
@@ -1656,6 +1676,8 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
       gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
 		  "Missing conditional information field");
       if (gsn->cb_conf) gsn->cb_conf(type, EOF, pdp, cbp);
+      if (gsn->cb_delete_context) gsn->cb_delete_context(pdp);
+      pdp_freepdp(pdp);
       return EOF;
     }
     
@@ -1665,6 +1687,8 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
       gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
 		  "Missing conditional information field");
       if (gsn->cb_conf) gsn->cb_conf(type, EOF, pdp, cbp);
+      if (gsn->cb_delete_context) gsn->cb_delete_context(pdp);
+      pdp_freepdp(pdp);
       return EOF;
     }
 
@@ -1675,10 +1699,12 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 	gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
 		    "Missing conditional information field");
 	if (gsn->cb_conf) gsn->cb_conf(type, EOF, pdp, cbp);
+	if (gsn->cb_delete_context) gsn->cb_delete_context(pdp);
+	pdp_freepdp(pdp);
 	return EOF;
       }
     }
-    
+   
   }
   
   if (gsn->cb_conf) gsn->cb_conf(type, cause, pdp, cbp);
