@@ -193,6 +193,7 @@ char* snprint_packet(struct gsn_t *gsn, struct sockaddr_in *peer,
 	   inet_ntoa(peer->sin_addr),
 	   ntohs(peer->sin_port),
 	   len);
+  buf[size-1] = 0;
   pos = strlen(buf);
   for(n=0; n<len; n++) {
     if ((pos+4)<size) {
@@ -211,7 +212,7 @@ void gtp_err(int priority, char *filename, int linenum, char *fmt, ...) {
   va_start(args, fmt);
   vsnprintf(buf, ERRMSG_SIZE, fmt, args);
   va_end(args);
-
+  buf[ERRMSG_SIZE-1] = 0;
   syslog(priority, "%s: %d: %s", filename, linenum, buf); 
 }
 
@@ -227,11 +228,13 @@ void gtp_errpack(int pri, char *fn, int ln, struct sockaddr_in *peer,
   va_start(args, fmt);
   vsnprintf(buf, ERRMSG_SIZE, fmt, args);
   va_end(args);
+  buf[ERRMSG_SIZE-1] = 0;
 
   snprintf(buf2, ERRMSG_SIZE, "Packet from %s:%u, length: %d, content:",
 	   inet_ntoa(peer->sin_addr),
 	   ntohs(peer->sin_port),
 	   len);
+  buf2[ERRMSG_SIZE-1] = 0;
   pos = strlen(buf2);
   for(n=0; n<len; n++) {
     if ((pos+4)<ERRMSG_SIZE) {
@@ -1044,9 +1047,12 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
   in_addr2gsna(&pdp->gsnlc, &gsn->gsnc);
   in_addr2gsna(&pdp->gsnlu, &gsn->gsnu);
 
+  if (GTP_DEBUG) printf("gtp_create_pdp_ind: Before pdp_tidget\n");
+
   if (!pdp_tidget(&pdp_old, ((union gtp_packet*)pack)->gtp0.h.tid)) {
     /* Found old pdp with same tid. Now the voodoo begins! */
     /* We check that the APN, selection mode and MSISDN is the same */
+    if (GTP_DEBUG) printf("gtp_create_pdp_ind: Old context found\n"); 
     if (   (pdp->apn_req.l == pdp_old->apn_req.l) 
 	&& (!memcmp(pdp->apn_req.v, pdp_old->apn_req.v, pdp->apn_req.l)) 
 	&& (pdp->selmode == pdp_old->selmode)
@@ -1058,6 +1064,8 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
        * QoS: MS will get originally negotiated QoS.
        * End user address (EUA). MS will get old EUA anyway.
        * Protocol configuration option (PCO): Only application can verify */
+
+      if (GTP_DEBUG) printf("gtp_create_pdp_ind: Old context found\n");
       
       /* Copy remote flow label */
       pdp_old->flru = pdp->flru;
@@ -1077,10 +1085,13 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 				 GTPCAUSE_ACC_REQ);
     }
     else { /* This is not the same PDP context. Delete the old one. */
+
+      if (GTP_DEBUG) printf("gtp_create_pdp_ind: Deleting old context\n");
       
       if (gsn->cb_delete_context) gsn->cb_delete_context(pdp_old);
       pdp_freepdp(pdp_old);
-      
+
+      if (GTP_DEBUG) printf("gtp_create_pdp_ind: Deleted...\n");      
     }
   }
 

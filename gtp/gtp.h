@@ -17,6 +17,8 @@
 #ifndef _GTP_H
 #define _GTP_H
 
+#define GTP_DEBUG 1              /* Print debug information */
+
 #define GTP0_PORT	3386
 #define GTP1C_PORT	2123
 #define GTP1U_PORT	2152
