@@ -133,7 +133,8 @@ int queue_newmsg(struct queue_t *queue, struct qmsg_t **qmsg,
     (*qmsg)->this = queue->next;
     (*qmsg)->next=-1;       /* End of the queue */
     (*qmsg)->prev=queue->last; /* Link to the previous */
-    queue->qmsga[queue->last].next=queue->next; /* Link previous to us */
+    if (queue->last != -1)
+      queue->qmsga[queue->last].next=queue->next; /* Link previous to us */
     queue->last = queue->next;                  /* End of queue */
     if (queue->first == -1) queue->first = queue->next;
     queue->next = (queue->next+1) % QUEUE_SIZE;   /* Increment */

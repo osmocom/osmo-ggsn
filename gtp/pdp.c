@@ -1,6 +1,6 @@
 /* 
  *  OpenGGSN - Gateway GPRS Support Node
- *  Copyright (C) 2002 Mondru AB.
+ *  Copyright (C) 2002, 2003 Mondru AB.
  * 
  *  The contents of this file may be used under the terms of the GNU
  *  General Public License Version 2, provided that the above copyright
@@ -32,7 +32,7 @@
 
 struct pdp_t pdpa[PDP_MAX];    /* PDP storage */
 struct pdp_t* hashtid[PDP_MAX];/* Hash table for IMSI + NSAPI */
-struct pdp_t* haship[PDP_MAX]; /* Hash table for IP and network interface */
+/* struct pdp_t* haship[PDP_MAX];  Hash table for IP and network interface */
 
 /* ***********************************************************
  * Functions related to PDP storage
@@ -109,7 +109,7 @@ struct pdp_t* haship[PDP_MAX]; /* Hash table for IP and network interface */
 int pdp_init() {
   memset(&pdpa, 0, sizeof(pdpa));
   memset(&hashtid, 0, sizeof(hashtid));
-  memset(&haship, 0, sizeof(haship));
+  /*  memset(&haship, 0, sizeof(haship)); */
 
   return 0;
 }
@@ -227,8 +227,9 @@ int pdp_tidget(struct pdp_t **pdp, uint64_t tid) {
   return EOF; /* End of linked list and not found */
 }
 
+/*
 int pdp_iphash(void* ipif, struct ul66_t *eua) {
-  /*printf("IPhash %ld\n", lookup(eua->v, eua->l, ipif) % PDP_MAX);*/
+  /#printf("IPhash %ld\n", lookup(eua->v, eua->l, ipif) % PDP_MAX);#/
   return (lookup(eua->v, eua->l, ipif) % PDP_MAX);
 }
     
@@ -276,27 +277,27 @@ int pdp_ipdel(struct pdp_t *pdp) {
     pdp_prev = pdp2;
   }
   if (PDP_DEBUG) printf("End pdp_ipdel: PDP not found\n");
-  return EOF; /* End of linked list and not found */
+  return EOF; /# End of linked list and not found #/
 }
 
 int pdp_ipget(struct pdp_t **pdp, void* ipif, struct ul66_t *eua) {
   int hash = pdp_iphash(ipif, eua);
   struct pdp_t *pdp2;
-  /*printf("Begin pdp_ipget %d %d %2x%2x%2x%2x\n", (unsigned)ipif, eua->l, 
-    eua->v[2],eua->v[3],eua->v[4],eua->v[5]);*/
+  /#printf("Begin pdp_ipget %d %d %2x%2x%2x%2x\n", (unsigned)ipif, eua->l, 
+    eua->v[2],eua->v[3],eua->v[4],eua->v[5]);#/
   for (pdp2 = haship[hash]; pdp2; pdp2 = pdp2->ipnext) {
     if ((pdp2->ipif == ipif) && (pdp2->eua.l == eua->l) && 
 	(memcmp(&pdp2->eua.v, &eua->v, eua->l) == 0)) {
       *pdp = pdp2;
-      /*printf("End pdp_ipget. Found\n");*/
+      /#printf("End pdp_ipget. Found\n");#/
       return 0;
     }
   }
   if (PDP_DEBUG) printf("End pdp_ipget Notfound %d %d %2x%2x%2x%2x\n", 
 	 (unsigned)ipif, eua->l, eua->v[2],eua->v[3],eua->v[4],eua->v[5]);
-  return EOF; /* End of linked list and not found */
+  return EOF; /# End of linked list and not found #/
 }
-
+*/
 /* Various conversion functions */
 
 int pdp_ntoeua(struct in_addr *src, struct ul66_t *eua) {
@@ -304,6 +305,14 @@ int pdp_ntoeua(struct in_addr *src, struct ul66_t *eua) {
   eua->v[0]=0xf1; /* IETF */
   eua->v[1]=0x21; /* IPv4 */
   memcpy(&eua->v[2], src, 4); /* Copy a 4 byte address */
+  return 0;
+}
+
+int pdp_euaton(struct ul66_t *eua, struct in_addr *dst) {
+  if((eua->l!=6) || (eua->v[0]!=0xf1) || (eua->v[1]!=0x21)) {
+    return EOF;
+  }
+  memcpy(dst, &eua->v[2], 4); /* Copy a 4 byte address */
   return 0;
 }
 

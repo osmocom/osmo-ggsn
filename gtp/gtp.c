@@ -54,10 +54,6 @@
 #include "gtpie.h"
 #include "queue.h"
 
-
-struct gtp0_header gtp0_default;
-struct gtp1_header_long gtp1_default;
-
 /* API Functions */
 
 const char* gtp_version()
@@ -162,17 +158,28 @@ extern int gtp_set_cb_gpdu(struct gsn_t *gsn,
 }
 
 
-
 void get_default_gtp(int version, void *packet) {
+  struct gtp0_header *gtp0_default = (struct gtp0_header*) packet;
+  struct gtp1_header_long *gtp1_default = (struct gtp1_header_long*) packet;
   switch (version) {
   case 0:
-    memcpy(packet, &gtp0_default, sizeof(gtp0_default));
+    /* Initialise "standard" GTP0 header */
+    memset(gtp0_default, 0, sizeof(gtp0_default));
+    gtp0_default->flags=0x1e;
+    gtp0_default->spare1=0xff;
+    gtp0_default->spare2=0xff;
+    gtp0_default->spare3=0xff;
+    gtp0_default->number=0xff;
   break;
   case 1:
-    memcpy(packet, &gtp1_default, sizeof(gtp1_default));
+    /* Initialise "standard" GTP1 header */
+    memset(gtp1_default, 0, sizeof(gtp1_default));
+    gtp0_default->flags=0x1e;
     break;
   }
 }
+
+
 
 int print_packet(void *packet, unsigned len)
 {
@@ -448,6 +455,11 @@ int gtp_resp(int version, struct gsn_t *gsn, union gtp_packet *packet,
 	 ntohs(peer->sin_port));
   print_packet(packet, len); 
   */
+
+  if (fcntl(gsn->fd, F_SETFL, 0)) {
+    gtp_err(LOG_ERR, __FILE__, __LINE__, "fnctl()");
+    return -1;
+  }
   
   if (sendto(gsn->fd, packet, len, 0,
 	     (struct sockaddr *) peer, sizeof(struct sockaddr_in)) < 0) {
@@ -487,6 +499,12 @@ int gtp_dublicate(struct gsn_t *gsn, int version,
 	   ntohs(peer->sin_port));
     print_packet(&qmsg->p, qmsg->l);
     */
+
+    if (fcntl(gsn->fd, F_SETFL, 0)) {
+      gtp_err(LOG_ERR, __FILE__, __LINE__, "fnctl()");
+      return -1;
+    }
+
     if (sendto(gsn->fd, &qmsg->p, qmsg->l, 0,
 	       (struct sockaddr *) peer, sizeof(struct sockaddr_in)) < 0) {
       gsn->err_sendto++;
@@ -553,6 +571,9 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen)
 
   (*gsn)->statedir = statedir;
   log_restart(*gsn);
+
+  /* Initialise sequence number */
+  (*gsn)->seq_next = (*gsn)->restart_counter * 1024;
   
   /* Initialise request retransmit queue */
   queue_new(&(*gsn)->queue_req);
@@ -573,8 +594,6 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen)
     return -1;
   }
   (*gsn)->fd = gtp_fd;
-  
-  /* syslog(LOG_ERR, "GTP: gtp_init() after socket");*/
 
   (*gsn)->gsnc = *listen;
   (*gsn)->gsnu = *listen;
@@ -592,18 +611,6 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen)
     return -1;
   }
 
-  /* Initialise "standard" GTP0 header */
-  memset(&gtp0_default, 0, sizeof(gtp0_default));
-  gtp0_default.flags=0x1e;
-  gtp0_default.spare1=0xff;
-  gtp0_default.spare2=0xff;
-  gtp0_default.spare3=0xff;
-  gtp0_default.number=0xff;
-  
-  /* Initialise "standard" GTP1 header */
-  memset(&gtp1_default, 0, sizeof(gtp1_default));
-  gtp0_default.flags=0x1e;
-  
   return 0;
 }
 
@@ -1736,90 +1743,111 @@ int gtp_decaps(struct gsn_t *gsn)
   struct gtp0_header *pheader;
   int version = 0; /* GTP version should be determined from header!*/
 
-  peerlen = sizeof(peer);
-  if ((status = 
-       recvfrom(gsn->fd, buffer, sizeof(buffer), 0,
-		(struct sockaddr *) &peer, &peerlen)) < 0 ) {
-    gsn->err_readfrom++;
-    gtp_err(LOG_ERR, __FILE__, __LINE__, "recvfrom(fd=%d, buffer=%lx, len=%d) failed: status = %d error = %s", gsn->fd, (unsigned long) buffer, sizeof(buffer), status, status ? strerror(errno) : "No error");
-    return -1;
-  }
-  
-  /* Strip off IP header, if present: TODO Is this nessesary? */
-  if ((buffer[0] & 0xF0) == 0x40) {
-    ip_len = (buffer[0] & 0xF) * 4;
-    gtp_errpack(LOG_ERR, __FILE__, __LINE__, &peer, buffer, status,
-		"IP header found in return from read");
-    return -1;
-  }
-  
-  /* Need at least 1 byte in order to check version */
-  if (status < (1)) {
-    gsn->empty++;
-    gtp_errpack(LOG_ERR, __FILE__, __LINE__, &peer, buffer, status,
-		"Discarding packet - too small");
-    return -1;
-  }
-  
-  /* TODO: Remove these ERROR MESSAGES 
-  gtp_err(LOG_ERR, __FILE__, __LINE__, "Discarding packet - too small");
-  gtp_errpack(LOG_ERR, __FILE__, __LINE__, &peer, buffer, status,
-	      "Discarding packet - too small"); */
+  /* TODO: Need strategy of userspace buffering and blocking */
+  /* Currently read is non-blocking and send is blocking. */
+  /* This means that the program have to wait for busy send calls...*/
 
-  pheader = (struct gtp0_header *) (buffer + ip_len);
-
-  /* Version should be gtp0 (or earlier in theory) */
-  if (((pheader->flags & 0xe0) > 0x00)) {
-    gsn->unsup++;
-    gtp_errpack(LOG_ERR, __FILE__, __LINE__, &peer, buffer, status,
-		"Unsupported GTP version");
-    return gtp_unsup_resp(gsn, &peer, buffer, status); /* 29.60: 11.1.1 */
-  }
+  while (1) { /* Loop until no more to read */
+    if (fcntl(gsn->fd, F_SETFL, O_NONBLOCK)) {
+      gtp_err(LOG_ERR, __FILE__, __LINE__, "fnctl()");
+      return -1;
+    }
+    peerlen = sizeof(peer);
+    if ((status = 
+	 recvfrom(gsn->fd, buffer, sizeof(buffer), 0,
+		  (struct sockaddr *) &peer, &peerlen)) < 0 ) {
+      if (errno == EAGAIN) return -1;
+      gsn->err_readfrom++;
+      gtp_err(LOG_ERR, __FILE__, __LINE__, "recvfrom(fd=%d, buffer=%lx, len=%d) failed: status = %d error = %s", gsn->fd, (unsigned long) buffer, sizeof(buffer), status, status ? strerror(errno) : "No error");
+      return -1;
+    }
   
-  /* Check length of gtp0 packet */
-  if (((pheader->flags & 0xe0) == 0x00) && (status < GTP0_HEADER_SIZE)) {
-    gsn->tooshort++;
-    gtp_errpack(LOG_ERR, __FILE__, __LINE__, &peer, buffer, status,
-		"GTP0 packet too short");
-    return -1; /* Silently discard 29.60: 11.1.2 */
-  }
-
-  switch (pheader->type) {
-  case GTP_ECHO_REQ:
-    return gtp_echo_ind(gsn, &peer, buffer+ip_len, status - ip_len);
-  case GTP_ECHO_RSP:
-    return gtp_echo_conf(gsn, &peer, buffer+ip_len, status - ip_len);
-  case GTP_NOT_SUPPORTED:
-    return gtp_unsup_conf(gsn, &peer, buffer+ip_len, status - ip_len);
-  case GTP_CREATE_PDP_REQ:
-    return gtp_create_pdp_ind(gsn, version, &peer, buffer+ip_len, 
-			      status - ip_len);
-  case GTP_CREATE_PDP_RSP:
-    return gtp_create_pdp_conf(gsn, version, &peer, buffer+ip_len, 
-			       status - ip_len);
-  case GTP_UPDATE_PDP_REQ:
-    return gtp_update_pdp_ind(gsn, version, &peer, buffer+ip_len, 
-			      status - ip_len);
-  case GTP_UPDATE_PDP_RSP:
-    return gtp_update_pdp_conf(gsn, version, &peer, buffer+ip_len, 
-			       status - ip_len);
-  case GTP_DELETE_PDP_REQ:
-    return gtp_delete_pdp_ind(gsn, version, &peer, buffer+ip_len, 
-			      status - ip_len);
-  case GTP_DELETE_PDP_RSP:
-    return gtp_delete_pdp_conf(gsn, version, &peer, buffer+ip_len, 
-			       status - ip_len);
-  case GTP_ERROR:
-    return gtp_error_ind_conf(gsn, version, &peer, buffer+ip_len, 
-			      status - ip_len);
-  case GTP_GPDU:
-    return gtp_gpdu_ind(gsn, version, &peer, buffer+ip_len, status - ip_len);
-  default:
-    {
+    /* Strip off IP header, if present: TODO Is this nessesary? */
+    if ((buffer[0] & 0xF0) == 0x40) {
+      ip_len = (buffer[0] & 0xF) * 4;
+      gtp_errpack(LOG_ERR, __FILE__, __LINE__, &peer, buffer, status,
+		  "IP header found in return from read");
+      continue;
+    }
+    
+    /* Need at least 1 byte in order to check version */
+    if (status < (1)) {
+      gsn->empty++;
+      gtp_errpack(LOG_ERR, __FILE__, __LINE__, &peer, buffer, status,
+		  "Discarding packet - too small");
+      continue;
+    }
+    
+    /* TODO: Remove these ERROR MESSAGES 
+       gtp_err(LOG_ERR, __FILE__, __LINE__, "Discarding packet - too small");
+       gtp_errpack(LOG_ERR, __FILE__, __LINE__, &peer, buffer, status,
+       "Discarding packet - too small"); */
+    
+    pheader = (struct gtp0_header *) (buffer + ip_len);
+    
+    /* Version should be gtp0 (or earlier in theory) */
+    if (((pheader->flags & 0xe0) > 0x00)) {
+      gsn->unsup++;
+      gtp_errpack(LOG_ERR, __FILE__, __LINE__, &peer, buffer, status,
+		  "Unsupported GTP version");
+      gtp_unsup_resp(gsn, &peer, buffer, status); /* 29.60: 11.1.1 */
+      continue;
+    }
+    
+    /* Check length of gtp0 packet */
+    if (((pheader->flags & 0xe0) == 0x00) && (status < GTP0_HEADER_SIZE)) {
+      gsn->tooshort++;
+      gtp_errpack(LOG_ERR, __FILE__, __LINE__, &peer, buffer, status,
+		  "GTP0 packet too short");
+      continue;  /* Silently discard 29.60: 11.1.2 */
+    }
+    
+    switch (pheader->type) {
+    case GTP_ECHO_REQ:
+      gtp_echo_ind(gsn, &peer, buffer+ip_len, status - ip_len);
+      break;
+    case GTP_ECHO_RSP:
+      gtp_echo_conf(gsn, &peer, buffer+ip_len, status - ip_len);
+      break;
+    case GTP_NOT_SUPPORTED:
+      gtp_unsup_conf(gsn, &peer, buffer+ip_len, status - ip_len);
+      break;
+    case GTP_CREATE_PDP_REQ:
+      gtp_create_pdp_ind(gsn, version, &peer, buffer+ip_len, 
+			 status - ip_len);
+      break;
+    case GTP_CREATE_PDP_RSP:
+      gtp_create_pdp_conf(gsn, version, &peer, buffer+ip_len, 
+			  status - ip_len);
+      break;
+    case GTP_UPDATE_PDP_REQ:
+      gtp_update_pdp_ind(gsn, version, &peer, buffer+ip_len, 
+			 status - ip_len);
+      break;
+    case GTP_UPDATE_PDP_RSP:
+      gtp_update_pdp_conf(gsn, version, &peer, buffer+ip_len, 
+			  status - ip_len);
+      break;
+    case GTP_DELETE_PDP_REQ:
+      gtp_delete_pdp_ind(gsn, version, &peer, buffer+ip_len, 
+			 status - ip_len);
+      break;
+    case GTP_DELETE_PDP_RSP:
+      gtp_delete_pdp_conf(gsn, version, &peer, buffer+ip_len, 
+			  status - ip_len);
+      break;
+    case GTP_ERROR:
+      gtp_error_ind_conf(gsn, version, &peer, buffer+ip_len, 
+			 status - ip_len);
+      break;
+    case GTP_GPDU:
+      gtp_gpdu_ind(gsn, version, &peer, buffer+ip_len, status - ip_len);
+      break;
+    default:
       gsn->unknown++;
       gtp_errpack(LOG_ERR, __FILE__, __LINE__, &peer, buffer, status,
 		  "Unknown GTP message type received");
-      return -1;
+      break;
     }
   }
 }
@@ -1852,6 +1880,11 @@ int gtp_gpdu(struct gsn_t *gsn, struct pdp_t* pdp,
 	    "Memcpy failed");
     return EOF;
     }
+
+  if (fcntl(gsn->fd, F_SETFL, 0)) {
+    gtp_err(LOG_ERR, __FILE__, __LINE__, "fnctl()");
+    return -1;
+  }
 
   memcpy(packet.gtp0.p, pack, len); /* TODO Should be avoided! */
   

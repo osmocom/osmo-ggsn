@@ -1,6 +1,6 @@
 /* 
  *  OpenGGSN - Gateway GPRS Support Node
- *  Copyright (C) 2002 Mondru AB.
+ *  Copyright (C) 2002, 2003 Mondru AB.
  * 
  *  The contents of this file may be used under the terms of the GNU
  *  General Public License Version 2, provided that the above copyright
@@ -98,6 +98,7 @@ struct pdp_t {
   /* Parameters shared by all PDP context belonging to the same MS */
 
   void *ipif;           /* IP network interface */
+  void *peer;           /* Pointer to peer protocol */
   void *asap;           /* Application specific service access point */
 
   uint64_t    imsi;     /* International Mobile Subscriber Identity.*/
@@ -191,12 +192,15 @@ int pdp_tidset(struct pdp_t *pdp, uint64_t tid);
 int pdp_tiddel(struct pdp_t *pdp);
 int pdp_tidget(struct pdp_t **pdp, uint64_t tid);
 
+/*
 int pdp_iphash(void* ipif, struct ul66_t *eua);
 int pdp_ipset(struct pdp_t *pdp, void* ipif, struct ul66_t *eua);
 int pdp_ipdel(struct pdp_t *pdp);
 int pdp_ipget(struct pdp_t **pdp, void* ipif, struct ul66_t *eua);
+*/
 
 int pdp_ntoeua(struct in_addr *src, struct ul66_t *eua);
+int pdp_euaton(struct ul66_t *eua, struct in_addr *dst);
 uint64_t pdp_gettid(uint64_t imsi, uint8_t nsapi);
 int ulcpy(void* dst, void* src, size_t size);
 
