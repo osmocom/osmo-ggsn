@@ -511,13 +511,18 @@ int process_options(int argc, char **argv) {
   options.defaultroute = args_info.defaultroute_flag;
 
 
-  /* pinghost                                                         */
+  /* pinghost                                                     */
   /* Store ping host as in_addr                                   */
   if (args_info.pinghost_arg) {
-    if (!inet_aton(args_info.pinghost_arg, &options.pinghost)) {
+    if (!(host = gethostbyname(args_info.pinghost_arg))) {
       sys_err(LOG_ERR, __FILE__, __LINE__, 0,
 	      "Invalid ping host: %s!", args_info.pinghost_arg);
       return -1;
+    }
+    else {
+      memcpy(&options.pinghost.s_addr, host->h_addr, host->h_length);
+      printf("Using ping host:       %s (%s)\n", 
+	     args_info.pinghost_arg, inet_ntoa(options.pinghost));
     }
   }
 
@@ -927,7 +932,7 @@ int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause) {
 
   if ((options.createif) && (!options.net.s_addr)) {
     struct in_addr m;
-    inet_aton("255.255.255.255", &m);
+    inet_pton(AF_INET, "255.255.255.255", &m);
     /* printf("Setting up interface and routing\n");*/
     tun_addaddr(tun, &addr,  &addr, &m);
     if (options.defaultroute) {

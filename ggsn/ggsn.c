@@ -329,12 +329,21 @@ int main(int argc, char **argv)
 
   /* DNS1 and DNS2 */
   dns1.s_addr = 0;
-  if (args_info.pcodns1_arg)
-    inet_aton(args_info.pcodns1_arg, &dns1);
-
+  if (args_info.pcodns1_arg) {
+    if (0 >= inet_pton(AF_INET, args_info.pcodns1_arg, &dns1)) {
+      sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+	      "Failed to convert pcodns1!");
+      exit(1);
+    }
+  }
   dns2.s_addr = 0;
-  if (args_info.pcodns2_arg)
-    inet_aton(args_info.pcodns2_arg, &dns2);
+  if (args_info.pcodns2_arg) {
+    if (0 >= inet_pton(AF_INET, args_info.pcodns2_arg, &dns2)) {
+      sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+	      "Failed to convert pcodns2!");
+      exit(1);
+    }
+  }
 
   pco.l = 20;
   pco.v[0] = 0x80; /* x0000yyy x=1, yyy=000: PPP */
