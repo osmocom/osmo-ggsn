@@ -42,6 +42,10 @@ install -m755 examples/ggsn.conf \
 mkdir -p $RPM_BUILD_ROOT/var/lib/ggsn
 echo "0" > $RPM_BUILD_ROOT/var/lib/ggsn/gsn_restart
 
+#Clean up unwanted library files
+rm -rf $RPM_BUILD_ROOT/usr/include/*
+rm -rf $RPM_BUILD_ROOT/usr/lib/*
+
 
 %clean
 rm -rf $RPM_BUILD_ROOT

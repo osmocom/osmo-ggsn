@@ -38,10 +38,10 @@ pkglibdir = $(libdir)/openggsn
 pkgincludedir = $(includedir)/openggsn
 top_builddir = ..
 
-ACLOCAL = ${SHELL} /home/jj/openggsn-0.60/missing --run aclocal-1.6
-AUTOCONF = ${SHELL} /home/jj/openggsn-0.60/missing --run autoconf
-AUTOMAKE = ${SHELL} /home/jj/openggsn-0.60/missing --run automake-1.6
-AUTOHEADER = ${SHELL} /home/jj/openggsn-0.60/missing --run autoheader
+ACLOCAL = ${SHELL} /home/jj/openggsn/missing --run aclocal-1.6
+AUTOCONF = ${SHELL} /home/jj/openggsn/missing --run autoconf
+AUTOMAKE = ${SHELL} /home/jj/openggsn/missing --run automake-1.6
+AUTOHEADER = ${SHELL} /home/jj/openggsn/missing --run autoheader
 
 am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
 INSTALL = /usr/bin/install -c
@@ -65,7 +65,7 @@ host_triplet = i686-pc-linux-gnu
 EXEEXT = 
 OBJEXT = o
 PATH_SEPARATOR = :
-AMTAR = ${SHELL} /home/jj/openggsn-0.60/missing --run tar
+AMTAR = ${SHELL} /home/jj/openggsn/missing --run tar
 AS = @AS@
 AWK = gawk
 CC = gcc
@@ -85,7 +85,7 @@ STRIP = strip
 VERSION = 0.60
 am__include = include
 am__quote = 
-install_sh = /home/jj/openggsn-0.60/install-sh
+install_sh = /home/jj/openggsn/install-sh
 man_MANS = ggsn.8 sgsnemu.8
 man_aux = $(man_MANS:.1=.x)
 EXTRA_DIST = $(man_MANS)
