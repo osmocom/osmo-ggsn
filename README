@@ -208,6 +208,22 @@ http://sources.redhat.com/autobook/autobook/autobook_25.html#SEC25
 for details on autotools.
 
 
+Checking out from CVS
+---------------------
+
+To download the latest source code from anonymous CVS:
+
+cvs -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/ggsn login
+cvs -z3 -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/ggsn co openggsn
+
+Or to download from developer CVS:
+
+export CVS_RSH=ssh
+cvs -z3 -d:ext:developername@cvs.sourceforge.net:/cvsroot/ggsn co openggsn
+
+Both the above sets of commands creates a new directory called openggsn.
+
+
 Compilation and installation
 ----------------------------
 
