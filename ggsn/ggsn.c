@@ -36,18 +36,14 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
 
 #include <sys/socket.h>  
 #include <sys/ioctl.h>
 #include <net/if.h>
-#include <features.h>
 
 #include <errno.h>
-
-#include <asm/types.h>
-#include <sys/socket.h>
-#include <linux/netlink.h> 
 
 #include <time.h>
 
@@ -88,9 +84,37 @@ void log_pid(char *pidfile) {
 	    "Failed to create process ID file: %s!", pidfile);
     return;
   }
-  fprintf(file, "%d\n", getpid());
+  fprintf(file, "%d\n", (int) getpid());
   fclose(file);
 }
+
+#ifdef __sun__
+int daemon(int nochdir, int noclose) {
+  int fd;
+
+  switch (fork()) {
+  case -1:
+    return (-1);
+  case 0:
+    break;
+  default:
+    _exit(0);
+  }
+
+  if (setsid() == -1)
+    return (-1);
+  
+  if (!nochdir) chdir("/");
+
+  if (!noclose && (fd = open("/dev/null", O_RDWR, 0)) != -1) {
+    dup2(fd, STDIN_FILENO);
+    dup2(fd, STDOUT_FILENO);
+    dup2(fd, STDERR_FILENO);
+    if (fd > 2) close (fd);
+  }
+  return (0);
+}
+#endif
 
 
 int encaps_printf(void *p, void *packet, unsigned len)
@@ -192,7 +216,14 @@ int main(int argc, char **argv)
 
   /* open a connection to the syslog daemon */
   /*openlog(PACKAGE, LOG_PID, LOG_DAEMON);*/
+
+  /* TODO: Only use LOG__PERROR for linux */
+#ifdef __linux__
   openlog(PACKAGE, (LOG_PID | LOG_PERROR), LOG_DAEMON);
+#else
+  openlog(PACKAGE, (LOG_PID), LOG_DAEMON);
+#endif
+
 
   if (cmdline_parser (argc, argv, &args_info) != 0)
     exit(1);

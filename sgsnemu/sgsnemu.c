@@ -43,11 +43,8 @@
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <net/if.h>
-#include <features.h>
 #include <errno.h>
-#include <asm/types.h>
 #include <sys/socket.h>
-#include <linux/netlink.h>
 #include <resolv.h>
 #include <time.h>
 
@@ -122,22 +119,22 @@ struct {
 #define CREATEPING_ICMP    8
 
 struct ip_ping {
-  u_int8_t ipver;               /* Type and header length*/
-  u_int8_t tos;                 /* Type of Service */
-  u_int16_t length;             /* Total length */
-  u_int16_t fragid;             /* Identifier */
-  u_int16_t offset;             /* Flags and fragment offset */
-  u_int8_t ttl;                 /* Time to live */
-  u_int8_t protocol;            /* Protocol */
-  u_int16_t ipcheck;            /* Header checksum */
-  u_int32_t src;                /* Source address */
-  u_int32_t dst;                /* Destination */
-  u_int8_t type;                /* Type and header length*/
-  u_int8_t code;                /* Code */
-  u_int16_t checksum;           /* Header checksum */
-  u_int16_t ident;              /* Identifier */
-  u_int16_t seq;                /* Sequence number */
-  u_int8_t data[CREATEPING_MAX]; /* Data */
+  uint8_t ipver;               /* Type and header length*/
+  uint8_t tos;                 /* Type of Service */
+  uint16_t length;             /* Total length */
+  uint16_t fragid;             /* Identifier */
+  uint16_t offset;             /* Flags and fragment offset */
+  uint8_t ttl;                 /* Time to live */
+  uint8_t protocol;            /* Protocol */
+  uint16_t ipcheck;            /* Header checksum */
+  uint32_t src;                /* Source address */
+  uint32_t dst;                /* Destination */
+  uint8_t type;                /* Type and header length*/
+  uint8_t code;                /* Code */
+  uint16_t checksum;           /* Header checksum */
+  uint16_t ident;              /* Identifier */
+  uint16_t seq;                /* Sequence number */
+  uint8_t data[CREATEPING_MAX]; /* Data */
 } __attribute__((packed));
 
 /* Statistical values for ping */
@@ -205,7 +202,7 @@ void log_pid(char *pidfile) {
   umask(oldmask);
   if(!file)
     return;
-  fprintf(file, "%d\n", getpid());
+  fprintf(file, "%d\n", (int) getpid());
   fclose(file);
 }
 
@@ -782,8 +779,8 @@ int create_ping(void *gsn, struct pdp_t *pdp,
 		struct in_addr *dst, int seq, int datasize) {
 
   struct ip_ping pack;
-  u_int16_t *p = (u_int16_t *) &pack;
-  u_int8_t  *p8 = (u_int8_t *) &pack;
+  uint16_t *p = (uint16_t *) &pack;
+  uint8_t  *p8 = (uint8_t *) &pack;
   struct in_addr src;
   int n;
   long int sum = 0;
@@ -817,14 +814,14 @@ int create_ping(void *gsn, struct pdp_t *pdp,
   pack.seq = htons(seq);
 
   /* Generate ICMP payload */
-  p8 = (u_int8_t *) &pack + CREATEPING_IP + CREATEPING_ICMP;
+  p8 = (uint8_t *) &pack + CREATEPING_IP + CREATEPING_ICMP;
   for (n=0; n<(datasize); n++) p8[n] = n;
 
   if (datasize >= sizeof(struct timeval)) 
     gettimeofday(tp, &tz);
 
   /* Calculate IP header checksum */
-  p = (u_int16_t *) &pack;
+  p = (uint16_t *) &pack;
   count = CREATEPING_IP;
   sum = 0;
   while (count>1) {
@@ -839,7 +836,7 @@ int create_ping(void *gsn, struct pdp_t *pdp,
   /* Calculate ICMP checksum */
   count = CREATEPING_ICMP + datasize; /* Length of ICMP message */
   sum = 0;
-  p = (u_int16_t *) &pack;
+  p = (uint16_t *) &pack;
   p += CREATEPING_IP / 2;
   while (count>1) {
     sum += *p++;
@@ -1012,7 +1009,14 @@ int main(int argc, char **argv)
 
   /* open a connection to the syslog daemon */
   /*openlog(PACKAGE, LOG_PID, LOG_DAEMON);*/
+  /* TODO: Only use LOG__PERROR for linux */
+
+#ifdef __linux__
   openlog(PACKAGE, (LOG_PID | LOG_PERROR), LOG_DAEMON);
+#else
+  openlog(PACKAGE, (LOG_PID), LOG_DAEMON);
+#endif
+
 
   /* Process options given in configuration file and command line */
   if (process_options(argc, argv)) 

@@ -43,19 +43,24 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
-#include <linux/if.h>
 #include <errno.h>
-#include <linux/if_tun.h>
 #include <net/route.h>
 
+#ifdef __linux__
+#include <linux/if.h>
+#include <linux/if_tun.h>
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
+#elif defined (__sun__)
+#include <net/if_tun.h>
+#endif
+
 
 #include "tun.h"
 #include "syserr.h"
 
 
-
+#ifdef __linux__
 int tun_nlattr(struct nlmsghdr *n, int nsize, int type, void *d, int dlen)
 {
   int len = RTA_LENGTH(dlen);
@@ -69,6 +74,7 @@ int tun_nlattr(struct nlmsghdr *n, int nsize, int type, void *d, int dlen)
   n->nlmsg_len = alen + len;
   return 0;
 }
+#endif
 
 int tun_gifindex(struct tun_t *this, int *index) {
   struct ifreq ifr;
@@ -118,7 +124,7 @@ int tun_sifflags(struct tun_t *this, int flags) {
 }
 
 
-/* Currently unused */
+/* Currently unused 
 int tun_addroute2(struct tun_t *this,
 		  struct in_addr *dst,
 		  struct in_addr *gateway,
@@ -208,16 +214,18 @@ int tun_addroute2(struct tun_t *this,
   req.n.nlmsg_seq = 0;
   req.n.nlmsg_flags |= NLM_F_ACK;
 
-  status = sendmsg(fd, &msg, 0);  /* TODO: Error check */
+  status = sendmsg(fd, &msg, 0);  * TODO: Error check *
   close(fd);
   return 0;
 }
-
+*/
 
 int tun_addaddr(struct tun_t *this,
 		struct in_addr *addr,
 		struct in_addr *dstaddr,
 		struct in_addr *netmask) {
+
+#ifdef __linux__
   struct {
     struct nlmsghdr 	n;
     struct ifaddrmsg 	i;
@@ -232,10 +240,16 @@ int tun_addaddr(struct tun_t *this,
   struct sockaddr_nl nladdr;
   struct iovec iov;
   struct msghdr msg;
+#endif
 
   if (!this->addrs) /* Use ioctl for first addr to make ping work */
     return tun_setaddr(this, addr, dstaddr, netmask);
 
+#ifndef __linux__
+  sys_err(LOG_ERR, __FILE__, __LINE__, errno,
+	  "Setting multiple addresses only possible on linux");
+  return -1;
+#else
   memset(&req, 0, sizeof(req));
   req.n.nlmsg_len = NLMSG_LENGTH(sizeof(struct ifaddrmsg));
   req.n.nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE;
@@ -315,6 +329,7 @@ int tun_addaddr(struct tun_t *this,
   close(fd);
   this->addrs++;
   return 0;
+#endif
 }
 
 
