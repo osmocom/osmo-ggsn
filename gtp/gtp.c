@@ -46,7 +46,7 @@
 
 #include <arpa/inet.h>
 
-#include <stdint.h> /* ISO C99 types */
+/* #include <stdint.h>  ISO C99 types */
 
 #include "../config.h"
 #include "pdp.h"
