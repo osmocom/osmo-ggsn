@@ -30,6 +30,7 @@ option  "timelimit"    - "Exit after timelimit seconds"   int default="0" no
 
 option  "gtpversion"   - "GTP version to use"             int    default="1" no
 option  "apn"          a "Access point name"              string default="internet" no
+option  "selmode"      - "Selection mode"                 int    default="0x01" no
 option  "imsi"         i "IMSI"                           string default="240010123456789" no
 option  "nsapi"        - "NSAPI"                          int default="0" no
 option  "msisdn"       m "Mobile Station ISDN number"     string default="46702123456" no

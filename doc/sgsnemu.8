@@ -53,6 +53,8 @@ sgsnemu \- Serving GPRS Support Node Emulator
 ] [
 .BI \-\-apn " apn"
 ] [
+.BI \-\-selmode " selmode"
+] [
 .BI \-\-imsi " imsi"
 ] [
 .BI \-\-nsapi " nsapi"
@@ -206,6 +208,15 @@ to establish a GTPv1 context sgsnemu will fall back to using GTPv0.
 .I apn
 to use when connecting to the GGSN (default = internet). APN is an
 abbreviation of Access Point Name.
+
+.TP
+.BI --selmode " selmode"
+Selection mode to use when connecting to the GGSN (default =
+0x01). The encoding of the selection mode is as follows: 0: MS or
+network provided APN, subscribed verified, 1: MS provided APN,
+subscription not verified, 2: Network provided APN, subscription not
+verified.
+
 
 .TP
 .BI --imsi " imsi"

@@ -31,6 +31,7 @@ struct gengetopt_args_info
   int timelimit_arg;	/* Exit after timelimit seconds (default='0').  */
   int gtpversion_arg;	/* GTP version to use (default='1').  */
   char * apn_arg;	/* Access point name (default='internet').  */
+  int selmode_arg;	/* Selection mode (default='0x01').  */
   char * imsi_arg;	/* IMSI (default='240010123456789').  */
   int nsapi_arg;	/* NSAPI (default='0').  */
   char * msisdn_arg;	/* Mobile Station ISDN number (default='46702123456').  */
@@ -62,6 +63,7 @@ struct gengetopt_args_info
   int timelimit_given ;	/* Whether timelimit was given.  */
   int gtpversion_given ;	/* Whether gtpversion was given.  */
   int apn_given ;	/* Whether apn was given.  */
+  int selmode_given ;	/* Whether selmode was given.  */
   int imsi_given ;	/* Whether imsi was given.  */
   int nsapi_given ;	/* Whether nsapi was given.  */
   int msisdn_given ;	/* Whether msisdn was given.  */

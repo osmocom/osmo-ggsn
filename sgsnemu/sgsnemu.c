@@ -108,6 +108,7 @@ struct {
   struct ul255_t qos;
   uint16_t cch;
   struct ul255_t apn;
+  uint8_t selmode;
   struct ul16_t msisdn;
 } options;
 
@@ -447,6 +448,12 @@ int process_options(int argc, char **argv) {
   options.apn.v[0] = (char) strlen(args_info.apn_arg);
   strncpy(&options.apn.v[1], args_info.apn_arg, sizeof(options.apn.v)-1);
   printf("Using APN:             %s\n", args_info.apn_arg);
+
+
+  /* selmode */
+  options.selmode = args_info.selmode_arg;
+  printf("Using selection mode:  %d\n", args_info.selmode_arg);
+
   
   /* msisdn                                                          */
   if (strlen(args_info.msisdn_arg)>(sizeof(options.msisdn.v)-1)) {
@@ -1134,7 +1141,7 @@ int main(int argc, char **argv)
     pdp->qos_req.v[0] = 0x00;
     memcpy(pdp->qos_req.v+1, options.qos.v, options.qos.l);
     
-    pdp->selmode = 0x01; /* MS provided APN, subscription not verified */
+    pdp->selmode = options.selmode;
     
     if (options.apn.l > sizeof(pdp->apn_use.v)) {
       sys_err(LOG_ERR, __FILE__, __LINE__, 0, "APN length too big");
