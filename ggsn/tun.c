@@ -40,7 +40,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <errno.h>
@@ -52,7 +51,11 @@
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
 #elif defined (__sun__)
+#include <stropts.h>
+#include <sys/sockio.h>
+#include <net/if.h>
 #include <net/if_tun.h>
+/*#include "sun_if_tun.h"*/
 #endif
 
 
@@ -74,7 +77,6 @@ int tun_nlattr(struct nlmsghdr *n, int nsize, int type, void *d, int dlen)
   n->nlmsg_len = alen + len;
   return 0;
 }
-#endif
 
 int tun_gifindex(struct tun_t *this, int *index) {
   struct ifreq ifr;
@@ -100,6 +102,7 @@ int tun_gifindex(struct tun_t *this, int *index) {
   *index = ifr.ifr_ifindex;
   return 0;
 }
+#endif
 
 int tun_sifflags(struct tun_t *this, int flags) {
   struct ifreq ifr;
@@ -344,7 +347,9 @@ int tun_setaddr(struct tun_t *this,
   memset (&ifr, '\0', sizeof (ifr));
   ifr.ifr_addr.sa_family = AF_INET;
   ifr.ifr_dstaddr.sa_family = AF_INET;
+#ifndef __sun__
   ifr.ifr_netmask.sa_family = AF_INET;
+#endif
   strncpy(ifr.ifr_name, this->devname, IFNAMSIZ);
   ifr.ifr_name[IFNAMSIZ-1] = 0; /* Make sure to terminate */
 
@@ -386,8 +391,13 @@ int tun_setaddr(struct tun_t *this,
 
   if (netmask) { /* Set the netmask */
     this->netmask.s_addr = netmask->s_addr;
+#ifdef __sun__
+    ((struct sockaddr_in *) &ifr.ifr_dstaddr)->sin_addr.s_addr = 
+      dstaddr->s_addr;
+#else
     ((struct sockaddr_in *) &ifr.ifr_netmask)->sin_addr.s_addr = 
       netmask->s_addr;
+#endif
     if (ioctl(fd, SIOCSIFNETMASK, (void *) &ifr) < 0) {
       sys_err(LOG_ERR, __FILE__, __LINE__, errno,
 	      "ioctl(SIOCSIFNETMASK) failed");
@@ -406,6 +416,10 @@ int tun_addroute(struct tun_t *this,
 		 struct in_addr *gateway,
 		 struct in_addr *mask)
 {
+
+  /* TODO: Learn how to set routing table on sun */
+#ifndef __sun__
+
   struct rtentry r;
   int fd;
 
@@ -433,13 +447,22 @@ int tun_addroute(struct tun_t *this,
     return -1;
   }
   close(fd);
+
+#endif
+
   return 0;
 }
 
 
 int tun_new(struct tun_t **tun)
 {
+
+#ifndef __sun__
   struct ifreq ifr;
+#else
+  int if_fd, ppa = -1;
+  static int ip_fd = 0;
+#endif
   
   if (!(*tun = calloc(1, sizeof(struct tun_t)))) {
     sys_err(LOG_ERR, __FILE__, __LINE__, errno, "calloc() failed");
@@ -448,26 +471,75 @@ int tun_new(struct tun_t **tun)
   
   (*tun)->cb_ind = NULL;
   (*tun)->addrs = 0;
-  
+
+#ifdef __linux__
+  /* Open the actual tun device */
   if (((*tun)->fd  = open("/dev/net/tun", O_RDWR)) < 0) {
     sys_err(LOG_ERR, __FILE__, __LINE__, errno, "open() failed");
     return -1;
   }
-  
+
+  /* Set device flags. For some weird reason this is also the method
+     used to obtain the network interface name */
   memset(&ifr, 0, sizeof(ifr));
   ifr.ifr_flags = IFF_TUN | IFF_NO_PI; /* Tun device, no packet info */
-  strncpy(ifr.ifr_name, (*tun)->devname, IFNAMSIZ);
-  
   if (ioctl((*tun)->fd, TUNSETIFF, (void *) &ifr) < 0) {
     sys_err(LOG_ERR, __FILE__, __LINE__, errno, "ioctl() failed");
     close((*tun)->fd);
     return -1;
   } 
-  
-  ioctl((*tun)->fd, TUNSETNOCSUM, 1); /* Disable checksums */
-  
+
   strncpy((*tun)->devname, ifr.ifr_name, IFNAMSIZ);
   (*tun)->devname[IFNAMSIZ] = 0;
+
+  ioctl((*tun)->fd, TUNSETNOCSUM, 1); /* Disable checksums */
+
+#endif
+
+#ifdef __sun__
+
+  if( (ip_fd = open("/dev/ip", O_RDWR, 0)) < 0){
+    sys_err(LOG_ERR, __FILE__, __LINE__, errno, "Can't open /dev/ip");
+    return -1;
+  }
+  
+  if( ((*tun)->fd = open("/dev/tun", O_RDWR, 0)) < 0){
+    sys_err(LOG_ERR, __FILE__, __LINE__, errno, "Can't open /dev/tun");
+    return -1;
+  }
+  
+  /* Assign a new PPA and get its unit number. */
+  if( (ppa = ioctl((*tun)->fd, TUNNEWPPA, -1)) < 0){
+    syslog(LOG_ERR, "Can't assign new interface");
+    return -1;
+  }
+  
+  if( (if_fd = open("/dev/tun", O_RDWR, 0)) < 0){
+    syslog(LOG_ERR, "Can't open /dev/tun (2)");
+    return -1;
+  }
+  if(ioctl(if_fd, I_PUSH, "ip") < 0){
+    syslog(LOG_ERR, "Can't push IP module");
+    return -1;
+  }
+  
+  /* Assign ppa according to the unit number returned by tun device */
+  if(ioctl(if_fd, IF_UNITSEL, (char *)&ppa) < 0){
+    syslog(LOG_ERR, "Can't set PPA %d", ppa);
+    return -1;
+  }
+
+  /* Link the two streams */
+  if(ioctl(ip_fd, I_LINK, if_fd) < 0){
+    syslog(LOG_ERR, "Can't link TUN device to IP");
+    return -1;
+  }
+
+  close (if_fd);
+  
+  sprintf((*tun)->devname, "tun%d", ppa);
+  
+#endif
   
   return 0;
 }
@@ -477,6 +549,8 @@ int tun_free(struct tun_t *tun)
   if (close(tun->fd)) {
     sys_err(LOG_ERR, __FILE__, __LINE__, errno, "close() failed");
   }
+
+  /* TODO: For solaris we need to unlink streams */
 
   free(tun);
   return 0;
