@@ -114,7 +114,7 @@ int create_tun() {
   strncpy(snet, inet_ntoa(net), 100);
   strncpy(smask, inet_ntoa(mask), 100);
 
-  sprintf(buf, "ifconfig %s %s mtu 1450 netmask %s",
+  sprintf(buf, "/sbin/ifconfig %s %s mtu 1450 netmask %s",
 	  tun->devname, snet, smask);
   if (debug) printf("%s\n", buf);
   system(buf);
@@ -211,8 +211,8 @@ int create_pdp_conf(struct pdp_t *pdp, int cause) {
 	tun_fd2 = tun2->fd;
       }
       
-      /*system("ifconfig tun0 192.168.0.10");*/
-      sprintf(buf, "ifconfig %s %hu.%hu.%hu.%hu", 
+      /*system("/sbin/ifconfig tun0 192.168.0.10");*/
+      sprintf(buf, "/sbin/ifconfig %s %hu.%hu.%hu.%hu", 
 	      ((struct tun_t*) pdp->ipif)->devname,
 	      pdp->eua.v[2], pdp->eua.v[3], pdp->eua.v[4], pdp->eua.v[5]);
       printf(buf);  printf("\n");
@@ -220,7 +220,7 @@ int create_pdp_conf(struct pdp_t *pdp, int cause) {
       
       
       /*system("route add -net 192.168.0.0 netmask 255.255.255.0 gw 192.168.0.10");*/
-      sprintf(buf, "route add -net %hu.%hu.%hu.0 netmask 255.255.255.0 gw %hu.%hu.%hu.%hu", 
+      sprintf(buf, "/sbin/route add -net %hu.%hu.%hu.0 netmask 255.255.255.0 gw %hu.%hu.%hu.%hu", 
 	      pdp->eua.v[2], pdp->eua.v[3], pdp->eua.v[4],
 	      pdp->eua.v[2], pdp->eua.v[3], pdp->eua.v[4], pdp->eua.v[5]);
       printf(buf);  printf("\n");

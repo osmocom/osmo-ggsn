@@ -139,6 +139,7 @@ int getip(struct pdp_t *pdp, void* ipif, struct ul66_t *eua,
 
 
 int delete_context(struct pdp_t *pdp) {
+  if (debug) printf("Deleting PDP context\n");
   pdp_ipdel(pdp);
   return 0;
 }
@@ -177,7 +178,7 @@ int create_tun() {
   strncpy(snet, inet_ntoa(net), 100);
   strncpy(smask, inet_ntoa(mask), 100);
 
-  sprintf(buf, "ifconfig %s %s mtu 1450 netmask %s",
+  sprintf(buf, "/sbin/ifconfig %s %s mtu 1450 netmask %s",
 	  tun->devname, snet, smask);
   if (debug) printf("%s\n", buf);
   system(buf);
@@ -226,7 +227,6 @@ int main(int argc, char **argv)
 
   fd_set fds;			/* For select() */
   struct timeval idleTime;	/* How long to select() */
-  int i;                          /* for loop */
 
   struct ul_t qos, apn;
   unsigned char qosh[3], apnh[256];
