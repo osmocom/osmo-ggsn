@@ -12,8 +12,7 @@ Requirements
 *Linux* 
 OpenGGSN was developed and tested using Redhat 8.0 and 9.0. It should
 run also on other Linux distributions as well as FreeBSD, but this is
-untested. Compilation on Solaris 2.8 has also been verified. Please
-tell me of any testing results.
+untested. Compilation on Solaris 2.8 has also been verified.
 
 *Tun*
 The tun driver is required for proper operation of openggsn. For linux
@@ -211,6 +210,18 @@ for details on autotools.
 
 Compilation and installation
 ----------------------------
+
+If compiling under Solaris you need to edit the following line in
+ggsn/Makefile.in and sgsnemu/Makefile.in:
+
+LDFLAGS = -Wl,--rpath -Wl,/usr/local/lib @EXEC_LDFLAGS@
+
+should be changed to:
+
+LDFLAGS =  -lresolv -lsocket -lnsl @EXEC_LDFLAGS@ 
+
+Note that the above is not necessary on other platforms. Compilation
+and installation is performed by the following steps:
 
  1. ./configure
  2. make clean
