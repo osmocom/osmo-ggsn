@@ -4,6 +4,8 @@ LDFLAGS = -Wl,--rpath -Wl,/usr/local/lib @EXEC_LDFLAGS@
 
 CFLAGS = -O2 -D_GNU_SOURCE -fno-builtin -Wall -DSBINDIR='"$(sbindir)"' -ggdb -lgtp -L../gtp
 
+sgsnemu_LDADD = @LIBOBJS@
+
 sgsnemu_SOURCES = sgsnemu.c tun.c tun.h cmdline.c cmdline.h ippool.h ippool.c syserr.h syserr.c
 
 

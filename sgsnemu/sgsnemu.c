@@ -932,7 +932,11 @@ int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause) {
 
   if ((options.createif) && (!options.net.s_addr)) {
     struct in_addr m;
-    inet_pton(AF_INET, "255.255.255.255", &m);
+#ifndef HAVE_INET_ATON
+    inet_aton("255.255.255.255", &m);
+#else
+    m.s_addr = INADDR_NONE;
+#endif
     /* printf("Setting up interface and routing\n");*/
     tun_addaddr(tun, &addr,  &addr, &m);
     if (options.defaultroute) {

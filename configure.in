@@ -45,8 +45,12 @@ AC_HEADER_TIME
 # Checks for library functions.
 AC_PROG_GCC_TRADITIONAL
 AC_FUNC_MALLOC
-AC_FUNC_MEMCMP
+# AC_FUNC_MEMCMP 
 AC_CHECK_FUNCS([gethostbyname inet_ntoa memset select socket strdup strerror strtol])
+AC_CHECK_FUNCS(inet_aton inet_addr, break)
+
+# check for getopt in standard library
+adl_FUNC_GETOPT_LONG
 
 AM_INIT_AUTOMAKE()
 
