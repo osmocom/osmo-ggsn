@@ -1,3 +1,16 @@
+2004-01-15: Jens Jakobsen <jj@openggsn.org>
+	Added iptables firewall script.
+	
+
+2004-01-14: Jens Jakobsen <jj@openggsn.org>
+	Changes to allow compilation under Solaris: u_int8_t changed to uint8_t
+	and tun api changed for sun platform (#ifdef).
+
+	
+2004-01-09: Jens Jakobsen <jj@openggsn.org>
+	Fixed bug which included NSAPI in GTPv0 create PDP context messages.
+
+
 2003-11-10: Jens Jakobsen <jj@openggsn.org>
 	Added --net option for sgsnemu. Allow user to specify the network
 	address and mask of the local interface.

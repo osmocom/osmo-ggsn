@@ -4,6 +4,12 @@ OPENGGSN NEWS
 OpenGGSN - Gateway GPRS Support Node
 Copyright (C) 2002, 2003 Mondru AB.
 
+Version 0.8
+===========
+
+ * Solaris support.
+ * Iptables firewall script.
+
 Version 0.7
 ===========
 
