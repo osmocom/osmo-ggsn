@@ -1,3 +1,10 @@
+2004-12-30: Jens Jakobsen <jj@openggsn.org>
+        Initial MAC OS X support
+
+	Quality assurance and improved error logging
+
+	QoS length bug fix.
+	
 2004-09-11: Jens Jakobsen <jj@openggsn.org>
 	Added selection mode option to sgsnemu.
 	Added charging characteristics option to sgsnemu.

@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(openggsn, 0.83, jj@openggsn.org)
+AC_INIT(openggsn, 0.84, jj@openggsn.org)
 AC_CONFIG_SRCDIR([gtp/gtp.c])
 AM_CONFIG_HEADER([config.h])
 #AC_CONFIG_HEADER([config.h])
@@ -61,6 +61,15 @@ AC_CHECK_HEADERS([linux/if_tun.h net/if_tun.h])
 # Check for netlink and rtnetlink headers
 AC_CHECK_HEADERS([linux/netlink.h linux/rtnetlink.h])
 
+
+# Check for sockaddr.sa_len
+AC_CHECK_MEMBER([struct sockaddr.sa_len],
+[AC_DEFINE(HAVE_SOCKADDR_SA_LEN, 1, [Do we have sockaddr.sa_len?])],
+[],
+[
+#include <sys/types.h>
+#include <sys/socket.h>
+])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

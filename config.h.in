@@ -76,6 +76,9 @@
 /* Define to 1 if you have the `select' function. */
 #undef HAVE_SELECT
 
+/* Do we have sockaddr.sa_len? */
+#undef HAVE_SOCKADDR_SA_LEN
+
 /* Define to 1 if you have the `socket' function. */
 #undef HAVE_SOCKET
 

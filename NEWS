@@ -4,6 +4,12 @@ OPENGGSN NEWS
 OpenGGSN - Gateway GPRS Support Node
 Copyright (C) 2002, 2003, 2004 Mondru AB.
 
+Version 0.84
+============
+
+* Initial MAC OSX support (Thanks to Pekka Nikander)
+* Quality assurance and improved error logging (Thanks to Pekka
+  Nikander and Jonny Winberg)
 
 Version 0.83
 ============
