@@ -48,6 +48,7 @@
 #include <resolv.h>
 #include <time.h>
 
+#include "config.h"
 #include "tun.h"
 #include "ippool.h"
 #include "syserr.h"
@@ -932,7 +933,7 @@ int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause) {
 
   if ((options.createif) && (!options.net.s_addr)) {
     struct in_addr m;
-#ifndef HAVE_INET_ATON
+#ifdef HAVE_INET_ATON
     inet_aton("255.255.255.255", &m);
 #else
     m.s_addr = INADDR_NONE;

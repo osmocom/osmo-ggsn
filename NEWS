@@ -7,7 +7,7 @@ Copyright (C) 2002, 2003 Mondru AB.
 Version 0.8
 ===========
 
- * Solaris support.
+ * Support for compilation under Solaris.
  * Iptables firewall script.
 
 Version 0.7

@@ -47,6 +47,8 @@
 
 #include <time.h>
 
+#include "config.h"
+
 #include "tun.h"
 #include "ippool.h"
 #include "syserr.h"
@@ -328,7 +330,7 @@ int main(int argc, char **argv)
   }
 
   /* DNS1 and DNS2 */
-#ifndef HAVE_INET_ATON
+#ifdef HAVE_INET_ATON
   dns1.s_addr = 0;
   if (args_info.pcodns1_arg) {
     if (0 == inet_aton(args_info.pcodns1_arg, &dns1)) {
@@ -346,11 +348,10 @@ int main(int argc, char **argv)
     }
   }
 #else
-#ifndef HAVE_INET_ADDR
   dns1.s_addr = 0;
   if (args_info.pcodns1_arg) {
-    dns1 = inet_addr(args_info.pcodns1_arg);
-    if (dns1.s_addr == INADDR_NONE)  {
+    dns1.s_addr = inet_addr(args_info.pcodns1_arg);
+    if (dns1.s_addr == -1)  {
       sys_err(LOG_ERR, __FILE__, __LINE__, 0,
 	      "Failed to convert pcodns1!");
       exit(1);
@@ -358,16 +359,13 @@ int main(int argc, char **argv)
   }
   dns2.s_addr = 0;
   if (args_info.pcodns2_arg) {
-    dns2 = inet_addr(args_info.pcodns2_arg);
-    if (dns2.s_addr == INADDR_NONE) {
+    dns2.s_addr = inet_addr(args_info.pcodns2_arg);
+    if (dns2.s_addr == -1) {
       sys_err(LOG_ERR, __FILE__, __LINE__, 0,
 	      "Failed to convert pcodns2!");
       exit(1);
     }
   }
-#else
-#error Function missing!
-#endif
 #endif
 
 
