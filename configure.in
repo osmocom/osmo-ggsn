@@ -93,7 +93,7 @@ AC_EGREP_HEADER(rt_msghdr, net/route.h,
 
 # Checks for library functions.
 AC_PROG_GCC_TRADITIONAL
-AC_FUNC_MALLOC
+# AC_FUNC_MALLOC
 # AC_FUNC_MEMCMP 
 AC_CHECK_FUNCS([gethostbyname inet_ntoa memset select socket strdup strerror strtol])
 AC_CHECK_FUNCS(inet_aton inet_addr, break)
