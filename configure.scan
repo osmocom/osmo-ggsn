@@ -1,0 +1,27 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(src/cmdline.c)
+
+dnl Checks for programs.
+AC_PROG_AWK
+AC_PROG_CC
+AC_PROG_INSTALL
+AC_PROG_LN_S
+
+dnl Checks for libraries.
+
+dnl Checks for header files.
+AC_HEADER_STDC
+AC_HEADER_SYS_WAIT
+AC_CHECK_HEADERS(fcntl.h strings.h sys/ioctl.h sys/time.h syslog.h unistd.h)
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_TYPE_SIZE_T
+AC_HEADER_TIME
+
+dnl Checks for library functions.
+AC_PROG_GCC_TRADITIONAL
+AC_FUNC_VFORK
+AC_CHECK_FUNCS(select socket strdup strerror strtoul)
+
+AC_OUTPUT(doc/Makefile po/Makefile intl/Makefile Makefile tests/Makefile src/Makefile)

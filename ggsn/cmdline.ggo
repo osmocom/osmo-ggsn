@@ -1,0 +1,29 @@
+#  OpenGGSN - Gateway GPRS Support Node
+#  Copyright (C) 2002 Mondru AB.
+#  
+#  The contents of this file may be used under the terms of the GNU
+#  General Public License Version 2, provided that the above copyright
+#  notice and this permission notice is included in all copies or
+#  substantial portions of the software.
+#  
+#  The initial developer of the original code is
+#  Jens Jakobsen <jj@openggsn.org>
+#  
+#  Contributor(s):
+
+
+option  "fg"          f "Run in foreground"             flag   off
+option  "debug"       d "Run in debug mode"             flag   off
+
+option  "conf"        c "Read configuration file"       string default="/etc/ggsn.conf" no
+option  "pidfile"     - "Filename of process id file"   string default="/var/run/ggsn.pid" no
+option  "statedir"    - "Directory of nonvolatile data" string default="/var/lib/ggsn/" no
+
+option  "listen"      l "Local interface"               string no
+option  "net"         n "Network"                       string default="192.168.0.0" no
+option  "mask"        - "Network mask"                  string default="255.255.255.0" no
+
+option  "timelimit"   - "Exit after timelimit seconds"  int default="0" no
+
+option  "apn"         a "Access point name"             string default="internet" no
+option  "qos"         q "Requested quality of service"  int    default="0x0b921f" no
