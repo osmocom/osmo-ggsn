@@ -77,7 +77,7 @@ int debug;                      /* Print debug messages */
 struct in_addr net, mask;       /* Network interface       */
 int createif;                   /* Create local network interface */
 char *ipup, *ipdown;            /* Filename of scripts */
-/* int defaultroute;               /* Set up default route    */
+/* int defaultroute;               Set up default route    */
 struct in_addr pinghost;        /* Remote ping host    */
 int pingrate, pingsize, pingcount, pingquiet;
 struct in_addr listen_, remote;
