@@ -363,7 +363,7 @@ int main(int argc, char **argv)
 
   if (debug) printf("gtpclient: Initialising GTP tunnel\n");
   
-  if (gtp_new(&gsn, args_info.statedir_arg,  &listen_)) {
+  if (gtp_new(&gsn, args_info.statedir_arg,  &listen_, GTP_MODE_GGSN)) {
     sys_err(LOG_ERR, __FILE__, __LINE__, 0,
 	    "Failed to create gtp");
     exit(1);

@@ -54,6 +54,55 @@
 #include "gtpie.h"
 #include "queue.h"
 
+
+/* Error reporting functions */
+
+void gtp_err(int priority, char *filename, int linenum, char *fmt, ...) {
+  va_list args;
+  char buf[ERRMSG_SIZE];
+
+  va_start(args, fmt);
+  vsnprintf(buf, ERRMSG_SIZE, fmt, args);
+  va_end(args);
+  buf[ERRMSG_SIZE-1] = 0;
+  syslog(priority, "%s: %d: %s", filename, linenum, buf); 
+}
+
+void gtp_errpack(int pri, char *fn, int ln, struct sockaddr_in *peer,
+		 void *pack, unsigned len, char *fmt, ...) {
+  
+  va_list args;
+  char buf[ERRMSG_SIZE];
+  char buf2[ERRMSG_SIZE];
+  int n;
+  int pos;
+  
+  va_start(args, fmt);
+  vsnprintf(buf, ERRMSG_SIZE, fmt, args);
+  va_end(args);
+  buf[ERRMSG_SIZE-1] = 0;
+
+  snprintf(buf2, ERRMSG_SIZE, "Packet from %s:%u, length: %d, content:",
+	   inet_ntoa(peer->sin_addr),
+	   ntohs(peer->sin_port),
+	   len);
+  buf2[ERRMSG_SIZE-1] = 0;
+  pos = strlen(buf2);
+  for(n=0; n<len; n++) {
+    if ((pos+4)<ERRMSG_SIZE) {
+      sprintf((buf2+pos), " %02hhx", ((unsigned char*)pack)[n]);
+      pos += 3;
+    }
+  }
+  buf2[pos] = 0;
+  
+  syslog(pri, "%s: %d: %s. %s", fn, ln, buf, buf2);
+
+}
+
+
+
+
 /* API Functions */
 
 const char* gtp_version()
@@ -76,6 +125,65 @@ int gtp_freepdp(struct gsn_t* gsn, struct pdp_t *pdp) {
 int gtp_create_context(struct gsn_t *gsn, struct pdp_t *pdp, void *aid,
 		       struct in_addr* inetaddr) {
   int version = 0;
+
+  return gtp_create_pdp_req(gsn, version, aid, inetaddr, pdp);
+}
+
+int gtp_create_context2(struct gsn_t *gsn, void *aid, 
+			struct in_addr* inetaddr,
+			int selmode, uint64_t imsi, int nsapi,
+			uint8_t *qos, int qoslen,
+			char *apn, int apnlen,
+			char *msisdn, int msisdnlen,
+			uint8_t *pco, int pcolen) {
+  int version = 0;
+
+  struct pdp_t *pdp;
+
+  if (qoslen > sizeof(pdp->qos_req0)) {
+    gtp_err(LOG_ERR, __FILE__, __LINE__, 0, "QoS length too big");
+    return -1;
+  }
+
+  if (apnlen > sizeof(pdp->apn_use.v)) {
+    gtp_err(LOG_ERR, __FILE__, __LINE__, 0, "APN length too big");
+    return -1;
+  }
+
+  if (msisdnlen > sizeof(pdp->msisdn.v)) {
+    gtp_err(LOG_ERR, __FILE__, __LINE__, 0, "MSISDN length too big");
+    return -1;
+  }
+
+  if (pcolen > sizeof(pdp->pco_req.v)) {
+    gtp_err(LOG_ERR, __FILE__, __LINE__, 0, "PCO length too big");
+    return -1;
+  }
+
+  /* New pdp allocated here:*/
+  pdp_newpdp(&pdp, imsi, nsapi, NULL); 
+
+  pdp->peer = aid;
+  pdp->ipif = NULL;
+
+  pdp->selmode = selmode; 
+
+  memcpy(pdp->qos_req0, qos, qoslen);  /* Length checked above */
+  pdp->apn_use.l = apnlen;
+  memcpy(pdp->apn_use.v, apn, apnlen); /* Length checked above */
+
+  pdp->gsnlc.l = sizeof(gsn->gsnc);
+  memcpy(pdp->gsnlc.v, &gsn->gsnc, sizeof(gsn->gsnc));
+  pdp->gsnlu.l = sizeof(gsn->gsnc);
+  memcpy(pdp->gsnlu.v, &gsn->gsnc, sizeof(gsn->gsnc));
+
+  pdp->msisdn.l = msisdnlen;
+  memcpy(pdp->msisdn.v, msisdn, msisdnlen);
+
+  ipv42eua(&pdp->eua, NULL); /* Request dynamic IP address */
+
+  pdp->pco_req.l = pcolen;
+  memcpy(pdp->pco_req.v, pco, pcolen);
 
   return gtp_create_pdp_req(gsn, version, aid, inetaddr, pdp);
 }
@@ -211,49 +319,6 @@ char* snprint_packet(struct gsn_t *gsn, struct sockaddr_in *peer,
   }
   buf[pos] = 0;
   return buf;
-}
-
-void gtp_err(int priority, char *filename, int linenum, char *fmt, ...) {
-  va_list args;
-  char buf[ERRMSG_SIZE];
-
-  va_start(args, fmt);
-  vsnprintf(buf, ERRMSG_SIZE, fmt, args);
-  va_end(args);
-  buf[ERRMSG_SIZE-1] = 0;
-  syslog(priority, "%s: %d: %s", filename, linenum, buf); 
-}
-
-void gtp_errpack(int pri, char *fn, int ln, struct sockaddr_in *peer,
-		 void *pack, unsigned len, char *fmt, ...) {
-  
-  va_list args;
-  char buf[ERRMSG_SIZE];
-  char buf2[ERRMSG_SIZE];
-  int n;
-  int pos;
-  
-  va_start(args, fmt);
-  vsnprintf(buf, ERRMSG_SIZE, fmt, args);
-  va_end(args);
-  buf[ERRMSG_SIZE-1] = 0;
-
-  snprintf(buf2, ERRMSG_SIZE, "Packet from %s:%u, length: %d, content:",
-	   inet_ntoa(peer->sin_addr),
-	   ntohs(peer->sin_port),
-	   len);
-  buf2[ERRMSG_SIZE-1] = 0;
-  pos = strlen(buf2);
-  for(n=0; n<len; n++) {
-    if ((pos+4)<ERRMSG_SIZE) {
-      sprintf((buf2+pos), " %02hhx", ((unsigned char*)pack)[n]);
-      pos += 3;
-    }
-  }
-  buf2[pos] = 0;
-  
-  syslog(pri, "%s: %d: %s. %s", fn, ln, buf, buf2);
-
 }
 
 
@@ -560,7 +625,8 @@ static void log_restart(struct gsn_t *gsn) {
 
 
 
-int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen) 
+int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
+	    int mode) 
 {
   struct sockaddr_in addr;
   int gtp_fd;
@@ -1720,6 +1786,14 @@ int gtp_gpdu_ind(struct gsn_t *gsn, int version,
     return gtp_error_ind_resp(gsn, version, peer, pack, len);
  
   }
+
+  /* If the GPDU was not from the peer GSN tell him to delete context */
+  if (memcmp(&peer->sin_addr, pdp->gsnru.v, pdp->gsnru.l)) { /* TODO Range? */
+    gsn->err_unknownpdp++;
+    gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
+		"Unknown PDP context");
+    return gtp_error_ind_resp(gsn, version, peer, pack, len);
+  }
   
   /* Callback function */
   if (gsn->cb_gpdu !=0)
@@ -1801,6 +1875,28 @@ int gtp_decaps(struct gsn_t *gsn)
 		  "GTP0 packet too short");
       continue;  /* Silently discard 29.60: 11.1.2 */
     }
+
+    if ((gsn->mode == GTP_MODE_GGSN) && 
+	((pheader->type == GTP_CREATE_PDP_RSP) ||
+	 (pheader->type == GTP_UPDATE_PDP_RSP) ||
+	 (pheader->type == GTP_DELETE_PDP_RSP))) {
+      gsn->unexpect++;
+      gtp_errpack(LOG_ERR, __FILE__, __LINE__, &peer, buffer, status,
+		  "Unexpected GTP Signalling Message");
+      continue;  /* Silently discard 29.60: 11.1.4 */
+    }
+
+    if ((gsn->mode == GTP_MODE_SGSN) && 
+	((pheader->type == GTP_CREATE_PDP_REQ) ||
+	 (pheader->type == GTP_UPDATE_PDP_REQ) ||
+	 (pheader->type == GTP_DELETE_PDP_REQ))) {
+      gsn->unexpect++;
+      gtp_errpack(LOG_ERR, __FILE__, __LINE__, &peer, buffer, status,
+		  "Unexpected GTP Signalling Message");
+      continue;  /* Silently discard 29.60: 11.1.4 */
+    }
+
+
     
     switch (pheader->type) {
     case GTP_ECHO_REQ:

@@ -19,6 +19,9 @@
 
 #define GTP_DEBUG 0              /* Print debug information */
 
+#define GTP_MODE_GGSN 1
+#define GTP_MODE_SGSN 2
+
 #define GTP0_PORT	3386
 #define GTP1C_PORT	2123
 #define GTP1U_PORT	2152
@@ -186,6 +189,7 @@ struct gsn_t {
   /* Parameters related to the network interface */
 
   int         fd;       /* File descriptor to network interface */
+  int       mode;       /* Mode of operation: GGSN or SGSN */
   struct in_addr gsnc;  /* IP address of this gsn for signalling */
   struct in_addr gsnu;  /* IP address of this gsn for user traffic */
 
@@ -234,7 +238,9 @@ struct gsn_t {
 /* External API functions */
 
 extern const char* gtp_version();
-extern int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen);
+extern int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
+		   int mode);
+
 extern int gtp_free(struct gsn_t *gsn);
 
 extern int gtp_newpdp(struct gsn_t *gsn, struct pdp_t **pdp,
@@ -246,6 +252,15 @@ extern int gtp_create_context(struct gsn_t *gsn, struct pdp_t *pdp, void *aid,
 extern int gtp_update_context(struct gsn_t *gsn, struct pdp_t *pdp, void *aid,
 			      struct in_addr* inetaddr);
 extern int gtp_delete_context(struct gsn_t *gsn, struct pdp_t *pdp, void *aid);
+
+extern int 
+gtp_create_context2(struct gsn_t *gsn, void *aid, 
+		    struct in_addr* inetaddr,
+		    int selmode, uint64_t imsi, int nsapi,
+		    uint8_t *qos, int qoslen,
+		    char *apn, int apnlen,
+		    char *msisdn, int msisdnlen,
+		    uint8_t *pco, int pcolen);
 
 extern int gtp_gpdu(struct gsn_t *gsn, struct pdp_t *pdp,
 		    void *pack, unsigned len);
