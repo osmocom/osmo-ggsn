@@ -120,6 +120,8 @@ int ntransmitted = 0;
 int tmin = 999999999;
 int tmax = 0;
 int tsum = 0;
+int pingseq = 0;              /* Ping sequence counter */
+struct timeval firstping;
 
 
 int encaps_printf(struct pdp_t *pdp, void *pack, unsigned len) {
@@ -168,12 +170,40 @@ char * print_icmptype(int t) {
   return(ttab[t]);
 }
 
+/* Calculate time left until we have to send off next ping packet */
+int ping_timeout(struct timeval *tp) {
+  struct timezone tz;
+  struct timeval tv;
+  int diff;
+  if ((pinghost.s_addr) && (2 == state) && 
+      ((pingseq < pingcount) || (pingcount == 0))) {
+    gettimeofday(&tv, &tz);
+    diff = 1000000 / pingrate * pingseq -
+      1000000 * (tv.tv_sec - firstping.tv_sec) -
+      (tv.tv_usec - firstping.tv_usec); /* Microseconds safe up to 500 sec */
+    tp->tv_sec = 0;
+    if (diff > 0) 
+      tp->tv_usec = diff;
+    else
+      /* For some reason we get packet loss if set to zero */
+      tp->tv_usec = 100000 / pingrate; /* 10 times pingrate */
+  }
+  return 0;
+}
+
 /* Print out statistics when at the end of ping sequence */
 int ping_finish()
 {
+  struct timezone tz;
+  struct timeval tv;
+  int elapsed;
+  gettimeofday(&tv, &tz);
+  elapsed = 1000000 * (tv.tv_sec - firstping.tv_sec) + 
+    (tv.tv_usec - firstping.tv_usec); /* Microseconds */
   printf("\n");
   printf("\n----%s PING Statistics----\n", inet_ntoa(pinghost));
-  printf("%d packets transmitted, ", ntransmitted );
+  printf("%d packets transmitted in %.3f seconds, ", ntransmitted,
+	 elapsed / 1000000.0);
   printf("%d packets received, ", nreceived );
   if (ntransmitted) {
     if( nreceived > ntransmitted)
@@ -190,6 +220,8 @@ int ping_finish()
 	   tmin/1000.0,
 	   tsum/1000.0/nreceived,
 	   tmax/1000.0 );
+  printf("%d packets transmitted \n", ntreceived );
+
   ntransmitted = 0;
   return 0;
 }
@@ -529,7 +561,10 @@ int main(int argc, char **argv)
   struct pdp_t *pdp[50];
   int n; /* For counter */
   int starttime;                /* Time program was started */
-  int pingseq = 0;              /* Ping sequence counter */
+
+  struct timezone tz;           /* Used for calculating ping times */
+  struct timeval tv;
+  int diff;
 
   /* function-local options */
   struct ul_t imsi, qos, apn, msisdn;
@@ -951,16 +986,23 @@ int main(int argc, char **argv)
 	if (gtpfd != -1) gtp_delete_context(gsn, pdp[n], NULL);
 	if ((pinghost.s_addr !=0) && ntransmitted) ping_finish();
       }
-}
+    }
 
 
-    /* Ping */
-    while ((2 == state) && (pinghost.s_addr !=0) && 
-	((pingseq < pingcount) || (pingcount == 0)) &&
-	(starttime + pingseq/pingrate) <= time(NULL)) {
-      create_ping(gsn, pdp[pingseq % contexts],
-		  &pinghost, pingseq, pingsize);
-      pingseq++;
+    /* Send off an ICMP ping packet */
+    if ((pinghost.s_addr) && (2 == state) && 
+	((pingseq < pingcount) || (pingcount == 0))) {
+      if (!pingseq) gettimeofday(&firstping, &tz); /* Set time of first ping */
+      gettimeofday(&tv, &tz);
+      diff = 1000000 / pingrate * pingseq -
+	1000000 * (tv.tv_sec - firstping.tv_sec) -
+	(tv.tv_usec - firstping.tv_usec); /* Microseconds safe up to 500 sec */
+      if (diff <=0) {
+	if (debug) printf("Create_ping %d\n", diff);
+	create_ping(gsn, pdp[pingseq % contexts],
+		    &pinghost, pingseq, pingsize);
+	pingseq++;
+      }
     }
 
     if (ntransmitted && pingcount && nreceived >= pingcount)
@@ -973,12 +1015,10 @@ int main(int argc, char **argv)
     if (gtpfd != -1) FD_SET(gtpfd, &fds);
     
     gtp_retranstimeout(gsn, &idleTime);
+    ping_timeout(&idleTime);
 
-    if ((pinghost.s_addr !=0) && 
-	((idleTime.tv_sec !=0) || (idleTime.tv_usec !=0))) {
-      idleTime.tv_sec = 0;
-      idleTime.tv_usec = 1000000 / pingrate;
-    }
+    if (debug) printf("idletime.tv_sec %d, idleTime.tv_usec %d\n",
+		      (int) idleTime.tv_sec, (int) idleTime.tv_usec);
 
     switch (select(maxfd + 1, &fds, NULL, NULL, &idleTime)) {
     case -1:

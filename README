@@ -96,15 +96,18 @@ the testing of roaming connectivity through a GPRS roaming exchange.
 Two experiments were performed in order to test the performance of
 sgsnemu and ggsn. The ggsn used a 550 MHz Athlon with 384 MB of
 RAM. sgsnemu used a 1 GHz Athlon with 256 MB of RAM. Both machines had
-100 Mb/s NICs and were connected through a Netgear FS105 switch. Both
-tests were performed by sending ICMP echo packets from the ggsn to
-sgsnemu.
+100 Mb/s NICs (RTL-8139) and were connected through a crossed patch
+cable. Both tests were performed by sending ICMP echo packets from
+sgsnemu to the ggsn.
 
-89.4 Mb/s IP downlink throughput when sending 10001 ICMP ping packets
-with a payload of 1000 bytes. Transfer time 0.9 sec, no packets lost.
+89.5 Mb/s IP throughput when sending 10000 ICMP ping packets with a
+payload of 1400 bytes. Transfer time 1.27 sec, no packets lost.
 
-17,1 Mb/s IP downlink throughput when sending 10001 ICMP ping packets with
-a payload of 100 bytes. Transfer time 0.6 sec, no packets lost.
+71.4 Mb/s IP throughput when sending 10000 ICMP ping packets with a
+payload of 1000 bytes. Transfer time 1.15 sec, no packets lost.
+
+12,1 Mb/s IP throughput when sending 10000 ICMP ping packets with a
+payload of 100 bytes. Transfer time 0.84 sec, no packets lost.
 
 
 *** Required software ***
@@ -190,6 +193,32 @@ COMPILATION AND INSTALLATION
 Use ggsn -h for a list of available options. All options available on
 the command line can also be given in a configuration file. See
 examples/ggsn.conf for the format of this file.
+
+Start the ggsn as root using the command:
+
+  ggsn -c examples/ggsn.conf --fg -l 10.20.30.40 --net 192.168.0.0 --mask 255.255.0.0 
+
+First a tun network interface will be created. In the above example
+the network interface address is 192.168.0.0 and the mask is
+255.255.0.0. You can check that this interface is up by using
+ifconfig.
+
+After tun has been successfully established the ggsn will wait for GTP
+create PDP context requests on the local interface
+10.20.30.40. Currently all requests are excepted, and no password,
+username or APN validation is performed. 
+
+When receiving a create PDP context request a dynamic IP address will
+be allocated from the address pool determined by --net and --mask. In
+the above example the first allocated address will be 192.168.0.1,
+followed by 192.168.0.2 and so on. The request is confirmed by sending
+a create PDP context response message to the peer (SGSN).
+
+Now IP packets will be forwarded between the tun network interface and
+the established GTP tunnel. In order to allow users to access the
+external network routing needs to be set up. If private addresses are
+are used you need to configure network address translation. See the
+Linux Networking HOWTO for details.
 
 Remember to enable routing: echo 1 > /proc/sys/net/ipv4/ip_forward
 
