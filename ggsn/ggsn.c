@@ -60,7 +60,6 @@
 
 
 int maxfd = 0;	                /* For select()            */
-struct tun_t *tun;              /* TUN instance            */
 
 struct in_addr listen_;
 struct in_addr net, mask;       /* Network interface       */
@@ -71,10 +70,9 @@ struct ul255_t pco;
 struct ul255_t qos;
 struct ul255_t apn;
 
+struct gsn_t *gsn;              /* GSN instance            */
 struct tun_t *tun;              /* TUN instance            */
 struct ippool_t *ippool;        /* Pool of IP addresses    */
-struct gsn_t *gsn;              /* GSN instance            */
-
 
 
 /* Used to write process ID to file. Assume someone else will delete */
@@ -345,7 +343,6 @@ int main(int argc, char **argv)
   apn.v[0] = (char) strlen(args_info.apn_arg);
   strncpy(&apn.v[1], args_info.apn_arg, sizeof(apn.v)-1);
   
-  
 
   if (debug) printf("gtpclient: Initialising GTP tunnel\n");
   
@@ -355,7 +352,6 @@ int main(int argc, char **argv)
     exit(1);
   }
   if (gsn->fd > maxfd) maxfd = gsn->fd;
-    
 
   gtp_set_cb_gpdu(gsn, encaps_tun);
   gtp_set_cb_delete_context(gsn, delete_context);
@@ -373,23 +369,7 @@ int main(int argc, char **argv)
   tun_set_cb_ind(tun, cb_tun_ind);
   if (tun->fd > maxfd) maxfd = tun->fd;
 
-  if (ipup) {
-    char buf[1024];
-    char snet[100];
-    char smask[100];
-
-    strncpy(snet, inet_ntoa(net), sizeof(snet));
-    snet[sizeof(snet)-1] = 0;
-    strncpy(smask, inet_ntoa(mask), sizeof(smask));
-    smask[sizeof(smask)-1] = 0;
-    
-    /* system("ipup /dev/tun0 192.168.0.10"); */
-    snprintf(buf, sizeof(buf), "%s %s %s %s",
-	     ipup, tun->devname, snet, smask);
-    buf[sizeof(buf)-1] = 0;
-    if (debug) printf("%s\n", buf);
-    system(buf);
-  }
+  if (ipup) tun_runscript(tun, ipup);
 
   /******************************************************************/
   /* Main select loop                                               */
