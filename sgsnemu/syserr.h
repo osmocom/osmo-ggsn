@@ -1,6 +1,6 @@
 /* 
  * Syslog functions.
- * Copyright (C) 2003 Mondru AB.
+ * Copyright (C) 2003, 2004 Mondru AB.
  * 
  * The contents of this file may be used under the terms of the GNU
  * General Public License Version 2, provided that the above copyright
