@@ -15,7 +15,6 @@
 # Use "gengetopt --conf-parser < cmdline.ggo" 
 # to generate cmdline.c and cmdline.h
 
-option  "fg"           f "Run in foreground"              flag   off
 option  "debug"        d "Run in debug mode"              flag   off
 
 option  "conf"         c "Read configuration file"        string no

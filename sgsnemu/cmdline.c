@@ -44,7 +44,6 @@ cmdline_parser_print_help (void)
   "Usage: %s [OPTIONS]...\n", PACKAGE);
   printf("   -h         --help             Print help and exit\n");
   printf("   -V         --version          Print version and exit\n");
-  printf("   -f         --fg               Run in foreground (default=off)\n");
   printf("   -d         --debug            Run in debug mode (default=off)\n");
   printf("   -cSTRING   --conf=STRING      Read configuration file\n");
   printf("              --pidfile=STRING   Filename of process id file (default='./sgsnemu.pid')\n");
@@ -94,7 +93,6 @@ cmdline_parser (int argc, char * const *argv, struct gengetopt_args_info *args_i
 
   args_info->help_given = 0 ;
   args_info->version_given = 0 ;
-  args_info->fg_given = 0 ;
   args_info->debug_given = 0 ;
   args_info->conf_given = 0 ;
   args_info->pidfile_given = 0 ;
@@ -120,7 +118,6 @@ cmdline_parser (int argc, char * const *argv, struct gengetopt_args_info *args_i
   args_info->pingcount_given = 0 ;
   args_info->pingquiet_given = 0 ;
 #define clear_args() { \
-  args_info->fg_flag = 0;\
   args_info->debug_flag = 0;\
   args_info->conf_arg = NULL; \
   args_info->pidfile_arg = strdup("./sgsnemu.pid") ;\
@@ -161,7 +158,6 @@ cmdline_parser (int argc, char * const *argv, struct gengetopt_args_info *args_i
       static struct option long_options[] = {
         { "help",	0, NULL, 'h' },
         { "version",	0, NULL, 'V' },
-        { "fg",	0, NULL, 'f' },
         { "debug",	0, NULL, 'd' },
         { "conf",	1, NULL, 'c' },
         { "pidfile",	1, NULL, 0 },
@@ -189,7 +185,7 @@ cmdline_parser (int argc, char * const *argv, struct gengetopt_args_info *args_i
         { NULL,	0, NULL, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVfdc:l:r:a:i:m:q:u:p:", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVdc:l:r:a:i:m:q:u:p:", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -204,17 +200,6 @@ cmdline_parser (int argc, char * const *argv, struct gengetopt_args_info *args_i
           clear_args ();
           cmdline_parser_print_version ();
           exit (EXIT_SUCCESS);
-
-        case 'f':	/* Run in foreground.  */
-          if (args_info->fg_given)
-            {
-              fprintf (stderr, "%s: `--fg' (`-f') option given more than once\n", PACKAGE);
-              clear_args ();
-              exit (EXIT_FAILURE);
-            }
-          args_info->fg_given = 1;
-          args_info->fg_flag = !(args_info->fg_flag);
-          break;
 
         case 'd':	/* Run in debug mode.  */
           if (args_info->debug_given)
@@ -580,15 +565,6 @@ cmdline_parser_configfile (char * const filename, struct gengetopt_args_info *ar
                 {
                   args_info->version_given = 1;
                   
-                }
-              continue;
-            }
-          if (!strcmp(fopt, "fg"))
-            {
-              if (override || !args_info->fg_given)
-                {
-                  args_info->fg_given = 1;
-                  args_info->fg_flag = !(args_info->fg_flag);
                 }
               continue;
             }

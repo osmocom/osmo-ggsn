@@ -76,6 +76,7 @@ struct iphash_t *iphash[MAXCONTEXTS];
 /* 1: Wait_connect               */
 /* 2: Connected                  */
 /* 3: Wait_disconnect            */
+/* 4: Disconnected               */
 int state = 0;                  
 
 struct gsn_t *gsn = NULL;       /* GSN instance */
@@ -217,7 +218,6 @@ int process_options(int argc, char **argv) {
     printf("remote: %s\n", args_info.remote_arg);
     printf("listen: %s\n", args_info.listen_arg);
     printf("conf: %s\n", args_info.conf_arg);
-    printf("fg: %d\n", args_info.fg_flag);
     printf("debug: %d\n", args_info.debug_flag);
     printf("imsi: %s\n", args_info.imsi_arg);
     printf("qos: %#08x\n", args_info.qos_arg);
@@ -251,7 +251,6 @@ int process_options(int argc, char **argv) {
       printf("remote: %s\n", args_info.remote_arg);
       printf("listen: %s\n", args_info.listen_arg);
       printf("conf: %s\n", args_info.conf_arg);
-      printf("fg: %d\n", args_info.fg_flag);
       printf("debug: %d\n", args_info.debug_flag);
       printf("imsi: %s\n", args_info.imsi_arg);
       printf("qos: %#08x\n", args_info.qos_arg);
@@ -279,18 +278,17 @@ int process_options(int argc, char **argv) {
   /* Handle each option */
 
   /* foreground                                                   */
-  /* If fg flag not given run as a daemon                            */
+  /* If fg flag not given run as a daemon                         */ 
+  /* Do not allow sgsnemu to run as deamon                        
   if (!args_info.fg_flag)
     {
       closelog(); 
-      /* Close the standard file descriptors. Why? */
       freopen("/dev/null", "w", stdout);
       freopen("/dev/null", "w", stderr);
       freopen("/dev/null", "r", stdin);
       daemon(0, 0);
-      /* Open log again. This time with new pid */
       openlog(PACKAGE, LOG_PID, LOG_DAEMON);
-    }
+    }                                                             */
 
   /* debug                                                        */
   options.debug = args_info.debug_flag;
@@ -750,6 +748,7 @@ int delete_context(struct pdp_t *pdp) {
 
   ipdel((struct iphash_t*) pdp->peer);
   memset(pdp->peer, 0, sizeof(struct iphash_t)); /* To be sure */
+  state = 4; /* Disconnected */
   return 0;
 }
 
@@ -867,7 +866,7 @@ int main(int argc, char **argv)
     exit(1);
 
   printf("\nInitialising GTP library\n");
-  if (gtp_new(&gsn, options.statedir,  &options.listen)) {
+  if (gtp_new(&gsn, options.statedir,  &options.listen, GTP_MODE_SGSN)) {
     sys_err(LOG_ERR, __FILE__, __LINE__, 0,
 	    "Failed to create gtp");
     exit(1);

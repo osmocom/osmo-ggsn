@@ -20,7 +20,6 @@ extern "C" {
 
 struct gengetopt_args_info
 {
-  int fg_flag;	/* Run in foreground (default=off).  */
   int debug_flag;	/* Run in debug mode (default=off).  */
   char * conf_arg;	/* Read configuration file.  */
   char * pidfile_arg;	/* Filename of process id file (default='./sgsnemu.pid').  */
@@ -48,7 +47,6 @@ struct gengetopt_args_info
 
   int help_given ;	/* Whether help was given.  */
   int version_given ;	/* Whether version was given.  */
-  int fg_given ;	/* Whether fg was given.  */
   int debug_given ;	/* Whether debug was given.  */
   int conf_given ;	/* Whether conf was given.  */
   int pidfile_given ;	/* Whether pidfile was given.  */
