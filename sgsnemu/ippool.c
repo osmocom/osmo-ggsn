@@ -29,7 +29,7 @@
  * statistical properties and speed. It is NOT recommended for cryptographic
  * purposes.
  **/
-unsigned long int lookup( k, length, level)
+unsigned long int static lookup( k, length, level)
 register unsigned char *k;         /* the key */
 register unsigned long int length; /* the length of the key */
 register unsigned long int level; /* the previous hash, or an arbitrary value*/
