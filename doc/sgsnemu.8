@@ -49,9 +49,13 @@ sgsnemu \- Serving GPRS Support Node Emulator
 ] [
 .BI \-\-timelimit " seconds" 
 ] [
+.BI \-\-gtpversion " version"
+] [
 .BI \-\-apn " apn"
 ] [
 .BI \-\-imsi " imsi"
+] [
+.BI \-\-nsapi " nsapi"
 ] [
 .BI \-\-msisdn " msisdn"
 ] [
@@ -62,6 +66,8 @@ sgsnemu \- Serving GPRS Support Node Emulator
 .BI \-\-pwd " pwd"
 ] [
 .BI \-\-createif
+] [
+.BI \-\-net " net" 
 ] [
 .BI \-\-defaultroute
 ] [
@@ -170,7 +176,10 @@ specify the access point name (APN) as the remote host.
 
 .TP
 .BI --contexts " num"
-Number of contexts to establish. (default = 1)
+Number of contexts to establish. (default = 1). For multiple contexts
+the the first context is established using imsi + 0 and msisdn +
+0. The second context is established using imsi + 1 and msisdn +
+1. The third....
 
 .TP
 .BI --timelimit " seconds"
@@ -185,6 +194,12 @@ will also exit after
 packets has been transmitted.
 
 .TP
+.BI --gtpversion " version"
+.I version
+of GTP to use when establishing a context (default = 1). If not able
+to establish a GTPv1 context sgsnemu will fall back to using GTPv0.
+
+.TP
 .BI --apn " apn"
 .I apn
 to use when connecting to the GGSN (default = internet). APN is an
@@ -195,7 +210,17 @@ abbreviation of Access Point Name.
 .I imsi
 to use when connecting to the GGSN (default = 240010123456789). IMSI
 is an abbreviation of International Mobile Subscriber Identity. Must
-be exactly 15 digits.
+be exactly 15 digits. See the
+.I contexts
+option for the the use of the
+.I imsi
+option with multiple contexts.
+
+.TP
+.BI --nsapi " nsapi"
+.I nsapi
+to use when connecting to the GGSN (default = 0). Must be between 0
+and 15.
 
 .TP
 .BI --msisdn " msisdn"
@@ -203,7 +228,11 @@ be exactly 15 digits.
 to use when connecting to the GGSN (default = 46702123456). MSISDN is
 an abbreviation of International Mobile Integrated Services Digital
 Network. Effectly a phone number in international format without the
-leading 00 or 011.
+leading 00 or 011. See the
+.I contexts
+option for the the use of the
+.I msisdn
+option with multiple contexts.
 
 .TP
 .BI --qos " qos"
@@ -225,7 +254,23 @@ Password to send to GGSN as protocol configuration option.
 Create a local tun interface. This interface will be used for
 forwarding packets to and from the Gn/Gp interface. Use with caution
 as the Gn/Gp interface is normally be routed to the Internet by the
-GGSN.
+GGSN. Only one interface will be created, even if several contexts are
+established. The interface will be given an IP address for each
+established context, or the address can be specified with the
+.I net
+option.
+
+.TP
+.BI --net " net"
+Network address of the local interface. The 
+.I net
+option is only valid when the
+.I createif
+option is used. The
+.I net
+option is given in cidr format (net/mask bits). If the
+.I net
+option omitted an IP address is allocated for each context established.
 
 .TP
 .BI --defaultroute

@@ -305,7 +305,7 @@ extern int gtp_newpdp(struct gsn_t *gsn, struct pdp_t **pdp,
 extern int gtp_freepdp(struct gsn_t *gsn, struct pdp_t *pdp);
 
 extern int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp, 
-				  void *cbp, struct in_addr* inetaddr);
+				  void *cbp);
 
 extern int gtp_set_cb_create_context_ind(struct gsn_t *gsn,
 	     int (*cb_create_context_ind) (struct pdp_t* pdp));

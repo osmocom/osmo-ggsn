@@ -1,3 +1,19 @@
+2003-11-10: Jens Jakobsen <jj@openggsn.org>
+	Added --net option for sgsnemu. Allow user to specify the network
+	address and mask of the local interface.
+
+	Added --gtpversion option for sgsnemu. Allow user to specify which
+	GTP version to use.
+
+	Added --nsapi option for sgsnemu. Allow user to specify which
+	NSAPI to use.
+
+	Changed the functionality for multiple contexts. Previously
+	contexts were differentiated by nsapi. This limited the number of
+	contexts to 16. Now each context is established with a new imsi
+	and msisdn.
+
+
 2003-10-22: Jens Jakobsen <jj@openggsn.org>
 	Support for GTP1. Currently without support for the secondary pdp
 	context activation procedure.

@@ -59,7 +59,7 @@
 #include "cmdline.h"
 
 #define IPADDRLEN 256      /* Character length of addresses */ 
-#define MAXCONTEXTS 16     /* Max number of allowed contexts */ 
+#define MAXCONTEXTS 1024  /* Max number of allowed contexts */ 
 
 /* HASH tables for IP address allocation */
 struct iphash_t {
@@ -89,6 +89,7 @@ int echoversion = 1;            /* First try this version */
 struct {
   int debug;                      /* Print debug messages */
   int createif;                   /* Create local network interface */
+  struct in_addr net, mask;       /* Network interface       */
   char *ipup, *ipdown;            /* Filename of scripts */
   int defaultroute;               /* Set up default route */
   struct in_addr pinghost;        /* Remote ping host    */
@@ -103,6 +104,8 @@ struct {
   int timelimit;                  /* Number of seconds to be connected */
   char *statedir;
   uint64_t imsi;
+  uint8_t nsapi;
+  int gtpversion;
   struct ul255_t pco;
   struct ul255_t qos;
   struct ul255_t apn;
@@ -389,8 +392,18 @@ int process_options(int argc, char **argv) {
   options.imsi |= ((uint64_t) (args_info.imsi_arg[13]-48)) << 52;
   options.imsi |= ((uint64_t) (args_info.imsi_arg[14]-48)) << 56;
 
-    printf("IMSI is:               %s (%#08llx)\n", 
-	   args_info.imsi_arg, options.imsi);
+  printf("IMSI is:               %s (%#08llx)\n", 
+	 args_info.imsi_arg, options.imsi);
+  
+  
+  /* nsapi                                                           */
+  if ((args_info.nsapi_arg > 15) || 
+      (args_info.nsapi_arg < 0)) {
+    printf("Invalid NSAPI\n");
+    return -1;
+  }
+  options.nsapi = args_info.nsapi_arg;
+  printf("Using NSAPI:           %d\n", args_info.nsapi_arg);
 
 
   /* qos                                                             */
@@ -409,6 +422,16 @@ int process_options(int argc, char **argv) {
   /* Timelimit                                                       */
   options.timelimit = args_info.timelimit_arg;
   
+  /* gtpversion                                                      */
+  if ((args_info.gtpversion_arg > 1) || 
+      (args_info.gtpversion_arg < 0)) {
+    printf("Invalid GTP version\n");
+    return -1;
+  }
+  options.gtpversion = args_info.gtpversion_arg;
+  printf("Using GTP version:     %d\n", args_info.gtpversion_arg);
+
+
   /* apn                                                             */
   if (strlen(args_info.apn_arg) > (sizeof(options.apn.v)-1)) {
     printf("Invalid APN\n");
@@ -463,6 +486,20 @@ int process_options(int argc, char **argv) {
   
   /* createif */
   options.createif = args_info.createif_flag;
+
+  /* net                                                          */
+  /* Store net as in_addr net and mask                            */
+  if (args_info.net_arg) {
+    if(ippool_aton(&options.net, &options.mask, args_info.net_arg, 0)) {
+      sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+	      "Invalid network address: %s!", args_info.net_arg);
+      exit(1);
+    }
+  }
+  else {
+    options.net.s_addr = 0;
+    options.mask.s_addr = 0;
+  }
 
   /* ipup */
   options.ipup = args_info.ipup_arg;
@@ -542,6 +579,81 @@ char * print_icmptype(int t) {
   if( t < 0 || t > 16 )
     return("OUT-OF-RANGE");  
   return(ttab[t]);
+}
+
+int msisdn_add(struct ul16_t *src, struct ul16_t *dst, int add) {
+  int n;
+  uint64_t i64 = 0;
+  uint8_t msa[sizeof(i64) * 3]; /* Allocate 3 digits per octet (0..255) */
+  int msalen = 0;
+
+  /* Convert to uint64_t from ul16_t format (most significant digit first) */
+  /* ul16_t format always starts with 0x91 to indicate international format */
+  /* In ul16_t format 0x0f/0xf0 indicates that digit is not used */
+  for (n=0; n< src->l; n++) {
+    if ((src->v[n] & 0x0f) != 0x0f) {
+      i64 *= 10;
+      i64 += src->v[n] & 0x0f;
+    }
+    if ((src->v[n] & 0xf0) != 0xf0) {
+      i64 *= 10;
+      i64 += (src->v[n] & 0xf0) >> 4;
+    }
+  }
+
+  i64 += add;
+
+  /* Generate array with least significant digit in first octet */
+  while (i64) {
+    msa[msalen++] = i64 % 10;
+    i64 = i64 / 10;
+  }
+
+  /* Convert back to ul16_t format */
+  for(n=0; n<msalen; n++) {
+    if ((n%2) == 0) {
+      dst->v[((int)n/2)] = msa[msalen-n-1] + 0xf0;
+      dst->l += 1;
+    }
+    else {
+      dst->v[((int)n/2)] = (dst->v[((int)n/2)] & 0x0f) + 
+	msa[msalen-n-1] * 16;
+    }
+  }
+
+  return 0;
+
+}
+
+int imsi_add(uint64_t src, uint64_t *dst, int add) {
+  /* TODO: big endian / small endian ??? */
+  uint64_t i64 = 0;
+
+  /* Convert from uint64_t bcd to uint64_t integer format */
+  /* The resulting integer format is multiplied by 10 */
+  while (src) {
+    if ((src & 0x0f) != 0x0f) {
+      i64 *= 10;
+      i64 += (src & 0x0f);
+    }
+    if ((src & 0xf0) != 0xf0) {
+      i64 *= 10;
+      i64 += (src & 0xf0) >> 4;
+    }
+    src = src >> 8;
+  }
+
+  i64 += add * 10; 
+
+  *dst = 0;
+  while (i64) {
+    *dst = *dst << 4;
+    *dst += (i64 % 10);
+    i64 = i64 / 10;
+  }
+
+  return 0;
+
 }
 
 /* Calculate time left until we have to send off next ping packet */
@@ -786,7 +898,7 @@ int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause) {
     if (iph->pdp->version == 1) {
       printf("Retrying with version 0\n");
       iph->pdp->version = 0;
-      gtp_create_context_req(gsn, iph->pdp, iph, &options.remote);
+      gtp_create_context_req(gsn, iph->pdp, iph);
       return 0;
     }
     else {
@@ -816,7 +928,7 @@ int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause) {
   printf("Received create PDP context response. IP address: %s\n", 
 	 inet_ntoa(addr));
 
-  if (options.createif) {
+  if ((options.createif) && (!options.net.s_addr)) {
     struct in_addr m;
     inet_aton("255.255.255.255", &m);
     /* printf("Setting up interface and routing\n");*/
@@ -935,6 +1047,18 @@ int main(int argc, char **argv)
     if (tun->fd > maxfd) maxfd = tun->fd;
   }
 
+  if ((options.createif) && (options.net.s_addr)) {
+    /* printf("Setting up interface and routing\n");*/
+    tun_addaddr(tun, &options.net,  &options.net, &options.mask);
+    if (options.defaultroute) {
+      struct in_addr rm;
+      rm.s_addr = 0;
+      tun_addroute(tun, &rm,  &options.net, &rm);
+    }
+    if (options.ipup) tun_runscript(tun, options.ipup);
+  }
+
+
   /* Initialise hash tables */
   memset(&iphash, 0, sizeof(iphash));  
   memset(&iparr, 0, sizeof(iparr));  
@@ -943,16 +1067,20 @@ int main(int argc, char **argv)
 
   /* See if anybody is there */
   printf("Sending off echo request\n");
+  echoversion = options.gtpversion;
   gtp_echo_req(gsn, echoversion, NULL, &options.remote); /* Is remote alive? */
 
   for(n=0; n<options.contexts; n++) {
+    uint64_t myimsi;
     printf("Setting up PDP context #%d\n", n);
     iparr[n].inuse = 1; /* TODO */
 
+    imsi_add(options.imsi, &myimsi, n);
+
     /* Allocated here. */
     /* If create context failes we have to deallocate ourselves. */
-    /* Otherwise it is deallocated gy gtplib */
-    pdp_newpdp(&pdp, options.imsi, n, NULL); 
+    /* Otherwise it is deallocated by gtplib */
+    pdp_newpdp(&pdp, myimsi, options.nsapi, NULL); 
 
     pdp->peer = &iparr[n];
     pdp->ipif = tun; /* TODO */
@@ -992,8 +1120,7 @@ int main(int argc, char **argv)
       exit(1);
     }
     else {
-      pdp->msisdn.l = options.msisdn.l;
-      memcpy(pdp->msisdn.v, options.msisdn.v, options.msisdn.l);
+      msisdn_add(&options.msisdn, &pdp->msisdn, n);
     }
     
     ipv42eua(&pdp->eua, NULL); /* Request dynamic IP address */
@@ -1007,11 +1134,14 @@ int main(int argc, char **argv)
       memcpy(pdp->pco_req.v, options.pco.v, options.pco.l);
     }
     
-    pdp->version = 1; /* First try with version 1 */
+    pdp->version = options.gtpversion;
+
+    pdp->hisaddr0 = options.remote;
+    pdp->hisaddr1 = options.remote;
 
     /* Create context */
     /* We send this of once. Retransmissions are handled by gtplib */
-    gtp_create_context_req(gsn, pdp, &iparr[n], &options.remote);
+    gtp_create_context_req(gsn, pdp, &iparr[n]);
   }    
 
   state = 1;  /* Enter wait_connection state */

@@ -996,7 +996,7 @@ int gtp_extheader_ind(struct gsn_t *gsn, struct sockaddr_in *peer,
 
 /* API: Send Create PDP Context Request */
 extern int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp, 
-				  void *cbp, struct in_addr* inetaddr) {
+				  void *cbp) {
   union gtp_packet packet;
   int length = get_default_gtp(pdp->version, GTP_CREATE_PDP_REQ, &packet);
   struct pdp_t *linked_pdp = NULL;
@@ -1107,7 +1107,8 @@ extern int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
     gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_OMC_ID,
 	      pdp->omcid.l, pdp->omcid.v);
   
-  gtp_req(gsn, pdp->version, pdp, &packet, length, inetaddr, cbp);
+  /* TODO hisaddr0 */
+  gtp_req(gsn, pdp->version, pdp, &packet, length, &pdp->hisaddr0, cbp);
 
   return 0;
 }

@@ -29,13 +29,16 @@ struct gengetopt_args_info
   char * remote_arg;	/* Remote host.  */
   int contexts_arg;	/* Number of contexts (default='1').  */
   int timelimit_arg;	/* Exit after timelimit seconds (default='0').  */
+  int gtpversion_arg;	/* GTP version to use (default='1').  */
   char * apn_arg;	/* Access point name (default='internet').  */
   char * imsi_arg;	/* IMSI (default='240010123456789').  */
+  int nsapi_arg;	/* NSAPI (default='1').  */
   char * msisdn_arg;	/* Mobile Station ISDN number (default='46702123456').  */
   int qos_arg;	/* Requested quality of service (default='0x0b921f').  */
   char * uid_arg;	/* Login user ID (default='mig').  */
   char * pwd_arg;	/* Login password (default='hemmelig').  */
   int createif_flag;	/* Create local network interface (default=off).  */
+  char * net_arg;	/* Network address for local interface.  */
   int defaultroute_flag;	/* Create default route (default=off).  */
   char * ipup_arg;	/* Script to run after link-up.  */
   char * ipdown_arg;	/* Script to run after link-down.  */
@@ -56,13 +59,16 @@ struct gengetopt_args_info
   int remote_given ;	/* Whether remote was given.  */
   int contexts_given ;	/* Whether contexts was given.  */
   int timelimit_given ;	/* Whether timelimit was given.  */
+  int gtpversion_given ;	/* Whether gtpversion was given.  */
   int apn_given ;	/* Whether apn was given.  */
   int imsi_given ;	/* Whether imsi was given.  */
+  int nsapi_given ;	/* Whether nsapi was given.  */
   int msisdn_given ;	/* Whether msisdn was given.  */
   int qos_given ;	/* Whether qos was given.  */
   int uid_given ;	/* Whether uid was given.  */
   int pwd_given ;	/* Whether pwd was given.  */
   int createif_given ;	/* Whether createif was given.  */
+  int net_given ;	/* Whether net was given.  */
   int defaultroute_given ;	/* Whether defaultroute was given.  */
   int ipup_given ;	/* Whether ipup was given.  */
   int ipdown_given ;	/* Whether ipdown was given.  */

@@ -53,13 +53,16 @@ cmdline_parser_print_help (void)
   printf("   -rSTRING   --remote=STRING    Remote host\n");
   printf("              --contexts=INT     Number of contexts (default='1')\n");
   printf("              --timelimit=INT    Exit after timelimit seconds (default='0')\n");
+  printf("              --gtpversion=INT   GTP version to use (default='1')\n");
   printf("   -aSTRING   --apn=STRING       Access point name (default='internet')\n");
   printf("   -iSTRING   --imsi=STRING      IMSI (default='240010123456789')\n");
+  printf("              --nsapi=INT        NSAPI (default='1')\n");
   printf("   -mSTRING   --msisdn=STRING    Mobile Station ISDN number (default='46702123456')\n");
   printf("   -qINT      --qos=INT          Requested quality of service (default='0x0b921f')\n");
   printf("   -uSTRING   --uid=STRING       Login user ID (default='mig')\n");
   printf("   -pSTRING   --pwd=STRING       Login password (default='hemmelig')\n");
   printf("              --createif         Create local network interface (default=off)\n");
+  printf("   -nSTRING   --net=STRING       Network address for local interface\n");
   printf("              --defaultroute     Create default route (default=off)\n");
   printf("              --ipup=STRING      Script to run after link-up\n");
   printf("              --ipdown=STRING    Script to run after link-down\n");
@@ -102,13 +105,16 @@ cmdline_parser (int argc, char * const *argv, struct gengetopt_args_info *args_i
   args_info->remote_given = 0 ;
   args_info->contexts_given = 0 ;
   args_info->timelimit_given = 0 ;
+  args_info->gtpversion_given = 0 ;
   args_info->apn_given = 0 ;
   args_info->imsi_given = 0 ;
+  args_info->nsapi_given = 0 ;
   args_info->msisdn_given = 0 ;
   args_info->qos_given = 0 ;
   args_info->uid_given = 0 ;
   args_info->pwd_given = 0 ;
   args_info->createif_given = 0 ;
+  args_info->net_given = 0 ;
   args_info->defaultroute_given = 0 ;
   args_info->ipup_given = 0 ;
   args_info->ipdown_given = 0 ;
@@ -127,13 +133,16 @@ cmdline_parser (int argc, char * const *argv, struct gengetopt_args_info *args_i
   args_info->remote_arg = NULL; \
   args_info->contexts_arg = 1 ;\
   args_info->timelimit_arg = 0 ;\
+  args_info->gtpversion_arg = 1 ;\
   args_info->apn_arg = strdup("internet") ;\
   args_info->imsi_arg = strdup("240010123456789") ;\
+  args_info->nsapi_arg = 1 ;\
   args_info->msisdn_arg = strdup("46702123456") ;\
   args_info->qos_arg = 0x0b921f ;\
   args_info->uid_arg = strdup("mig") ;\
   args_info->pwd_arg = strdup("hemmelig") ;\
   args_info->createif_flag = 0;\
+  args_info->net_arg = NULL; \
   args_info->defaultroute_flag = 0;\
   args_info->ipup_arg = NULL; \
   args_info->ipdown_arg = NULL; \
@@ -167,13 +176,16 @@ cmdline_parser (int argc, char * const *argv, struct gengetopt_args_info *args_i
         { "remote",	1, NULL, 'r' },
         { "contexts",	1, NULL, 0 },
         { "timelimit",	1, NULL, 0 },
+        { "gtpversion",	1, NULL, 0 },
         { "apn",	1, NULL, 'a' },
         { "imsi",	1, NULL, 'i' },
+        { "nsapi",	1, NULL, 0 },
         { "msisdn",	1, NULL, 'm' },
         { "qos",	1, NULL, 'q' },
         { "uid",	1, NULL, 'u' },
         { "pwd",	1, NULL, 'p' },
         { "createif",	0, NULL, 0 },
+        { "net",	1, NULL, 'n' },
         { "defaultroute",	0, NULL, 0 },
         { "ipup",	1, NULL, 0 },
         { "ipdown",	1, NULL, 0 },
@@ -185,7 +197,7 @@ cmdline_parser (int argc, char * const *argv, struct gengetopt_args_info *args_i
         { NULL,	0, NULL, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVdc:l:r:a:i:m:q:u:p:", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVdc:l:r:a:i:m:q:u:p:n:", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -311,6 +323,17 @@ cmdline_parser (int argc, char * const *argv, struct gengetopt_args_info *args_i
           args_info->pwd_arg = strdup (optarg);
           break;
 
+        case 'n':	/* Network address for local interface.  */
+          if (args_info->net_given)
+            {
+              fprintf (stderr, "%s: `--net' (`-n') option given more than once\n", PACKAGE);
+              clear_args ();
+              exit (EXIT_FAILURE);
+            }
+          args_info->net_given = 1;
+          args_info->net_arg = strdup (optarg);
+          break;
+
 
         case 0:	/* Long option with no short option */
           /* Filename of process id file.  */
@@ -376,6 +399,32 @@ cmdline_parser (int argc, char * const *argv, struct gengetopt_args_info *args_i
               }
             args_info->timelimit_given = 1;
             args_info->timelimit_arg = strtol (optarg,&stop_char,0);
+            break;
+          }
+          /* GTP version to use.  */
+          else if (strcmp (long_options[option_index].name, "gtpversion") == 0)
+          {
+            if (args_info->gtpversion_given)
+              {
+                fprintf (stderr, "%s: `--gtpversion' option given more than once\n", PACKAGE);
+                clear_args ();
+                exit (EXIT_FAILURE);
+              }
+            args_info->gtpversion_given = 1;
+            args_info->gtpversion_arg = strtol (optarg,&stop_char,0);
+            break;
+          }
+          /* NSAPI.  */
+          else if (strcmp (long_options[option_index].name, "nsapi") == 0)
+          {
+            if (args_info->nsapi_given)
+              {
+                fprintf (stderr, "%s: `--nsapi' option given more than once\n", PACKAGE);
+                clear_args ();
+                exit (EXIT_FAILURE);
+              }
+            args_info->nsapi_given = 1;
+            args_info->nsapi_arg = strtol (optarg,&stop_char,0);
             break;
           }
           /* Create local network interface.  */
@@ -705,6 +754,22 @@ cmdline_parser_configfile (char * const filename, struct gengetopt_args_info *ar
                 }
               continue;
             }
+          if (!strcmp(fopt, "gtpversion"))
+            {
+              if (override || !args_info->gtpversion_given)
+                {
+                  args_info->gtpversion_given = 1;
+                  if (fnum == 2)
+                    args_info->gtpversion_arg = strtol (farg,&stop_char,0);
+                  else
+                    {
+                      fprintf (stderr, "%s:%d: required <option_name> <option_val>\n",
+                               filename, line_num);
+                      exit (EXIT_FAILURE);
+                    }
+                }
+              continue;
+            }
           if (!strcmp(fopt, "apn"))
             {
               if (override || !args_info->apn_given)
@@ -728,6 +793,22 @@ cmdline_parser_configfile (char * const filename, struct gengetopt_args_info *ar
                   args_info->imsi_given = 1;
                   if (fnum == 2)
                     args_info->imsi_arg = strdup (farg);
+                  else
+                    {
+                      fprintf (stderr, "%s:%d: required <option_name> <option_val>\n",
+                               filename, line_num);
+                      exit (EXIT_FAILURE);
+                    }
+                }
+              continue;
+            }
+          if (!strcmp(fopt, "nsapi"))
+            {
+              if (override || !args_info->nsapi_given)
+                {
+                  args_info->nsapi_given = 1;
+                  if (fnum == 2)
+                    args_info->nsapi_arg = strtol (farg,&stop_char,0);
                   else
                     {
                       fprintf (stderr, "%s:%d: required <option_name> <option_val>\n",
@@ -807,6 +888,22 @@ cmdline_parser_configfile (char * const filename, struct gengetopt_args_info *ar
                 {
                   args_info->createif_given = 1;
                   args_info->createif_flag = !(args_info->createif_flag);
+                }
+              continue;
+            }
+          if (!strcmp(fopt, "net"))
+            {
+              if (override || !args_info->net_given)
+                {
+                  args_info->net_given = 1;
+                  if (fnum == 2)
+                    args_info->net_arg = strdup (farg);
+                  else
+                    {
+                      fprintf (stderr, "%s:%d: required <option_name> <option_val>\n",
+                               filename, line_num);
+                      exit (EXIT_FAILURE);
+                    }
                 }
               continue;
             }

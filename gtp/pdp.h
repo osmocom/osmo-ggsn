@@ -212,6 +212,12 @@ struct pdp_t {
 
   /* Secondary contexts of this primary context */
   uint32_t secondary_tei[PDP_MAXNSAPI]; 
+
+  /* IP address used for Create and Update PDP Context Requests */
+  struct in_addr hisaddr0;       /* Server address */
+  struct in_addr hisaddr1;       /* Server address */
+
+
 };
 
 
