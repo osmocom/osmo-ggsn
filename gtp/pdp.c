@@ -243,7 +243,7 @@ int pdp_tidget(struct pdp_t **pdp, uint64_t tid) {
 
 int pdp_getimsi(struct pdp_t **pdp, uint64_t imsi, uint8_t nsapi) {
   return pdp_tidget(pdp, 
-		    (imsi & 0x0fffffffffffffff) + ((uint64_t)nsapi << 60));
+		    (imsi & 0x0fffffffffffffffull) + ((uint64_t)nsapi << 60));
 }
 
 /*
@@ -336,7 +336,7 @@ int pdp_euaton(struct ul66_t *eua, struct in_addr *dst) {
 }
 
 uint64_t pdp_gettid(uint64_t imsi, uint8_t nsapi) {
-  return (imsi & 0x0fffffffffffffff) + ((uint64_t)nsapi << 60);
+  return (imsi & 0x0fffffffffffffffull) + ((uint64_t)nsapi << 60);
 }
 
 int ulcpy(void* dst, void* src, size_t size) {

@@ -421,7 +421,17 @@ int tun_setaddr(struct tun_t *this,
 
   close(fd);
   this->addrs++;
-  return tun_sifflags(this, IFF_UP | IFF_RUNNING);
+
+  /* On linux the route to the interface is set automatically
+     on FreeBSD we have to do this manually */
+
+#if defined(__FreeBSD__)
+  tun_sifflags(this, IFF_UP | IFF_RUNNING); /* TODO */
+  return tun_addroute(this, addr, addr, netmask);
+#else
+  return tun_sifflags(this, IFF_UP | IFF_RUNNING); 
+#endif
+
 }
 
 int tun_addroute(struct tun_t *this,
@@ -430,7 +440,8 @@ int tun_addroute(struct tun_t *this,
 		 struct in_addr *mask)
 {
 
-  /* TODO: Learn how to set routing table on sun and FreeBSD */
+
+  /* TODO: Learn how to set routing table on sun  */
 #ifdef __linux__
 
   struct rtentry r;
@@ -460,6 +471,55 @@ int tun_addroute(struct tun_t *this,
     return -1;
   }
   close(fd);
+
+#elif defined(__FreeBSD__)
+
+struct {
+  struct rt_msghdr rt;
+  struct sockaddr_in dst;
+  struct sockaddr_in gate;
+  struct sockaddr_in mask;
+} req;
+
+ int fd;
+ struct rt_msghdr *rtm;
+ 
+ if((fd = socket(AF_ROUTE, SOCK_RAW, 0)) == -1) {
+   sys_err(LOG_ERR, __FILE__, __LINE__, errno,
+	   "socket() failed");
+   return -1;
+ }
+ 
+ memset(&req, 0x00, sizeof(req));
+ 
+ rtm  = &req.rt;
+ 
+ rtm->rtm_msglen = sizeof(req);
+ rtm->rtm_version = RTM_VERSION;
+ rtm->rtm_type = RTM_ADD;
+ rtm->rtm_flags = RTF_UP | RTF_GATEWAY | RTF_STATIC;  /* TODO */
+ rtm->rtm_addrs = RTA_DST | RTA_GATEWAY | RTA_NETMASK;
+ rtm->rtm_pid = getpid();      
+ rtm->rtm_seq = 0044;                                 /* TODO */
+ 
+ req.dst.sin_family       = AF_INET;
+ req.dst.sin_len          = sizeof(req.dst);
+ req.mask.sin_family      = AF_INET;
+ req.mask.sin_len         = sizeof(req.mask);
+ req.gate.sin_family      = AF_INET;
+ req.gate.sin_len         = sizeof(req.gate);
+
+ req.dst.sin_addr.s_addr  = dst->s_addr;
+ req.mask.sin_addr.s_addr = mask->s_addr;
+ req.gate.sin_addr.s_addr = gateway->s_addr;
+ 
+ if(write(fd, rtm, rtm->rtm_msglen) < 0) {
+   sys_err(LOG_ERR, __FILE__, __LINE__, errno,
+	   "write() failed");
+   close(fd);
+   return -1;
+ }
+ close(fd);
 
 #endif
 
@@ -573,6 +633,7 @@ int tun_new(struct tun_t **tun)
 
   snprintf((*tun)->devname, sizeof((*tun)->devname), "tun%d", devnum);
   (*tun)->devname[sizeof((*tun)->devname)] = 0;
+
 #endif
 
   return 0;

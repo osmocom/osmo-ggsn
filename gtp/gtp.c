@@ -2960,7 +2960,7 @@ int gtp_data_req(struct gsn_t *gsn, struct pdp_t* pdp,
     packet.gtp0.h.length = hton16(len);
     packet.gtp0.h.seq = hton16(pdp->gtpsntx++);
     packet.gtp0.h.flow = hton16(pdp->flru);
-    packet.gtp0.h.tid = (pdp->imsi & 0x0fffffffffffffff) + ((uint64_t)pdp->nsapi << 60);
+    packet.gtp0.h.tid = (pdp->imsi & 0x0fffffffffffffffull) + ((uint64_t)pdp->nsapi << 60);
 
     if (len > sizeof (union gtp_packet) - sizeof(struct gtp0_header)) {
       gsn->err_memcpy++;

@@ -13,7 +13,7 @@
 # PARTICULAR PURPOSE.
 
 
-SHELL = /bin/sh
+SHELL = /usr/local/bin/bash
 
 srcdir = .
 top_srcdir = ..
@@ -38,10 +38,10 @@ pkglibdir = $(libdir)/openggsn
 pkgincludedir = $(includedir)/openggsn
 top_builddir = ..
 
-ACLOCAL = ${SHELL} /home/jj/openggsn/missing --run aclocal-1.6
-AUTOCONF = ${SHELL} /home/jj/openggsn/missing --run autoconf
-AUTOMAKE = ${SHELL} /home/jj/openggsn/missing --run automake-1.6
-AUTOHEADER = ${SHELL} /home/jj/openggsn/missing --run autoheader
+ACLOCAL = ${SHELL} /usr/home/jj/openggsn/missing --run aclocal-1.6
+AUTOCONF = ${SHELL} /usr/home/jj/openggsn/missing --run autoconf
+AUTOMAKE = ${SHELL} /usr/home/jj/openggsn/missing --run automake-1.6
+AUTOHEADER = ${SHELL} /usr/home/jj/openggsn/missing --run autoheader
 
 am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
 INSTALL = /usr/bin/install -c
@@ -60,14 +60,14 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 host_alias = 
-host_triplet = i686-pc-linux-gnu
+host_triplet = i386-unknown-freebsd5.2
 
 EXEEXT = 
 OBJEXT = o
 PATH_SEPARATOR = :
-AMTAR = ${SHELL} /home/jj/openggsn/missing --run tar
+AMTAR = ${SHELL} /usr/home/jj/openggsn/missing --run tar
 AS = @AS@
-AWK = gawk
+AWK = nawk
 CC = gcc
 CPP = gcc -E
 CXX = g++
@@ -85,7 +85,7 @@ STRIP = strip
 VERSION = 0.81
 am__include = include
 am__quote = 
-install_sh = /home/jj/openggsn/install-sh
+install_sh = /usr/home/jj/openggsn/install-sh
 man_MANS = ggsn.8 sgsnemu.8
 man_aux = $(man_MANS:.1=.x)
 EXTRA_DIST = $(man_MANS)
