@@ -199,7 +199,7 @@ struct pdp_t {
   int         version;  /* Protocol version currently in use. 0 or 1 */
 
   uint64_t    tid;      /* Combination of imsi and nsapi */
-  u_int16_t   seq;      /* Sequence number of last request */
+  uint16_t   seq;      /* Sequence number of last request */
   struct sockaddr_in sa_peer; /* Address of last request */
   int fd;               /* File descriptor request was received on */
 

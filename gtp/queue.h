@@ -30,7 +30,7 @@
 struct qmsg_t {           /* Holder for queued packets */
   int state;              /* 0=empty, 1=full */
   uint16_t seq;           /* The sequence number */
-  u_int8_t type;          /* The type of packet */
+  uint8_t type;          /* The type of packet */
   void *cbp;              /* Application specific pointer */
   union gtp_packet p;     /* The packet stored */
   int l;                  /* Length of the packet */

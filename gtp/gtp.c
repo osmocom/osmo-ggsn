@@ -179,7 +179,7 @@ extern int gtp_set_cb_data_ind(struct gsn_t *gsn,
  * to hold the packet header.
  * returns the length of the header. 0 on error.
  **/
-static int get_default_gtp(int version, u_int8_t type, void *packet) {
+static int get_default_gtp(int version, uint8_t type, void *packet) {
   struct gtp0_header *gtp0_default = (struct gtp0_header*) packet;
   struct gtp1_header_long *gtp1_default = (struct gtp1_header_long*) packet;
   switch (version) {

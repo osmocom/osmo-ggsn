@@ -26,14 +26,14 @@
 #define ntoh32(x) ntohl(x)
 
 #if BYTE_ORDER == LITTLE_ENDIAN
-static __inline u_int64_t
-hton64(u_int64_t q)
+static __inline uint64_t
+hton64(uint64_t q)
 {
-        register u_int32_t u, l;
+        register uint32_t u, l;
         u = q >> 32;
-        l = (u_int32_t) q;
+        l = (uint32_t) q;
 
-        return htonl(u) | ((u_int64_t)htonl(l) << 32);
+        return htonl(u) | ((uint64_t)htonl(l) << 32);
 }
 
 #define ntoh64(_x)        hton64(_x)
@@ -117,45 +117,45 @@ hton64(u_int64_t q)
 
 /* GTP information element structs in network order */
 struct gtpie_ext {              /* Extension header */
-  u_int8_t t;                   /* Type */
-  u_int8_t l;                   /* Length */
-  u_int8_t *p;                  /* Value */
+  uint8_t t;                   /* Type */
+  uint8_t l;                   /* Length */
+  uint8_t *p;                  /* Value */
 } __attribute__((packed));
 
 struct gtpie_tlv {              /* Type length value pair */
-  u_int8_t t;                   /* Type */
-  u_int16_t l;                  /* Length */
-  u_int8_t v[GTPIE_MAX_TLV];    /* Value */
+  uint8_t t;                   /* Type */
+  uint16_t l;                  /* Length */
+  uint8_t v[GTPIE_MAX_TLV];    /* Value */
 } __attribute__((packed));
 
 struct gtpie_tv0 {              /* 1 byte type value pair */
-  u_int8_t t;                   /* Type */
-  u_int8_t v[GTPIE_MAX_TV];     /* Pointer to value */
+  uint8_t t;                   /* Type */
+  uint8_t v[GTPIE_MAX_TV];     /* Pointer to value */
 }__attribute__((packed));
 
 struct gtpie_tv1 {              /* 1 byte type value pair */
-  u_int8_t t;                   /* Type */
-  u_int8_t v;                   /* Value */
+  uint8_t t;                   /* Type */
+  uint8_t v;                   /* Value */
 }__attribute__((packed));
 
 struct gtpie_tv2 {              /* 2 byte type value pair */
-  u_int8_t t;                   /* Type */
-  u_int16_t v;                  /* Value */
+  uint8_t t;                   /* Type */
+  uint16_t v;                  /* Value */
 }__attribute__((packed));
 
 struct gtpie_tv4 {              /* 4 byte type value pair */
-  u_int8_t t;                   /* Type */
-  u_int32_t v;                  /* Value */
+  uint8_t t;                   /* Type */
+  uint32_t v;                  /* Value */
 }__attribute__((packed));
 
 struct gtpie_tv8 {              /* 8 byte type value pair */
-  u_int8_t t;                   /* Type */
-  u_int64_t v;                  /* Value */
+  uint8_t t;                   /* Type */
+  uint64_t v;                  /* Value */
 }__attribute__((packed));
 
 
 union gtpie_member {
-  u_int8_t t;
+  uint8_t t;
   struct gtpie_ext ext;
   struct gtpie_tlv tlv;
   struct gtpie_tv0 tv0;
@@ -215,23 +215,23 @@ private
 */
 
 struct tlv1 {
-  u_int8_t  type;
-  u_int8_t  length;
+  uint8_t  type;
+  uint8_t  length;
 }__attribute__((packed));
 
 struct tlv2 {
-  u_int8_t  type;
-  u_int16_t length;
+  uint8_t  type;
+  uint16_t length;
 }__attribute__((packed));
 
 extern int gtpie_tlv(void *p, int *length, int size,
-		     u_int8_t t, int l, void *v);
+		     uint8_t t, int l, void *v);
 extern int gtpie_tv0(void *p, int *length, int size, 
-		     u_int8_t t, int l, u_int8_t *v);
-extern int gtpie_tv1(void *p, int *length, int size, u_int8_t t, u_int8_t v);
-extern int gtpie_tv2(void *p, int *length, int size, u_int8_t t, u_int16_t v);
-extern int gtpie_tv4(void *p, int *length, int size, u_int8_t t, u_int32_t v);
-extern int gtpie_tv8(void *p, int *length, int size, u_int8_t t, u_int64_t v);
+		     uint8_t t, int l, uint8_t *v);
+extern int gtpie_tv1(void *p, int *length, int size, uint8_t t, uint8_t v);
+extern int gtpie_tv2(void *p, int *length, int size, uint8_t t, uint16_t v);
+extern int gtpie_tv4(void *p, int *length, int size, uint8_t t, uint32_t v);
+extern int gtpie_tv8(void *p, int *length, int size, uint8_t t, uint64_t v);
 extern int gtpie_getie(union gtpie_member* ie[], int type, int instance);
 extern int gtpie_exist(union gtpie_member* ie[], int type, int instance);
 extern int gtpie_gettlv(union gtpie_member* ie[], int type, int instance,
