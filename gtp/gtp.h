@@ -38,6 +38,9 @@
 #define RESTART_FILE "gsn_restart"
 #define NAMESIZE 1024
 
+/* GTP version 1 extension header type definitions. */
+#define GTP_EXT_PDCP_PDU    0xC0 /* PDCP PDU Number */
+
 /* GTP version 1 message type definitions. Also covers version 0 except *
  * for anonymous PDP context which was superceded in version 1 */
 
@@ -259,6 +262,7 @@ struct gsn_t {
   int (*cb_delete_context) (struct pdp_t*);
   int (*cb_create_context_ind) (struct pdp_t*);
   int (*cb_unsup_ind) (struct sockaddr_in *peer);
+  int (*cb_extheader_ind) (struct sockaddr_in *peer);
   int (*cb_conf) (int type, int cause, struct pdp_t *pdp, void* cbp);
   int (*cb_data_ind) (struct pdp_t* pdp, void* pack, unsigned len);
 
@@ -282,7 +286,8 @@ struct gsn_t {
   uint64_t unknown;     /* Number of unknown messages 29.60 11.1.3 */
   uint64_t unexpect;    /* Number of unexpected messages 29.60 11.1.4 */
   uint64_t dublicate;   /* Number of dublicate or unsolicited replies */
-  uint64_t missing;     /* Number of missing mandatory field messages */
+  uint64_t missing;     /* Number of missing information field messages */
+  uint64_t incorrect;   /* Number of incorrect information field messages */
   uint64_t invalid;     /* Number of invalid message format messages */
 };
 
@@ -312,7 +317,7 @@ extern int gtp_update_context(struct gsn_t *gsn, struct pdp_t *pdp,
 			      void *cbp, struct in_addr* inetaddr);
 
 extern int gtp_delete_context_req(struct gsn_t *gsn, struct pdp_t *pdp, 
-				  void *cbp);
+				  void *cbp, int teardown);
 
 extern int gtp_data_req(struct gsn_t *gsn, struct pdp_t *pdp,
 			void *pack, unsigned len);
@@ -335,6 +340,9 @@ extern int gtp_set_cb_delete_context(struct gsn_t *gsn,
 
 extern int gtp_set_cb_unsup_ind(struct gsn_t *gsn,
 				int (*cb) (struct sockaddr_in *peer));
+
+extern int gtp_set_cb_extheader_ind(struct gsn_t *gsn,
+				    int (*cb) (struct sockaddr_in *peer));
 
 
 extern int gtp_set_cb_conf(struct gsn_t *gsn,
@@ -381,7 +389,8 @@ extern int gtp_delete_pdp_req(struct gsn_t *gsn, int version, void *cbp,
 extern int gtp_delete_pdp_resp(struct gsn_t *gsn, int version,
 			       struct sockaddr_in *peer, int fd,
 			       void *pack, unsigned len, 
-			       struct pdp_t *pdp, uint8_t cause);
+			       struct pdp_t *pdp, struct pdp_t *linked_pdp,
+			       uint8_t cause, int teardown);
 
 extern int gtp_delete_pdp_ind(struct gsn_t *gsn, int version,
 			      struct sockaddr_in *peer, int fd,

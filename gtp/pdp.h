@@ -18,6 +18,7 @@
 #define _PDP_H
 
 #define PDP_MAX 1024             /* Max number of PDP contexts */
+#define PDP_MAXNSAPI 16          /* Max number of NSAPI */
 
 #define PDP_DEBUG 0              /* Print debug information */
 
@@ -52,19 +53,19 @@ unsigned char v[255];
 };
 
 
-/* ***********************************************************
+/* *****************************************************************
  * Information storage for each PDP context
  *
- * Information storage for each PDP context is defined in 
- * 23.060 section 13.3 and 03.60. Includes IMSI, MSISDN, APN, 
- * PDP-type, PDP-address (IP address), sequence numbers, charging ID.
- * For the SGSN it also includes radio related mobility
- * information.
- * The following structure is a combination of the storage 
- * requirements for each PDP context for the GGSN and SGSN.
- * It contains both 23.060 as well as 03.60 parameters.
- * Information is stored in the format for information elements
- * described in 29.060 and 09.60.
+ * Information storage for each PDP context is defined in 23.060
+ * section 13.3 and 03.60. Includes IMSI, MSISDN, APN, PDP-type,
+ * PDP-address (IP address), sequence numbers, charging ID.  For the
+ * SGSN it also includes radio related mobility information.
+ *
+ * The following structure is a combination of the storage
+ * requirements for each PDP context for the GGSN and SGSN.  It
+ * contains both 23.060 as well as 03.60 parameters.  Information is
+ * stored in the format for information elements described in 29.060
+ * and 09.60.
  * 31 * 4 + 15 structs +  = 120 + 15 structs ~ 2k / context
  * Structs: IP address 16+4 bytes (6), APN 255 bytes (2)
  * QOS: 255 bytes (3), msisdn 16 bytes (1), 
@@ -85,7 +86,26 @@ unsigned char v[255];
  * allocate, free, sort and find pdp_t
  * (newpdp, freepdp, getpdp)
  * Hash tables: TID, IMSI, IP etc.) 
- *************************************************************/
+ *
+ *
+ * Secondary PDP Context Activation Procedure 
+ *
+ * With GTP version 1 it is possible to establish multiple PDP
+ * contexts with the same IP address. With this scheme the first
+ * context is established as normal. Following contexts are
+ * established by referencing one of the allready existing ones.  Each
+ * context is uniquely identified by IMSI and NSAPI. Each context is
+ * allocated an tei_di, but they all share the same tei_c.
+ *
+ * For Delete PDP Context the context is referenced by tei_c and
+ * nsapi. As an option it is possible to include a teardown indicater,
+ * in which case all PDP contexts with the same tei_c (IP address) are
+ * deleted.
+ *
+ * For Update PDP Context the context is normally referenced by tei_c
+ * and nsapi. If moving from GTP0 to GTP1 during an update the context
+ * is referenced instead by IMSI and NSAPI.
+ *****************************************************************/
 
 struct pdp_t {
   /* Parameter determining if this PDP is in use. */
@@ -123,7 +143,6 @@ struct pdp_t {
   struct ul255_t apn_sub;/* The APN received from the HLR. */
   struct ul255_t apn_use;/* The APN Network Identifier currently used. */
   uint8_t     nsapi;    /* Network layer Service Access Point Identifier. (4 bit) */
-  uint8_t     linked_nsapi;  /* (Linked NSAPI) (4 bit) */
   uint16_t    ti;       /* Transaction Identifier. (4 or 12 bit) */
 
   uint32_t    teic_own; /* (Own Tunnel Endpoint Identifier Control) */
@@ -183,6 +202,16 @@ struct pdp_t {
   u_int16_t   seq;      /* Sequence number of last request */
   struct sockaddr_in sa_peer; /* Address of last request */
   int fd;               /* File descriptor request was received on */
+
+  uint8_t teic_confirmed; /* 0: Not confirmed. 1: Confirmed */
+
+  /* Parameters used for secondary activation procedure (tei data) */
+  /* If (secondary == 1) then teic_own indicates linked PDP context */
+  uint8_t secondary;    /* 0: Primary (control). 1: Secondary (data only) */
+  uint8_t nodata;       /* 0: User plane PDP context. 1: No user plane */
+
+  /* Secondary contexts of this primary context */
+  uint32_t secondary_tei[PDP_MAXNSAPI]; 
 };
 
 

@@ -125,11 +125,18 @@ int pdp_newpdp(struct pdp_t **pdp, uint64_t imsi, uint8_t nsapi,
       (*pdp)->inuse    = 1;
       (*pdp)->imsi     = imsi;
       (*pdp)->nsapi    = nsapi;
-      (*pdp)->fllc     = (uint16_t) n;
-      (*pdp)->fllu     = (uint16_t) n;
-      (*pdp)->teic_own = (uint32_t) n;
-      (*pdp)->teid_own = (uint32_t) n;
+      (*pdp)->fllc     = (uint16_t) n + 1;
+      (*pdp)->fllu     = (uint16_t) n + 1;
+      (*pdp)->teid_own = (uint32_t) n + 1;
+      if (!(*pdp)->secondary) (*pdp)->teic_own = (uint32_t) n + 1;
       pdp_tidset(*pdp, pdp_gettid(imsi, nsapi));
+      
+      /* Insert reference in primary context */
+      if (((*pdp)->teic_own > 0 ) && ((*pdp)->teic_own <= PDP_MAX)) {
+	pdpa[(*pdp)->teic_own-1].secondary_tei[(*pdp)->nsapi & 0x0f] = 
+	  (*pdp)->teid_own;
+      }
+      
       return 0;
     }
   }
@@ -138,8 +145,13 @@ int pdp_newpdp(struct pdp_t **pdp, uint64_t imsi, uint8_t nsapi,
 
 int pdp_freepdp(struct pdp_t *pdp){
   pdp_tiddel(pdp);
+
+  /* Remove any references in primary context */
+  if ((pdp->secondary) && (pdp->teic_own > 0 ) && (pdp->teic_own <= PDP_MAX)) {
+    pdpa[pdp->teic_own-1].secondary_tei[pdp->nsapi & 0x0f] = 0;
+  }
+
   memset(pdp, 0, sizeof(struct pdp_t));
-  /* Also need to clean up IP hash tables */
   return 0;
 }
 
@@ -149,24 +161,26 @@ int pdp_getpdp(struct pdp_t **pdp){
 }
 
 int pdp_getgtp0(struct pdp_t **pdp, uint16_t fl){
-  if (fl>=PDP_MAX) {
+  if ((fl>PDP_MAX) || (fl<1)) {
     return EOF;  /* Not found */
   }
   else {
-    *pdp = &pdpa[fl];
+    *pdp = &pdpa[fl-1];
     if ((*pdp)->inuse) return 0;
     else return EOF; 
     /* Context exists. We do no further validity checking. */
   }
 }
 
-int pdp_getgtp1(struct pdp_t **pdp, uint32_t teid){
-  if (teid>=PDP_MAX) {
-    return -1;  /* Not found */
+int pdp_getgtp1(struct pdp_t **pdp, uint32_t tei){
+  if ((tei>PDP_MAX) || (tei<1)) {
+    return EOF;  /* Not found */
   }
   else {
-    *pdp = &pdpa[teid];
-    return 0; /* We do no validity checking. */
+    *pdp = &pdpa[tei-1];
+    if ((*pdp)->inuse) return 0;
+    else return EOF; 
+    /* Context exists. We do no further validity checking. */
   }
 }
 

@@ -775,8 +775,25 @@ int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len) {
   return 0;
 }
 
-int create_pdp_conf(struct pdp_t *pdp, int cause) {
+int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause) {
   struct in_addr addr;
+
+  struct iphash_t *iph = (struct iphash_t*) cbp;
+
+  if (cause < 0) {
+    printf("Create PDP Context Request timed out\n");
+    if (iph->pdp->version == 1) {
+      printf("Retrying with version 0\n");
+      iph->pdp->version = 0;
+      gtp_create_context_req(gsn, iph->pdp, iph, &options.remote);
+      state = 1;  /* Enter wait_connection state */
+      return 0;
+    }
+    else {
+      state = 0;
+      return EOF;
+    }
+  }
 
   if (cause != 128) {
     printf("Received create PDP context response. Cause value: %d\n", cause);
@@ -828,14 +845,13 @@ int echo_conf(int recovery) {
   return 0;
 }
 
-int conf(int type, int cause, struct pdp_t* pdp, void *aid) {
+int conf(int type, int cause, struct pdp_t* pdp, void *cbp) {
   /* if (cause < 0) return 0; Some error occurred. We don't care */
   switch (type) {
   case GTP_ECHO_REQ:
     return echo_conf(cause);
   case GTP_CREATE_PDP_REQ:
-    if (cause !=128) return 0; /* Request not accepted. We don't care */
-    return create_pdp_conf(pdp, cause);
+    return create_pdp_conf(pdp, cbp, cause);
   case GTP_DELETE_PDP_REQ:
     if (cause !=128) return 0; /* Request not accepted. We don't care */
     return delete_pdp_conf(pdp, cause);
@@ -976,7 +992,7 @@ int main(int argc, char **argv)
 
     /* Create context */
     /* We send this of once. Retransmissions are handled by gtplib */
-    gtp_create_context_req(gsn, pdp, NULL, &options.remote);
+    gtp_create_context_req(gsn, pdp, &iparr[n], &options.remote);
   }    
 
   state = 1;  /* Enter wait_connection state */
@@ -1018,14 +1034,14 @@ int main(int argc, char **argv)
 	state = 3;
     }    
 
-    /* Send of disconnect */
+    /* Send off disconnect */
     if (3 == state) {
       state = 4;
       stoptime = time(NULL) + 5; /* Extra seconds to allow disconnect */
       for(n=0; n<options.contexts; n++) {
 	/* Delete context */
 	printf("Disconnecting PDP context #%d\n", n);
-	gtp_delete_context_req(gsn, iparr[n].pdp, NULL);
+	gtp_delete_context_req(gsn, iparr[n].pdp, NULL, 1);
 	if ((options.pinghost.s_addr !=0) && ntransmitted) ping_finish();
       }
     }

@@ -139,6 +139,12 @@ int gtp_set_cb_unsup_ind(struct gsn_t *gsn,
   return 0;
 }
 
+int gtp_set_cb_extheader_ind(struct gsn_t *gsn,
+			     int (*cb) (struct sockaddr_in *peer)) {
+  gsn->cb_extheader_ind = cb;
+  return 0;
+}
+
 
 /* API: Initialise delete context callback */
 /* Called whenever a pdp context is deleted for any reason */
@@ -383,6 +389,9 @@ char* snprint_packet(struct gsn_t *gsn, struct sockaddr_in *peer,
  * gtp_resp:
  *   Send off a response to a request. Use the same sequence
  *   number in the response as in the request.
+ * gtp_notification:
+ *   Send off a notification message. This is neither a request nor
+ *   a response. Both TEI and SEQ are zero.
  * gtp_retrans:
  *   Retransmit any outstanding packets which have exceeded
  *   a predefined timeout.
@@ -592,6 +601,50 @@ int gtp_resp(int version, struct gsn_t *gsn, struct pdp_t *pdp,
     qmsg->cbp = NULL;
     qmsg->type = 0;
     qmsg->fd = fd;
+  }
+  return 0;
+}
+
+int gtp_notification(struct gsn_t *gsn, int version,
+		     union gtp_packet *packet, int len,
+		     struct sockaddr_in *peer, int fd, 
+		     uint16_t seq) {
+
+  struct sockaddr_in addr;
+  
+  memcpy(&addr, peer, sizeof(addr));
+
+  /* In GTP0 notifications are treated as replies. In GTP1 they
+     are requests for which there is no reply */
+
+  if (fd == gsn->fd1c)
+    addr.sin_port = htons(GTP1C_PORT);
+  else if (fd == gsn->fd1u)
+    addr.sin_port = htons(GTP1C_PORT);
+
+  if ((packet->flags & 0xe0) == 0x00) { /* Version 0 */
+    packet->gtp0.h.length = hton16(len - GTP0_HEADER_SIZE);
+    packet->gtp0.h.seq = hton16(seq);
+  }
+  else if ((packet->flags & 0xe2) == 0x22) { /* Version 1 with seq */
+    packet->gtp1l.h.length = hton16(len - GTP1_HEADER_SIZE_SHORT);
+    packet->gtp1l.h.seq = hton16(seq);
+  }
+  else {
+    gtp_err(LOG_ERR, __FILE__, __LINE__, "Unknown packet flag");
+    return -1;
+  }
+  
+  if (fcntl(fd, F_SETFL, 0)) {
+    gtp_err(LOG_ERR, __FILE__, __LINE__, "fnctl()");
+    return -1;
+  }
+
+  if (sendto(fd, packet, len, 0,
+	     (struct sockaddr *) &addr, sizeof(struct sockaddr_in)) < 0) {
+    gsn->err_sendto++;
+    gtp_err(LOG_ERR, __FILE__, __LINE__, "Sendto(fd=%d, msg=%lx, len=%d) failed: Error = %s", fd, (unsigned long) &packet, len, strerror(errno));
+    return -1;
   }
   return 0;
 }
@@ -884,8 +937,9 @@ int gtp_unsup_req(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
   union gtp_packet packet;
 
   /* GTP 1 is the highest supported protocol */
-  int hlen = get_default_gtp(1, GTP_NOT_SUPPORTED, &packet);
-  return gtp_resp(version, gsn, NULL, &packet, hlen, peer, fd, 0, 0);
+  int length = get_default_gtp(1, GTP_NOT_SUPPORTED, &packet);
+  return gtp_notification(gsn, version, &packet, length, 
+			  peer, fd, 0);
 }
 
 /* Handle a Version Not Supported message */
@@ -896,6 +950,36 @@ int gtp_unsup_ind(struct gsn_t *gsn, struct sockaddr_in *peer,
   
   return 0;
 }
+
+/* Send off an Supported Extension Headers Notification */
+int gtp_extheader_req(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
+		      int fd, void *pack, unsigned len)
+{
+  union gtp_packet packet;
+  int length = get_default_gtp(version, GTP_SUPP_EXT_HEADER, &packet);
+
+  uint8_t pdcp_pdu = GTP_EXT_PDCP_PDU;
+
+  if (version < 1)
+    return 0;
+
+  /* We report back that we support only PDCP PDU headers */
+  gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_EXT_HEADER_T, sizeof(pdcp_pdu), 
+	    &pdcp_pdu);
+
+  return gtp_notification(gsn, version, &packet, length, 
+			  peer, fd, get_seq(pack));
+}
+
+/* Handle a Supported Extension Headers Notification */
+int gtp_extheader_ind(struct gsn_t *gsn, struct sockaddr_in *peer, 
+		      void *pack, unsigned len) {
+
+  if (gsn->cb_extheader_ind) gsn->cb_extheader_ind(peer);
+  
+  return 0;
+}
+
 
 /* ***********************************************************
  * Session management messages
@@ -914,19 +998,38 @@ extern int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
 				  void *cbp, struct in_addr* inetaddr) {
   union gtp_packet packet;
   int length = get_default_gtp(pdp->version, GTP_CREATE_PDP_REQ, &packet);
+  struct pdp_t *linked_pdp = NULL;
 
-  if (pdp->version == 0)
+  /* TODO: Secondary PDP Context Activation Procedure */
+  /* In secondary activation procedure the PDP context is identified
+     by tei in the header. The following fields are omitted: Selection
+     mode, IMSI, MSISDN, End User Address, Access Point Name and
+     Protocol Configuration Options */
+
+  if (pdp->secondary) {
+    if (pdp_getgtp1(&linked_pdp, pdp->teic_own)) {
+      gtp_err(LOG_ERR, __FILE__, __LINE__, "Unknown linked PDP context");
+      return EOF;
+    }
+  }
+
+  if (pdp->version == 0) {
     gtpie_tv0(&packet, &length, GTP_MAX, GTPIE_QOS_PROFILE0, 
 	      sizeof(pdp->qos_req0), pdp->qos_req0);
+  }
 
-  if (pdp->version == 1)
-    gtpie_tv0(&packet, &length, GTP_MAX, GTPIE_IMSI, 
-	      sizeof(pdp->imsi), (uint8_t*) &pdp->imsi);
+  if (pdp->version == 1) {
+    if (!pdp->secondary) /* Not Secondary PDP Context Activation Procedure */
+      gtpie_tv0(&packet, &length, GTP_MAX, GTPIE_IMSI, 
+		sizeof(pdp->imsi), (uint8_t*) &pdp->imsi);
+  }
 
   gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_RECOVERY, 
 	    gsn->restart_counter);
-  gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_SELECTION_MODE,
-	    pdp->selmode);
+
+  if (!pdp->secondary) /* Not Secondary PDP Context Activation Procedure */
+    gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_SELECTION_MODE,
+	      pdp->selmode);
 
   if (pdp->version == 0) {
     gtpie_tv2(&packet, &length, GTP_MAX, GTPIE_FL_DI, 
@@ -938,17 +1041,21 @@ extern int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
   if (pdp->version == 1) {
     gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_TEI_DI,
 	      pdp->teid_own);
-    gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_TEI_C,
-	      pdp->teic_own);
+
+    if (!pdp->teic_confirmed) 
+      gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_TEI_C,
+		pdp->teic_own);
   }
 
   gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_NSAPI, 
 	    pdp->nsapi);
 
-  /*gtpie_tv1(packet.gtp1l.p, &length, GTP_MAX, GTPIE_NSAPI, 
-    pdp->nsapil); For use by several QoS profiles for the same address */
 
   if (pdp->version == 1) {
+    if (pdp->secondary) /* Secondary PDP Context Activation Procedure */
+      gtpie_tv1(packet.gtp1l.p, &length, GTP_MAX, GTPIE_NSAPI, 
+		linked_pdp->nsapi);
+    
     gtpie_tv2(&packet, &length, GTP_MAX, GTPIE_CHARGING_C,
 	      pdp->cch_pdp);
   }
@@ -959,21 +1066,28 @@ extern int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
   gtpie_tv2(&packet, &length, GTP_MAX, GTPIE_TRACE_TYPE,
 	    pdp->tracetype); */
 
-  gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_EUA, 
-	    pdp->eua.l, pdp->eua.v);
-  gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_APN, 
-	    pdp->apn_use.l, pdp->apn_use.v);
+  if (!pdp->secondary) /* Not Secondary PDP Context Activation Procedure */
+    gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_EUA, 
+	      pdp->eua.l, pdp->eua.v);
+  
 
-  if (pdp->pco_req.l)
-    gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_PCO, 
-	      pdp->pco_req.l, pdp->pco_req.v);
+  if (!pdp->secondary) /* Not Secondary PDP Context Activation Procedure */
+    gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_APN, 
+	      pdp->apn_use.l, pdp->apn_use.v);
+
+  if (!pdp->secondary) /* Not Secondary PDP Context Activation Procedure */
+    if (pdp->pco_req.l)
+      gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_PCO, 
+		pdp->pco_req.l, pdp->pco_req.v);
   
   gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_GSN_ADDR, 
 	    pdp->gsnlc.l, pdp->gsnlc.v);
   gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_GSN_ADDR, 
 	    pdp->gsnlu.l, pdp->gsnlu.v);
-  gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_MSISDN,
-	    pdp->msisdn.l, pdp->msisdn.v);
+
+  if (!pdp->secondary) /* Not Secondary PDP Context Activation Procedure */
+    gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_MSISDN,
+	      pdp->msisdn.l, pdp->msisdn.v);
 
   if (pdp->version == 1) 
     gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_QOS_PROFILE,
@@ -996,7 +1110,6 @@ extern int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
 
   return 0;
 }
-
 
 /* API: Application response to context indication */
 int gtp_create_context_resp(struct gsn_t *gsn, struct pdp_t *pdp, int cause) {
@@ -1053,8 +1166,10 @@ int gtp_create_pdp_resp(struct gsn_t *gsn, int version, struct pdp_t *pdp,
 		pdp->teic_own);
     }
 
+    /* TODO: We use teic_own as charging ID */
     gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_CHARGING_ID,
-	      0x12345678);
+	      pdp->teic_own);
+
     gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_EUA, 
 	      pdp->eua.l, pdp->eua.v);
 
@@ -1090,8 +1205,10 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 
   uint16_t seq = get_seq(pack);
   int hlen = get_hlen(pack);
+  uint8_t linked_nsapi = 0;
+  struct pdp_t *linked_pdp = NULL;
 
-  if(!gtp_dublicate(gsn, 0, peer, seq)) return 0;
+  if(!gtp_dublicate(gsn, version, peer, seq)) return 0;
 
   pdp = &pdp_buf;
   memset(pdp, 0, sizeof(struct pdp_t));
@@ -1117,6 +1234,43 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
       return gtp_create_pdp_resp(gsn, version, pdp, GTPCAUSE_INVALID_MESSAGE);
   }
 
+  if (version == 1) {
+    /* Linked NSAPI (conditional) */
+    /* If included this is the Secondary PDP Context Activation Procedure */
+    /* In secondary activation IMSI is not included, so the context must be */
+    /* identified by the tei */
+    if (!gtpie_gettv1(ie, GTPIE_NSAPI, 1, &linked_nsapi)) {
+      
+      /* Find the primary PDP context */
+      if (pdp_getgtp1(&linked_pdp, get_tei(pack))) {
+	gsn->incorrect++;
+	gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
+		    "Incorrect optional information field");
+	return gtp_create_pdp_resp(gsn, version, pdp, 
+				   GTPCAUSE_OPT_IE_INCORRECT);
+      }
+
+      /* Check that the primary PDP context matches linked nsapi */
+      if (linked_pdp->nsapi != linked_nsapi) {
+	gsn->incorrect++;
+	gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
+		    "Incorrect optional information field");
+	return gtp_create_pdp_resp(gsn, version, pdp, 
+				   GTPCAUSE_OPT_IE_INCORRECT);
+      }
+      
+      /* Copy parameters from primary context */
+      pdp->selmode = linked_pdp->selmode;
+      pdp->imsi = linked_pdp->imsi;
+      pdp->msisdn = linked_pdp->msisdn;
+      pdp->eua = linked_pdp->eua;
+      pdp->pco_req = linked_pdp->pco_req;
+      pdp->apn_req = linked_pdp->apn_req;
+      pdp->teic_gn = linked_pdp->teic_gn;
+      pdp->secondary = 1;
+    }
+  } /* if (version == 1) */
+
   if (version == 0) {
     if (gtpie_gettv0(ie, GTPIE_QOS_PROFILE0, 0,
 		     pdp->qos_req0, sizeof(pdp->qos_req0))) {
@@ -1126,9 +1280,9 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
       return gtp_create_pdp_resp(gsn, version, pdp, GTPCAUSE_MAN_IE_MISSING);
     }
   }
-
-
-  if (version == 1) {
+  
+  if ((version == 1) && (!linked_pdp)) {
+    /* Not Secondary PDP Context Activation Procedure */
     /* IMSI (conditional) */
     if (gtpie_gettv0(ie, GTPIE_IMSI, 0, &pdp->imsi, sizeof(pdp->imsi))) {
       gsn->missing++;
@@ -1138,20 +1292,22 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 				 GTPCAUSE_MAN_IE_MISSING);
     }
   }
-
+  
   /* Recovery (optional) */
   if (!gtpie_gettv1(ie, GTPIE_RECOVERY, 0, &recovery)) {
     /* TODO: Handle received recovery IE */
   }
-
+  
   /* Selection mode (conditional) */
-  if (gtpie_gettv0(ie, GTPIE_SELECTION_MODE, 0,
-		   &pdp->selmode, sizeof(pdp->selmode))) {
-    gsn->missing++;
-    gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
-		"Missing mandatory information field");
-    return gtp_create_pdp_resp(gsn, version, pdp, 
-			       GTPCAUSE_MAN_IE_MISSING);
+  if (!linked_pdp) { /* Not Secondary PDP Context Activation Procedure */
+    if (gtpie_gettv0(ie, GTPIE_SELECTION_MODE, 0,
+		     &pdp->selmode, sizeof(pdp->selmode))) {
+      gsn->missing++;
+      gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
+		  "Missing mandatory information field");
+      return gtp_create_pdp_resp(gsn, version, pdp, 
+				 GTPCAUSE_MAN_IE_MISSING);
+    }
   }
 
   if (version == 0) {
@@ -1171,8 +1327,8 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 				 GTPCAUSE_MAN_IE_MISSING);
     }
   }
-
-
+  
+  
   if (version == 1) {
     /* TEID (mandatory) */
     if (gtpie_gettv4(ie, GTPIE_TEI_DI, 0, &pdp->teid_gn)) {
@@ -1184,64 +1340,57 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
     }
 
     /* TEIC (conditional) */
-    if (gtpie_gettv4(ie, GTPIE_TEI_C, 0, &pdp->teic_gn)) {
-      gsn->missing++;
-      gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
-		  "Missing mandatory information field");
-      return gtp_create_pdp_resp(gsn, version, pdp, 
-				 GTPCAUSE_MAN_IE_MISSING);
-    }
-
-    /* NSAPI (mandatory) */
-    if (gtpie_gettv1(ie, GTPIE_NSAPI, 0, &pdp->nsapi)) {
-      gsn->missing++;
-      gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
-		  "Missing mandatory information field");
-      return gtp_create_pdp_resp(gsn, version, pdp, 
-				 GTPCAUSE_MAN_IE_MISSING);
-    }
-
-    /* Linked NSAPI (conditional) */
-    if (gtpie_gettv1(ie, GTPIE_NSAPI, 1, &pdp->linked_nsapi)) {
-      /* TODO: Handle linked NSAPI */
-      /* Currently the Secondary PDP Context Activation Procedure is not */
-      /* supported */
-    } else {
-      gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
-		  "Found Linked NSAPI");
-      return gtp_create_pdp_resp(gsn, version, pdp, 
-				 GTPCAUSE_NOT_SUPPORTED);
+    if (!linked_pdp) { /* Not Secondary PDP Context Activation Procedure */
+      if (gtpie_gettv4(ie, GTPIE_TEI_C, 0, &pdp->teic_gn)) {
+	gsn->missing++;
+	gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
+		    "Missing mandatory information field");
+	return gtp_create_pdp_resp(gsn, version, pdp, 
+				   GTPCAUSE_MAN_IE_MISSING);
+      }
     }
   }
 
+  /* NSAPI (mandatory) */
+  if (gtpie_gettv1(ie, GTPIE_NSAPI, 0, &pdp->nsapi)) {
+    gsn->missing++;
+    gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
+		"Missing mandatory information field");
+    return gtp_create_pdp_resp(gsn, version, pdp, 
+			       GTPCAUSE_MAN_IE_MISSING);
+  }
+  
+  
   /* Charging Characteriatics (optional) */
   /* Trace reference (optional) */
   /* Trace type (optional) */
   /* Charging Characteriatics (optional) */
-
-  /* End User Address (conditional) */
-  if (gtpie_gettlv(ie, GTPIE_EUA, 0, &pdp->eua.l,
+  
+  if (!linked_pdp) { /* Not Secondary PDP Context Activation Procedure */
+    /* End User Address (conditional) */
+    if (gtpie_gettlv(ie, GTPIE_EUA, 0, &pdp->eua.l,
 		     &pdp->eua.v, sizeof(pdp->eua.v))) {
-    gsn->missing++;
-    gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
-		"Missing mandatory information field");
-    return gtp_create_pdp_resp(gsn, version, pdp, 
-			       GTPCAUSE_MAN_IE_MISSING);
-  }
-
-  /* APN */
-  if (gtpie_gettlv(ie, GTPIE_APN, 0, &pdp->apn_req.l,
+      gsn->missing++;
+      gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
+		  "Missing mandatory information field");
+      return gtp_create_pdp_resp(gsn, version, pdp, 
+				 GTPCAUSE_MAN_IE_MISSING);
+    }
+    
+    /* APN */
+    if (gtpie_gettlv(ie, GTPIE_APN, 0, &pdp->apn_req.l,
 		     &pdp->apn_req.v, sizeof(pdp->apn_req.v))) {
-    gsn->missing++;
-    gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
-		"Missing mandatory information field");
-    return gtp_create_pdp_resp(gsn, version, pdp, 
-			       GTPCAUSE_MAN_IE_MISSING);
-  }
-
-  /* Extract protocol configuration options (optional) */
-  if (!gtpie_gettlv(ie, GTPIE_PCO, 0, &pdp->pco_req.l,
-		    &pdp->pco_req.v, sizeof(pdp->pco_req.v))) {
+      gsn->missing++;
+      gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
+		  "Missing mandatory information field");
+      return gtp_create_pdp_resp(gsn, version, pdp, 
+				 GTPCAUSE_MAN_IE_MISSING);
+    }
+    
+    /* Extract protocol configuration options (optional) */
+    if (!gtpie_gettlv(ie, GTPIE_PCO, 0, &pdp->pco_req.l,
+		      &pdp->pco_req.v, sizeof(pdp->pco_req.v))) {
+    }
   }
 
   /* SGSN address for signalling (mandatory) */
@@ -1264,14 +1413,16 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 			       GTPCAUSE_MAN_IE_MISSING);
   }
   
-  /* MSISDN (conditional) */
-  if (gtpie_gettlv(ie, GTPIE_MSISDN, 0, &pdp->msisdn.l,
-		   &pdp->msisdn.v, sizeof(pdp->msisdn.v))) {
-    gsn->missing++;
-    gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
-		"Missing mandatory information field");
-    return gtp_create_pdp_resp(gsn, version, pdp, 
-			       GTPCAUSE_MAN_IE_MISSING);
+  if (!linked_pdp) { /* Not Secondary PDP Context Activation Procedure */
+    /* MSISDN (conditional) */
+    if (gtpie_gettlv(ie, GTPIE_MSISDN, 0, &pdp->msisdn.l,
+		     &pdp->msisdn.v, sizeof(pdp->msisdn.v))) {
+      gsn->missing++;
+      gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
+		  "Missing mandatory information field");
+      return gtp_create_pdp_resp(gsn, version, pdp, 
+				 GTPCAUSE_MAN_IE_MISSING);
+    }
   }
 
   if (version == 1) {
@@ -1289,7 +1440,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
     if (gtpie_gettlv(ie, GTPIE_TFT, 0, &pdp->tft.l,
 		     &pdp->tft.v, sizeof(pdp->tft.v))) {
     }
-    
+
     /* Trigger ID */
     /* OMC identity */
   }
@@ -1297,9 +1448,9 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
   /* Initialize our own IP addresses */
   in_addr2gsna(&pdp->gsnlc, &gsn->gsnc);
   in_addr2gsna(&pdp->gsnlu, &gsn->gsnu);
-
+  
   if (GTP_DEBUG) printf("gtp_create_pdp_ind: Before pdp_tidget\n");
-
+  
   if (!pdp_getimsi(&pdp_old, pdp->imsi, pdp->nsapi)) {
     /* Found old pdp with same tid. Now the voodoo begins! */
     /* 09.60 / 29.060 allows create on existing context to "steal" */
@@ -1333,7 +1484,14 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
       memcpy(&pdp_old->gsnrc.v, &pdp->gsnrc.v, pdp->gsnrc.l);
       pdp_old->gsnru.l = pdp->gsnru.l;
       memcpy(&pdp_old->gsnru.v, &pdp->gsnru.v, pdp->gsnru.l);
-      
+
+      /* Copy request parameters */
+      pdp_old->seq     = pdp->seq;
+      pdp_old->sa_peer = pdp->sa_peer;
+      pdp_old->fd      = pdp->fd = fd;
+      pdp_old->version =  pdp->version = version;
+
+      /* Switch to using the old pdp context */
       pdp = pdp_old;
       
       /* Confirm to peer that things were "successful" */
@@ -1385,6 +1543,9 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
     if (gsn->cb_conf) gsn->cb_conf(type, EOF, NULL, cbp);
     return EOF;
   }
+
+  /* Register that we have received a valid teic from GGSN */
+  pdp->teic_confirmed = 1;
 
   /* Decode information elements */
   if (gtpie_decaps(ie, version, pack+hlen, len-hlen)) {
@@ -1534,52 +1695,55 @@ int gtp_update_context(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
   if (pdp->version == 0)
     gtpie_tv0(&packet, &length, GTP_MAX, GTPIE_QOS_PROFILE0, 
 	      sizeof(pdp->qos_req0), pdp->qos_req0);
-
-  if (pdp->version == 1)
+  
+  /* Include IMSI if updating with unknown teic_gn */
+  if ((pdp->version == 1) && (!pdp->teic_gn))
     gtpie_tv0(&packet, &length, GTP_MAX, GTPIE_IMSI, 
 	      sizeof(pdp->imsi), (uint8_t*) &pdp->imsi);
-
+  
   gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_RECOVERY, 
 	    gsn->restart_counter);
-
+  
   if (pdp->version == 0) {
     gtpie_tv2(&packet, &length, GTP_MAX, GTPIE_FL_DI, 
 	      pdp->fllu);
     gtpie_tv2(&packet, &length, GTP_MAX, GTPIE_FL_C,
 	      pdp->fllc);
   }
-
+  
   if (pdp->version == 1) {
     gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_TEI_DI,
 	      pdp->teid_own);
-    gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_TEI_C,
-	      pdp->teic_own);
-  }
 
+    if (!pdp->teic_confirmed)
+      gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_TEI_C,
+		pdp->teic_own);
+  }
+  
   gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_NSAPI, 
 	    pdp->nsapi);
-
+  
   /* TODO 
-  gtpie_tv2(&packet, &length, GTP_MAX, GTPIE_TRACE_REF,
-	    pdp->traceref);
-  gtpie_tv2(&packet, &length, GTP_MAX, GTPIE_TRACE_TYPE,
-	    pdp->tracetype); */
-
+     gtpie_tv2(&packet, &length, GTP_MAX, GTPIE_TRACE_REF,
+     pdp->traceref);
+     gtpie_tv2(&packet, &length, GTP_MAX, GTPIE_TRACE_TYPE,
+     pdp->tracetype); */
+  
   /* TODO if ggsn update message
-  gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_EUA, 
-	    pdp->eua.l, pdp->eua.v);
+     gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_EUA, 
+     pdp->eua.l, pdp->eua.v);
   */
-
+  
   gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_GSN_ADDR, 
 	    pdp->gsnlc.l, pdp->gsnlc.v);
   gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_GSN_ADDR, 
 	    pdp->gsnlu.l, pdp->gsnlu.v);
-
+  
   if (pdp->version == 1) 
     gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_QOS_PROFILE,
 	      pdp->qos_req.l, pdp->qos_req.v);
-
-
+  
+  
   if ((pdp->version == 1) && pdp->tft.l)
     gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_TFT,
 	      pdp->tft.l, pdp->tft.v);
@@ -1628,31 +1792,34 @@ int gtp_update_pdp_resp(struct gsn_t *gsn, int version,
     if (version == 1) {
       gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_TEI_DI, 
 		pdp->teid_own);
-      gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_TEI_C,
-		pdp->teic_own);
+      
+      if (!pdp->teic_confirmed)
+	gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_TEI_C,
+		  pdp->teic_own);
     }
-
+    
+    /* TODO we use teid_own as charging ID address */
     gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_CHARGING_ID,
-	      0x12345678); /* TODO */
-
+	      pdp->teid_own); 
+    
     /* If ggsn 
-    gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_EUA, 
-	      pdp->eua.l, pdp->eua.v); */
-
+       gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_EUA, 
+       pdp->eua.l, pdp->eua.v); */
+    
     gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_GSN_ADDR, 
 	      pdp->gsnlc.l, pdp->gsnlc.v);
     gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_GSN_ADDR, 
 	      pdp->gsnlu.l, pdp->gsnlu.v);
-
+    
     if (version == 1)
       gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_QOS_PROFILE,
 		pdp->qos_neg.l, pdp->qos_neg.v);
-
+    
     /* TODO: Charging gateway address */
   }
-
-  return gtp_resp(version, gsn, pdp, &packet, length, &pdp->sa_peer, 
-		  pdp->fd, pdp->seq, pdp->tid);
+  
+  return gtp_resp(version, gsn, pdp, &packet, length, peer, 
+		  fd, get_seq(pack), get_tid(pack));
 }
 
 
@@ -1675,7 +1842,7 @@ int gtp_update_pdp_ind(struct gsn_t *gsn, int version,
   if(!gtp_dublicate(gsn, version, peer, seq)) {
     return 0; /* We allready send of response once */
   }
-
+  
   
   /* Decode information elements */
   if (gtpie_decaps(ie, version, pack+hlen, len-hlen)) {
@@ -1696,7 +1863,7 @@ int gtp_update_pdp_ind(struct gsn_t *gsn, int version,
   if (version == 0) {
     imsi = ((union gtp_packet*)pack)->gtp0.h.tid & 0x0fffffffffffffff;
     nsapi = (((union gtp_packet*)pack)->gtp0.h.tid & 0xf000000000000000) >> 60;
-
+    
     /* Find the context in question */
     if (pdp_getimsi(&pdp, imsi, nsapi)) {
       gsn->err_unknownpdp++;
@@ -1715,7 +1882,7 @@ int gtp_update_pdp_ind(struct gsn_t *gsn, int version,
       return gtp_update_pdp_resp(gsn, version, peer, fd, pack, len,
 				 NULL, GTPCAUSE_MAN_IE_MISSING);
     }
-
+    
     /* IMSI (conditional) */
     if (gtpie_gettv0(ie, GTPIE_IMSI, 0, &imsi, sizeof(imsi))) {
       /* Find the context in question */
@@ -1742,7 +1909,7 @@ int gtp_update_pdp_ind(struct gsn_t *gsn, int version,
     gtp_err(LOG_ERR, __FILE__, __LINE__, "Unknown version");
     return EOF;
   }
-
+  
   /* Make a backup copy in case anything is wrong */
   memcpy(&pdp_backup, pdp, sizeof(pdp_backup));
 
@@ -1794,12 +1961,13 @@ int gtp_update_pdp_ind(struct gsn_t *gsn, int version,
       return gtp_update_pdp_resp(gsn, version, peer, fd, pack, len, pdp, 
 				 GTPCAUSE_MAN_IE_MISSING);
     }
-
+    
     /* TEIC (conditional) */
     /* If TEIC is not included it means that we have allready received it */
-    if (gtpie_gettv4(ie, GTPIE_TEI_C, 0, &pdp->teic_gn)) {
-    }
-
+    /* TODO: From 29.060 it is not clear if TEI_C MUST be included for */
+    /* all updated contexts, or only for one of the linked contexts */
+    gtpie_gettv4(ie, GTPIE_TEI_C, 0, &pdp->teic_gn);
+    
     /* NSAPI (mandatory) */
     if (gtpie_gettv1(ie, GTPIE_NSAPI, 0, &pdp->nsapi)) {
       gsn->missing++;
@@ -1897,6 +2065,9 @@ int gtp_update_pdp_conf(struct gsn_t *gsn, int version,
     return EOF;
   }
 
+  /* Register that we have received a valid teic from GGSN */
+  pdp->teic_confirmed = 1;
+
   /* Decode information elements */
   if (gtpie_decaps(ie, 0, pack+GTP0_HEADER_SIZE, len-GTP0_HEADER_SIZE)) {
     gsn->invalid++;
@@ -1971,50 +2142,122 @@ int gtp_update_pdp_conf(struct gsn_t *gsn, int version,
 
 
 /* API: Send Delete PDP Context Request */
-int gtp_delete_context_req(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp) {
+int gtp_delete_context_req(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
+			   int teardown) {
   union gtp_packet packet;
-  int length = get_default_gtp(pdp->version, GTP_CREATE_PDP_REQ, &packet);
+  int length = get_default_gtp(pdp->version, GTP_DELETE_PDP_REQ, &packet);
   struct in_addr addr;
-  
+  struct pdp_t *linked_pdp;
+  struct pdp_t *secondary_pdp;
+  int n;
+  int count = 0;
+
   if (gsna2in_addr(&addr, &pdp->gsnrc)) {
     gsn->err_address++;
     gtp_err(LOG_ERR, __FILE__, __LINE__, "GSN address conversion failed");
     return EOF;
   }
-  
+
+  if (pdp_getgtp1(&linked_pdp, pdp->teic_own)) {
+    gtp_err(LOG_ERR, __FILE__, __LINE__, "Unknown linked PDP context");
+    return EOF;
+  }
+
+  if (!teardown) {
+    for (n=0; n< PDP_MAXNSAPI; n++)
+      if (linked_pdp->secondary_tei[n]) count++;
+    if (count <= 1) {
+      gtp_err(LOG_ERR, __FILE__, __LINE__, 
+	      "Must use teardown for last context");
+      return EOF;
+    }
+  }
+ 
   if (pdp->version == 1) {
     gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_NSAPI, 
 	      pdp->nsapi);
-
-    gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_TEARDOWN,
-	      0xff);
+    
+    if (teardown)
+      gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_TEARDOWN,
+		0xff);
   }
 
-  get_default_gtp(pdp->version, GTP_DELETE_PDP_REQ, &packet);
-  
-  return gtp_req(gsn, pdp->version, pdp, &packet, length, &addr, cbp);
-}
+  gtp_req(gsn, pdp->version, pdp, &packet, length, &addr, cbp);
 
+  if (teardown) { /* Remove all contexts */
+    for (n=0; n< PDP_MAXNSAPI; n++) {
+      if (linked_pdp->secondary_tei[n]) {
+	if (pdp_getgtp1(&secondary_pdp, linked_pdp->secondary_tei[n])) {
+	  gtp_err(LOG_ERR, __FILE__, __LINE__, "Unknown secondary PDP context");
+	  return EOF;
+	}
+	if (linked_pdp != secondary_pdp) {
+	  if (gsn->cb_delete_context) gsn->cb_delete_context(secondary_pdp);
+	  pdp_freepdp(secondary_pdp);
+	}
+      }
+    }
+    if (gsn->cb_delete_context) gsn->cb_delete_context(linked_pdp);
+    pdp_freepdp(linked_pdp);
+  }
+  else {
+    if (gsn->cb_delete_context) gsn->cb_delete_context(pdp);
+    if (pdp == linked_pdp) {
+      linked_pdp->secondary_tei[pdp->nsapi & 0xf0] = 0;
+      linked_pdp->nodata = 1;
+    }
+    else
+      pdp_freepdp(pdp);
+  }
+
+  return 0;
+}
 
 /* Send Delete PDP Context Response */
 int gtp_delete_pdp_resp(struct gsn_t *gsn, int version,
 			struct sockaddr_in *peer, int fd,
 			void *pack, unsigned len, 
-			struct pdp_t *pdp, uint8_t cause)
+			struct pdp_t *pdp, struct pdp_t *linked_pdp, 
+			uint8_t cause, int teardown)
 {
   union gtp_packet packet;
+  struct pdp_t *secondary_pdp;
   int length = get_default_gtp(version, GTP_DELETE_PDP_RSP, &packet);
+  int n;
 
   gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_CAUSE, cause);
 
   gtp_resp(version, gsn, pdp, &packet, length, peer, fd,
-	   get_seq(pack),get_tid(pack));
+	   get_seq(pack), get_tid(pack));
 
-  if (pdp) {
-    /* Callback function to allow application to clean up */
-    if (gsn->cb_delete_context) gsn->cb_delete_context(pdp);
-    pdp_freepdp(pdp); /* Clean up PDP context */
-  }
+  if (cause == GTPCAUSE_ACC_REQ) {
+    if ((teardown) || (version == 0)) { /* Remove all contexts */
+      for (n=0; n< PDP_MAXNSAPI; n++) {
+	if (linked_pdp->secondary_tei[n]) {
+	  if (pdp_getgtp1(&secondary_pdp, linked_pdp->secondary_tei[n])) {
+	    gtp_err(LOG_ERR, __FILE__, __LINE__, 
+		    "Unknown secondary PDP context");
+	    return EOF;
+	  }
+	  if (linked_pdp != secondary_pdp) {
+	    if (gsn->cb_delete_context) gsn->cb_delete_context(secondary_pdp);
+	    pdp_freepdp(secondary_pdp);
+	  }
+	}
+      }
+      if (gsn->cb_delete_context) gsn->cb_delete_context(linked_pdp);
+      pdp_freepdp(linked_pdp);
+    }
+    else { /* Remove only current context */
+      if (gsn->cb_delete_context) gsn->cb_delete_context(pdp);
+      if (pdp == linked_pdp) {
+	linked_pdp->secondary_tei[pdp->nsapi & 0xf0] = 0;
+	linked_pdp->nodata = 1;
+      }
+      else
+	pdp_freepdp(pdp);
+    }
+  } /* if (cause == GTPCAUSE_ACC_REQ) */
   
   return 0;
 }
@@ -2023,28 +2266,35 @@ int gtp_delete_pdp_resp(struct gsn_t *gsn, int version,
 int gtp_delete_pdp_ind(struct gsn_t *gsn, int version,
 		       struct sockaddr_in *peer, int fd,
 		       void *pack, unsigned len) {
-  struct pdp_t *pdp;
+  struct pdp_t *pdp = NULL;
+  struct pdp_t *linked_pdp = NULL;
   union gtpie_member* ie[GTPIE_SIZE];
   
   uint16_t seq = get_seq(pack);
   int hlen = get_hlen(pack);
 
   uint8_t nsapi;
-  uint8_t teardown;
-  
+  uint8_t teardown = 0;
+  int n;
+  int count = 0;
+
   /* Is this a dublicate ? */
   if(!gtp_dublicate(gsn, version, peer, seq)) {
     return 0; /* We allready send off response once */
   }
 
-  /* Find the context in question */
-  if (pdp_getgtp1(&pdp, get_tei(pack))) {
+  /* Find the linked context in question */
+  if (pdp_getgtp1(&linked_pdp, get_tei(pack))) {
     gsn->err_unknownpdp++;
     gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
 		"Unknown PDP context");
-    return gtp_delete_pdp_resp(gsn, version, peer, fd, pack, len,
-			       NULL, GTPCAUSE_NON_EXIST);
+    return gtp_delete_pdp_resp(gsn, version, peer, fd, pack, len, NULL, NULL,
+			       GTPCAUSE_NON_EXIST, teardown);
   }
+
+  /* If version 0 this is also the secondary context */
+  if (version == 0) 
+    pdp = linked_pdp;
   
   /* Decode information elements */
   if (gtpie_decaps(ie, version, pack+hlen, len-hlen)) {
@@ -2054,37 +2304,43 @@ int gtp_delete_pdp_ind(struct gsn_t *gsn, int version,
     if (0 == version)
       return EOF;
     else
-      return gtp_delete_pdp_resp(gsn, version, peer, fd, pack, len,
-				 NULL, GTPCAUSE_INVALID_MESSAGE);
+      return gtp_delete_pdp_resp(gsn, version, peer, fd, pack, len, NULL, NULL,
+				 GTPCAUSE_INVALID_MESSAGE, teardown);
   }
-
+  
   if (version == 1) {
     /* NSAPI (mandatory) */
     if (gtpie_gettv1(ie, GTPIE_NSAPI, 0, &nsapi)) {
       gsn->missing++;
       gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
 		  "Missing mandatory information field");
-      return gtp_delete_pdp_resp(gsn, version, peer, fd, pack, len,
-				 NULL, GTPCAUSE_MAN_IE_MISSING);
+      return gtp_delete_pdp_resp(gsn, version, peer, fd, pack, len, NULL, NULL,
+				 GTPCAUSE_MAN_IE_MISSING, teardown);
     }
-
-    /* TODO: When multiple contexts with the same IP address exists
-       we need to tear down each one individually or as a group depending
-       on the value of teardown */
+    
+    /* Find the context in question */
+    if (pdp_getgtp1(&pdp, linked_pdp->secondary_tei[nsapi & 0x0f])) {
+      gsn->err_unknownpdp++;
+      gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
+		  "Unknown PDP context");
+      return gtp_delete_pdp_resp(gsn, version, peer, fd, pack, len, NULL, NULL,
+				 GTPCAUSE_NON_EXIST, teardown);
+    }
     
     /* Teardown (conditional) */
-    if (gtpie_gettv1(ie, GTPIE_TEARDOWN, 0, &teardown)) {
-      return 0; /* 29.060 7.3.5 Ignore message */
-      /* gsn->missing++;
-	 gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
-      "Missing mandatory information field");
-		  return gtp_delete_pdp_resp(gsn, version, peer, fd, pack, len,
-      NULL, GTPCAUSE_MAN_IE_MISSING); */
+    gtpie_gettv1(ie, GTPIE_TEARDOWN, 0, &teardown);
+
+    if (!teardown) {
+      for (n=0; n< PDP_MAXNSAPI; n++)
+	if (linked_pdp->secondary_tei[n]) count++;
+      if (count <= 1) {
+	return 0; /* 29.060 7.3.5 Ignore message */
+      }
     }
   }
-  
-  return gtp_delete_pdp_resp(gsn, version, peer, fd, pack, len, pdp,
-			     GTPCAUSE_ACC_REQ);
+
+  return gtp_delete_pdp_resp(gsn, version, peer, fd, pack, len, 
+			     pdp, linked_pdp, GTPCAUSE_ACC_REQ, teardown);
 }
 
 
@@ -2092,7 +2348,6 @@ int gtp_delete_pdp_ind(struct gsn_t *gsn, int version,
 int gtp_delete_pdp_conf(struct gsn_t *gsn, int version,
 			struct sockaddr_in *peer, 
 			void *pack, unsigned len) {
-  struct pdp_t *pdp; 
   union gtpie_member *ie[GTPIE_SIZE];
   uint8_t cause;
   void *cbp = NULL;
@@ -2102,21 +2357,12 @@ int gtp_delete_pdp_conf(struct gsn_t *gsn, int version,
   /* Remove packet from queue */
   if (gtp_conf(gsn, version, peer, pack, len, &type, &cbp)) return EOF;
   
-  /* Find the context in question */
-  if (pdp_getgtp1(&pdp, get_tei(pack))) {
-    gsn->err_unknownpdp++;
-    gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
-		"Unknown PDP context");
-    if (gsn->cb_conf) gsn->cb_conf(type, EOF, NULL, cbp);
-    return EOF;
-  }
-
   /* Decode information elements */
   if (gtpie_decaps(ie, version, pack+hlen, len-hlen)) {
     gsn->invalid++;
     gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
 		"Invalid message format");
-    if (gsn->cb_conf) gsn->cb_conf(type, EOF, pdp, cbp);
+    if (gsn->cb_conf) gsn->cb_conf(type, EOF, NULL, cbp);
     return EOF;
   }
 
@@ -2125,23 +2371,21 @@ int gtp_delete_pdp_conf(struct gsn_t *gsn, int version,
     gsn->missing++;
     gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
 		"Missing mandatory information field");
-    if (gsn->cb_conf) gsn->cb_conf(type, EOF, pdp, cbp);
+    if (gsn->cb_conf) gsn->cb_conf(type, EOF, NULL, cbp);
     return EOF;
   }
 
-  /* Check the cause value */
-  if ((GTPCAUSE_ACC_REQ != cause) &&  (GTPCAUSE_NON_EXIST != cause)) {
+  /* Check the cause value (again) */
+  if ((GTPCAUSE_ACC_REQ != cause) && (GTPCAUSE_NON_EXIST != cause)) {
     gsn->err_cause++;
     gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
 		"Unexpected cause value received: %d", cause);
+    if (gsn->cb_conf) gsn->cb_conf(type, cause, NULL, cbp);
+    return EOF;
   }
-
+  
   /* Callback function to notify application */
-  if (gsn->cb_conf) gsn->cb_conf(type, cause, pdp, cbp);
-
-  /* Callback function to allow application to clean up */
-  if (gsn->cb_delete_context) gsn->cb_delete_context(pdp);
-  pdp_freepdp(pdp);  
+  if (gsn->cb_conf) gsn->cb_conf(type, cause, NULL, cbp);
   
   return 0;
 }
@@ -2242,7 +2486,7 @@ int gtp_gpdu_ind(struct gsn_t *gsn, int version,
  * TODO: Need to decide on return values! */
 int gtp_decaps0(struct gsn_t *gsn)
 {
-  unsigned char buffer[PACKET_MAX + 64 /*TODO: ip header */ ];
+  unsigned char buffer[PACKET_MAX];
   struct sockaddr_in peer;
   int peerlen;
   int status;
@@ -2374,12 +2618,12 @@ int gtp_decaps0(struct gsn_t *gsn)
 
 int gtp_decaps1c(struct gsn_t *gsn)
 {
-  unsigned char buffer[PACKET_MAX + 64 /*TODO: ip header */ ];
+  unsigned char buffer[PACKET_MAX];
   struct sockaddr_in peer;
   int peerlen;
   int status;
   struct gtp1_header_short *pheader;
-  int version = 1; /* GTP version should be determined from header!*/
+  int version = 1; /* TODO GTP version should be determined from header!*/
   int fd = gsn->fd1c;
 
   /* TODO: Need strategy of userspace buffering and blocking */
@@ -2387,17 +2631,17 @@ int gtp_decaps1c(struct gsn_t *gsn)
   /* This means that the program have to wait for busy send calls...*/
 
   while (1) { /* Loop until no more to read */
-    if (fcntl(gsn->fd1c, F_SETFL, O_NONBLOCK)) {
+    if (fcntl(fd, F_SETFL, O_NONBLOCK)) {
       gtp_err(LOG_ERR, __FILE__, __LINE__, "fnctl()");
       return -1;
     }
     peerlen = sizeof(peer);
     if ((status = 
-	 recvfrom(gsn->fd1c, buffer, sizeof(buffer), 0,
+	 recvfrom(fd, buffer, sizeof(buffer), 0,
 		  (struct sockaddr *) &peer, &peerlen)) < 0 ) {
       if (errno == EAGAIN) return 0;
       gsn->err_readfrom++;
-      gtp_err(LOG_ERR, __FILE__, __LINE__, "recvfrom(fd1c=%d, buffer=%lx, len=%d) failed: status = %d error = %s", gsn->fd1c, (unsigned long) buffer, sizeof(buffer), status, status ? strerror(errno) : "No error");
+      gtp_err(LOG_ERR, __FILE__, __LINE__, "recvfrom(fd=%d, buffer=%lx, len=%d) failed: status = %d error = %s", fd, (unsigned long) buffer, sizeof(buffer), status, status ? strerror(errno) : "No error");
       return -1;
     }
   
@@ -2416,7 +2660,8 @@ int gtp_decaps1c(struct gsn_t *gsn)
       gsn->unsup++;
       gtp_errpack(LOG_ERR, __FILE__, __LINE__, &peer, buffer, status,
 		  "Unsupported GTP version");
-      gtp_unsup_req(gsn, 1, &peer, gsn->fd1c, buffer, status);/*29.60: 11.1.1*/
+      gtp_unsup_req(gsn, version, &peer, fd, buffer, status);
+      /*29.60: 11.1.1*/
       continue;
     }
 
@@ -2455,6 +2700,18 @@ int gtp_decaps1c(struct gsn_t *gsn)
       continue;  /* Silently discard */
     }
 
+    /* Check for extension headers */
+    /* TODO: We really should cycle through the headers and determine */
+    /* if any have the comprehension required flag set */
+    if (((pheader->flags & 0x04) != 0x00)) {
+      gsn->unsup++;
+      gtp_errpack(LOG_ERR, __FILE__, __LINE__, &peer, buffer, status,
+		  "Unsupported extension header");
+      gtp_extheader_req(gsn, version, &peer, fd, buffer, status);
+
+      continue;
+    }
+
     if ((gsn->mode == GTP_MODE_GGSN) && 
 	((pheader->type == GTP_CREATE_PDP_RSP) ||
 	 (pheader->type == GTP_UPDATE_PDP_RSP) ||
@@ -2484,6 +2741,9 @@ int gtp_decaps1c(struct gsn_t *gsn)
       break;
     case GTP_NOT_SUPPORTED:
       gtp_unsup_ind(gsn, &peer, buffer, status);
+      break;
+    case GTP_SUPP_EXT_HEADER:
+      gtp_extheader_ind(gsn, &peer, buffer, status);
       break;
     case GTP_CREATE_PDP_REQ:
       gtp_create_pdp_ind(gsn, version, &peer, fd, buffer, status);
@@ -2517,7 +2777,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 
 int gtp_decaps1u(struct gsn_t *gsn)
 {
-  unsigned char buffer[PACKET_MAX + 64 /*TODO: ip header */ ];
+  unsigned char buffer[PACKET_MAX];
   struct sockaddr_in peer;
   int peerlen;
   int status;
@@ -2597,6 +2857,18 @@ int gtp_decaps1u(struct gsn_t *gsn)
 		  "GTP packet length field does not match actual length");
       continue;  /* Silently discard */
     }
+
+    /* Check for extension headers */
+    /* TODO: We really should cycle through the headers and determine */
+    /* if any have the comprehension required flag set */
+    if (((pheader->flags & 0x04) != 0x00)) {
+      gsn->unsup++;
+      gtp_errpack(LOG_ERR, __FILE__, __LINE__, &peer, buffer, status,
+		  "Unsupported extension header");
+      gtp_extheader_req(gsn, version, &peer, fd, buffer, status);
+
+      continue;
+    }
     
     switch (pheader->type) {
     case GTP_ECHO_REQ:
@@ -2604,6 +2876,9 @@ int gtp_decaps1u(struct gsn_t *gsn)
       break;
     case GTP_ECHO_RSP:
       gtp_echo_conf(gsn, version, &peer, buffer, status);
+      break;
+    case GTP_SUPP_EXT_HEADER:
+      gtp_extheader_ind(gsn, &peer, buffer, status);
       break;
     case GTP_ERROR:
       gtp_error_ind_conf(gsn, version, &peer, buffer, status);
@@ -2663,6 +2938,7 @@ int gtp_data_req(struct gsn_t *gsn, struct pdp_t* pdp,
     packet.gtp1l.h.length = hton16(len-GTP1_HEADER_SIZE_SHORT+
 				   GTP1_HEADER_SIZE_LONG);
     packet.gtp1l.h.seq = hton16(pdp->gtpsntx++);
+    packet.gtp1l.h.tei = hton32(pdp->teid_gn);
 
     if (len > sizeof (union gtp_packet) - sizeof(struct gtp1_header_long)) {
       gsn->err_memcpy++;
