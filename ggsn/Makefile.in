@@ -74,6 +74,7 @@ CXX = @CXX@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
 ECHO = @ECHO@
+EXEC_LDFLAGS = @EXEC_LDFLAGS@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LIBTOOL = @LIBTOOL@
 LN_S = @LN_S@
@@ -87,7 +88,7 @@ am__quote = @am__quote@
 install_sh = @install_sh@
 bin_PROGRAMS = ggsn
 
-LDFLAGS = -Wl,--rpath -Wl,/usr/local/lib
+LDFLAGS = -Wl,--rpath -Wl,/usr/local/lib @EXEC_LDFLAGS@
 
 CFLAGS = -O2 -D_GNU_SOURCE -fno-builtin -Wall -ansi -DSBINDIR='"$(sbindir)"' -ggdb -lgtp -L../gtp
 
