@@ -473,7 +473,7 @@ int process_options(int argc, char **argv) {
   options.pco.v[0] = 0x80; /* PPP */
   options.pco.v[1] = 0xc0; /* PAP */
   options.pco.v[2] = 0x23; 
-  options.pco.v[3] = 0x12; /* Length of protocol contents */
+  options.pco.v[3] = strlen(args_info.uid_arg) + strlen(args_info.pwd_arg) + 6;
   options.pco.v[4] = 0x01; /* Authenticate request */
   options.pco.v[5] = 0x01;
   options.pco.v[6] = 0x00; /* MSB of length */
@@ -1167,6 +1167,13 @@ int main(int argc, char **argv)
 
     pdp->hisaddr0 = options.remote;
     pdp->hisaddr1 = options.remote;
+
+    /* TODO: This could be an option */
+    pdp->cch_pdp = 2048; /* Normal charging 3GPP 32.015 */
+                         /* 2048 = Normal
+			    1024 = Prepaid
+			    0512 = Flat rate
+			    0256 = Hot billing */
 
     /* Create context */
     /* We send this of once. Retransmissions are handled by gtplib */
