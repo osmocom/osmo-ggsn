@@ -1,21 +1,33 @@
+OPENGGSN NEWS
+=============
+
 OpenGGSN - Gateway GPRS Support Node
-Copyright (C) 2002 Mondru AB.
+Copyright (C) 2002, 2003 Mondru AB.
 
-Version 0.6b
+Version 0.6
+===========
 
-   * Improved README file.
-   * Absolute path to ifconfig and route in ggsn and sgsnemu
-   * Absolute path to gtp library in ggsn/Makefile.am and ggsn/Makefile.am
-   * Compiles with gengetopt 2.8 (Thanks to Lorenzo Bettini
-     <lorenzo.bettini@penteres.it>)
-   * sgsnemu is now able to handle several contexts and allocate
-     interface IP addresses for each context.
-   * ggsn now support protocol configuration option DNS
-     addresses. This allow mobile stations to set up DNS based on
-     information configured in the ggsn.
+ * Improved README file.
+ * Now uses ioctl instead of ifconfig and route in ggsn and sgsnemu.
+ * Absolute path to gtp library in ggsn/Makefile.am and ggsn/Makefile.am
+ * Compiles with gengetopt 2.8 (Thanks to Lorenzo Bettini <bettini@gnu.org>)
+ * sgsnemu is now able to handle several contexts and allocate
+   interface IP addresses for each context.
+ * ggsn now supports protocol configuration option DNS
+   addresses. This allow mobile stations to set up DNS based on
+   information configured in the ggsn.
+ * Ping facility in sgsnemu allow testing without the need to route
+   packets through the tun interface.
+ * Man pages for ggsn and sgsnemu.
+ * Sys 5 init script.
+ * Spec file for building binary RPM packages.
+ * If not --createif exit after "ping" or "echo" finishes
+ * If sgsnemu echo failure, exit with code != 0
+
 
 Version 0.5
+===========
 
-   * Initial release. See README file for installation and usage
-     instructions.
+ * Initial release. See README file for installation and usage
+   instructions.
  

@@ -1,8 +1,19 @@
+2003-07-07: Jens Jakobsen <jj@openggsn.org>
+	Added spec.in file for building binary RPM packages. Now openggsn
+	will install binaries, man pages as well as scripts.
+
+	Added ggsn and sgsnemu man pages
+
+	Added ggsn Sys V init script
+
+	Added bootstrap script for autotools automation
+	
+
 2003-04-11: Jens Jakobsen <jj@openggsn.org>
 	Added -ggdb to gtp, sgsnemu and ggsn makefiles in order to include
 	debugging information.
 
-	Added ippool.c and ippool.h to ggsn. This allow for generic
+	Added ippool.c and ippool.h to ggsn. This allows for generic
 	allocation of dynamic ip addresses based on a <net>/<mask>
 	description of ip address space. The same files are also used in
 	sgsnemu, but only for hashing IP addresses. At the same time the
