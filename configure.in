@@ -4,6 +4,8 @@ AC_CONFIG_SRCDIR([gtp/gtp.c])
 AM_CONFIG_HEADER([config.h])
 #AC_CONFIG_HEADER([config.h])
 
+AC_CANONICAL_SYSTEM
+
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
@@ -16,6 +18,20 @@ AC_PROG_RANLIB
 #JJAKO Check for libtool
 AC_PROG_LIBTOOL
 AM_PROG_LIBTOOL
+
+AC_ARG_ENABLE(static-exec,
+ [  --enable-static-exec  Enable static linking of executables],
+ [ EXEC_LDFLAGS="-all-static"])
+
+AC_SUBST(EXEC_LDFLAGS)
+
+case "${host}" in
+  i[3456]86-*-linux-gnu*) 
+    EXEC_LDFLAGS="$EXEC_LDFLAGS -Wl,--rpath -Wl,/usr/local/lib" ;;
+  *solaris*) 
+    EXEC_LDFLAGS="$EXEC_LDFLAGS -lresolv -lsocket -lnsl" ;;
+esac
+
 
 AC_ARG_ENABLE(static-exec,
  [  --enable-static-exec  Enable static linking of executables],
@@ -36,11 +52,47 @@ AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h syslog.h unistd.h])
 
+# Check for if header
+AC_CHECK_HEADERS([linux/if.h net/if.h])
+
+# Check for tun header
+AC_CHECK_HEADERS([linux/if_tun.h net/if_tun.h])
+
+# Check for netlink and rtnetlink headers
+AC_CHECK_HEADERS([linux/netlink.h linux/rtnetlink.h])
+
+
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_TYPE_MODE_T
 AC_TYPE_SIZE_T
 AC_HEADER_TIME
+
+# check for ifaliasreq
+AC_MSG_CHECKING(whether struct ifaliasreq exist)
+AH_TEMPLATE(HAVE_IFALIASREQ)
+AC_EGREP_HEADER(ifaliasreq, net/if.h,
+[AC_MSG_RESULT(yes)
+ AC_DEFINE([HAVE_IFALIASREQ])],
+ AC_MSG_RESULT(no))
+
+# check for ifreq.ifru_netmask
+AC_MSG_CHECKING(whether struct ifreq.ifru_netmask exist)
+AH_TEMPLATE(HAVE_IFREQ_IFRU_NETMASK)
+AC_EGREP_HEADER(ifru_netmask, linux/if.h,
+[AC_MSG_RESULT(yes)
+ AC_DEFINE([HAVE_IFREQ_IFRU_NETMASK])],
+ AC_MSG_RESULT(no))
+
+
+# check for rt_msghdr
+AC_MSG_CHECKING(whether struct rt_msghdr exist)
+AH_TEMPLATE(HAVE_RT_MSGHDR)
+AC_EGREP_HEADER(rt_msghdr, net/route.h,
+[AC_MSG_RESULT(yes)
+ AC_DEFINE([HAVE_RT_MSGHDR])],
+ AC_MSG_RESULT(no))
+
 
 # Checks for library functions.
 AC_PROG_GCC_TRADITIONAL

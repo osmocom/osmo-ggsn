@@ -18,6 +18,12 @@
 /* Define to 1 if you have the `getopt_long' function. */
 #undef HAVE_GETOPT_LONG
 
+/* */
+#undef HAVE_IFALIASREQ
+
+/* */
+#undef HAVE_IFREQ_IFRU_NETMASK
+
 /* Define to 1 if you have the `inet_addr' function. */
 #undef HAVE_INET_ADDR
 
@@ -29,6 +35,18 @@
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the <linux/if.h> header file. */
+#undef HAVE_LINUX_IF_H
+
+/* Define to 1 if you have the <linux/if_tun.h> header file. */
+#undef HAVE_LINUX_IF_TUN_H
+
+/* Define to 1 if you have the <linux/netlink.h> header file. */
+#undef HAVE_LINUX_NETLINK_H
+
+/* Define to 1 if you have the <linux/rtnetlink.h> header file. */
+#undef HAVE_LINUX_RTNETLINK_H
 
 /* Define to 1 if your system has a GNU libc compatible `malloc' function, and
    to 0 otherwise. */
@@ -45,6 +63,15 @@
 
 /* Define to 1 if you have the <netinet/in.h> header file. */
 #undef HAVE_NETINET_IN_H
+
+/* Define to 1 if you have the <net/if.h> header file. */
+#undef HAVE_NET_IF_H
+
+/* Define to 1 if you have the <net/if_tun.h> header file. */
+#undef HAVE_NET_IF_TUN_H
+
+/* */
+#undef HAVE_RT_MSGHDR
 
 /* Define to 1 if you have the `select' function. */
 #undef HAVE_SELECT
