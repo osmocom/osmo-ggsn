@@ -19,7 +19,7 @@
 .\" IP indented paragraph
 .\" TP hanging label
 
-.TH sgsnemu 8 "July 2003"
+.TH sgsnemu 8 "May 2004"
 .SH NAME
 sgsnemu \- Serving GPRS Support Node Emulator
 .SH SYNOPSIS
@@ -60,6 +60,8 @@ sgsnemu \- Serving GPRS Support Node Emulator
 .BI \-\-msisdn " msisdn"
 ] [
 .BI \-\-qos " qos"
+] [
+.BI \-\-charging " charging"
 ] [
 .BI \-\-uid " uid"
 ] [
@@ -242,6 +244,13 @@ abbreviation of Quality of Service. See 3GPP specification 09.60 for
 the format of this string.
 
 .TP
+.BI --charging " charging"
+Charging characteristics to use when connecting to the GGSN (default =
+0x0800). 0x0800 = Normal, 0x0400 = Prepaid, 0x0200 = Flat rate, 0x0100
+= Hot billing. See 3GPP specification 32.015 for the format of this
+field.
+
+.TP
 .BI --uid " uid"
 User ID to send to GGSN as protocol configuration option.
 
@@ -368,7 +377,7 @@ can be found at
 
 .SH COPYRIGHT
 
-Copyright (C) 2002, 2003 by Mondru AB.
+Copyright (C) 2002, 2003, 2004 by Mondru AB.
 
 The contents of this file may be used under the terms of the GNU
 General Public License Version 2, provided that the above copyright

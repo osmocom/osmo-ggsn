@@ -34,6 +34,7 @@ option  "imsi"         i "IMSI"                           string default="240010
 option  "nsapi"        - "NSAPI"                          int default="0" no
 option  "msisdn"       m "Mobile Station ISDN number"     string default="46702123456" no
 option  "qos"          q "Requested quality of service"   int    default="0x0b921f" no
+option  "charging"     - "Charging characteristics"       int    default="0x0800" no
 option  "uid"          u "Login user ID"                  string default="mig" no
 option  "pwd"          p "Login password"                 string default="hemmelig" no
 

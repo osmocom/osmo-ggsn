@@ -32,9 +32,10 @@ struct gengetopt_args_info
   int gtpversion_arg;	/* GTP version to use (default='1').  */
   char * apn_arg;	/* Access point name (default='internet').  */
   char * imsi_arg;	/* IMSI (default='240010123456789').  */
-  int nsapi_arg;	/* NSAPI (default='1').  */
+  int nsapi_arg;	/* NSAPI (default='0').  */
   char * msisdn_arg;	/* Mobile Station ISDN number (default='46702123456').  */
   int qos_arg;	/* Requested quality of service (default='0x0b921f').  */
+  int charging_arg;	/* Charging characteristics (default='0x0800').  */
   char * uid_arg;	/* Login user ID (default='mig').  */
   char * pwd_arg;	/* Login password (default='hemmelig').  */
   int createif_flag;	/* Create local network interface (default=off).  */
@@ -65,6 +66,7 @@ struct gengetopt_args_info
   int nsapi_given ;	/* Whether nsapi was given.  */
   int msisdn_given ;	/* Whether msisdn was given.  */
   int qos_given ;	/* Whether qos was given.  */
+  int charging_given ;	/* Whether charging was given.  */
   int uid_given ;	/* Whether uid was given.  */
   int pwd_given ;	/* Whether pwd was given.  */
   int createif_given ;	/* Whether createif was given.  */

@@ -106,6 +106,7 @@ struct {
   int gtpversion;
   struct ul255_t pco;
   struct ul255_t qos;
+  uint16_t cch;
   struct ul255_t apn;
   struct ul16_t msisdn;
 } options;
@@ -224,6 +225,7 @@ int process_options(int argc, char **argv) {
     printf("debug: %d\n", args_info.debug_flag);
     if (args_info.imsi_arg) printf("imsi: %s\n", args_info.imsi_arg);
     printf("qos: %#08x\n", args_info.qos_arg);
+    printf("charging: %#04x\n", args_info.charging_arg);
     if (args_info.apn_arg) printf("apn: %s\n", args_info.apn_arg);
     if (args_info.msisdn_arg) printf("msisdn: %s\n", args_info.msisdn_arg);
     if (args_info.uid_arg) printf("uid: %s\n", args_info.uid_arg);
@@ -257,6 +259,7 @@ int process_options(int argc, char **argv) {
       printf("debug: %d\n", args_info.debug_flag);
       if (args_info.imsi_arg) printf("imsi: %s\n", args_info.imsi_arg);
       printf("qos: %#08x\n", args_info.qos_arg);
+      printf("charging: %#04x\n", args_info.charging_arg);
       if (args_info.apn_arg) printf("apn: %s\n", args_info.apn_arg);
       if (args_info.msisdn_arg) printf("msisdn: %s\n", args_info.msisdn_arg);
       if (args_info.uid_arg) printf("uid: %s\n", args_info.uid_arg);
@@ -411,6 +414,9 @@ int process_options(int argc, char **argv) {
   options.qos.v[2] = (args_info.qos_arg) & 0xff;
   options.qos.v[1] = ((args_info.qos_arg) >> 8) & 0xff;
   options.qos.v[0] = ((args_info.qos_arg) >> 16) & 0xff;
+
+  /* charging                                                        */
+  options.cch = args_info.charging_arg;
   
   /* contexts                                                        */
   if (args_info.contexts_arg > MAXCONTEXTS) {
@@ -1168,12 +1174,8 @@ int main(int argc, char **argv)
     pdp->hisaddr0 = options.remote;
     pdp->hisaddr1 = options.remote;
 
-    /* TODO: This could be an option */
-    pdp->cch_pdp = 2048; /* Normal charging 3GPP 32.015 */
-                         /* 2048 = Normal
-			    1024 = Prepaid
-			    0512 = Flat rate
-			    0256 = Hot billing */
+    pdp->cch_pdp = options.cch; /* 2048 = Normal, 1024 = Prepaid, 
+				   512 = Flat rate, 256 = Hot billing */
 
     /* Create context */
     /* We send this of once. Retransmissions are handled by gtplib */
