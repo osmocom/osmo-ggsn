@@ -11,6 +11,8 @@
 # make
 # make install
 
+find . -exec chmod go-w '{}' \;
+
 aclocal
 autoheader
 touch config.h.in
@@ -22,4 +24,5 @@ make clean
 rm config.status
 rm libtool
 rm -r autom4te.cache/
+
 
