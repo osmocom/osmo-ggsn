@@ -2,7 +2,7 @@
 
 REQUIREMENTS
 
-Linux 
+Linux
 OpenGGSN was developed and tested using Redhat 7.1 and Redhat
 7.2. It should run also on other Linux distributions as well as
 FreeBSD and Solaris, but this is untested. Please tell me of any
@@ -11,16 +11,22 @@ testing results.
 Tun
 Both ggsn and sgsnemu uses the tun package. You need at least tun
 version 1.1. See http://vtun.sourceforge.net/tun/ for instructions on
-installation. Tun should be included from linux kernel version 2.4, so
-you might not need to manually install tun.
+installation. Tun is included in the kernel from early version 2.4, so
+you will not normall need to install it. You do however need to do the
+following:
+mkdir /dev/net
+mknod /dev/net/tun c 10 200
+Add the following line to /etc/modules.conf: alias char-major-10-200 tun 
+depmod -a
 
-COMPILATION
+
+COMPILATION and INSTALLATION
 ./configure
-make clean
+cd gtp
 make
-
-INSTALLATION
-Need to be root to do this
+make install
+cd ..
+make
 make install
 Add /usr/local/lib to /etc/ld.so.conf
 Run ldconfig
@@ -29,10 +35,10 @@ RUNNING
 
 sgsnemu
 Edit the configuration file sgsnemu.conf found under
-openggsn/examples.
+openggsn/examples. Use sgsnemu -h for a list of available options.
 Start the emulator using the command:
 
-  sgsnemu -c examples/sgsnemu.conf -l 10.20.30.50 -r 10.20.30.40 --apn internet
+  sgsnemu -c examples/sgsnemu.conf -l 10.20.30.50 -r 10.20.30.40
 
 This will cause the sgsn emulator to bind to local address 10.20.30.50
 and connect to the ggsn found at 10.20.30.40. It will first send off
@@ -42,9 +48,12 @@ routing. Now you should be able to ping through the connection. Use a
 network analysator such as ethereal to monitor the traffic.
 
 ggsn
-Edit the configuration file ggsn.conf found under openggsn/examples.
+Edit the configuration file ggsn.conf found under
+openggsn/examples. Use sgsnemu -h for a list of available options.
 Start the ggsn using the command:
-  ggsn --fg -c examples/ggsn.conf -l 10.20.30.40 
+
+  ggsn --fg -c examples/ggsn.conf -l 10.20.30.40 --statedir .
+
 This will run the ggsn in foreground using the local interface
 10.20.30.40
 
@@ -60,22 +69,24 @@ OpenGGSN provides 3 components:
 * sgsnemu
 
 gtplib
-This library contain all functionality retating to the GTP
+This library contains all functionality relating to the GTP
 protocol. Use this libraty if you want to implement your own
 GSN. Currently gtplib supports GTPv0.
 
 ggsn
-The ggsn implements a Gateway GPRS Support Node. The GGSN is a
-small application which is provided in order to test and demonstrate
-the use of gtplib. It is fully compliant to the 3GPP standards, but
-lack important functionality such as charging and management. Use this
+The ggsn implements a Gateway GPRS Support Node. The GGSN is a small
+application which is provided in order to test and demonstrate the use
+of gtplib. It is fully compliant to the 3GPP standards, but lacks
+important functionality such as charging and management. Use this
 application as a starting point if you want to build your own GGSN
 with your own fancy VPN, management and charging functionality.
 
-sgsnemu This application emulates a Serving GPRS Support Node. sgsnemu
+sgsnemu
+This application emulates a Serving GPRS Support Node (SGSN). sgsnemu
 enable you to test your 3GPP core network without the need to invest
 in a 3G radio access network. An important application of sgsnemu is
 the testing of roaming connectivity through a GPRS roaming exchange.
+
 
 *** Required software ***
 
@@ -83,30 +94,33 @@ TUN
 http://vtun.sourceforge.net/tun/ 
 
 Both ggsn and sgsnemu uses the tun package. You need at least tun
-version 1.1. See the above web page for instructions on installation.
+version 1.1. See the above web page for instructions on
+installation. Tun is included in the kernel from early version 2.4, so
+you will not normally need to install it. For Redhat 7.1 and 7.2 you
+do however need to do the following:
+mkdir /dev/net
+mknod /dev/net/tun c 10 200
+Add the following line to /etc/modules.conf: alias char-major-10-200 tun 
+depmod -a
+
 
 GENGETOPT
 http://www.gnu.org/software/gengetopt/gengetopt.html
 
 Gengetopt is required if you want to change the options defined in the
-cmdline.ggo source file. You need at least gengetopt version 2.8 (Not
-released yet 2002-12-12).
+cmdline.ggo source file. You need at least gengetopt version 2.8.
 
 If you are just going to compile the programs you don't need
 gengetopt.
 
-To use gengetopt do the following:
+To use gengetopt for the ggsn do the following:
 cd ggsn
-../../gengetopt-2.8rc/src/gengetopt < cmdline.ggo --conf-parser
-insert #define _GNU_SOURCE in the top of cmdline.c to get rid of warnings.
+gengetopt < cmdline.ggo --conf-parser
 
-To use gengetopt do the following:
+To use gengetopt for the sgsnemu do the following:
 cd sgsnemu
-../../gengetopt-2.8rc/src/gengetopt < cmdline.ggo --conf-parser
-insert #define _GNU_SOURCE in the top of cmdline.c to get rid of warnings.
+gengetopt < cmdline.ggo --conf-parser
 
-libPropList-0.10.1 (??? I can't remember if I use this???)
-ftp://ftp.windowmaker.org/pub/libs
 
 *** Compilation and Installation ***
 
@@ -121,17 +135,12 @@ See http://sources.redhat.com/autobook/autobook/autobook_25.html#SEC25
  6 run ./configure
  7 rin make clean
  8 run make
+   (First time you run make it will complain that it can not find gtp.
+    Ignore the warning, gtp will get installed when you run make install)
  9 run make install
 10 Add /usr/local/lib to /etc/ld.so.conf
 11 run ldconfig
 
-
-*** Installation of libraries
-
-cd gtp
-make install
-Add /usr/local/lib to /etc/ld.so.conf
-run ldconfig
 
 On RedHat add /usr/local/lib to /etc/ld.so.conf
 http://www.dwheeler.com/program-library/Program-Library-HOWTO/shared-libraries.html
