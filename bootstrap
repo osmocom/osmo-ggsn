@@ -1,0 +1,9 @@
+#! /bin/sh
+
+aclocal
+autoheader
+touch config.h.in
+automake
+autoconf
+./configure
+make clean
