@@ -461,6 +461,69 @@ int tun_addroute(struct tun_t *this,
   }
   close(fd);
 
+#elif defined(__FreeBSD__)
+
+struct my_rt
+{
+      struct rt_msghdr rt;
+      struct sockaddr_in dst;
+      struct sockaddr_in gate;
+      struct sockaddr_in mask;
+} my_rt;
+
+ int s;
+ struct rt_msghdr *rtm;
+ struct sockaddr_in *dst, *gate, *mask;
+ 
+ if((s = socket(AF_ROUTE, SOCK_RAW, 0)) == -1)
+   {
+     sys_err(LOG_ERR, __FILE__, __LINE__, errno,
+	     "socket() failed");
+     return -1;
+   }
+ 
+ memset(&my_rt, 0x00, sizeof(my_rt));
+ 
+ rtm  = &my_rt.rt;
+ 
+ dst  = &my_rt.dst;
+ gate = &my_rt.gate;
+ mask = &my_rt.mask;
+ 
+ rtm->rtm_type = RTM_ADD;
+ rtm->rtm_flags = RTF_UP | RTF_GATEWAY | RTF_STATIC;  /* TODO */
+ rtm->rtm_msglen = sizeof(my_rt);
+ rtm->rtm_version = RTM_VERSION;
+ rtm->rtm_seq = 1234;                                 /* TODO */
+ rtm->rtm_addrs = RTA_DST | RTA_GATEWAY | RTA_NETMASK;
+ rtm->rtm_pid = getpid();      
+ 
+ dst->sin_family = AF_INET;
+ dst->sin_len    = sizeof(*dst);
+ dst->sin_addr.s_addr = dst->s_addr;
+ 
+ mask->sin_family = AF_INET;
+ mask->sin_len    = sizeof(*mask);
+ mask->sin_addr.s_addr = mask->s_addr;
+ 
+ gate->sin_family = AF_INET;
+ gate->sin_len    = sizeof(*gate);
+ gate->sin_addr.s_addr = gateway->s_addr;
+ 
+ AGAIN:
+ if(write(s, rtm, rtm->rtm_msglen) < 0)
+   {
+     if(errno == EEXIST && rtm->rtm_type == RTM_ADD)
+       {
+	 rtm->rtm_type = RTM_CHANGE;
+	 goto AGAIN;
+       }
+     sys_err(LOG_ERR, __FILE__, __LINE__, errno,
+	     "write() failed");
+     return -1;
+   }
+ return 0;
+ 
 #endif
 
   return 0;
