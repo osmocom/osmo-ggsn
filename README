@@ -10,9 +10,10 @@ Requirements
 ------------
 
 *Linux*
-OpenGGSN was developed and tested using Redhat 8.0 and 9.0. It should
-run also on other Linux distributions as well as FreeBSD and Solaris,
-but this is untested. Please tell me of any testing results.
+OpenGGSN was developed and tested using Redhat 8.0 and 9.0 and Solaris
+2.8. It should run also on other Linux distributions as well as
+FreeBSD, but this is untested. Please tell me of any
+testing results.
 
 *Tun*
 The tun driver is required for proper operation of openggsn. For linux
@@ -151,8 +152,8 @@ version 1.1. With Linux tun is normally included from kernel version
 
 Alternatively you can execute "modprobe tun" on the commandline.
 
-For other platforms and general information about tun see
-http://vtun.sourceforge.net/tun/
+For Solaris the tun driver needs to be installed manually. For general
+information about tun see http://vtun.sourceforge.net/tun/
 
 Gengetopt
 ---------
