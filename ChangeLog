@@ -1,3 +1,11 @@
+2004-04-28: Jens Jakobsen <jj@openggsn.org>
+	Improved Solaris support. OpenGGSN now correctly initializes
+	tun/tap driver under Solaris. As a consequence the ggsn network
+	interface IP address is set to the network address plus one.
+
+	Added routing manipulation and IP address alias capability for
+	FreeBSD.
+
 2004-01-19: Jens Jakobsen <jj@openggsn.org>
 	Initial FreeBSD port (Thanks to	Pavel Andreev <pavel.andreev@hp.com>).
 

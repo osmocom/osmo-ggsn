@@ -4,6 +4,13 @@ OPENGGSN NEWS
 OpenGGSN - Gateway GPRS Support Node
 Copyright (C) 2002, 2003, 2004 Mondru AB.
 
+Version 0.82
+============
+
+* Improved Solaris support. 
+* Routing manipulation and IP address alias capability for FreeBSD.
+* Initial Debian port (Thanks to ARAKI Yasuhiro <ar@debian.org>).
+
 Version 0.81
 ============
 

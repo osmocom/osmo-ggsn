@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(openggsn, 0.81, jj@openggsn.org)
+AC_INIT(openggsn, 0.82, jj@openggsn.org)
 AC_CONFIG_SRCDIR([gtp/gtp.c])
 AM_CONFIG_HEADER([config.h])
 #AC_CONFIG_HEADER([config.h])
