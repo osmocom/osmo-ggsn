@@ -175,10 +175,14 @@ Number of contexts to establish. (default = 1)
 .TP
 .BI --timelimit " seconds"
 Exit 
-.b sgsnemu
+.B sgsnemu
 after 
-.I seconds.
-Used for debugging.
+.I seconds. 
+When using the ping facility 
+.B sgsnemu
+will also exit after
+.B --pingcount
+packets has been transmitted.
 
 .TP
 .BI --apn " apn"

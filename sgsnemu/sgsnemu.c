@@ -75,8 +75,9 @@ struct iphash_t *iphash[MAXCONTEXTS];
 /* 0: Idle                       */
 /* 1: Wait_connect               */
 /* 2: Connected                  */
-/* 3: Wait_disconnect            */
-/* 4: Disconnected               */
+/* 3: Done                       */
+/* 4: Wait_disconnect            */
+/* 5: Disconnected               */
 int state = 0;                  
 
 struct gsn_t *gsn = NULL;       /* GSN instance */
@@ -748,7 +749,10 @@ int delete_context(struct pdp_t *pdp) {
 
   ipdel((struct iphash_t*) pdp->peer);
   memset(pdp->peer, 0, sizeof(struct iphash_t)); /* To be sure */
-  state = 4; /* Disconnected */
+
+  if (1 == options.contexts)
+    state = 5;  /* Disconnected */
+
   return 0;
 }
 
@@ -811,13 +815,14 @@ int create_pdp_conf(struct pdp_t *pdp, int cause) {
 
 int delete_pdp_conf(struct pdp_t *pdp, int cause) {
   printf("Received delete PDP context response. Cause value: %d\n", cause);
-  state = 0; /* Idle */
   return 0;
 }
 
 int echo_conf(struct pdp_t *pdp, int cause) {
-  if (cause <0)
+  if (cause <0) {
     printf("Echo request timed out\n");
+    state = 0; 
+  }
   else
     printf("Received echo response.\n");
   return 0;
@@ -852,6 +857,8 @@ int main(int argc, char **argv)
   struct pdp_t *pdp;
   int n;
   int starttime = time(NULL);   /* Time program was started */
+  int stoptime = 0;             /* Time to exit */
+  int pingtimeout = 0;          /* Time to print ping statistics */
 
   struct timezone tz;           /* Used for calculating ping times */
   struct timeval tv;
@@ -971,13 +978,40 @@ int main(int argc, char **argv)
   /* Main select loop                                               */
   /******************************************************************/
 
-  while ((((starttime + options.timelimit + 10) > time(NULL)) 
-	 || (0 == options.timelimit)) && (state!=0)) {
+  while ((0 != state) && (5 != state)) {
 
-    /* Take down client connections at some stage */
-    if (((starttime + options.timelimit) <= time(NULL)) &&
-	(0 != options.timelimit) && (2 == state)) {
+    /* Take down client after timeout after disconnect */
+    if ((4 == state) && ((stoptime) <= time(NULL))) {
+      state = 5;
+    }
+
+    /* Take down client after timelimit timeout */
+    if ((2 == state) && (options.timelimit) && 
+	((starttime + options.timelimit) <= time(NULL))) {
       state = 3;
+    }
+
+    /* Take down client after ping timeout */
+    if ((2 == state) &&  (pingtimeout) && (pingtimeout <= time(NULL))) {
+      state = 3;
+    }
+
+    /* Set pingtimeout for later disconnection */
+    if (options.pingcount && ntransmitted >= options.pingcount) {
+      pingtimeout = time(NULL) + 5; /* Extra seconds */
+    }
+
+    /* Print statistics if no more ping packets are missing */
+    if (ntransmitted && options.pingcount && nreceived >= options.pingcount) {
+      ping_finish();
+      if (!options.createif)
+	state = 3;
+    }    
+
+    /* Send of disconnect */
+    if (3 == state) {
+      state = 4;
+      stoptime = time(NULL) + 5; /* Extra seconds to allow disconnect */
       for(n=0; n<options.contexts; n++) {
 	/* Delete context */
 	printf("Disconnecting PDP context #%d\n", n);
@@ -985,12 +1019,13 @@ int main(int argc, char **argv)
 	if ((options.pinghost.s_addr !=0) && ntransmitted) ping_finish();
       }
     }
-    
+
+    /* Send of ping packets */
     diff = 0;
     while (( diff<=0 ) && 
-    /* Send off an ICMP ping packet */
+	   /* Send off an ICMP ping packet */
 	   /*if (*/(options.pinghost.s_addr) && (2 == state) && 
-	((pingseq < options.pingcount) || (options.pingcount == 0))) {
+	   ((pingseq < options.pingcount) || (options.pingcount == 0))) {
       if (!pingseq) gettimeofday(&firstping, &tz); /* Set time of first ping */
       gettimeofday(&tv, &tz);
       diff = 1000000 / options.pingrate * pingseq -
@@ -1003,11 +1038,6 @@ int main(int argc, char **argv)
 	pingseq++;
       }
     }
-    
-
-    if (ntransmitted && options.pingcount && nreceived >= options.pingcount)
-      ping_finish();
-    
 
     FD_ZERO(&fds);
     if (tun) FD_SET(tun->fd, &fds);
@@ -1045,6 +1075,9 @@ int main(int argc, char **argv)
   
   if (options.createif)
     tun_free(tun);
+
+  if (0 == state)
+    exit(1); /* Indicate error */
   
   return 0; 
 }
