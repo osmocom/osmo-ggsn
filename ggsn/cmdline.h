@@ -29,8 +29,8 @@ struct gengetopt_args_info
   char * net_arg;	/* Network (default='192.168.0.0/24').  */
   char * ipup_arg;	/* Script to run after link-up.  */
   char * ipdown_arg;	/* Script to run after link-down.  */
-  char * dynip_arg;	/* Dynamic IP address pool (default='192.168.0.0/24').  */
-  char * statip_arg;	/* Static IP address pool (default='192.168.1.0/24').  */
+  char * dynip_arg;	/* Dynamic IP address pool.  */
+  char * statip_arg;	/* Static IP address pool.  */
   char * pcodns1_arg;	/* PCO DNS Server 1 (default='0.0.0.0').  */
   char * pcodns2_arg;	/* PCO DNS Server 2 (default='0.0.0.0').  */
   int timelimit_arg;	/* Exit after timelimit seconds (default='0').  */

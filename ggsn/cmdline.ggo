@@ -24,8 +24,8 @@ option  "net"         n "Network"                       string default="192.168.
 option  "ipup"        - "Script to run after link-up"    string no
 option  "ipdown"      - "Script to run after link-down"  string no
 
-option  "dynip"       - "Dynamic IP address pool"       string default="192.168.0.0/24" no
-option  "statip"      - "Static IP address pool"        string default="192.168.1.0/24" no
+option  "dynip"       - "Dynamic IP address pool"       string no
+option  "statip"      - "Static IP address pool"        string no
 
 option  "pcodns1"     - "PCO DNS Server 1"              string default="0.0.0.0" no
 option  "pcodns2"     - "PCO DNS Server 2"              string default="0.0.0.0" no

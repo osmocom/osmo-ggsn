@@ -132,7 +132,7 @@ int create_context(struct pdp_t *pdp) {
   }
 
   pdp_ntoeua(&member->addr, &pdp->eua);
-  pdp->peer = &member;
+  pdp->peer = member;
   pdp->ipif = tun; /* TODO */
   member->peer = pdp;
 
@@ -259,7 +259,7 @@ int main(int argc, char **argv)
 	      PACKAGE, args_info.listen_arg);
       syslog(LOG_ERR, "Invalid listening address: %s!", 
 	     args_info.listen_arg);
-      return 1;
+      exit(1);
     }
     else {
       memcpy(&listen_.s_addr, host->h_addr, host->h_length);
@@ -275,21 +275,30 @@ int main(int argc, char **argv)
     if(ippool_aton(&net, &mask, args_info.net_arg, 0)) {
       sys_err(LOG_ERR, __FILE__, __LINE__, 0,
 	      "Invalid network address: %s!", args_info.net_arg);
-      return -1;
+      exit(1);
     }
+  }
+  else {
+    sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+	    "Network address must be specified: %s!", args_info.net_arg);
+    exit(1);
   }
 
   /* dynip                                                        */
   if (!args_info.dynip_arg) {
-    sys_err(LOG_ERR, __FILE__, __LINE__, 0,
-	    "No dynamic address pool given!");
-    return -1;
+    if (ippool_new(&ippool, args_info.net_arg, 
+		   IPPOOL_NONETWORK | IPPOOL_NOBROADCAST)) {
+      sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+	      "Failed to allocate IP pool!");
+      exit(1);
+    }
   }
   else {
     if (ippool_new(&ippool, args_info.dynip_arg, 
 		   IPPOOL_NONETWORK | IPPOOL_NOBROADCAST)) {
       sys_err(LOG_ERR, __FILE__, __LINE__, 0,
 	      "Failed to allocate IP pool!");
+      exit(1);
     }
   }
 

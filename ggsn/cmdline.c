@@ -53,8 +53,8 @@ cmdline_parser_print_help (void)
   printf("   -nSTRING   --net=STRING       Network (default='192.168.0.0/24')\n");
   printf("              --ipup=STRING      Script to run after link-up\n");
   printf("              --ipdown=STRING    Script to run after link-down\n");
-  printf("              --dynip=STRING     Dynamic IP address pool (default='192.168.0.0/24')\n");
-  printf("              --statip=STRING    Static IP address pool (default='192.168.1.0/24')\n");
+  printf("              --dynip=STRING     Dynamic IP address pool\n");
+  printf("              --statip=STRING    Static IP address pool\n");
   printf("              --pcodns1=STRING   PCO DNS Server 1 (default='0.0.0.0')\n");
   printf("              --pcodns2=STRING   PCO DNS Server 2 (default='0.0.0.0')\n");
   printf("              --timelimit=INT    Exit after timelimit seconds (default='0')\n");
@@ -111,8 +111,8 @@ cmdline_parser (int argc, char * const *argv, struct gengetopt_args_info *args_i
   args_info->net_arg = strdup("192.168.0.0/24") ;\
   args_info->ipup_arg = NULL; \
   args_info->ipdown_arg = NULL; \
-  args_info->dynip_arg = strdup("192.168.0.0/24") ;\
-  args_info->statip_arg = strdup("192.168.1.0/24") ;\
+  args_info->dynip_arg = NULL; \
+  args_info->statip_arg = NULL; \
   args_info->pcodns1_arg = strdup("0.0.0.0") ;\
   args_info->pcodns2_arg = strdup("0.0.0.0") ;\
   args_info->timelimit_arg = 0 ;\
