@@ -439,9 +439,9 @@ int process_options(int argc, char **argv) {
     printf("Invalid APN\n");
     return -1;
   }
-  options.apn.l = strlen(args_info.apn_arg) + 1;
-  options.apn.v[0] = (char) strlen(args_info.apn_arg);
-  strncpy(&options.apn.v[1], args_info.apn_arg, sizeof(options.apn.v)-1);
+  options.apn.l = strlen(args_info.apn_arg);
+  strncpy(options.apn.v, args_info.apn_arg, sizeof(options.apn.v));
+  options.apn.v[sizeof(options.apn.v)-1] = 0;
   printf("Using APN:             %s\n", args_info.apn_arg);
 
 
