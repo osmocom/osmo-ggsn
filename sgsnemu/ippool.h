@@ -1,16 +1,11 @@
 /* 
  * IP address pool functions.
- * Copyright (C) 2003 Mondru AB.
+ * Copyright (C) 2003, 2004 Mondru AB.
  * 
  * The contents of this file may be used under the terms of the GNU
  * General Public License Version 2, provided that the above copyright
  * notice and this permission notice is included in all copies or
  * substantial portions of the software.
- * 
- * The initial developer of the original code is
- * Jens Jakobsen <jj@openggsn.org>
- * 
- * Contributor(s):
  * 
  */
 
@@ -36,7 +31,6 @@
 #define IPPOOL_NONETWORK   0x01
 #define IPPOOL_NOBROADCAST 0x02
 #define IPPOOL_NOGATEWAY   0x04
-#define IPPOOL_NODESTADDR  0x08
 
 #define IPPOOL_STATSIZE 0x10000
 
