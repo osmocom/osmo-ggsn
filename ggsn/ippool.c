@@ -20,34 +20,20 @@
 
 #include "ippool.h"
 
+/**
+ * lookup()
+ * Generates a 32 bit hash.
+ * Based on public domain code by Bob Jenkins
+ * It should be one of the best hash functions around in terms of both
+ * statistical properties and speed. It is NOT recommended for cryptographic
+ * purposes.
+ **/
+unsigned long int lookup( k, length, level)
+register unsigned char *k;         /* the key */
+register unsigned long int length; /* the length of the key */
+register unsigned long int level; /* the previous hash, or an arbitrary value*/
+{
 
-/*
---------------------------------------------------------------------
-Public domain by From Bob Jenkins, December 1996.
-mix -- mix 3 32-bit values reversibly.
-For every delta with one or two bit set, and the deltas of all three
-  high bits or all three low bits, whether the original value of a,b,c
-  is almost all zero or is uniformly distributed,
-* If mix() is run forward or backward, at least 32 bits in a,b,c
-  have at least 1/4 probability of changing.
-* If mix() is run forward, every bit of c will change between 1/3 and
-  2/3 of the time.  (Well, 22/100 and 78/100 for some 2-bit deltas.)
-mix() was built out of 36 single-cycle latency instructions in a 
-  structure that could supported 2x parallelism, like so:
-      a -= b; 
-      a -= c; x = (c>>13);
-      b -= c; a ^= x;
-      b -= a; x = (a<<8);
-      c -= a; b ^= x;
-      c -= b; x = (b>>13);
-      ...
-  Unfortunately, superscalar Pentiums and Sparcs can't take advantage 
-  of that parallelism.  They've also turned some of those single-cycle
-  latency instructions into multi-cycle latency instructions.  Still,
-  this is the fastest good hash I could find.  There were about 2^^68
-  to choose from.  I only looked at a billion or so.
---------------------------------------------------------------------
-*/
 #define mix(a,b,c) \
 { \
   a -= b; a -= c; a ^= (c>>13); \
@@ -60,89 +46,57 @@ mix() was built out of 36 single-cycle latency instructions in a
   b -= c; b -= a; b ^= (a<<10); \
   c -= a; c -= b; c ^= (b>>15); \
 }
-/*
---------------------------------------------------------------------
-lookup() -- hash a variable-length key into a 32-bit value
-  k     : the key (the unaligned variable-length array of bytes)
-  len   : the length of the key, counting by bytes
-  level : can be any 4-byte value
-Returns a 32-bit value.  Every bit of the key affects every bit of
-the return value.  Every 1-bit and 2-bit delta achieves avalanche.
-About 6len+35 instructions.
 
-The best hash table sizes are powers of 2.  There is no need to do
-mod a prime (mod is sooo slow!).  If you need less than 32 bits,
-use a bitmask.  For example, if you need only 10 bits, do
-  h = (h & hashmask(10));
-In which case, the hash table should have hashsize(10) elements.
-
-If you are hashing n strings (ub1 **)k, do it like this:
-  for (i=0, h=0; i<n; ++i) h = lookup( k[i], len[i], h);
-
-By Bob Jenkins, 1996.  bob_jenkins@burtleburtle.net.  You may use this
-code any way you wish, private, educational, or commercial.
-
-See http://burtleburtle.net/bob/hash/evahash.html
-Use for hash table lookup, or anything where one collision in 2^32 is
-acceptable.  Do NOT use for cryptographic purposes.
---------------------------------------------------------------------
-*/
-
-unsigned long int lookup( k, length, level)
-register unsigned char *k;           /* the key */
-register unsigned long int length;   /* the length of the key */
-register unsigned long int level;    /* the previous hash, or an arbitrary value */
-{
-   register unsigned long int a,b,c,len;
-
-   /* Set up the internal state */
-   len = length;
-   a = b = 0x9e3779b9;  /* the golden ratio; an arbitrary value */
-   c = level;           /* the previous hash value */
-
-   /*---------------------------------------- handle most of the key */
-   while (len >= 12)
-   {
+  typedef  unsigned long  int  ub4;   /* unsigned 4-byte quantities */
+  typedef  unsigned       char ub1;   /* unsigned 1-byte quantities */
+  register unsigned long int a,b,c,len;
+  
+  /* Set up the internal state */
+  len = length;
+  a = b = 0x9e3779b9;  /* the golden ratio; an arbitrary value */
+  c = level;           /* the previous hash value */
+  
+  /*---------------------------------------- handle most of the key */
+  while (len >= 12)
+    {
       a += (k[0] +((ub4)k[1]<<8) +((ub4)k[2]<<16) +((ub4)k[3]<<24));
       b += (k[4] +((ub4)k[5]<<8) +((ub4)k[6]<<16) +((ub4)k[7]<<24));
       c += (k[8] +((ub4)k[9]<<8) +((ub4)k[10]<<16)+((ub4)k[11]<<24));
       mix(a,b,c);
       k += 12; len -= 12;
-   }
-
-   /*------------------------------------- handle the last 11 bytes */
-   c += length;
-   switch(len)              /* all the case statements fall through */
-   {
-   case 11: c+=((ub4)k[10]<<24);
-   case 10: c+=((ub4)k[9]<<16);
-   case 9 : c+=((ub4)k[8]<<8);
+    }
+  
+  /*------------------------------------- handle the last 11 bytes */
+  c += length;
+  switch(len)              /* all the case statements fall through */
+    {
+    case 11: c+=((ub4)k[10]<<24);
+    case 10: c+=((ub4)k[9]<<16);
+    case 9 : c+=((ub4)k[8]<<8);
       /* the first byte of c is reserved for the length */
-   case 8 : b+=((ub4)k[7]<<24);
-   case 7 : b+=((ub4)k[6]<<16);
-   case 6 : b+=((ub4)k[5]<<8);
-   case 5 : b+=k[4];
-   case 4 : a+=((ub4)k[3]<<24);
-   case 3 : a+=((ub4)k[2]<<16);
-   case 2 : a+=((ub4)k[1]<<8);
-   case 1 : a+=k[0];
-     /* case 0: nothing left to add */
-   }
-   mix(a,b,c);
-   /*-------------------------------------------- report the result */
-   return c;
+    case 8 : b+=((ub4)k[7]<<24);
+    case 7 : b+=((ub4)k[6]<<16);
+    case 6 : b+=((ub4)k[5]<<8);
+    case 5 : b+=k[4];
+    case 4 : a+=((ub4)k[3]<<24);
+    case 3 : a+=((ub4)k[2]<<16);
+    case 2 : a+=((ub4)k[1]<<8);
+    case 1 : a+=k[0];
+      /* case 0: nothing left to add */
+    }
+  mix(a,b,c);
+  /*-------------------------------------------- report the result */
+  return c;
 }
 
-/*
-End of public domain code by From Bob Jenkins, December 1996.
---------------------------------------------------------------------
-*/
 
 int ippool_printaddr(struct ippool_t *this) {
   int n;
   printf("ippool_printaddr\n");
-  printf("First %d\n", this->first - this->member);
-  printf("Last %d\n",  this->last - this->member);
+  printf("Firstdyn %d\n", this->firstdyn - this->member);
+  printf("Lastdyn %d\n",  this->lastdyn - this->member);
+  printf("Firststat %d\n", this->firststat - this->member);
+  printf("Laststat %d\n",  this->laststat - this->member);
   printf("Listsize %d\n",  this->listsize);
 
   for (n=0; n<this->listsize; n++) {
@@ -154,6 +108,50 @@ int ippool_printaddr(struct ippool_t *this) {
 	   this->member[n].addr.s_addr
 	   );
   }
+  return 0;
+}
+
+
+int ippool_hashadd(struct ippool_t *this, struct ippoolm_t *member) {
+  uint32_t hash;
+  struct ippoolm_t *p;
+  struct ippoolm_t *p_prev = NULL; 
+
+  /* Insert into hash table */
+  hash = ippool_hash4(&member->addr) & this->hashmask;
+  for (p = this->hash[hash]; p; p = p->nexthash)
+    p_prev = p;
+  if (!p_prev)
+    this->hash[hash] = member;
+  else 
+    p_prev->nexthash = member;
+  return 0; /* Always OK to insert */
+}
+
+int ippool_hashdel(struct ippool_t *this, struct ippoolm_t *member) {
+  uint32_t hash;
+  struct ippoolm_t *p;
+  struct ippoolm_t *p_prev = NULL; 
+
+  /* Find in hash table */
+  hash = ippool_hash4(&member->addr) & this->hashmask;
+  for (p = this->hash[hash]; p; p = p->nexthash) {
+    if (p == member) {
+      break;
+    }
+    p_prev = p;
+  }
+
+  if (p!= member) {
+    printf("ippool_hashdel: Tried to delete member not in hash table\n");
+    return -1; /* Member was not in hash table !!! */
+  }
+
+  if (!p_prev)
+    this->hash[hash] = 0;
+  else
+    p_prev->nexthash = 0;
+
   return 0;
 }
 
@@ -226,36 +224,64 @@ int ippool_aton(struct in_addr *addr, struct in_addr *mask,
 }
 
 /* Create new address pool */
-int ippool_new(struct ippool_t **this, char *pool, int flags) {
+int ippool_new(struct ippool_t **this, char *dyn,  char *stat, 
+	       int allowdyn, int allowstat, int flags) {
 
-  /* Parse only first instance of network for now */
+  /* Parse only first instance of pool for now */
 
   int i;
-  struct ippoolm_t *p;
-  struct ippoolm_t *p_prev = NULL; 
-  uint32_t hash;
   struct in_addr addr;
   struct in_addr mask;
+  struct in_addr stataddr;
+  struct in_addr statmask;
   unsigned int m;
   unsigned int listsize;
+  unsigned int dynsize;
+  unsigned int statsize;
 
-  if (ippool_aton(&addr, &mask, pool, 0))
-    return 0; /* Failed to parse pool */
+  if (!allowdyn) {
+    dynsize = 0;
+  }
+  else {
+    if (ippool_aton(&addr, &mask, dyn, 0))
+      return -1; /* Failed to parse dynamic pool */
+    
+    m = ntohl(mask.s_addr);
+    dynsize = ((~m)+1);
+    if (flags & IPPOOL_NONETWORK)   /* Exclude network address from pool */
+      dynsize--;
+    if (flags & IPPOOL_NOBROADCAST) /* Exclude broadcast address from pool */
+      dynsize--;
+  }
 
-  m = ntohl(mask.s_addr);
-  listsize = ((~m)+1);
-  if (flags & IPPOOL_NONETWORK)   /* Exclude network address from pool */
-    listsize--;
-  if (flags & IPPOOL_NOBROADCAST) /* Exclude broadcast address from pool */
-    listsize--;
+  if (!allowstat) {
+    statsize = 0;
+    stataddr.s_addr = 0;
+    statmask.s_addr = 0;
+  }
+  else {
+    if (ippool_aton(&stataddr, &statmask, stat, 0))
+      return -1; /* Failed to parse static range */
+    
+    m = ntohl(statmask.s_addr);
+    statsize = ((~m)+1);
+    if (statsize > IPPOOL_STATSIZE) statsize = IPPOOL_STATSIZE;
+  }
+
+  listsize = dynsize + statsize; /* Allocate space for static IP addresses */
 
   if (!(*this = calloc(sizeof(struct ippool_t), 1))) {
     /* Failed to allocate memory for ippool */
     return -1;
   }
   
+  (*this)->allowdyn  = allowdyn;
+  (*this)->allowstat = allowstat;
+  (*this)->stataddr  = stataddr;
+  (*this)->statmask  = statmask;
+
   (*this)->listsize += listsize;
-  if (!((*this)->member = calloc(sizeof(struct ippoolm_t), (*this)->listsize))){
+  if (!((*this)->member = calloc(sizeof(struct ippoolm_t), listsize))){
     /* Failed to allocate memory for members in ippool */
     return -1;
   }
@@ -276,9 +302,9 @@ int ippool_new(struct ippool_t **this, char *pool, int flags) {
     return -1;
   }
   
-  (*this)->first = NULL;
-  (*this)->last = NULL;
-  for (i = 0; i<(*this)->listsize; i++) {
+  (*this)->firstdyn = NULL;
+  (*this)->lastdyn = NULL;
+  for (i = 0; i<dynsize; i++) {
 
     if (flags & IPPOOL_NONETWORK)
       (*this)->member[i].addr.s_addr = htonl(ntohl(addr.s_addr) + i + 1);
@@ -286,29 +312,41 @@ int ippool_new(struct ippool_t **this, char *pool, int flags) {
       (*this)->member[i].addr.s_addr = htonl(ntohl(addr.s_addr) + i);
 
     (*this)->member[i].inuse = 0;
-    (*this)->member[i].parent = *this;
 
     /* Insert into list of unused */
-    (*this)->member[i].prev = (*this)->last;
-    if ((*this)->last) {
-      (*this)->last->next = &((*this)->member[i]);
+    (*this)->member[i].prev = (*this)->lastdyn;
+    if ((*this)->lastdyn) {
+      (*this)->lastdyn->next = &((*this)->member[i]);
     }
     else {
-      (*this)->first = &((*this)->member[i]);
+      (*this)->firstdyn = &((*this)->member[i]);
     }
-    (*this)->last = &((*this)->member[i]);
+    (*this)->lastdyn = &((*this)->member[i]);
     (*this)->member[i].next = NULL; /* Redundant */
 
-    /* Insert into hash table */
-    hash = ippool_hash4(&(*this)->member[i].addr) & (*this)->hashmask;
-    for (p = (*this)->hash[hash]; p; p = p->nexthash)
-      p_prev = p;
-    if (!p_prev)
-      (*this)->hash[hash] = &((*this)->member[i]);
-    else 
-      p_prev->nexthash = &((*this)->member[i]);
+    ippool_hashadd(*this, &(*this)->member[i]);
   }
-  /*ippool_printaddr(*this);*/
+
+  (*this)->firststat = NULL;
+  (*this)->laststat = NULL;
+  for (i = dynsize; i<listsize; i++) {
+
+    (*this)->member[i].addr.s_addr = 0;
+    (*this)->member[i].inuse = 0;
+
+    /* Insert into list of unused */
+    (*this)->member[i].prev = (*this)->laststat;
+    if ((*this)->laststat) {
+      (*this)->laststat->next = &((*this)->member[i]);
+    }
+    else {
+      (*this)->firststat = &((*this)->member[i]);
+    }
+    (*this)->laststat = &((*this)->member[i]);
+    (*this)->member[i].next = NULL; /* Redundant */
+  }
+
+  if (0) ippool_printaddr(*this);
   return 0;
 }
 
@@ -338,16 +376,47 @@ int ippool_getip(struct ippool_t *this, struct ippoolm_t **member,
   return -1; /* Address could not be found */
 }
 
-
-/* Get an IP address. If addr = 0.0.0.0 get a dynamic IP address. Otherwise
-   check to see if the given address is available */
+/**
+ * ippool_newip
+ * Get an IP address. If addr = 0.0.0.0 get a dynamic IP address. Otherwise
+ * check to see if the given address is available. If available within
+ * dynamic address space allocate it there, otherwise allocate within static
+ * address space.
+**/
 int ippool_newip(struct ippool_t *this, struct ippoolm_t **member,
 		 struct in_addr *addr) {
   struct ippoolm_t *p;
   struct ippoolm_t *p2 = NULL;
   uint32_t hash;
 
-  /*ippool_printaddr(this);*/
+  /* If static:
+   *   Look in dynaddr. 
+   *     If found remove from firstdyn/lastdyn linked list.
+   *   Else allocate from stataddr.
+   *    Remove from firststat/laststat linked list.
+   *    Insert into hash table.
+   *
+   * If dynamic
+   *   Remove from firstdyn/lastdyn linked list.
+   *
+   */
+
+  if (0) ippool_printaddr(this);
+
+  /* First check to see if this type of address is allowed */
+  if ((addr) && (addr->s_addr)) { /* IP address given */
+    if (!this->allowstat) {
+      return -1; /* Static not allowed */
+    }
+    if ((addr->s_addr & this->statmask.s_addr) != this->stataddr.s_addr) {
+      return -1; /* Static out of range */
+    }
+  }
+  else {
+    if (!this->allowdyn) {
+      return -1; /* Dynamic not allowed */
+    }
+  }
 
   if ((addr) && (addr->s_addr)) { /* IP address given */
     /* Find in hash table */
@@ -360,52 +429,110 @@ int ippool_newip(struct ippool_t *this, struct ippoolm_t **member,
     }
   }
   else { /* No ip address given */
-    p2 = this -> first;
+    if (!this ->firstdyn)
+      return -1; /* No more available */
+    else
+      p2 = this ->firstdyn;
   }
 
-  if (!p2) return -1; /* Not found */
-  if (p2->inuse) return -1; /* Allready in use / Should not happen */
+  if (p2) { /* Was allocated from dynamic address pool */
+    if (p2->inuse) return -1; /* Allready in use / Should not happen */
   
-  /* Found new address. Remove from queue */
-  if (p2->prev) 
-    p2->prev->next = p2->next;
-  else
-    this->first = p2->next;
-  if (p2->next) 
-    p2->next->prev = p2->prev;
-  else
-    this->last = p2->prev;
-  p2->next = NULL;
-  p2->prev = NULL;
-  p2->inuse = 1;
-  
-  *member = p2;
-  /*ippool_printaddr(this);*/
-  return 0; /* Success */
+    /* Remove from linked list of free dynamic addresses */
+    if (p2->prev) 
+      p2->prev->next = p2->next;
+    else
+      this->firstdyn = p2->next;
+    if (p2->next) 
+      p2->next->prev = p2->prev;
+    else
+      this->lastdyn = p2->prev;
+    p2->next = NULL;
+    p2->prev = NULL;
+    p2->inuse = 1; /* Dynamic address in use */
+    
+    *member = p2;
+    if (0) ippool_printaddr(this);
+    return 0; /* Success */
+  }
+
+  /* It was not possible to allocate from dynamic address pool */
+  /* Try to allocate from static address space */
+
+  if ((addr) && (addr->s_addr)) { /* IP address given */
+    if (this->firststat)
+      return -1; /* No more available */
+    else
+      p2 = this ->firststat;
+
+    /* Remove from linked list of free static addresses */
+    if (p2->prev) 
+      p2->prev->next = p2->next;
+    else
+      this->firststat = p2->next;
+    if (p2->next) 
+      p2->next->prev = p2->prev;
+    else
+      this->laststat = p2->prev;
+    p2->next = NULL;
+    p2->prev = NULL;
+    p2->inuse = 1; /* Static address in use */
+
+    *member = p2;
+    if (0) ippool_printaddr(this);
+    return 0; /* Success */
+  }
+
+  return -1; /* Should never get here. TODO: Bad code */
 }
 
 
-int ippool_freeip(struct ippoolm_t *member) {
-  struct ippool_t *this = member->parent;
+int ippool_freeip(struct ippool_t *this, struct ippoolm_t *member) {
   
-  /*ippool_printaddr(this);*/
+  if (0) ippool_printaddr(this);
 
   if (!member->inuse) return -1; /* Not in use: Should not happen */
 
-  /* Insert into list of unused */
-  member->prev = this->last;
-  if (this->last) {
-    this->last->next = member;
+  switch (member->inuse) {
+  case 0: /* Not in use: Should not happen */
+    return -1;
+  case 1: /* Allocated from dynamic address space */
+    /* Insert into list of unused */
+    member->prev = this->lastdyn;
+    if (this->lastdyn) {
+      this->lastdyn->next = member;
+    }
+    else {
+      this->firstdyn = member;
+    }
+    this->lastdyn = member;
+    
+    member->inuse = 0;
+    member->peer = NULL;
+    if (0) ippool_printaddr(this);
+    return 0;
+  case 2: /* Allocated from static address space */
+    if (ippool_hashdel(this, member))
+      return -1;
+    /* Insert into list of unused */
+    member->prev = this->laststat;
+    if (this->laststat) {
+      this->laststat->next = member;
+    }
+    else {
+      this->firststat = member;
+    }
+    this->laststat = member;
+    
+    member->inuse = 0;
+    member->addr.s_addr = 0;
+    member->peer = NULL;
+    member->nexthash = NULL;
+    if (0) ippool_printaddr(this);
+    return 0;
+  default: /* Should not happen */
+    return -1;
   }
-  else {
-    this->first = member;
-  }
-  this->last = member;
-
-  member->inuse = 0;
-  /*ippool_printaddr(this);*/
-  
-  return 0; /* Success */
 }
 
 

@@ -109,7 +109,7 @@ int encaps_printf(void *p, void *packet, unsigned len)
 
 int delete_context(struct pdp_t *pdp) {
   if (debug) printf("Deleting PDP context\n");
-  ippool_freeip((struct ippoolm_t *) pdp->peer);
+  ippool_freeip(ippool, (struct ippoolm_t *) pdp->peer);
   return 0;
 }
 
@@ -254,6 +254,7 @@ int main(int argc, char **argv)
     exit(1);
   }
   
+
   /* net                                                          */
   /* Store net as in_addr net and mask                            */
   if (args_info.net_arg) {
@@ -271,7 +272,7 @@ int main(int argc, char **argv)
 
   /* dynip                                                        */
   if (!args_info.dynip_arg) {
-    if (ippool_new(&ippool, args_info.net_arg, 
+    if (ippool_new(&ippool, args_info.net_arg, NULL, 1, 0,
 		   IPPOOL_NONETWORK | IPPOOL_NOBROADCAST)) {
       sys_err(LOG_ERR, __FILE__, __LINE__, 0,
 	      "Failed to allocate IP pool!");
@@ -279,7 +280,7 @@ int main(int argc, char **argv)
     }
   }
   else {
-    if (ippool_new(&ippool, args_info.dynip_arg, 
+    if (ippool_new(&ippool, args_info.dynip_arg, NULL, 1 ,0,
 		   IPPOOL_NONETWORK | IPPOOL_NOBROADCAST)) {
       sys_err(LOG_ERR, __FILE__, __LINE__, 0,
 	      "Failed to allocate IP pool!");
