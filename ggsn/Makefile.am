@@ -1,6 +1,6 @@
 bin_PROGRAMS = ggsn
 
-LDFLAGS = -Wl,--rpath -Wl,/usr/local/lib
+LDFLAGS = -Wl,--rpath -Wl,/usr/local/lib @EXEC_LDFLAGS@
 
 CFLAGS = -O2 -D_GNU_SOURCE -fno-builtin -Wall -ansi -DSBINDIR='"$(sbindir)"' -ggdb -lgtp -L../gtp
 

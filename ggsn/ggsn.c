@@ -83,8 +83,11 @@ void log_pid(char *pidfile) {
   oldmask = umask(022);
   file = fopen(pidfile, "w");
   umask(oldmask);
-  if(!file)
+  if(!file) {
+    sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+	    "Failed to create process ID file: %s!", pidfile);
     return;
+  }
   fprintf(file, "%d\n", getpid());
   fclose(file);
 }
@@ -226,39 +229,17 @@ int main(int argc, char **argv)
 
   /* Handle each option */
 
-  /* foreground                                                   */
-  /* If flag not given run as a daemon                            */
-  if (!args_info.fg_flag)
-    {
-      closelog(); 
-      /* Close the standard file descriptors. */
-      /* Is this really needed ? */
-      freopen("/dev/null", "w", stdout);
-      freopen("/dev/null", "w", stderr);
-      freopen("/dev/null", "r", stdin);
-      daemon(0, 0);
-      /* Open log again. This time with new pid */
-      openlog(PACKAGE, LOG_PID, LOG_DAEMON);
-    }
-
   /* debug                                                        */
   debug = args_info.debug_flag;
 
-  /* pidfile */
-  /* This has to be done after we have our final pid */
-  if (args_info.pidfile_arg) {
-    log_pid(args_info.pidfile_arg);
-  }
-
   /* listen                                                       */
-  /* If no listen option is specified listen to any local port    */
   /* Do hostname lookup to translate hostname to IP address       */
+  /* Any port listening is not possible as a valid address is     */
+  /* required for create_pdp_context_response messages            */
   if (args_info.listen_arg) {
     if (!(host = gethostbyname(args_info.listen_arg))) {
-      fprintf(stderr, "%s: Invalid listening address: %s!\n", 
-	      PACKAGE, args_info.listen_arg);
-      syslog(LOG_ERR, "Invalid listening address: %s!", 
-	     args_info.listen_arg);
+      sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+	      "Invalid listening address: %s!", args_info.listen_arg);
       exit(1);
     }
     else {
@@ -266,7 +247,11 @@ int main(int argc, char **argv)
     }
   }
   else {
-    listen_.s_addr = htonl(INADDR_ANY);
+    sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+	    "Listening address must be specified! "
+	    "Please use command line option --listen or "
+	    "edit %s configuration file\n", args_info.conf_arg);
+    exit(1);
   }
   
   /* net                                                          */
@@ -351,6 +336,28 @@ int main(int argc, char **argv)
   apn.l = strlen(args_info.apn_arg) + 1;
   apn.v[0] = (char) strlen(args_info.apn_arg);
   strncpy(&apn.v[1], args_info.apn_arg, sizeof(apn.v)-1);
+
+
+  /* foreground                                                   */
+  /* If flag not given run as a daemon                            */
+  if (!args_info.fg_flag)
+    {
+      closelog(); 
+      /* Close the standard file descriptors. */
+      /* Is this really needed ? */
+      freopen("/dev/null", "w", stdout);
+      freopen("/dev/null", "w", stderr);
+      freopen("/dev/null", "r", stdin);
+      daemon(0, 0);
+      /* Open log again. This time with new pid */
+      openlog(PACKAGE, LOG_PID, LOG_DAEMON);
+    }
+
+  /* pidfile */
+  /* This has to be done after we have our final pid */
+  if (args_info.pidfile_arg) {
+    log_pid(args_info.pidfile_arg);
+  }
   
 
   if (debug) printf("gtpclient: Initialising GTP tunnel\n");
@@ -392,11 +399,9 @@ int main(int argc, char **argv)
     
     gtp_retranstimeout(gsn, &idleTime);
     switch (select(maxfd + 1, &fds, NULL, NULL, &idleTime)) {
-    case -1:	/* Error with select() *
-		   if (errno != EINTR)
-		   syslog(LOG_ERR, "CTRL: Error with select(), quitting");
-		   *goto leave_clear_call;*/
-      syslog(LOG_ERR, "GGSN: select = -1");
+    case -1:	/* errno == EINTR : unblocked signal */
+      sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+	      "select() returned -1");
       break;  
     case 0:
       /* printf("Select returned 0\n"); */
@@ -408,7 +413,8 @@ int main(int argc, char **argv)
 
     if (tun->fd != -1 && FD_ISSET(tun->fd, &fds) && 
 	tun_decaps(tun) < 0) {
-      syslog(LOG_ERR, "TUN read failed (fd)=(%d)", tun->fd);
+      sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+	      "TUN read failed (fd)=(%d)", tun->fd);
     }
 
     if (FD_ISSET(gsn->fd, &fds))
