@@ -243,7 +243,7 @@ int tun_addaddr(struct tun_t *this,
   } req;
   
   struct sockaddr_nl local;
-  int addr_len;
+  socklen_t addr_len;
   int fd;
   int status;
   

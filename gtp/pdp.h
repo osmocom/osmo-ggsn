@@ -23,27 +23,27 @@
 
 
 struct sl_t {
-int l;
+unsigned int l;
 char *v;
 };
 
 struct ul_t {
-int l;
+unsigned int l;
 unsigned char *v;
 };
 
 struct ul16_t {
-int l;
+unsigned int l;
 unsigned char v[16];
 };
 
 struct ul66_t {
-int l;
+unsigned int l;
 unsigned char v[66];
 };
 
 struct ul255_t {
-int l;
+unsigned int l;
 unsigned char v[255];
 };
 

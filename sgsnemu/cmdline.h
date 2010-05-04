@@ -45,9 +45,9 @@ struct gengetopt_args_info
   char * ipup_arg;	/* Script to run after link-up.  */
   char * ipdown_arg;	/* Script to run after link-down.  */
   char * pinghost_arg;	/* Ping remote host.  */
-  int pingrate_arg;	/* Number of ping req per second (default='1').  */
-  int pingsize_arg;	/* Number of ping data bytes (default='56').  */
-  int pingcount_arg;	/* Number of ping req to send (default='0').  */
+  unsigned int pingrate_arg;	/* Number of ping req per second (default='1').  */
+  unsigned int pingsize_arg;	/* Number of ping data bytes (default='56').  */
+  unsigned int pingcount_arg;	/* Number of ping req to send (default='0').  */
   int pingquiet_flag;	/* Do not print ping packet info (default=off).  */
 
   int help_given ;	/* Whether help was given.  */

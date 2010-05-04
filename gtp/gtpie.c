@@ -39,7 +39,7 @@
 
 #include "gtpie.h"
 
-int gtpie_tlv(void *p, int *length, int size, uint8_t t, int l, void *v) {
+int gtpie_tlv(void *p, unsigned int *length, unsigned int size, uint8_t t, int l, void *v) {
   if ((*length + 3 + l) >= size) return 1;
   ((union gtpie_member*) (p + *length))->tlv.t = hton8(t);
   ((union gtpie_member*) (p + *length))->tlv.l = hton16(l);
@@ -48,7 +48,7 @@ int gtpie_tlv(void *p, int *length, int size, uint8_t t, int l, void *v) {
   return 0;
 }
 
-int gtpie_tv0(void *p, int *length, int size, uint8_t t, int l, uint8_t *v) {
+int gtpie_tv0(void *p, unsigned int *length, unsigned int size, uint8_t t, int l, uint8_t *v) {
   if ((*length + 1 + l) >= size) return 1;
   ((union gtpie_member*) (p + *length))->tv0.t = hton8(t);
   memcpy((void*) (p + *length +1), v, l);
@@ -56,7 +56,7 @@ int gtpie_tv0(void *p, int *length, int size, uint8_t t, int l, uint8_t *v) {
   return 0;
 }
 
-int gtpie_tv1(void *p, int *length, int size, uint8_t t, uint8_t v) {
+int gtpie_tv1(void *p, unsigned int *length, unsigned int size, uint8_t t, uint8_t v) {
   if ((*length + 2) >= size) return 1;
   ((union gtpie_member*) (p + *length))->tv1.t = hton8(t);
   ((union gtpie_member*) (p + *length))->tv1.v = hton8(v);
@@ -64,7 +64,7 @@ int gtpie_tv1(void *p, int *length, int size, uint8_t t, uint8_t v) {
   return 0;
 }
 
-int gtpie_tv2(void *p, int *length, int size, uint8_t t, uint16_t v) {
+int gtpie_tv2(void *p, unsigned int *length, unsigned int size, uint8_t t, uint16_t v) {
   if ((*length + 3) >= size) return 1;
   ((union gtpie_member*) (p + *length))->tv2.t = hton8(t);
   ((union gtpie_member*) (p + *length))->tv2.v = hton16(v);
@@ -72,7 +72,7 @@ int gtpie_tv2(void *p, int *length, int size, uint8_t t, uint16_t v) {
   return 0;
 }
 
-int gtpie_tv4(void *p, int *length, int size, uint8_t t, uint32_t v) {
+int gtpie_tv4(void *p, unsigned int *length, unsigned int size, uint8_t t, uint32_t v) {
   if ((*length + 5) >= size) return 1;
   ((union gtpie_member*) (p + *length))->tv4.t = hton8(t);
   ((union gtpie_member*) (p + *length))->tv4.v = hton32(v);
@@ -80,7 +80,7 @@ int gtpie_tv4(void *p, int *length, int size, uint8_t t, uint32_t v) {
   return 0;
 }
 
-int gtpie_tv8(void *p, int *length, int size, uint8_t t, uint64_t v) {
+int gtpie_tv8(void *p, unsigned int *length, unsigned int size, uint8_t t, uint64_t v) {
   if ((*length + 9) >= size) return 1;
   ((union gtpie_member*) (p + *length))->tv8.t = hton8(t);
   ((union gtpie_member*) (p + *length))->tv8.v = hton64(v);
@@ -109,7 +109,7 @@ int gtpie_exist(union gtpie_member* ie[], int type, int instance) {
 }
 
 int gtpie_gettlv(union gtpie_member* ie[], int type, int instance,
-		 int *length, void *dst, int size){
+		 unsigned int *length, void *dst, unsigned int size){
   int ien;
   ien = gtpie_getie(ie, type, instance);
   if (ien>=0) {
@@ -123,7 +123,7 @@ int gtpie_gettlv(union gtpie_member* ie[], int type, int instance,
 }
 
 int gtpie_gettv0(union gtpie_member* ie[], int type, int instance,
-		void *dst, int size){
+		void *dst, unsigned int size){
   int ien;
   ien = gtpie_getie(ie, type, instance);
   if (ien>=0)
@@ -453,9 +453,9 @@ int gtpie_encaps(union gtpie_member *ie[], void *pack, unsigned *len) {
   return 0;
 }
 
-int gtpie_encaps2(union gtpie_member ie[], int size,
+int gtpie_encaps2(union gtpie_member ie[], unsigned int size,
 		  void *pack, unsigned *len) {
-  int i, j;
+  unsigned int i, j;
   unsigned char *p;
   unsigned char *end;
   union gtpie_member *m;

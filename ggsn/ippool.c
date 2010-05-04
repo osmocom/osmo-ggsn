@@ -23,7 +23,7 @@
 
 
 int ippool_printaddr(struct ippool_t *this) {
-  int n;
+  unsigned int n;
   printf("ippool_printaddr\n");
   printf("Firstdyn %d\n", this->firstdyn - this->member);
   printf("Lastdyn %d\n",  this->lastdyn - this->member);
@@ -110,7 +110,7 @@ int ippool_aton(struct in_addr *addr, struct in_addr *mask,
   unsigned int a1, a2, a3, a4;
   unsigned int m1, m2, m3, m4;
   int c;
-  unsigned int m;
+  int m;
   int masklog;
 
   c = sscanf(pool, "%u.%u.%u.%u/%u.%u.%u.%u",
@@ -167,8 +167,8 @@ int ippool_new(struct ippool_t **this, char *dyn,  char *stat,
   struct in_addr stataddr;
   struct in_addr statmask;
   unsigned int m;
-  unsigned int listsize;
-  unsigned int dynsize;
+  int listsize;
+  int dynsize;
   unsigned int statsize;
 
   if (!allowdyn) {

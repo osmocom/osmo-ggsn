@@ -41,7 +41,7 @@ void sys_errpack(int pri, char *fn, int ln, int en, struct sockaddr_in *peer,
   va_list args;
   char buf[SYSERR_MSGSIZE];
   char buf2[SYSERR_MSGSIZE];
-  int n;
+  unsigned int n;
   int pos;
   
   va_start(args, fmt);

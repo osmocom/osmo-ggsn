@@ -72,7 +72,7 @@ void gtp_errpack(int pri, char *fn, int ln, struct sockaddr_in *peer,
   va_list args;
   char buf[ERRMSG_SIZE];
   char buf2[ERRMSG_SIZE];
-  int n;
+  unsigned int n;
   int pos;
   
   va_start(args, fmt);
@@ -177,7 +177,7 @@ extern int gtp_set_cb_data_ind(struct gsn_t *gsn,
  * to hold the packet header.
  * returns the length of the header. 0 on error.
  **/
-static int get_default_gtp(int version, uint8_t type, void *packet) {
+static unsigned int get_default_gtp(int version, uint8_t type, void *packet) {
   struct gtp0_header *gtp0_default = (struct gtp0_header*) packet;
   struct gtp1_header_long *gtp1_default = (struct gtp1_header_long*) packet;
   switch (version) {
@@ -286,7 +286,7 @@ static uint32_t get_tei(void *pack) {
 
 int print_packet(void *packet, unsigned len)
 {
-  int i;
+  unsigned int i;
   printf("The packet looks like this (%d bytes):\n", len);
   for( i=0; i<len; i++) {
     printf("%02x ", (unsigned char)*(char *)(packet+i));
@@ -298,7 +298,7 @@ int print_packet(void *packet, unsigned len)
 
 char* snprint_packet(struct gsn_t *gsn, struct sockaddr_in *peer,
 		     void *pack, unsigned len, char *buf, int size) {
-  int n;
+  unsigned int n;
   int pos;
   snprintf(buf, size, "Packet from %s:%u, length: %d, content:",
 	   inet_ntoa(peer->sin_addr),
@@ -867,7 +867,7 @@ int gtp_echo_req(struct gsn_t *gsn, int version, void *cbp,
 		 struct in_addr *inetaddr)
 {
   union gtp_packet packet;
-  int length = get_default_gtp(version, GTP_ECHO_REQ, &packet);
+  unsigned int length = get_default_gtp(version, GTP_ECHO_REQ, &packet);
   return gtp_req(gsn, version, NULL, &packet, length, inetaddr, cbp);
 }
 
@@ -877,7 +877,7 @@ int gtp_echo_resp(struct gsn_t *gsn, int version,
 		  void *pack, unsigned len)
 {
   union gtp_packet packet;
-  int length = get_default_gtp(version, GTP_ECHO_RSP, &packet);
+  unsigned int length = get_default_gtp(version, GTP_ECHO_RSP, &packet);
   gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_RECOVERY, gsn->restart_counter);
   return gtp_resp(version, gsn, NULL, &packet, length, peer, fd, 
 		  get_seq(pack), get_tid(pack));
@@ -948,7 +948,7 @@ int gtp_unsup_req(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
   union gtp_packet packet;
 
   /* GTP 1 is the highest supported protocol */
-  int length = get_default_gtp(1, GTP_NOT_SUPPORTED, &packet);
+  unsigned int length = get_default_gtp(1, GTP_NOT_SUPPORTED, &packet);
   return gtp_notification(gsn, version, &packet, length, 
 			  peer, fd, 0);
 }
@@ -967,7 +967,7 @@ int gtp_extheader_req(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
 		      int fd, void *pack, unsigned len)
 {
   union gtp_packet packet;
-  int length = get_default_gtp(version, GTP_SUPP_EXT_HEADER, &packet);
+  unsigned int length = get_default_gtp(version, GTP_SUPP_EXT_HEADER, &packet);
 
   uint8_t pdcp_pdu = GTP_EXT_PDCP_PDU;
 
@@ -1008,7 +1008,7 @@ int gtp_extheader_ind(struct gsn_t *gsn, struct sockaddr_in *peer,
 extern int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp, 
 				  void *cbp) {
   union gtp_packet packet;
-  int length = get_default_gtp(pdp->version, GTP_CREATE_PDP_REQ, &packet);
+  unsigned int length = get_default_gtp(pdp->version, GTP_CREATE_PDP_REQ, &packet);
   struct pdp_t *linked_pdp = NULL;
 
   /* TODO: Secondary PDP Context Activation Procedure */
@@ -1147,7 +1147,7 @@ int gtp_set_cb_create_context_ind(struct gsn_t *gsn,
 int gtp_create_pdp_resp(struct gsn_t *gsn, int version, struct pdp_t *pdp, 
 			uint8_t cause) {
   union gtp_packet packet;
-  int length = get_default_gtp(version, GTP_CREATE_PDP_RSP, &packet);
+  unsigned int length = get_default_gtp(version, GTP_CREATE_PDP_RSP, &packet);
 
   gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_CAUSE, cause);
 
@@ -1726,7 +1726,7 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 int gtp_update_context(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 		       struct in_addr* inetaddr) {
   union gtp_packet packet;
-  int length = get_default_gtp(pdp->version, GTP_UPDATE_PDP_REQ, &packet);
+  unsigned int length = get_default_gtp(pdp->version, GTP_UPDATE_PDP_REQ, &packet);
   
   if (pdp->version == 0)
     gtpie_tv0(&packet, &length, GTP_MAX, GTPIE_QOS_PROFILE0, 
@@ -1805,7 +1805,7 @@ int gtp_update_pdp_resp(struct gsn_t *gsn, int version,
 			struct pdp_t *pdp, uint8_t cause) {
   
   union gtp_packet packet;
-  int length = get_default_gtp(version, GTP_CREATE_PDP_RSP, &packet);
+  unsigned int length = get_default_gtp(version, GTP_CREATE_PDP_RSP, &packet);
   
   gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_CAUSE, cause);
   
@@ -2181,7 +2181,7 @@ int gtp_update_pdp_conf(struct gsn_t *gsn, int version,
 int gtp_delete_context_req(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 			   int teardown) {
   union gtp_packet packet;
-  int length = get_default_gtp(pdp->version, GTP_DELETE_PDP_REQ, &packet);
+  unsigned int length = get_default_gtp(pdp->version, GTP_DELETE_PDP_REQ, &packet);
   struct in_addr addr;
   struct pdp_t *linked_pdp;
   struct pdp_t *secondary_pdp;
@@ -2258,7 +2258,7 @@ int gtp_delete_pdp_resp(struct gsn_t *gsn, int version,
 {
   union gtp_packet packet;
   struct pdp_t *secondary_pdp;
-  int length = get_default_gtp(version, GTP_DELETE_PDP_RSP, &packet);
+  unsigned int length = get_default_gtp(version, GTP_DELETE_PDP_RSP, &packet);
   int n;
 
   gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_CAUSE, cause);
@@ -2432,7 +2432,7 @@ int gtp_error_ind_resp(struct gsn_t *gsn, int version,
 		       void *pack, unsigned len)
 {
   union gtp_packet packet;
-  int length = get_default_gtp(version, GTP_ERROR, &packet);
+  unsigned int length = get_default_gtp(version, GTP_ERROR, &packet);
   
   return gtp_resp(version, gsn, NULL, &packet, length, peer, fd,
 		  get_seq(pack), get_tid(pack));
@@ -2524,7 +2524,7 @@ int gtp_decaps0(struct gsn_t *gsn)
 {
   unsigned char buffer[PACKET_MAX];
   struct sockaddr_in peer;
-  int peerlen;
+  size_t peerlen;
   int status;
   struct gtp0_header *pheader;
   int version = 0; /* GTP version should be determined from header!*/
@@ -2656,7 +2656,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 {
   unsigned char buffer[PACKET_MAX];
   struct sockaddr_in peer;
-  int peerlen;
+  size_t peerlen;
   int status;
   struct gtp1_header_short *pheader;
   int version = 1; /* TODO GTP version should be determined from header!*/
@@ -2815,7 +2815,7 @@ int gtp_decaps1u(struct gsn_t *gsn)
 {
   unsigned char buffer[PACKET_MAX];
   struct sockaddr_in peer;
-  int peerlen;
+  size_t peerlen;
   int status;
   struct gtp1_header_short *pheader;
   int version = 1; /* GTP version should be determined from header!*/

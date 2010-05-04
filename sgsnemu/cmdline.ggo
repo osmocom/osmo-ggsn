@@ -40,8 +40,8 @@ option  "ipup"         - "Script to run after link-up"    string no
 option  "ipdown"       - "Script to run after link-down"  string no
 
 option  "pinghost"     - "Ping remote host"               string no
-option  "pingrate"     - "Number of ping req per second"  int default="1" no
-option  "pingsize"     - "Number of ping data bytes"      int default="56" no
-option  "pingcount"    - "Number of ping req to send"     int default="0" no
+option  "pingrate"     - "Number of ping req per second"  unsigned int default="1" no
+option  "pingsize"     - "Number of ping data bytes"      unsigned int default="56" no
+option  "pingcount"    - "Number of ping req to send"     unsigned int default="0" no
 option  "pingquiet"    - "Do not print ping packet info"  flag off
 

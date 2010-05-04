@@ -37,13 +37,13 @@
 struct ippoolm_t;                /* Forward declaration */
 
 struct ippool_t {
-  int listsize;                  /* Total number of addresses */
+  unsigned int listsize;                  /* Total number of addresses */
   int allowdyn;                  /* Allow dynamic IP address allocation */
   int allowstat;                 /* Allow static IP address allocation */
   struct in_addr stataddr;       /* Static address range network address */
   struct in_addr statmask;       /* Static address range network mask */
   struct ippoolm_t *member;      /* Listsize array of members */
-  int hashsize;                  /* Size of hash table */
+  unsigned int hashsize;                  /* Size of hash table */
   int hashlog;                   /* Log2 size of hash table */
   int hashmask;                  /* Bitmask for calculating hash */
   struct ippoolm_t **hash;       /* Hashsize array of pointer to member */

@@ -124,7 +124,7 @@ int daemon(int nochdir, int noclose) {
 
 int encaps_printf(void *p, void *packet, unsigned len)
 {
-  int i;
+  unsigned int i;
   if (debug) {
     printf("The packet looks like this:\n");
     for( i=0; i<len; i++) {
@@ -423,7 +423,7 @@ int main(int argc, char **argv)
   }
   apn.l = strlen(args_info.apn_arg) + 1;
   apn.v[0] = (char) strlen(args_info.apn_arg);
-  strncpy(&apn.v[1], args_info.apn_arg, sizeof(apn.v)-1);
+  strncpy((char *) &apn.v[1], args_info.apn_arg, sizeof(apn.v)-1);
 
 
   /* foreground                                                   */

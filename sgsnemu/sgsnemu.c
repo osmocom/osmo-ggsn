@@ -210,7 +210,7 @@ int process_options(int argc, char **argv) {
   struct gengetopt_args_info args_info;
 
   struct hostent *host;
-  int n;
+  unsigned int n;
 
   if (cmdline_parser (argc, argv, &args_info) != 0)
     return -1;
@@ -560,7 +560,7 @@ int process_options(int argc, char **argv) {
 
 
 int encaps_printf(struct pdp_t *pdp, void *pack, unsigned len) {
-  int i;
+  unsigned int i;
   printf("The packet looks like this:\n");
   for( i=0; i<len; i++) {
     printf("%02x ", (unsigned char)*(char *)(pack+i));
@@ -606,10 +606,10 @@ char * print_icmptype(int t) {
 }
 
 int msisdn_add(struct ul16_t *src, struct ul16_t *dst, int add) {
-  int n;
+  unsigned int n;
   uint64_t i64 = 0;
   uint8_t msa[sizeof(i64) * 3]; /* Allocate 3 digits per octet (0..255) */
-  int msalen = 0;
+  unsigned int msalen = 0;
 
   /* Convert to uint64_t from ul16_t format (most significant digit first) */
   /* ul16_t format always starts with 0x91 to indicate international format */
@@ -805,13 +805,13 @@ int encaps_ping(struct pdp_t *pdp, void *pack, unsigned len) {
 
 /* Create a new ping packet and send it off to peer. */
 int create_ping(void *gsn, struct pdp_t *pdp,
-		struct in_addr *dst, int seq, int datasize) {
+		struct in_addr *dst, int seq, unsigned int datasize) {
 
   struct ip_ping pack;
   uint16_t *p = (uint16_t *) &pack;
   uint8_t  *p8 = (uint8_t *) &pack;
   struct in_addr src;
-  int n;
+  unsigned int n;
   long int sum = 0;
   int count = 0;
 
