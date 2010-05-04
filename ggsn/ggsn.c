@@ -532,6 +532,7 @@ int main(int argc, char **argv)
     
   }
 
+  ippool_free(ippool);
   gtp_free(gsn);
   tun_free(tun);
   
