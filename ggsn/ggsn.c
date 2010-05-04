@@ -504,6 +504,8 @@ int main(int argc, char **argv)
     case -1:	/* errno == EINTR : unblocked signal */
       sys_err(LOG_ERR, __FILE__, __LINE__, 0,
 	      "select() returned -1");
+      /* On error, select returns without modifying fds */
+      FD_ZERO(&fds);
       break;  
     case 0:
       /* printf("Select returned 0\n"); */
