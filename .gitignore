@@ -1,0 +1,15 @@
+Makefile.in
+aclocal.m4
+autom4te.cache
+config.guess
+config.h.in~
+config.sub
+configure
+depcomp
+install-sh
+missing
+doc/Makefile.in
+ggsn/Makefile.in
+gtp/Makefile.in
+sgsnemu/Makefile.in
+*.swp
