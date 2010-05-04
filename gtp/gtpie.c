@@ -188,7 +188,7 @@ int gtpie_decaps(union gtpie_member* ie[], int version, void *pack, unsigned len
 
   memset(ie, 0, 4 * GTPIE_SIZE);
 
-  while (p<end) {
+  while ((p<end) && (j<GTPIE_SIZE)) {
     if (GTPIE_DEBUG) {
       printf("The packet looks like this:\n");
       for( i=0; i<(end-p); i++) {
@@ -345,6 +345,10 @@ int gtpie_decaps(union gtpie_member* ie[], int version, void *pack, unsigned len
     if (GTPIE_DEBUG) printf("GTPIE normal return. %lx %lx\n",
 			    (unsigned long) p, (unsigned long) end);
     return 0; /* We landed at the end of the packet: OK */
+  }
+  else if (!(j<GTPIE_SIZE)) {
+    if (GTPIE_DEBUG) printf("GTPIE too many elements.\n");
+    return EOF; /* We received too many information elements */
   }
   else {
     if (GTPIE_DEBUG) printf("GTPIE exceeded end of packet. %lx %lx\n",
