@@ -2210,12 +2210,12 @@ int gtp_delete_context_req(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
   }
  
   if (pdp->version == 1) {
-    gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_NSAPI, 
-	      pdp->nsapi);
-    
     if (teardown)
       gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_TEARDOWN,
 		0xff);
+
+    gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_NSAPI,
+	      pdp->nsapi);
   }
 
   gtp_req(gsn, pdp->version, pdp, &packet, length, &addr, cbp);
