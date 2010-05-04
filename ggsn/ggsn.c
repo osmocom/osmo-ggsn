@@ -261,7 +261,7 @@ int main(int argc, char **argv)
 
   /* Try out our new parser */
   
-  if (cmdline_parser_configfile (args_info.conf_arg, &args_info, 0) != 0)
+  if (cmdline_parser_configfile (args_info.conf_arg, &args_info, 0, 0, 0) != 0)
     exit(1);
   if (args_info.debug_flag) {
     printf("cmdline_parser_configfile\n");
@@ -532,6 +532,7 @@ int main(int argc, char **argv)
     
   }
 
+  cmdline_parser_free(&args_info);
   ippool_free(ippool);
   gtp_free(gsn);
   tun_free(tun);

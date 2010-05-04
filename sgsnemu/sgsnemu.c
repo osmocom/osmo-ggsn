@@ -245,7 +245,7 @@ int process_options(int argc, char **argv) {
   /* Try out our new parser */
   
   if (args_info.conf_arg) {
-    if (cmdline_parser_configfile (args_info.conf_arg, &args_info, 0) != 0)
+    if (cmdline_parser_configfile (args_info.conf_arg, &args_info, 0, 0, 0) != 0)
       return -1;
     if (args_info.debug_flag) {
       printf("cmdline_parser_configfile\n");
