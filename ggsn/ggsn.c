@@ -54,7 +54,7 @@
 #include "../gtp/gtp.h"
 #include "cmdline.h"
 
-
+int end = 0;
 int maxfd = 0;	                /* For select()            */
 
 struct in_addr listen_;
@@ -70,6 +70,11 @@ struct gsn_t *gsn;              /* GSN instance            */
 struct tun_t *tun;              /* TUN instance            */
 struct ippool_t *ippool;        /* Pool of IP addresses    */
 
+/* To exit gracefully. Used with GCC compilation flag -pg and gprof */
+void signal_handler(int s) {
+  if (debug) printf("Received signal %d, exiting.\n", s);
+  end = 1;
+}
 
 /* Used to write process ID to file. Assume someone else will delete */
 void log_pid(char *pidfile) {
@@ -208,6 +213,14 @@ int main(int argc, char **argv)
 
   struct hostent *host;
 
+  /* Handle keyboard interrupt SIGINT */
+  struct sigaction s;
+  s.sa_handler = (void *) signal_handler;
+  if ((0 != sigemptyset( &s.sa_mask )) && debug)
+    printf("sigemptyset failed.\n");
+  s.sa_flags = SA_RESETHAND;
+  if ((sigaction(SIGINT, &s, NULL) != 0) && debug)
+    printf("Could not register SIGINT signal handler.\n");
 	
   fd_set fds;			/* For select() */
   struct timeval idleTime;	/* How long to select() */
@@ -478,8 +491,8 @@ int main(int argc, char **argv)
   /* Main select loop                                               */
   /******************************************************************/
 
-  while (((starttime + timelimit) > time(NULL)) || (0 == timelimit)) {
-	
+  while ((((starttime + timelimit) > time(NULL)) || (0 == timelimit)) && (!end)) {
+
     FD_ZERO(&fds);
     if (tun) FD_SET(tun->fd, &fds);
     FD_SET(gsn->fd0, &fds);
