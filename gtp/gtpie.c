@@ -186,7 +186,7 @@ int gtpie_decaps(union gtpie_member* ie[], int version, void *pack, unsigned len
   end = (unsigned char*) pack + len;
   p = pack;
 
-  memset(ie, 0, 4 * GTPIE_SIZE);
+  memset(ie, 0, sizeof(union gtpie_member *) * GTPIE_SIZE);
 
   while ((p<end) && (j<GTPIE_SIZE)) {
     if (GTPIE_DEBUG) {
