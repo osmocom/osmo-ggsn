@@ -1004,7 +1004,7 @@ int gtp_extheader_ind(struct gsn_t *gsn, struct sockaddr_in *peer,
  * information.
  *************************************************************/
 
-/* API: Send Create PDP Context Request */
+/* API: Send Create PDP Context Request (7.3.1) */
 extern int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp, 
 				  void *cbp) {
   union gtp_packet packet;
@@ -1029,15 +1029,18 @@ extern int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
 	      sizeof(pdp->qos_req0), pdp->qos_req0);
   }
 
+  /* Section 7.7.2 */
   if (pdp->version == 1) {
     if (!pdp->secondary) /* Not Secondary PDP Context Activation Procedure */
       gtpie_tv0(&packet, &length, GTP_MAX, GTPIE_IMSI, 
 		sizeof(pdp->imsi), (uint8_t*) &pdp->imsi);
   }
 
+  /* Section 7.7.11 */
   gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_RECOVERY, 
 	    gsn->restart_counter);
 
+  /* Section 7.7.12 */
   if (!pdp->secondary) /* Not Secondary PDP Context Activation Procedure */
     gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_SELECTION_MODE,
 	      pdp->selmode);
@@ -1049,21 +1052,26 @@ extern int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
 	      pdp->fllc);
   }
 
+  /* Section 7.7.13 */
   if (pdp->version == 1) {
     gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_TEI_DI,
 	      pdp->teid_own);
 
+    /* Section 7.7.14 */
     if (!pdp->teic_confirmed) 
       gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_TEI_C,
 		pdp->teic_own);
 
+    /* Section 7.7.17 */
     gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_NSAPI, 
 	      pdp->nsapi);
 
+    /* Section 7.7.17 */
     if (pdp->secondary) /* Secondary PDP Context Activation Procedure */
       gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_NSAPI, 
 		linked_pdp->nsapi);
 
+    /* Section 7.7.23 */
     if (pdp->cch_pdp) /* Only include charging if flags are set */
       gtpie_tv2(&packet, &length, GTP_MAX, GTPIE_CHARGING_C, 
 		pdp->cch_pdp);
@@ -1075,42 +1083,51 @@ extern int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
   gtpie_tv2(&packet, &length, GTP_MAX, GTPIE_TRACE_TYPE,
 	    pdp->tracetype); */
 
+  /* Section 7.7.27 */
   if (!pdp->secondary) /* Not Secondary PDP Context Activation Procedure */
     gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_EUA, 
 	      pdp->eua.l, pdp->eua.v);
   
 
+  /* Section 7.7.30 */
   if (!pdp->secondary) /* Not Secondary PDP Context Activation Procedure */
     gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_APN, 
 	      pdp->apn_use.l, pdp->apn_use.v);
 
+  /* Section 7.7.31 */
   if (!pdp->secondary) /* Not Secondary PDP Context Activation Procedure */
     if (pdp->pco_req.l)
       gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_PCO, 
 		pdp->pco_req.l, pdp->pco_req.v);
   
+  /* Section 7.7.32 */
   gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_GSN_ADDR, 
 	    pdp->gsnlc.l, pdp->gsnlc.v);
+  /* Section 7.7.32 */
   gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_GSN_ADDR, 
 	    pdp->gsnlu.l, pdp->gsnlu.v);
 
+  /* Section 7.7.33 */
   if (!pdp->secondary) /* Not Secondary PDP Context Activation Procedure */
     gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_MSISDN,
 	      pdp->msisdn.l, pdp->msisdn.v);
 
+  /* Section 7.7.34 */
   if (pdp->version == 1) 
     gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_QOS_PROFILE,
 	      pdp->qos_req.l, pdp->qos_req.v);
 
-
+  /* Section 7.7.36 */
   if ((pdp->version == 1) && pdp->tft.l)
     gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_TFT,
 	      pdp->tft.l, pdp->tft.v);
   
+  /* Section 7.7.41 */
   if ((pdp->version == 1) && pdp->triggerid.l)
     gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_TRIGGER_ID,
 	      pdp->triggerid.l, pdp->triggerid.v);
   
+  /* Section 7.7.42 */
   if ((pdp->version == 1) && pdp->omcid.l)
     gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_OMC_ID,
 	      pdp->omcid.l, pdp->omcid.v);
