@@ -8,4 +8,4 @@ sgsnemu_LDADD = @LIBOBJS@ @EXEC_LDADD@ -lgtp -L../gtp
 
 #sgsnemu_DEPENDENCIES = ../gtp/libgtp.la
 
-sgsnemu_SOURCES = sgsnemu.c tun.c tun.h cmdline.c cmdline.h ippool.h ippool.c syserr.h syserr.c lookup.c
+sgsnemu_SOURCES = sgsnemu.c tun.c tun.h cmdline.c cmdline.h ippool.h ippool.c syserr.h syserr.c lookup.c lookup.h
