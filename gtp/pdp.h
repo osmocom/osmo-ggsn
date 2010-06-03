@@ -212,7 +212,8 @@ struct pdp_t {
   struct in_addr hisaddr0;       /* Server address */
   struct in_addr hisaddr1;       /* Server address */
 
-
+  /* to be used by libgtp callers/users (to attach their own private state) */
+  void *priv;
 };
 
 
