@@ -676,7 +676,7 @@ int gtp_dublicate(struct gsn_t *gsn, int version,
 /* Perform restoration and recovery error handling as described in 29.060 */
 static void log_restart(struct gsn_t *gsn) {
 	FILE *f;
-	int i;
+	int i, rc;
 	int counter = 0;
 	char filename[NAMESIZE];
 
@@ -694,7 +694,11 @@ static void log_restart(struct gsn_t *gsn) {
 	}
 	else {
 	  umask(i);
-	  fscanf(f, "%d", &counter);
+	  rc = fscanf(f, "%d", &counter);
+	  if (rc != 1) {
+	    gtp_err(LOG_ERR, __FILE__, __LINE__, "fscanf failed to read counter value");
+	    return;
+	  }
 	  if (fclose(f)) {
 	    gtp_err(LOG_ERR, __FILE__, __LINE__, "fclose failed: Error = %s", strerror(errno));
 	  }
