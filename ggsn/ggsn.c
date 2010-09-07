@@ -430,13 +430,28 @@ int main(int argc, char **argv)
   /* If flag not given run as a daemon                            */
   if (!args_info.fg_flag)
     {
+      FILE *f;
+      int rc;
       closelog(); 
       /* Close the standard file descriptors. */
       /* Is this really needed ? */
-      freopen("/dev/null", "w", stdout);
-      freopen("/dev/null", "w", stderr);
-      freopen("/dev/null", "r", stdin);
-      daemon(0, 0);
+      f = freopen("/dev/null", "w", stdout);
+      if (f == NULL) {
+        sys_err(LOG_WARNING, __FILE__, __LINE__, 0, "Could not redirect stdout to /dev/null");
+      }
+      f = freopen("/dev/null", "w", stderr);
+      if (f == NULL) {
+        sys_err(LOG_WARNING, __FILE__, __LINE__, 0, "Could not redirect stderr to /dev/null");
+      }
+      f = freopen("/dev/null", "r", stdin);
+      if (f == NULL) {
+        sys_err(LOG_WARNING, __FILE__, __LINE__, 0, "Could not redirect stdin to /dev/null");
+      }
+      rc = daemon(0, 0);
+      if (rc != 0) {
+        sys_err(LOG_ERR, __FILE__, __LINE__, rc, "Could not daemonize");
+        exit(1);
+      }
       /* Open log again. This time with new pid */
       openlog(PACKAGE, LOG_PID, LOG_DAEMON);
     }
