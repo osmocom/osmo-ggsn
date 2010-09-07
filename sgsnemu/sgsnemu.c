@@ -440,7 +440,7 @@ int process_options(int argc, char **argv) {
     return -1;
   }
   options.apn.l = strlen(args_info.apn_arg);
-  strncpy(options.apn.v, args_info.apn_arg, sizeof(options.apn.v));
+  strncpy((char *)options.apn.v, args_info.apn_arg, sizeof(options.apn.v));
   options.apn.v[sizeof(options.apn.v)-1] = 0;
   printf("Using APN:             %s\n", args_info.apn_arg);
 
