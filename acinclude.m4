@@ -13,5 +13,5 @@ AC_DEFUN([adl_FUNC_GETOPT_LONG],
      [# use the GNU replacement
       AC_LIBOBJ(getopt)
       AC_LIBOBJ(getopt1)
-      AC_CONFIG_LINKS([ggsn/getopt.h:ggsn/gnugetopt.h])
-      AC_CONFIG_LINKS([sgsnemu/getopt.h:sgsnemu/gnugetopt.h])])])])
+      AC_CONFIG_LINKS([lib/getopt.h:lib/gnugetopt.h])])])])
+

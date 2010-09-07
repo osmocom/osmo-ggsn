@@ -44,9 +44,9 @@
 #include <time.h>
 
 #include "config.h"
-#include "tun.h"
-#include "ippool.h"
-#include "syserr.h"
+#include "../lib/tun.h"
+#include "../lib/ippool.h"
+#include "../lib/syserr.h"
 #include "../gtp/pdp.h"
 #include "../gtp/gtp.h"
 #include "cmdline.h"
