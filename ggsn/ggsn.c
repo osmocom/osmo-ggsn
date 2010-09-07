@@ -437,15 +437,18 @@ int main(int argc, char **argv)
       /* Is this really needed ? */
       f = freopen("/dev/null", "w", stdout);
       if (f == NULL) {
-        sys_err(LOG_WARNING, __FILE__, __LINE__, 0, "Could not redirect stdout to /dev/null");
+        sys_err(LOG_WARNING, __FILE__, __LINE__, 0,
+          "Could not redirect stdout to /dev/null");
       }
       f = freopen("/dev/null", "w", stderr);
       if (f == NULL) {
-        sys_err(LOG_WARNING, __FILE__, __LINE__, 0, "Could not redirect stderr to /dev/null");
+        sys_err(LOG_WARNING, __FILE__, __LINE__, 0,
+          "Could not redirect stderr to /dev/null");
       }
       f = freopen("/dev/null", "r", stdin);
       if (f == NULL) {
-        sys_err(LOG_WARNING, __FILE__, __LINE__, 0, "Could not redirect stdin to /dev/null");
+        sys_err(LOG_WARNING, __FILE__, __LINE__, 0,
+          "Could not redirect stdin to /dev/null");
       }
       rc = daemon(0, 0);
       if (rc != 0) {
