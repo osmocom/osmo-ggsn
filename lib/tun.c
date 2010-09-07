@@ -688,7 +688,7 @@ int tun_new(struct tun_t **tun)
   } 
   
   strncpy((*tun)->devname, ifr.ifr_name, IFNAMSIZ);
-  (*tun)->devname[IFNAMSIZ] = 0;
+  (*tun)->devname[IFNAMSIZ-1] = 0;
   
   ioctl((*tun)->fd, TUNSETNOCSUM, 1); /* Disable checksums */
   return 0;
