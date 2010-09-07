@@ -85,7 +85,7 @@ int tun_nlattr(struct nlmsghdr *n, int nsize, int type, void *d, int dlen)
   return 0;
 }
 
-int tun_gifindex(struct tun_t *this, int *index) {
+int tun_gifindex(struct tun_t *this, __u32 *index) {
   struct ifreq ifr;
   int fd;
 
@@ -432,7 +432,8 @@ int tun_setaddr(struct tun_t *this,
 
   if (addr) { /* Set the interface address */
     this->addr.s_addr = addr->s_addr;
-    ((struct sockaddr_in *) &ifr.ifr_addr)->sin_addr.s_addr = addr->s_addr;
+    memcpy(&((struct sockaddr_in *) &ifr.ifr_addr)->sin_addr, addr,
+      sizeof(*addr));
     if (ioctl(fd, SIOCSIFADDR, (void *) &ifr) < 0) {
       if (errno != EEXIST) {
 	sys_err(LOG_ERR, __FILE__, __LINE__, errno,
@@ -449,8 +450,8 @@ int tun_setaddr(struct tun_t *this,
 
   if (dstaddr) { /* Set the destination address */
     this->dstaddr.s_addr = dstaddr->s_addr;
-    ((struct sockaddr_in *) &ifr.ifr_dstaddr)->sin_addr.s_addr = 
-      dstaddr->s_addr;
+    memcpy(&((struct sockaddr_in *) &ifr.ifr_dstaddr)->sin_addr,
+      dstaddr, sizeof(*dstaddr));
     if (ioctl(fd, SIOCSIFDSTADDR, (caddr_t) &ifr) < 0) {
       sys_err(LOG_ERR, __FILE__, __LINE__, errno,
 	      "ioctl(SIOCSIFDSTADDR) failed");
@@ -462,8 +463,8 @@ int tun_setaddr(struct tun_t *this,
   if (netmask) { /* Set the netmask */
     this->netmask.s_addr = netmask->s_addr;
 #if defined(__linux__)
-    ((struct sockaddr_in *) &ifr.ifr_netmask)->sin_addr.s_addr = 
-      netmask->s_addr;
+    memcpy(&((struct sockaddr_in *) &ifr.ifr_netmask)->sin_addr, 
+      netmask, sizeof(*netmask));
 
 #elif defined(__FreeBSD__) || defined (__APPLE__)
     ((struct sockaddr_in *) &ifr.ifr_addr)->sin_addr.s_addr = 
@@ -530,9 +531,11 @@ int tun_route(struct tun_t *this,
   r.rt_dst.sa_family     = AF_INET;
   r.rt_gateway.sa_family = AF_INET;
   r.rt_genmask.sa_family = AF_INET;
-  ((struct sockaddr_in *) &r.rt_dst)->sin_addr.s_addr = dst->s_addr;
-  ((struct sockaddr_in *) &r.rt_gateway)->sin_addr.s_addr = gateway->s_addr;
-  ((struct sockaddr_in *) &r.rt_genmask)->sin_addr.s_addr = mask->s_addr;
+  memcpy(&((struct sockaddr_in *) &r.rt_dst)->sin_addr, dst, sizeof(*dst));
+  memcpy(&((struct sockaddr_in *) &r.rt_gateway)->sin_addr, gateway,
+    sizeof(*gateway));
+  memcpy(&((struct sockaddr_in *) &r.rt_genmask)->sin_addr, mask,
+    sizeof(*mask));
   
   if (delete) {
     if (ioctl(fd, SIOCDELRT, (void *) &r) < 0) {
@@ -882,6 +885,7 @@ int tun_runscript(struct tun_t *tun, char* script) {
   char buf[TUN_SCRIPTSIZE];
   char snet[TUN_ADDRSIZE];
   char smask[TUN_ADDRSIZE];
+  int rc;
 
   strncpy(snet, inet_ntoa(tun->addr), sizeof(snet));
   snet[sizeof(snet)-1] = 0;
@@ -892,6 +896,11 @@ int tun_runscript(struct tun_t *tun, char* script) {
   snprintf(buf, sizeof(buf), "%s %s %s %s",
 	   script, tun->devname, snet, smask);
   buf[sizeof(buf)-1] = 0;
-  system(buf);
+  rc = system(buf);
+  if (rc == -1) {
+    sys_err(LOG_ERR, __FILE__, __LINE__, errno, "Error executing command %s",
+      buf);
+    return -1;
+  }
   return 0;
 }
