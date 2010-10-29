@@ -328,6 +328,10 @@ int gtpie_decaps(union gtpie_member* ie[], int version, void *pack, unsigned len
     case GTPIE_TRIGGER_ID:
     case GTPIE_OMC_ID:
     case GTPIE_CHARGING_ADDR:
+    case GTPIE_RAT_TYPE:
+    case GTPIE_USER_LOC:
+    case GTPIE_MS_TZ:
+    case GTPIE_IMEI_SV:
     case GTPIE_PRIVATE:
       if (j<GTPIE_SIZE) {
 	ie[j] = (union gtpie_member*) p;

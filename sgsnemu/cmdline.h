@@ -61,6 +61,18 @@ struct gengetopt_args_info
   int selmode_arg;	/* Selection mode (default='0x01').  */
   char * selmode_orig;	/* Selection mode original value given at command line.  */
   const char *selmode_help; /* Selection mode help description.  */
+  char *  rattype_arg; /* Radio Access Technology Type (optional).  */
+  char *  rattype_orig;
+  char *  rattype_help;
+  char *  userloc_arg; /* User Location Information (optional).  */
+  char *  userloc_orig;
+  char *  userloc_help;
+  char *  mstz_arg;    /* MS Time Zone (optional).  */
+  char *  mstz_orig;
+  char *  mstz_help;
+  char *  imeisv_arg;  /* IMEI(SV) (optional).  */
+  char *  imeisv_orig;
+  char *  imeisv_help;
   char * imsi_arg;	/* IMSI (default='240010123456789').  */
   char * imsi_orig;	/* IMSI original value given at command line.  */
   const char *imsi_help; /* IMSI help description.  */
@@ -124,6 +136,10 @@ struct gengetopt_args_info
   int gtpversion_given ;	/* Whether gtpversion was given.  */
   int apn_given ;	/* Whether apn was given.  */
   int selmode_given ;	/* Whether selmode was given.  */
+  int rattype_given ;  /* Whether rattype was given.  */
+  int userloc_given ;  /* Whether userloc was given.  */
+  int mstz_given ;     /* Whether mstz was given.  */
+  int imeisv_given ;   /* Whether imeisv was given.  */
   int imsi_given ;	/* Whether imsi was given.  */
   int nsapi_given ;	/* Whether nsapi was given.  */
   int msisdn_given ;	/* Whether msisdn was given.  */

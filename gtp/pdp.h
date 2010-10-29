@@ -188,6 +188,14 @@ struct pdp_t {
   struct ul255_t pco_req;  /* Requested packet control options. */
   struct ul255_t pco_neg;  /* Negotiated packet control options. */
   uint32_t    selmode;  /* Selection mode. */
+  struct ul255_t    rattype;  /* Radio Access Technology Type */
+  int    rattype_given;  /* Radio Access Technology Type given*/
+  struct ul255_t    userloc;  /* User Location Information  */
+  int    userloc_given;  /* User Location Information  given*/
+  struct ul255_t    mstz;  /* MS Time Zone */
+  int    mstz_given;  /* MS Time Zone given*/
+  struct ul255_t    imeisv;  /* IMEI Software Version */
+  int    imeisv_given;  /* IMEI Software Version given*/
 
   /* Additional parameters used by library */
 

@@ -104,6 +104,10 @@ hton64(uint64_t q)
 #define GTPIE_EXT_HEADER_T  141 /* Extension Header Type List */
 #define GTPIE_TRIGGER_ID    142 /* Trigger Id */
 #define GTPIE_OMC_ID        143 /* OMC Identity */
+#define GTPIE_RAT_TYPE      151 /* Radio Access Technology Type */
+#define GTPIE_USER_LOC      152 /* User Location Information  */
+#define GTPIE_MS_TZ         153 /* MS Time Zone */
+#define GTPIE_IMEI_SV       154 /* IMEI Software Version */
 /* 239-250 Reserved for the GPRS charging protocol (see GTP' in GSM 12.15) */
 #define GTPIE_CHARGING_ADDR 251 /* Charging Gateway Address */
 /* 252-254 Reserved for the GPRS charging protocol (see GTP' in GSM 12.15) */

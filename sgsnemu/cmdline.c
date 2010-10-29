@@ -40,6 +40,10 @@ const char *gengetopt_args_info_help[] = {
   "      --gtpversion=INT   GTP version to use  (default=`1')",
   "  -a, --apn=STRING       Access point name  (default=`internet')",
   "      --selmode=INT      Selection mode  (default=`0x01')",
+  "      --rattype=INT      Radio Access Technology Type (optional-1to5)",
+  "      --userloc=STRING   User Location Information (optional-type.MCC.MNC.LAC.CIorSACorRAC)",
+  "      --mstz=STRING      MS Time Zone (optional- sign.NbQuartersOfAnHour.DSTAdjustment)",
+  "      --imeisv=STRING    IMEI(SV) International Mobile Equipment Identity (and Software Version) (optional,16 digits)",
   "  -i, --imsi=STRING      IMSI  (default=`240010123456789')",
   "      --nsapi=INT        NSAPI  (default=`0')",
   "  -m, --msisdn=STRING    Mobile Station ISDN number  (default=`46702123456')",
@@ -113,6 +117,10 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->gtpversion_given = 0 ;
   args_info->apn_given = 0 ;
   args_info->selmode_given = 0 ;
+  args_info->rattype_given = 0 ;
+  args_info->userloc_given = 0 ;
+  args_info->mstz_given = 0 ;
+  args_info->imeisv_given = 0 ;
   args_info->imsi_given = 0 ;
   args_info->nsapi_given = 0 ;
   args_info->msisdn_given = 0 ;
@@ -158,6 +166,14 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->apn_orig = NULL;
   args_info->selmode_arg = 0x01;
   args_info->selmode_orig = NULL;
+  args_info->rattype_arg = "1";
+  args_info->rattype_orig = NULL;
+  args_info->userloc_arg = strdup("02509946241207");
+  args_info->userloc_orig = NULL;
+  args_info->mstz_arg = strdup("0");
+  args_info->mstz_orig = NULL;
+  args_info->imeisv_arg = strdup("2143658709214365");
+  args_info->imeisv_orig = NULL;
   args_info->imsi_arg = gengetopt_strdup ("240010123456789");
   args_info->imsi_orig = NULL;
   args_info->nsapi_arg = 0;
@@ -768,6 +784,10 @@ cmdline_parser_internal (int argc, char * const *argv, struct gengetopt_args_inf
         { "gtpversion",	1, NULL, 0 },
         { "apn",	1, NULL, 'a' },
         { "selmode",	1, NULL, 0 },
+        { "rattype",   1, NULL, 0},
+        { "userloc",   1, NULL, 0},
+        { "mstz",      1, NULL, 0},
+        { "imeisv",    1, NULL, 0},
         { "imsi",	1, NULL, 'i' },
         { "nsapi",	1, NULL, 0 },
         { "msisdn",	1, NULL, 'm' },
@@ -1142,6 +1162,55 @@ cmdline_parser_internal (int argc, char * const *argv, struct gengetopt_args_inf
             if (args_info->selmode_orig)
               free (args_info->selmode_orig); /* free previous string */
             args_info->selmode_orig = gengetopt_strdup (optarg);
+          }
+         /* Radio Access Technology Type.  */
+          else if (strcmp (long_options[option_index].name, "rattype") == 0)
+          {
+            if (args_info->rattype_given)
+              {
+                fprintf (stderr, "%s: `--rattype' option given more than once\n", PACKAGE);
+                exit (EXIT_FAILURE);
+              }
+            args_info->rattype_given = 1;
+            /* args_info->rattype_arg = strtol (optarg,&stop_char,0); */
+            args_info->rattype_arg = strdup (optarg);
+            break;
+          }
+         /* User Location Information.  */
+          else if (strcmp (long_options[option_index].name, "userloc") == 0)
+          {
+            if (args_info->userloc_given)
+              {
+                fprintf (stderr, "%s: `--userloc' option given more than once\n", PACKAGE);
+                exit (EXIT_FAILURE);
+              }
+            args_info->userloc_given = 1;
+            args_info->userloc_arg = strdup (optarg);
+            break;
+          }
+         /* MS Time Zone  */
+          else if (strcmp (long_options[option_index].name, "mstz") == 0)
+          {
+            if (args_info->mstz_given)
+              {
+                fprintf (stderr, "%s: `--mstz' option given more than once\n", PACKAGE);
+                exit (EXIT_FAILURE);
+              }
+            args_info->mstz_given = 1;
+            args_info->mstz_arg = strdup (optarg);
+            break;
+          }
+          /* IMEI(SV)  */
+          else if (strcmp (long_options[option_index].name, "imeisv") == 0)
+          {
+            if (args_info->imeisv_given)
+              {
+                fprintf (stderr, "%s: `--imeisv' option given more than once\n", PACKAGE);
+                exit (EXIT_FAILURE);
+              }
+            args_info->imeisv_given = 1;
+            args_info->imeisv_arg = strdup (optarg);
+            break;
           }
           /* NSAPI.  */
           else if (strcmp (long_options[option_index].name, "nsapi") == 0)

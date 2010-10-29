@@ -1136,6 +1136,23 @@ extern int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
     gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_OMC_ID,
 	      pdp->omcid.l, pdp->omcid.v);
   
+  /* new R7 fields */
+  if (pdp->rattype_given == 1)
+    gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_RAT_TYPE,
+              pdp->rattype.l, pdp->rattype.v);
+
+  if (pdp->userloc_given == 1)
+    gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_USER_LOC,
+              pdp->userloc.l, pdp->userloc.v);
+
+  if (pdp->mstz_given == 1)
+    gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_MS_TZ,
+              pdp->mstz.l, pdp->mstz.v);
+
+  if (pdp->imeisv_given == 1)
+    gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_IMEI_SV,
+              pdp->imeisv.l, pdp->imeisv.v);
+
   /* TODO hisaddr0 */
   gtp_req(gsn, pdp->version, pdp, &packet, length, &pdp->hisaddr0, cbp);
 

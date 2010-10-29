@@ -104,6 +104,14 @@ struct {
   uint16_t cch;
   struct ul255_t apn;
   uint8_t selmode;
+  struct ul255_t rattype;
+  int rattype_given;
+  struct ul255_t userloc;
+  int userloc_given;
+  struct ul255_t mstz;
+  int mstz_given;
+  struct ul255_t imeisv;
+  int imeisv_given;
   struct ul16_t msisdn;
 } options;
 
@@ -211,6 +219,23 @@ int process_options(int argc, char **argv) {
 
   struct hostent *host;
   unsigned int n;
+  uint16_t i;
+  uint8_t a;
+  uint8_t b;
+  char * tmp;
+  char * pch;
+  char * type;
+  char * mcc;
+  char * mnc;
+  char * lac;
+  int lac_d;
+  char * rest;
+  char *userloc_el[] = {"TYPE","MCC","MNC","LAC","REST"};
+  char *mstz_el[] = {"SIGN","QUARTERS","DST"};
+  int sign ;
+  int nbquarters ;
+  int DST ;
+
 
   if (cmdline_parser (argc, argv, &args_info) != 0)
     return -1;
@@ -449,6 +474,174 @@ int process_options(int argc, char **argv) {
   options.selmode = args_info.selmode_arg;
   printf("Using selection mode:  %d\n", args_info.selmode_arg);
 
+  /* rattype */
+  if (args_info.rattype_given == 1 ) {
+    options.rattype_given = 1 ;
+    options.rattype.l = strlen(args_info.rattype_arg) ;
+    options.rattype.v[0] = atoi(args_info.rattype_arg) ;
+    printf("Using RAT Type:  %s\n", args_info.rattype_arg);
+  }
+
+  /* userloc */
+  if (args_info.userloc_given == 1 ) {
+    printf("Using User Location Information:  %s\n", args_info.userloc_arg);
+    tmp = args_info.userloc_arg ;
+    n=0;
+    pch = strtok (tmp,".");
+    while (pch != NULL) {
+      userloc_el[n] = pch ;
+      pch = strtok (NULL, ".");
+      n++;
+    }
+
+    options.userloc_given = 1 ;
+    options.userloc.l = 8 ;
+
+    /* 3GPP Geographic Location Type t0 / t1 / t2 */
+    type = userloc_el[0];
+    printf("->type : %c\n", type[0]);
+    if ( (strlen(type)!=1) || (!isdigit(type[0])) ) {
+       printf("Invalid type \n");
+      return -1;
+    }
+    /* options.userloc.v[0] = 0x00 */
+    options.userloc.v[0] = type[0] - 48;
+
+    /* MCC */
+    mcc = userloc_el[1] ;
+    printf("->mcc : %s\n", mcc);
+    if (strlen(mcc)!=3) {
+      printf("Invalid MCC lenght\n");
+      return -1;
+    }
+
+    /* MNC */
+    mnc = userloc_el[2] ;
+    printf("->mnc : %s\n", mnc);
+
+    /* octet 5 - MCC Digit 2 - MCC Digit 1 */
+    /* options.userloc.v[1] = 0x52 */
+    a = (uint8_t) (mcc[0] - 48);
+    b = (uint8_t) (mcc[1] - 48);
+    options.userloc.v[1] = 16*b+a ;
+
+    /* octet 6 - MNC Digit 3 - MCC Digit 3 */
+    /* options.userloc.v[2] = 0xf0 */
+    a = (uint8_t) (mcc[2] - 48);
+
+    if ( (strlen(mnc) > 3) || (strlen(mnc) < 2)) {
+      printf("Invalid MNC lenght\n");
+      return -1;
+    }
+    if (strlen(mnc)==2) {
+      b = 15 ;
+    }
+    if (strlen(mnc)==3) {
+      b = (uint8_t) (mnc[2] - 48);
+    }
+    options.userloc.v[2] = 16*b+a ;
+
+    /* octet 7 - MNC Digit 2 - MNC Digit 1 */
+    /* options.userloc.v[3] = 0x99*/
+    a = (uint8_t) (mnc[0]- 48);
+    b = (uint8_t) (mnc[1]- 48);
+    options.userloc.v[3] = 16*b+a ;
+
+    /* LAC */
+    lac = userloc_el[3] ;
+    /*options.userloc.v[4] = 0x12 ;  */
+    /*options.userloc.v[5] = 0x10 ;  */
+    printf("->LAC: %s\n", lac);
+    lac_d = atoi(lac);
+    if (lac_d>65535 || lac_d<1) {
+      printf("Invalid LAC\n");
+      return -1;
+    }
+    i = lac_d >> 8 ;
+    options.userloc.v[4] = i;          /* octet 8 - LAC */
+    options.userloc.v[5] = lac_d;      /* octet 9 - LAC */
+
+    /* CI/SAC/RAC */
+    rest = userloc_el[4] ;
+    printf("->CI/SAC/RAC : %s\n", rest);
+    lac_d = atoi(rest);
+    if (lac_d>65535 || lac_d<1) {
+      printf("Invalid CI/SAC/RAC\n");
+      return -1;
+    }
+    /*options.userloc.v[6] = 0x04 ; */
+    /*options.userloc.v[7] = 0xb7 ; */
+    i = lac_d >> 8 ;
+    options.userloc.v[6] = i;          /* octet 10 - t0,CI / t1,SAC / t2,RAC  */
+    options.userloc.v[7] = lac_d;      /* octet 11 - t0,CI / t1,SAC / t2,RAC  */
+  }
+  /* mstz */
+  if (args_info.mstz_given == 1 ) {
+    options.mstz_given = 1 ;
+    options.mstz.l = 2 ;
+
+    printf("Using MS Time Zone:  %s\n", args_info.mstz_arg);
+    tmp = args_info.mstz_arg ;
+    n=0;
+    pch = strtok (tmp,".");
+    while (pch != NULL) {
+      mstz_el[n] = pch ;
+      pch = strtok (NULL, ".");
+      n++;
+    }
+
+    /* sign */
+    sign = atoi(mstz_el[0]) ;
+    printf("->Sign (0=+ / 1=-): %d\n", sign);
+    if ( sign!=0 && sign!=1 ) {
+       printf("Invalid Sign \n");
+      return -1;
+    }
+    /* nbquarters */
+    nbquarters = atoi(mstz_el[1]) ;
+    printf("->Number of Quarters of an Hour : %d\n", nbquarters);
+    if ( nbquarters<0 || nbquarters>79 ) {
+       printf("Invalid Number of Quarters \n");
+      return -1;
+    }
+    /* DST */
+    DST = atoi(mstz_el[2]) ;
+    printf("->Daylight Saving Time Adjustment : %d\n", DST);
+    if ( DST<0 || DST>3 ) {
+       printf("Invalid DST Adjustment \n");
+      return -1;
+    }
+    /* 12345678
+    bits 123 = unit of # of quarters of an hour
+    bits 678 = # of quarters of an hour / 10
+    bit 5 = sign
+    */
+    i= nbquarters % 10 ;
+    i = i << 4 ;
+    i = i + nbquarters / 10 + 8 * sign;
+    /* options.mstz.v[0] = 0x69 ; */
+    /* options.mstz.v[1] = 0x01 ; */
+    options.mstz.v[0] = i ;
+    options.mstz.v[1] = DST ;
+    n = (i & 0x08) ? '-' : '+';
+    printf("->Human Readable MS Time Zone  : GMT %c %d hours %d minutes\n", n , nbquarters / 4, nbquarters % 4 * 15);
+  }
+
+  /* imeisv */
+  if (args_info.imeisv_given == 1 ) {
+    options.imeisv_given = 1 ;
+    if (strlen(args_info.imeisv_arg)!=16) {
+      printf("Invalid IMEI(SV)\n");
+      return -1;
+    }
+    options.imeisv.l = 8 ;
+    for(n=0; n<8; n++) {
+      a = (uint8_t) (args_info.imeisv_arg [2*n] - 48) ;
+      b = (uint8_t) (args_info.imeisv_arg [2*n + 1] - 48) ;
+      options.imeisv.v[n] = 16*b+a ;
+    }
+    printf("Using IMEI(SV):  %s\n", args_info.imeisv_arg);
+  }
   
   /* msisdn                                                          */
   if (strlen(args_info.msisdn_arg)>(sizeof(options.msisdn.v)-1)) {
@@ -1138,6 +1331,22 @@ int main(int argc, char **argv)
     
     pdp->selmode = options.selmode;
     
+    pdp->rattype.l = options.rattype.l;
+    memcpy(pdp->rattype.v, options.rattype.v, options.rattype.l);
+    pdp->rattype_given = options.rattype_given;
+
+    pdp->userloc.l = options.userloc.l;
+    memcpy(pdp->userloc.v, options.userloc.v, options.userloc.l);
+    pdp->userloc_given = options.userloc_given;
+
+    pdp->mstz.l = options.mstz.l;
+    memcpy(pdp->mstz.v, options.mstz.v, options.mstz.l);
+    pdp->mstz_given = options.mstz_given;
+
+    pdp->imeisv.l = options.imeisv.l;
+    memcpy(pdp->imeisv.v, options.imeisv.v, options.imeisv.l);
+    pdp->imeisv_given = options.imeisv_given;
+
     if (options.apn.l > sizeof(pdp->apn_use.v)) {
       sys_err(LOG_ERR, __FILE__, __LINE__, 0, "APN length too big");
       exit(1);
