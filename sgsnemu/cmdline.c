@@ -47,7 +47,11 @@ const char *gengetopt_args_info_help[] = {
   "  -i, --imsi=STRING      IMSI  (default=`240010123456789')",
   "      --nsapi=INT        NSAPI  (default=`0')",
   "  -m, --msisdn=STRING    Mobile Station ISDN number  (default=`46702123456')",
-  "  -q, --qos=INT          Requested quality of service  (default=`0x0b921f')",
+  "  -q, --qos=INT          Requested quality of service  (default=`0x000b921f')",
+  "      --qose1=INT        Requested quality of service Extension 1 (example=`0x9396404074f9ffff')",
+  "      --qose2=INT        Requested quality of service Extension 2 (example=`0x11')",
+  "      --qose3=INT        Requested quality of service Extension 3 (example=`0x0101')",
+  "      --qose4=INT        Requested quality of service Extension 4 (example=`0x4040')",
   "      --charging=INT     Charging characteristics  (default=`0x0800')",
   "  -u, --uid=STRING       Login user ID  (default=`mig')",
   "  -p, --pwd=STRING       Login password  (default=`hemmelig')",
@@ -125,6 +129,10 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->nsapi_given = 0 ;
   args_info->msisdn_given = 0 ;
   args_info->qos_given = 0 ;
+  args_info->qose1_given = 0 ;
+  args_info->qose2_given = 0 ;
+  args_info->qose3_given = 0 ;
+  args_info->qose4_given = 0 ;
   args_info->charging_given = 0 ;
   args_info->uid_given = 0 ;
   args_info->pwd_given = 0 ;
@@ -180,8 +188,16 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->nsapi_orig = NULL;
   args_info->msisdn_arg = gengetopt_strdup ("46702123456");
   args_info->msisdn_orig = NULL;
-  args_info->qos_arg = 0x0b921f;
+  args_info->qos_arg = 0x000b921f;
   args_info->qos_orig = NULL;
+  args_info->qose1_arg = 0x9396404074f9ffff;
+  args_info->qose1_orig = NULL;
+  args_info->qose2_arg = 0x11;
+  args_info->qose2_orig = NULL;
+  args_info->qose3_arg = 0x0101;
+  args_info->qose3_orig = NULL;
+  args_info->qose4_arg = 0x4040;
+  args_info->qose4_orig = NULL;
   args_info->charging_arg = 0x0800;
   args_info->charging_orig = NULL;
   args_info->uid_arg = gengetopt_strdup ("mig");
@@ -792,6 +808,10 @@ cmdline_parser_internal (int argc, char * const *argv, struct gengetopt_args_inf
         { "nsapi",	1, NULL, 0 },
         { "msisdn",	1, NULL, 'm' },
         { "qos",	1, NULL, 'q' },
+        { "qose1",	1, NULL, 0 },
+        { "qose2",	1, NULL, 0 },
+        { "qose3",	1, NULL, 0 },
+        { "qose4",	1, NULL, 0 },
         { "charging",	1, NULL, 0 },
         { "uid",	1, NULL, 'u' },
         { "pwd",	1, NULL, 'p' },
@@ -1162,6 +1182,82 @@ cmdline_parser_internal (int argc, char * const *argv, struct gengetopt_args_inf
             if (args_info->selmode_orig)
               free (args_info->selmode_orig); /* free previous string */
             args_info->selmode_orig = gengetopt_strdup (optarg);
+          }
+         /* QoS Extension 1.  */
+          else if (strcmp (long_options[option_index].name, "qose1") == 0)
+          {
+            if (args_info->qose1_given)
+              {
+                fprintf (stderr, "%s: `--qose1' option given more than once\n", PACKAGE);
+                exit (EXIT_FAILURE);
+              }
+            args_info->qose1_given = 1;
+            args_info->qose1_arg = strtoull (optarg, &stop_char, 0);
+          if (!(stop_char && *stop_char == '\0')) {
+            fprintf(stderr, "%s: invalid numeric value: %s\n", argv[0], optarg);
+            goto failure;
+          }
+          if (args_info->qose1_orig)
+            free (args_info->qose1_orig); /* free previous string */
+          args_info->qose1_orig = gengetopt_strdup (optarg);
+          break;
+          }
+         /* QoS Extension 2.  */
+          else if (strcmp (long_options[option_index].name, "qose2") == 0)
+          {
+            if (args_info->qose2_given)
+              {
+                fprintf (stderr, "%s: `--qose2' option given more than once\n", PACKAGE);
+                exit (EXIT_FAILURE);
+              }
+            args_info->qose2_given = 1;
+            args_info->qose2_arg = strtol (optarg, &stop_char, 0);
+          if (!(stop_char && *stop_char == '\0')) {
+            fprintf(stderr, "%s: invalid numeric value: %s\n", argv[0], optarg);
+            goto failure;
+          }
+          if (args_info->qose2_orig)
+            free (args_info->qose2_orig); /* free previous string */
+          args_info->qose2_orig = gengetopt_strdup (optarg);
+          break;
+          }
+         /* QoS Extension 3.  */
+          else if (strcmp (long_options[option_index].name, "qose3") == 0)
+          {
+            if (args_info->qose3_given)
+              {
+                fprintf (stderr, "%s: `--qose3' option given more than once\n", PACKAGE);
+                exit (EXIT_FAILURE);
+              }
+            args_info->qose3_given = 1;
+            args_info->qose3_arg = strtol (optarg, &stop_char, 0);
+          if (!(stop_char && *stop_char == '\0')) {
+            fprintf(stderr, "%s: invalid numeric value: %s\n", argv[0], optarg);
+            goto failure;
+          }
+          if (args_info->qose3_orig)
+            free (args_info->qose3_orig); /* free previous string */
+          args_info->qose3_orig = gengetopt_strdup (optarg);
+          break;
+          }
+         /* QoS Extension 4.  */
+          else if (strcmp (long_options[option_index].name, "qose4") == 0)
+          {
+            if (args_info->qose4_given)
+              {
+                fprintf (stderr, "%s: `--qose4' option given more than once\n", PACKAGE);
+                exit (EXIT_FAILURE);
+              }
+            args_info->qose4_given = 1;
+            args_info->qose4_arg = strtol (optarg, &stop_char, 0);
+          if (!(stop_char && *stop_char == '\0')) {
+            fprintf(stderr, "%s: invalid numeric value: %s\n", argv[0], optarg);
+            goto failure;
+          }
+          if (args_info->qose4_orig)
+            free (args_info->qose4_orig); /* free previous string */
+          args_info->qose4_orig = gengetopt_strdup (optarg);
+          break;
           }
          /* Radio Access Technology Type.  */
           else if (strcmp (long_options[option_index].name, "rattype") == 0)

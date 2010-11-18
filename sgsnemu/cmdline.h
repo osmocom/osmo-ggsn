@@ -85,6 +85,14 @@ struct gengetopt_args_info
   int qos_arg;	/* Requested quality of service (default='0x0b921f').  */
   char * qos_orig;	/* Requested quality of service original value given at command line.  */
   const char *qos_help; /* Requested quality of service help description.  */
+  unsigned long long int qose1_arg;	/* Requested quality of service Extension 1  */
+  char * qose1_orig;	/* Requested quality of service Extension 1 original value given at command line.  */
+  int qose2_arg;	/* Requested quality of service Extension 2  */
+  char * qose2_orig;	/* Requested quality of service Extension 2 original value given at command line.  */
+  int qose3_arg;	/* Requested quality of service Extension 3  */
+  char * qose3_orig;	/* Requested quality of service Extension 3 original value given at command line.  */
+  int qose4_arg;	/* Requested quality of service Extension 4  */
+  char * qose4_orig;	/* Requested quality of service Extension 4 original value given at command line.  */
   int charging_arg;	/* Charging characteristics (default='0x0800').  */
   char * charging_orig;	/* Charging characteristics original value given at command line.  */
   const char *charging_help; /* Charging characteristics help description.  */
@@ -144,6 +152,10 @@ struct gengetopt_args_info
   int nsapi_given ;	/* Whether nsapi was given.  */
   int msisdn_given ;	/* Whether msisdn was given.  */
   int qos_given ;	/* Whether qos was given.  */
+  int qose1_given ;	/* Whether qos Extension 1 was given.  */
+  int qose2_given ;	/* Whether qos Extension 2 was given.  */
+  int qose3_given ;	/* Whether qos Extension 3 was given.  */
+  int qose4_given ;	/* Whether qos Extension 4 was given.  */
   int charging_given ;	/* Whether charging was given.  */
   int uid_given ;	/* Whether uid was given.  */
   int pwd_given ;	/* Whether pwd was given.  */

@@ -246,6 +246,10 @@ int process_options(int argc, char **argv) {
     printf("debug: %d\n", args_info.debug_flag);
     if (args_info.imsi_arg) printf("imsi: %s\n", args_info.imsi_arg);
     printf("qos: %#08x\n", args_info.qos_arg);
+    printf("qose1: %#0.16llx\n", args_info.qose1_arg);
+    printf("qose2: %#04x\n", args_info.qose2_arg);
+    printf("qose3: %#06x\n", args_info.qose3_arg);
+    printf("qose4: %#06x\n", args_info.qose4_arg);
     printf("charging: %#04x\n", args_info.charging_arg);
     if (args_info.apn_arg) printf("apn: %s\n", args_info.apn_arg);
     if (args_info.msisdn_arg) printf("msisdn: %s\n", args_info.msisdn_arg);
@@ -280,6 +284,10 @@ int process_options(int argc, char **argv) {
       printf("debug: %d\n", args_info.debug_flag);
       if (args_info.imsi_arg) printf("imsi: %s\n", args_info.imsi_arg);
       printf("qos: %#08x\n", args_info.qos_arg);
+      printf("qose1: %#0.16llx\n", args_info.qose1_arg);
+      printf("qose2: %#04x\n", args_info.qose2_arg);
+      printf("qose3: %#06x\n", args_info.qose3_arg);
+      printf("qose4: %#06x\n", args_info.qose4_arg);
       printf("charging: %#04x\n", args_info.charging_arg);
       if (args_info.apn_arg) printf("apn: %s\n", args_info.apn_arg);
       if (args_info.msisdn_arg) printf("msisdn: %s\n", args_info.msisdn_arg);
@@ -431,11 +439,38 @@ int process_options(int argc, char **argv) {
 
 
   /* qos                                                             */
-  options.qos.l = 3;
-  options.qos.v[2] = (args_info.qos_arg) & 0xff;
-  options.qos.v[1] = ((args_info.qos_arg) >> 8) & 0xff;
-  options.qos.v[0] = ((args_info.qos_arg) >> 16) & 0xff;
-
+  options.qos.l = 4;
+  options.qos.v[3] = (args_info.qos_arg) & 0xff;
+  options.qos.v[2] = ((args_info.qos_arg) >> 8)& 0xff;
+  options.qos.v[1] = ((args_info.qos_arg) >> 16) & 0xff;
+  options.qos.v[0] = ((args_info.qos_arg) >> 24) & 0xff;
+  /* Extensions according to 3GPP TS 24.008			     */
+  if (args_info.qose1_given == 1 ) {
+    options.qos.l = 12;
+    options.qos.v[11] = (args_info.qose1_arg) & 0xff;
+    options.qos.v[10] = ((args_info.qose1_arg) >> 8)& 0xff;
+    options.qos.v[9] = ((args_info.qose1_arg) >> 16)& 0xff;
+    options.qos.v[8] = ((args_info.qose1_arg) >> 24)& 0xff;
+    options.qos.v[7] = ((args_info.qose1_arg) >> 32)& 0xff;
+    options.qos.v[6] = ((args_info.qose1_arg) >> 40) & 0xff;
+    options.qos.v[5] = ((args_info.qose1_arg) >> 48) & 0xff;
+    options.qos.v[4] = ((args_info.qose1_arg) >> 56) & 0xff;
+    if (args_info.qose2_given == 1 ) {
+      options.qos.l = 13;
+      options.qos.v[12] = (args_info.qose2_arg) & 0xff;
+      if (args_info.qose3_given == 1 ) {
+	options.qos.l = 15;
+	options.qos.v[14] = (args_info.qose3_arg) & 0xff;
+        options.qos.v[13] = ((args_info.qose3_arg) >> 8)& 0xff;
+	 if (args_info.qose4_given == 1 ) {
+	  options.qos.l = 17;
+	  options.qos.v[16] = (args_info.qose4_arg) & 0xff;
+	  options.qos.v[15] = ((args_info.qose4_arg) >> 8)& 0xff;
+	}
+      }
+    }
+  }
+  
   /* charging                                                        */
   options.cch = args_info.charging_arg;
   
@@ -1316,18 +1351,18 @@ int main(int argc, char **argv)
     pdp->ipif = tun; /* TODO */
     iparr[n].pdp = pdp;
 
-    if (options.qos.l > sizeof(pdp->qos_req0)) {
-      sys_err(LOG_ERR, __FILE__, __LINE__, 0, "QoS length too big");
-      exit(1);
-    }
-    else {
-      memcpy(pdp->qos_req0, options.qos.v, options.qos.l);
+    if (options.gtpversion == 0) {
+      if (options.qos.l - 1 > sizeof(pdp->qos_req0)) {
+	sys_err(LOG_ERR, __FILE__, __LINE__, 0, "QoS length too big");
+	exit(1);
+      }
+      else {
+	memcpy(pdp->qos_req0, options.qos.v, options.qos.l);
+      }
     }
 
-    /* TODO */
-    pdp->qos_req.l = 4;
-    pdp->qos_req.v[0] = 0x00;
-    memcpy(pdp->qos_req.v+1, options.qos.v, options.qos.l);
+    pdp->qos_req.l = options.qos.l ;
+    memcpy(pdp->qos_req.v, options.qos.v, options.qos.l);
     
     pdp->selmode = options.selmode;
     
