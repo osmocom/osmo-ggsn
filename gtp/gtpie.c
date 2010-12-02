@@ -286,12 +286,20 @@ int gtpie_decaps(union gtpie_member* ie[], int version, void *pack, unsigned len
       }
       break;
     case GTPIE_IMSI:            /* TV GTPIE types with value length 8 */
-    case GTPIE_RAI:
+       if (j<GTPIE_SIZE) {
+        ie[j] = (union gtpie_member*) p;
+       if (GTPIE_DEBUG) printf("GTPIE_IMSI - GTPIE TV 8 found. Type %d, value 0x%llx\n",
+                                ie[j]->tv0.t, ie[j]->tv8.v);
+        p+= 1 + 8;
+        j++;
+       }
+       break;
+    case GTPIE_RAI: 		/* TV GTPIE types with value length 6 */
       if (j<GTPIE_SIZE) {
 	ie[j] = (union gtpie_member*) p;
-	if (GTPIE_DEBUG) printf("GTPIE TV 8 found. Type %d, value 0x%llx\n",
+	if (GTPIE_DEBUG) printf("GTPIE_RAI - GTPIE TV 6 found. Type %d, value 0x%llx\n",
 				ie[j]->tv0.t, ie[j]->tv8.v);
-	p+= 1 + 8;
+	p+= 1 + 6;
 	j++;
       }
       break;
