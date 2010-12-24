@@ -260,6 +260,7 @@ struct gsn_t {
   int (*cb_extheader_ind) (struct sockaddr_in *peer);
   int (*cb_conf) (int type, int cause, struct pdp_t *pdp, void* cbp);
   int (*cb_data_ind) (struct pdp_t* pdp, void* pack, unsigned len);
+  int (*cb_recovery) (struct sockaddr_in *peer, uint8_t recovery);
 
   /* Counters */
   
@@ -343,6 +344,8 @@ extern int gtp_set_cb_extheader_ind(struct gsn_t *gsn,
 extern int gtp_set_cb_conf(struct gsn_t *gsn,
              int (*cb) (int type, int cause, struct pdp_t* pdp, void *cbp));
 
+int gtp_set_cb_recovery(struct gsn_t *gsn,
+		        int (*cb) (struct sockaddr_in *peer, uint8_t recovery));
 
 /* Internal functions (not part of the API */
 
