@@ -109,6 +109,7 @@ AC_CONFIG_FILES([Makefile
                  doc/Makefile
                  ggsn/Makefile
                  gtp/Makefile
+                 lib/Makefile
                  intl/Makefile
                  po/Makefile
                  sgsnemu/Makefile
