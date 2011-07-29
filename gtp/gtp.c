@@ -1852,7 +1852,7 @@ int gtp_update_pdp_resp(struct gsn_t *gsn, int version,
 			struct pdp_t *pdp, uint8_t cause) {
   
   union gtp_packet packet;
-  unsigned int length = get_default_gtp(version, GTP_CREATE_PDP_RSP, &packet);
+  unsigned int length = get_default_gtp(version, GTP_UPDATE_PDP_RSP, &packet);
   
   gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_CAUSE, cause);
   
