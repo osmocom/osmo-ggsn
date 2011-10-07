@@ -1049,6 +1049,12 @@ extern int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
 		sizeof(pdp->imsi), (uint8_t*) &pdp->imsi);
   }
 
+  /* Section 7.7.3 Routing Area Information */
+  if (pdp->rai_given == 1)
+    gtpie_tv0(&packet, &length, GTP_MAX, GTPIE_RAI,
+              pdp->rai.l, (uint8_t*) &pdp->rai.v);
+
+
   /* Section 7.7.11 */
   gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_RECOVERY, 
 	    gsn->restart_counter);

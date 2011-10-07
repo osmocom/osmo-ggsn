@@ -192,6 +192,8 @@ struct pdp_t {
   int    rattype_given;  /* Radio Access Technology Type given*/
   struct ul255_t    userloc;  /* User Location Information  */
   int    userloc_given;  /* User Location Information  given*/
+  struct ul255_t    rai;  /* Routing Area Information  */
+  int    rai_given;  /* Routing Area Information  given*/
   struct ul255_t    mstz;  /* MS Time Zone */
   int    mstz_given;  /* MS Time Zone given*/
   struct ul255_t    imeisv;  /* IMEI Software Version */

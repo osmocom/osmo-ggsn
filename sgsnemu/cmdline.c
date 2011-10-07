@@ -42,6 +42,7 @@ const char *gengetopt_args_info_help[] = {
   "      --selmode=INT      Selection mode  (default=`0x01')",
   "      --rattype=INT      Radio Access Technology Type (optional-1to5)",
   "      --userloc=STRING   User Location Information (optional-type.MCC.MNC.LAC.CIorSACorRAC)",
+  "      --rai=STRING       Routing Area Information (optional-MCC.MNC.LAC.RAC)",
   "      --mstz=STRING      MS Time Zone (optional- sign.NbQuartersOfAnHour.DSTAdjustment)",
   "      --imeisv=STRING    IMEI(SV) International Mobile Equipment Identity (and Software Version) (optional,16 digits)",
   "  -i, --imsi=STRING      IMSI  (default=`240010123456789')",
@@ -123,6 +124,7 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->selmode_given = 0 ;
   args_info->rattype_given = 0 ;
   args_info->userloc_given = 0 ;
+  args_info->rai_given = 0 ;
   args_info->mstz_given = 0 ;
   args_info->imeisv_given = 0 ;
   args_info->imsi_given = 0 ;
@@ -178,6 +180,8 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->rattype_orig = NULL;
   args_info->userloc_arg = strdup("02509946241207");
   args_info->userloc_orig = NULL;
+  args_info->rai_arg = strdup("02509946241207");
+  args_info->rai_orig = NULL;
   args_info->mstz_arg = strdup("0");
   args_info->mstz_orig = NULL;
   args_info->imeisv_arg = strdup("2143658709214365");
@@ -802,6 +806,7 @@ cmdline_parser_internal (int argc, char * const *argv, struct gengetopt_args_inf
         { "selmode",	1, NULL, 0 },
         { "rattype",   1, NULL, 0},
         { "userloc",   1, NULL, 0},
+        { "rai",       1, NULL, 0},
         { "mstz",      1, NULL, 0},
         { "imeisv",    1, NULL, 0},
         { "imsi",	1, NULL, 'i' },
@@ -1282,6 +1287,18 @@ cmdline_parser_internal (int argc, char * const *argv, struct gengetopt_args_inf
               }
             args_info->userloc_given = 1;
             args_info->userloc_arg = strdup (optarg);
+            break;
+          }
+         /* Routing Area Information.  */
+          else if (strcmp (long_options[option_index].name, "rai") == 0)
+          {
+            if (args_info->rai_given)
+              {
+                fprintf (stderr, "%s: `--rai' option given more than once\n", PACKAGE);
+                exit (EXIT_FAILURE);
+              }
+            args_info->rai_given = 1;
+            args_info->rai_arg = strdup (optarg);
             break;
           }
          /* MS Time Zone  */

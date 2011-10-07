@@ -67,6 +67,9 @@ struct gengetopt_args_info
   char *  userloc_arg; /* User Location Information (optional).  */
   char *  userloc_orig;
   char *  userloc_help;
+  char *  rai_arg; /* Routing Area Information (optional).  */
+  char *  rai_orig;
+  char *  rai_help;
   char *  mstz_arg;    /* MS Time Zone (optional).  */
   char *  mstz_orig;
   char *  mstz_help;
@@ -146,6 +149,7 @@ struct gengetopt_args_info
   int selmode_given ;	/* Whether selmode was given.  */
   int rattype_given ;  /* Whether rattype was given.  */
   int userloc_given ;  /* Whether userloc was given.  */
+  int rai_given ;      /* Whether RAI was given.  */
   int mstz_given ;     /* Whether mstz was given.  */
   int imeisv_given ;   /* Whether imeisv was given.  */
   int imsi_given ;	/* Whether imsi was given.  */

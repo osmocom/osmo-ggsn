@@ -108,6 +108,8 @@ struct {
   int rattype_given;
   struct ul255_t userloc;
   int userloc_given;
+  struct ul255_t rai;
+  int rai_given;
   struct ul255_t mstz;
   int mstz_given;
   struct ul255_t imeisv;
@@ -231,6 +233,7 @@ int process_options(int argc, char **argv) {
   int lac_d;
   char * rest;
   char *userloc_el[] = {"TYPE","MCC","MNC","LAC","REST"};
+  char *rai_el[] = {"MCC","MNC","LAC","RAC"};
   char *mstz_el[] = {"SIGN","QUARTERS","DST"};
   int sign ;
   int nbquarters ;
@@ -610,6 +613,82 @@ int process_options(int argc, char **argv) {
     options.userloc.v[6] = i;          /* octet 10 - t0,CI / t1,SAC / t2,RAC  */
     options.userloc.v[7] = lac_d;      /* octet 11 - t0,CI / t1,SAC / t2,RAC  */
   }
+
+  /* RAI */
+  if (args_info.rai_given == 1 ) {
+    printf("Using RAI:  %s\n", args_info.rai_arg);
+    tmp = args_info.rai_arg ;
+    n=0;
+    pch = strtok (tmp,".");
+    while (pch != NULL) {
+      rai_el[n] = pch ;
+      pch = strtok (NULL, ".");
+      n++;
+    }
+
+    options.rai_given = 1 ;
+    options.rai.l = 6 ;
+
+
+    /* MCC */
+    mcc = rai_el[0] ;
+    printf("->mcc : %s\n", mcc);
+    if (strlen(mcc)!=3) {
+      printf("Invalid MCC lenght\n");
+      return -1;
+    }
+
+    /* MNC */
+    mnc = rai_el[1] ;
+    printf("->mnc : %s\n", mnc);
+
+    a = (uint8_t) (mcc[0] - 48);
+    b = (uint8_t) (mcc[1] - 48);
+    options.rai.v[0] = 16*b+a ;
+
+    /* octet 3 - MNC Digit 3 - MCC Digit 3 */
+    a = (uint8_t) (mcc[2] - 48);
+
+    if ( (strlen(mnc) > 3) || (strlen(mnc) < 2)) {
+      printf("Invalid MNC lenght\n");
+      return -1;
+    }
+    if (strlen(mnc)==2) {
+      b = 15 ;
+    }
+    if (strlen(mnc)==3) {
+      b = (uint8_t) (mnc[2] - 48);
+    }
+    options.rai.v[1] = 16*b+a ;
+
+    /* octet 4 - MNC Digit 2 - MNC Digit 1 */
+    a = (uint8_t) (mnc[0]- 48);
+    b = (uint8_t) (mnc[1]- 48);
+    options.rai.v[2] = 16*b+a ;
+
+    /* LAC */
+    lac = rai_el[2] ;
+    printf("->LAC: %s\n", lac);
+    lac_d = atoi(lac);
+    if (lac_d>65535 || lac_d<1) {
+      printf("Invalid LAC\n");
+      return -1;
+    }
+    i = lac_d >> 8 ;
+    options.rai.v[3] = i;          /* octet 5 - LAC */
+    options.rai.v[4] = lac_d;      /* octet 6 - LAC */
+
+    /* RAC */
+    rest = rai_el[3] ;
+    printf("->RAC : %s\n", rest);
+    lac_d = atoi(rest);
+    if (lac_d>255 || lac_d<1) {
+      printf("Invalid RAC\n");
+      return -1;
+    }
+    options.rai.v[5] = lac_d;          /* octet 7 - RAC  */
+  }
+
   /* mstz */
   if (args_info.mstz_given == 1 ) {
     options.mstz_given = 1 ;
@@ -1373,6 +1452,10 @@ int main(int argc, char **argv)
     pdp->userloc.l = options.userloc.l;
     memcpy(pdp->userloc.v, options.userloc.v, options.userloc.l);
     pdp->userloc_given = options.userloc_given;
+
+    pdp->rai.l = options.rai.l;
+    memcpy(pdp->rai.v, options.rai.v, options.rai.l);
+    pdp->rai_given = options.rai_given;
 
     pdp->mstz.l = options.mstz.l;
     memcpy(pdp->mstz.v, options.mstz.v, options.mstz.l);
