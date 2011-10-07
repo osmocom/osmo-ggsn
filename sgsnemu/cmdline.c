@@ -66,6 +66,7 @@ const char *gengetopt_args_info_help[] = {
   "      --pingsize=INT     Number of ping data bytes  (default=`56')",
   "      --pingcount=INT    Number of ping req to send  (default=`0')",
   "      --pingquiet        Do not print ping packet info  (default=off)",
+  "      --norecovery       Do not send recovery (default=off)",
     0
 };
 
@@ -148,6 +149,7 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->pingsize_given = 0 ;
   args_info->pingcount_given = 0 ;
   args_info->pingquiet_given = 0 ;
+  args_info->norecovery_given = 0 ;
 }
 
 static
@@ -225,6 +227,7 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->pingcount_arg = 0;
   args_info->pingcount_orig = NULL;
   args_info->pingquiet_flag = 0;
+  args_info->norecovery_flag = 0;
   
 }
 
@@ -262,6 +265,7 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->pingsize_help = gengetopt_args_info_help[28] ;
   args_info->pingcount_help = gengetopt_args_info_help[29] ;
   args_info->pingquiet_help = gengetopt_args_info_help[30] ;
+  args_info->norecovery_help = gengetopt_args_info_help[31] ;
   
 }
 
@@ -708,6 +712,9 @@ cmdline_parser_file_save(const char *filename, struct gengetopt_args_info *args_
   if (args_info->pingquiet_given) {
     fprintf(outfile, "%s\n", "pingquiet");
   }
+  if (args_info->norecovery_given) {
+    fprintf(outfile, "%s\n", "norecovery");
+  }
   
   fclose (outfile);
 
@@ -830,6 +837,7 @@ cmdline_parser_internal (int argc, char * const *argv, struct gengetopt_args_inf
         { "pingsize",	1, NULL, 0 },
         { "pingcount",	1, NULL, 0 },
         { "pingquiet",	0, NULL, 0 },
+        { "norecovery",	0, NULL, 0 },
         { NULL,	0, NULL, 0 }
       };
 
@@ -1528,6 +1536,20 @@ cmdline_parser_internal (int argc, char * const *argv, struct gengetopt_args_inf
             local_args_info.pingquiet_given = 1;
             args_info->pingquiet_given = 1;
             args_info->pingquiet_flag = !(args_info->pingquiet_flag);
+          }
+          /* Do not send recovery.  */
+          else if (strcmp (long_options[option_index].name, "norecovery") == 0)
+          {
+            if (local_args_info.norecovery_given)
+              {
+                fprintf (stderr, "%s: `--norecovery' option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
+                goto failure;
+              }
+            if (args_info->norecovery_given && ! override)
+              continue;
+            local_args_info.norecovery_given = 1;
+            args_info->norecovery_given = 1;
+            args_info->norecovery_flag = !(args_info->norecovery_flag);
           }
           
           break;

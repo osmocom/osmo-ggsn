@@ -1056,7 +1056,8 @@ extern int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
 
 
   /* Section 7.7.11 */
-  gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_RECOVERY, 
+  if (pdp->norecovery_given == 0)
+    gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_RECOVERY,
 	    gsn->restart_counter);
 
   /* Section 7.7.12 */

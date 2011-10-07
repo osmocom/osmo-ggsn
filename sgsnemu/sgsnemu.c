@@ -115,6 +115,7 @@ struct {
   struct ul255_t imeisv;
   int imeisv_given;
   struct ul16_t msisdn;
+  int norecovery_given;
 } options;
 
 
@@ -272,6 +273,7 @@ int process_options(int argc, char **argv) {
     printf("pingsize: %d\n", args_info.pingsize_arg);
     printf("pingcount: %d\n", args_info.pingcount_arg);
     printf("pingquiet: %d\n", args_info.pingquiet_flag);
+    printf("norecovery: %d\n", args_info.norecovery_flag);
   }
 
   /* Try out our new parser */
@@ -310,6 +312,7 @@ int process_options(int argc, char **argv) {
       printf("pingsize: %d\n", args_info.pingsize_arg);
       printf("pingcount: %d\n", args_info.pingcount_arg);
       printf("pingquiet: %d\n", args_info.pingquiet_flag);
+      printf("norecovery: %d\n", args_info.norecovery_flag);
     }
   }
 
@@ -860,6 +863,9 @@ int process_options(int argc, char **argv) {
   options.pingsize = args_info.pingsize_arg;
   options.pingcount = args_info.pingcount_arg;
   options.pingquiet = args_info.pingquiet_flag;
+
+  /* norecovery */
+  options.norecovery_given = args_info.norecovery_flag;
 
   return 0;
 
@@ -1464,6 +1470,8 @@ int main(int argc, char **argv)
     pdp->imeisv.l = options.imeisv.l;
     memcpy(pdp->imeisv.v, options.imeisv.v, options.imeisv.l);
     pdp->imeisv_given = options.imeisv_given;
+
+    pdp->norecovery_given = options.norecovery_given;
 
     if (options.apn.l > sizeof(pdp->apn_use.v)) {
       sys_err(LOG_ERR, __FILE__, __LINE__, 0, "APN length too big");

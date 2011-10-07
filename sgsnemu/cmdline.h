@@ -132,6 +132,8 @@ struct gengetopt_args_info
   const char *pingcount_help; /* Number of ping req to send help description.  */
   int pingquiet_flag;	/* Do not print ping packet info (default=off).  */
   const char *pingquiet_help; /* Do not print ping packet info help description.  */
+  int norecovery_flag;	/* Do not print ping packet info (default=off).  */
+  const char *norecovery_help; /* Do not print ping packet info help description.  */
   
   int help_given ;	/* Whether help was given.  */
   int version_given ;	/* Whether version was given.  */
@@ -173,6 +175,7 @@ struct gengetopt_args_info
   int pingsize_given ;	/* Whether pingsize was given.  */
   int pingcount_given ;	/* Whether pingcount was given.  */
   int pingquiet_given ;	/* Whether pingquiet was given.  */
+  int norecovery_given ;	/* Whether norecovery was given.  */
 
 } ;
 

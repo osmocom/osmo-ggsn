@@ -198,6 +198,7 @@ struct pdp_t {
   int    mstz_given;  /* MS Time Zone given*/
   struct ul255_t    imeisv;  /* IMEI Software Version */
   int    imeisv_given;  /* IMEI Software Version given*/
+  int    norecovery_given;  /* norecovery given*/
 
   /* Additional parameters used by library */
 
