@@ -115,5 +115,6 @@ AC_CONFIG_FILES([Makefile
                  sgsnemu/Makefile
                  src/Makefile
                  tests/Makefile
+                 libgtp.pc
                  openggsn.spec])
 AC_OUTPUT
