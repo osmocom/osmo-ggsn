@@ -1,6 +1,7 @@
 /* 
  *  OpenGGSN - Gateway GPRS Support Node
  *  Copyright (C) 2002, 2003, 2004 Mondru AB.
+ *  Copyright (C) 2011 Harald Welte <laforge@gnumonks.org>
  * 
  *  The contents of this file may be used under the terms of the GNU
  *  General Public License Version 2, provided that the above copyright
@@ -29,6 +30,7 @@
 #include "gtp.h"
 #include "queue.h"
 
+/*! \brief dump a queue_t to stdout */
 static int queue_print(struct queue_t *queue)
 {
 	int n;
@@ -47,6 +49,7 @@ static int queue_print(struct queue_t *queue)
 	return 0;
 }
 
+/*! \brief compute the hash function */
 static int queue_seqhash(struct sockaddr_in *peer, uint16_t seq)
 {
 	/* With QUEUE_HASH_SIZE = 2^16 this describes all possible
@@ -58,6 +61,13 @@ static int queue_seqhash(struct sockaddr_in *peer, uint16_t seq)
 	return seq % QUEUE_HASH_SIZE;
 }
 
+/*! \brief Insert a message with given sequence number into the hash
+ *
+ * This function sets the peer and the seq of the qmsg and then inserts
+ * the qmsg into the queue hash.  To do so, it does a hashtable lookup
+ * and appends the new entry as the last into the double-linked list of
+ * entries for this sequence number.
+ */
 static int queue_seqset(struct queue_t *queue, struct qmsg_t *qmsg,
 		 	struct sockaddr_in *peer, uint16_t seq)
 {
@@ -85,6 +95,7 @@ static int queue_seqset(struct queue_t *queue, struct qmsg_t *qmsg,
 	return 0;
 }
 
+/*! \brief Remove a given qmsg_t from the queue hash */
 static int queue_seqdel(struct queue_t *queue, struct qmsg_t *qmsg)
 {
 	int hash = queue_seqhash(&qmsg->peer, qmsg->seq);
@@ -94,6 +105,7 @@ static int queue_seqdel(struct queue_t *queue, struct qmsg_t *qmsg)
 		printf("Begin queue_seqdel seq = %d\n", (int)qmsg->seq);
 
 	for (qmsg2 = queue->hashseq[hash]; qmsg2; qmsg2 = qmsg2->seqnext) {
+		/* FIXME: this is always true !?! */
 		if (qmsg == qmsg) {
 			if (!qmsg_prev)
 				queue->hashseq[hash] = qmsg2->seqnext;
@@ -109,7 +121,7 @@ static int queue_seqdel(struct queue_t *queue, struct qmsg_t *qmsg)
 	return EOF;		/* End of linked list and not found */
 }
 
-/*  Allocates and initialises new queue structure */
+/*! \brief Allocates and initialises new queue structure */
 int queue_new(struct queue_t **queue)
 {
 	if (QUEUE_DEBUG)
@@ -127,7 +139,7 @@ int queue_new(struct queue_t **queue)
 		return EOF;
 }
 
-/*  Deallocates queue structure */
+/*! \brief Deallocates queue structure */
 int queue_free(struct queue_t *queue)
 {
 	if (QUEUE_DEBUG)
@@ -138,6 +150,7 @@ int queue_free(struct queue_t *queue)
 	return 0;
 }
 
+/*! \brief Add a new message to the queue */
 int queue_newmsg(struct queue_t *queue, struct qmsg_t **qmsg,
 		 struct sockaddr_in *peer, uint16_t seq)
 {
@@ -164,6 +177,12 @@ int queue_newmsg(struct queue_t *queue, struct qmsg_t **qmsg,
 	}
 }
 
+/*! \brief Simply remoev a given qmsg_t from the queue
+ *
+ * Internally, we first delete the entry from the queue, and then update
+ * up our global queue->first / queue->last pointers.  Finally,
+ * the qmsg_t is re-initialized with zero bytes.  No memory is released.
+ */
 int queue_freemsg(struct queue_t *queue, struct qmsg_t *qmsg)
 {
 	if (QUEUE_DEBUG)
@@ -192,6 +211,7 @@ int queue_freemsg(struct queue_t *queue, struct qmsg_t *qmsg)
 	return 0;
 }
 
+/*! \brief Move a given qmsg_t to the end of the queue ?!? */
 int queue_back(struct queue_t *queue, struct qmsg_t *qmsg)
 {
 	if (QUEUE_DEBUG)
@@ -217,7 +237,7 @@ int queue_back(struct queue_t *queue, struct qmsg_t *qmsg)
 	return 0;
 }
 
-/* Get the element with a particular sequence number */
+/*! \brief Get the first element in the entire queue */
 int queue_getfirst(struct queue_t *queue, struct qmsg_t **qmsg)
 {
 	/*printf("queue_getfirst\n"); */
@@ -231,6 +251,8 @@ int queue_getfirst(struct queue_t *queue, struct qmsg_t **qmsg)
 	return 0;
 }
 
+/*! \brief Linear search over entire queue to get given peer + seq*/
+/* FIXME: unused, dead code! */
 int queue_getseqx(struct queue_t *queue, struct qmsg_t **qmsg,
 		  struct sockaddr_in *peer, uint16_t seq)
 {
@@ -249,6 +271,7 @@ int queue_getseqx(struct queue_t *queue, struct qmsg_t **qmsg,
 	return EOF;		/* Not found */
 }
 
+/*! \brief Get a queue entry for a given peer + seq */
 int queue_seqget(struct queue_t *queue, struct qmsg_t **qmsg,
 		 struct sockaddr_in *peer, uint16_t seq)
 {
@@ -270,6 +293,7 @@ int queue_seqget(struct queue_t *queue, struct qmsg_t **qmsg,
 	return EOF;		/* End of linked list and not found */
 }
 
+/*! \brief look-up a given seq/peer, return cbp + type and free entry */
 int queue_freemsg_seq(struct queue_t *queue, struct sockaddr_in *peer,
 		      uint16_t seq, uint8_t * type, void **cbp)
 {
