@@ -51,6 +51,11 @@
 #include "gtpie.h"
 #include "queue.h"
 
+/* According to section 14.2 of 3GPP TS 29.006 version 6.9.0 */
+#define N3_REQUESTS	5
+
+#define T3_REQUEST	3
+
 /* Error reporting functions */
 
 void gtp_err(int priority, char *filename, int linenum, char *fmt, ...)
@@ -462,7 +467,7 @@ int gtp_req(struct gsn_t *gsn, int version, struct pdp_t *pdp,
 	} else {
 		memcpy(&qmsg->p, packet, sizeof(union gtp_packet));
 		qmsg->l = len;
-		qmsg->timeout = time(NULL) + 3;	/* When to timeout */
+		qmsg->timeout = time(NULL) + T3_REQUEST; /* When to timeout */
 		qmsg->retrans = 0;	/* No retransmissions so far */
 		qmsg->cbp = cbp;
 		qmsg->type = ntoh8(packet->gtp0.h.type);
@@ -511,10 +516,12 @@ int gtp_retrans(struct gsn_t *gsn)
 	now = time(NULL);
 	/*printf("Retrans: New beginning %d\n", (int) now); */
 
+	/* get first element in queue, as long as the timeout of that
+	 * element has expired */
 	while ((!queue_getfirst(gsn->queue_req, &qmsg)) &&
 	       (qmsg->timeout <= now)) {
 		/*printf("Retrans timeout found: %d\n", (int) time(NULL)); */
-		if (qmsg->retrans > 3) {	/* To many retrans */
+		if (qmsg->retrans > N3_REQUESTS) {	/* To many retrans */
 			if (gsn->cb_conf)
 				gsn->cb_conf(qmsg->type, EOF, NULL, qmsg->cbp);
 			queue_freemsg(gsn->queue_req, qmsg);
@@ -529,7 +536,7 @@ int gtp_retrans(struct gsn_t *gsn)
 					qmsg->l, strerror(errno));
 			}
 			queue_back(gsn->queue_req, qmsg);
-			qmsg->timeout = now + 3;
+			qmsg->timeout = now + T3_REQUEST;
 			qmsg->retrans++;
 		}
 	}
