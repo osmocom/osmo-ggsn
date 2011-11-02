@@ -112,12 +112,12 @@ static int queue_seqdel(struct queue_t *queue, struct qmsg_t *qmsg)
 			else
 				qmsg_prev->seqnext = qmsg2->seqnext;
 			if (QUEUE_DEBUG)
-				printf("End queue_seqset: SEQ found\n");
+				printf("End queue_seqdel: SEQ found\n");
 			return 0;
 		}
 		qmsg_prev = qmsg2;
 	}
-	printf("End queue_seqset: SEQ not found\n");
+	printf("End queue_seqdel: SEQ not found\n");
 	return EOF;		/* End of linked list and not found */
 }
 
