@@ -20,6 +20,7 @@
 
 #ifndef _LOOKUP_H
 #define _LOOKUP_H
-unsigned long int lookup( unsigned char *k, unsigned long int length, unsigned long int level);
+unsigned long int lookup(unsigned char *k, unsigned long int length,
+			 unsigned long int level);
 
-#endif	/* !_LOOKUP_H */
+#endif /* !_LOOKUP_H */

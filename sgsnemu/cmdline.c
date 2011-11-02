@@ -23,1560 +23,1732 @@
 
 const char *gengetopt_args_info_purpose = "";
 
-const char *gengetopt_args_info_usage = "Usage: " CMDLINE_PARSER_PACKAGE " [OPTIONS]...";
+const char *gengetopt_args_info_usage =
+    "Usage: " CMDLINE_PARSER_PACKAGE " [OPTIONS]...";
 
 const char *gengetopt_args_info_help[] = {
-  "  -h, --help             Print help and exit",
-  "  -V, --version          Print version and exit",
-  "  -d, --debug            Run in debug mode  (default=off)",
-  "  -c, --conf=STRING      Read configuration file",
-  "      --pidfile=STRING   Filename of process id file  (default=`./sgsnemu.pid')",
-  "      --statedir=STRING  Directory of nonvolatile data  (default=`./')",
-  "      --dns=STRING       DNS Server to use",
-  "  -l, --listen=STRING    Local interface",
-  "  -r, --remote=STRING    Remote host",
-  "      --contexts=INT     Number of contexts  (default=`1')",
-  "      --timelimit=INT    Exit after timelimit seconds  (default=`0')",
-  "      --gtpversion=INT   GTP version to use  (default=`1')",
-  "  -a, --apn=STRING       Access point name  (default=`internet')",
-  "      --selmode=INT      Selection mode  (default=`0x01')",
-  "      --rattype=INT      Radio Access Technology Type (optional-1to5)",
-  "      --userloc=STRING   User Location Information (optional-type.MCC.MNC.LAC.CIorSACorRAC)",
-  "      --rai=STRING       Routing Area Information (optional-MCC.MNC.LAC.RAC)",
-  "      --mstz=STRING      MS Time Zone (optional- sign.NbQuartersOfAnHour.DSTAdjustment)",
-  "      --imeisv=STRING    IMEI(SV) International Mobile Equipment Identity (and Software Version) (optional,16 digits)",
-  "  -i, --imsi=STRING      IMSI  (default=`240010123456789')",
-  "      --nsapi=INT        NSAPI  (default=`0')",
-  "  -m, --msisdn=STRING    Mobile Station ISDN number  (default=`46702123456')",
-  "  -q, --qos=INT          Requested quality of service  (default=`0x000b921f')",
-  "      --qose1=INT        Requested quality of service Extension 1 (example=`0x9396404074f9ffff')",
-  "      --qose2=INT        Requested quality of service Extension 2 (example=`0x11')",
-  "      --qose3=INT        Requested quality of service Extension 3 (example=`0x0101')",
-  "      --qose4=INT        Requested quality of service Extension 4 (example=`0x4040')",
-  "      --charging=INT     Charging characteristics  (default=`0x0800')",
-  "  -u, --uid=STRING       Login user ID  (default=`mig')",
-  "  -p, --pwd=STRING       Login password  (default=`hemmelig')",
-  "      --createif         Create local network interface  (default=off)",
-  "  -n, --net=STRING       Network address for local interface",
-  "      --defaultroute     Create default route  (default=off)",
-  "      --ipup=STRING      Script to run after link-up",
-  "      --ipdown=STRING    Script to run after link-down",
-  "      --pinghost=STRING  Ping remote host",
-  "      --pingrate=INT     Number of ping req per second  (default=`1')",
-  "      --pingsize=INT     Number of ping data bytes  (default=`56')",
-  "      --pingcount=INT    Number of ping req to send  (default=`0')",
-  "      --pingquiet        Do not print ping packet info  (default=off)",
-  "      --norecovery       Do not send recovery (default=off)",
-    0
+	"  -h, --help             Print help and exit",
+	"  -V, --version          Print version and exit",
+	"  -d, --debug            Run in debug mode  (default=off)",
+	"  -c, --conf=STRING      Read configuration file",
+	"      --pidfile=STRING   Filename of process id file  (default=`./sgsnemu.pid')",
+	"      --statedir=STRING  Directory of nonvolatile data  (default=`./')",
+	"      --dns=STRING       DNS Server to use",
+	"  -l, --listen=STRING    Local interface",
+	"  -r, --remote=STRING    Remote host",
+	"      --contexts=INT     Number of contexts  (default=`1')",
+	"      --timelimit=INT    Exit after timelimit seconds  (default=`0')",
+	"      --gtpversion=INT   GTP version to use  (default=`1')",
+	"  -a, --apn=STRING       Access point name  (default=`internet')",
+	"      --selmode=INT      Selection mode  (default=`0x01')",
+	"      --rattype=INT      Radio Access Technology Type (optional-1to5)",
+	"      --userloc=STRING   User Location Information (optional-type.MCC.MNC.LAC.CIorSACorRAC)",
+	"      --rai=STRING       Routing Area Information (optional-MCC.MNC.LAC.RAC)",
+	"      --mstz=STRING      MS Time Zone (optional- sign.NbQuartersOfAnHour.DSTAdjustment)",
+	"      --imeisv=STRING    IMEI(SV) International Mobile Equipment Identity (and Software Version) (optional,16 digits)",
+	"  -i, --imsi=STRING      IMSI  (default=`240010123456789')",
+	"      --nsapi=INT        NSAPI  (default=`0')",
+	"  -m, --msisdn=STRING    Mobile Station ISDN number  (default=`46702123456')",
+	"  -q, --qos=INT          Requested quality of service  (default=`0x000b921f')",
+	"      --qose1=INT        Requested quality of service Extension 1 (example=`0x9396404074f9ffff')",
+	"      --qose2=INT        Requested quality of service Extension 2 (example=`0x11')",
+	"      --qose3=INT        Requested quality of service Extension 3 (example=`0x0101')",
+	"      --qose4=INT        Requested quality of service Extension 4 (example=`0x4040')",
+	"      --charging=INT     Charging characteristics  (default=`0x0800')",
+	"  -u, --uid=STRING       Login user ID  (default=`mig')",
+	"  -p, --pwd=STRING       Login password  (default=`hemmelig')",
+	"      --createif         Create local network interface  (default=off)",
+	"  -n, --net=STRING       Network address for local interface",
+	"      --defaultroute     Create default route  (default=off)",
+	"      --ipup=STRING      Script to run after link-up",
+	"      --ipdown=STRING    Script to run after link-down",
+	"      --pinghost=STRING  Ping remote host",
+	"      --pingrate=INT     Number of ping req per second  (default=`1')",
+	"      --pingsize=INT     Number of ping data bytes  (default=`56')",
+	"      --pingcount=INT    Number of ping req to send  (default=`0')",
+	"      --pingquiet        Do not print ping packet info  (default=off)",
+	"      --norecovery       Do not send recovery (default=off)",
+	0
 };
 
 static
-void clear_given (struct gengetopt_args_info *args_info);
+void clear_given(struct gengetopt_args_info *args_info);
 static
-void clear_args (struct gengetopt_args_info *args_info);
+void clear_args(struct gengetopt_args_info *args_info);
 
 static int
-cmdline_parser_internal (int argc, char * const *argv, struct gengetopt_args_info *args_info, int override, int initialize, int check_required, const char *additional_error);
+cmdline_parser_internal(int argc, char *const *argv,
+			struct gengetopt_args_info *args_info, int override,
+			int initialize, int check_required,
+			const char *additional_error);
 
-struct line_list
-{
-  char * string_arg;
-  struct line_list * next;
+struct line_list {
+	char *string_arg;
+	struct line_list *next;
 };
 
 static struct line_list *cmd_line_list = 0;
 static struct line_list *cmd_line_list_tmp = 0;
 
-static void
-free_cmd_list(void)
+static void free_cmd_list(void)
 {
-  /* free the list of a previous call */
-  if (cmd_line_list)
-    {
-      while (cmd_line_list) {
-        cmd_line_list_tmp = cmd_line_list;
-        cmd_line_list = cmd_line_list->next;
-        free (cmd_line_list_tmp->string_arg);
-        free (cmd_line_list_tmp);
-      }
-    }
+	/* free the list of a previous call */
+	if (cmd_line_list) {
+		while (cmd_line_list) {
+			cmd_line_list_tmp = cmd_line_list;
+			cmd_line_list = cmd_line_list->next;
+			free(cmd_line_list_tmp->string_arg);
+			free(cmd_line_list_tmp);
+		}
+	}
 }
 
-
-static char *
-gengetopt_strdup (const char *s);
+static char *gengetopt_strdup(const char *s);
 
 static
-void clear_given (struct gengetopt_args_info *args_info)
+void clear_given(struct gengetopt_args_info *args_info)
 {
-  args_info->help_given = 0 ;
-  args_info->version_given = 0 ;
-  args_info->debug_given = 0 ;
-  args_info->conf_given = 0 ;
-  args_info->pidfile_given = 0 ;
-  args_info->statedir_given = 0 ;
-  args_info->dns_given = 0 ;
-  args_info->listen_given = 0 ;
-  args_info->remote_given = 0 ;
-  args_info->contexts_given = 0 ;
-  args_info->timelimit_given = 0 ;
-  args_info->gtpversion_given = 0 ;
-  args_info->apn_given = 0 ;
-  args_info->selmode_given = 0 ;
-  args_info->rattype_given = 0 ;
-  args_info->userloc_given = 0 ;
-  args_info->rai_given = 0 ;
-  args_info->mstz_given = 0 ;
-  args_info->imeisv_given = 0 ;
-  args_info->imsi_given = 0 ;
-  args_info->nsapi_given = 0 ;
-  args_info->msisdn_given = 0 ;
-  args_info->qos_given = 0 ;
-  args_info->qose1_given = 0 ;
-  args_info->qose2_given = 0 ;
-  args_info->qose3_given = 0 ;
-  args_info->qose4_given = 0 ;
-  args_info->charging_given = 0 ;
-  args_info->uid_given = 0 ;
-  args_info->pwd_given = 0 ;
-  args_info->createif_given = 0 ;
-  args_info->net_given = 0 ;
-  args_info->defaultroute_given = 0 ;
-  args_info->ipup_given = 0 ;
-  args_info->ipdown_given = 0 ;
-  args_info->pinghost_given = 0 ;
-  args_info->pingrate_given = 0 ;
-  args_info->pingsize_given = 0 ;
-  args_info->pingcount_given = 0 ;
-  args_info->pingquiet_given = 0 ;
-  args_info->norecovery_given = 0 ;
+	args_info->help_given = 0;
+	args_info->version_given = 0;
+	args_info->debug_given = 0;
+	args_info->conf_given = 0;
+	args_info->pidfile_given = 0;
+	args_info->statedir_given = 0;
+	args_info->dns_given = 0;
+	args_info->listen_given = 0;
+	args_info->remote_given = 0;
+	args_info->contexts_given = 0;
+	args_info->timelimit_given = 0;
+	args_info->gtpversion_given = 0;
+	args_info->apn_given = 0;
+	args_info->selmode_given = 0;
+	args_info->rattype_given = 0;
+	args_info->userloc_given = 0;
+	args_info->rai_given = 0;
+	args_info->mstz_given = 0;
+	args_info->imeisv_given = 0;
+	args_info->imsi_given = 0;
+	args_info->nsapi_given = 0;
+	args_info->msisdn_given = 0;
+	args_info->qos_given = 0;
+	args_info->qose1_given = 0;
+	args_info->qose2_given = 0;
+	args_info->qose3_given = 0;
+	args_info->qose4_given = 0;
+	args_info->charging_given = 0;
+	args_info->uid_given = 0;
+	args_info->pwd_given = 0;
+	args_info->createif_given = 0;
+	args_info->net_given = 0;
+	args_info->defaultroute_given = 0;
+	args_info->ipup_given = 0;
+	args_info->ipdown_given = 0;
+	args_info->pinghost_given = 0;
+	args_info->pingrate_given = 0;
+	args_info->pingsize_given = 0;
+	args_info->pingcount_given = 0;
+	args_info->pingquiet_given = 0;
+	args_info->norecovery_given = 0;
 }
 
 static
-void clear_args (struct gengetopt_args_info *args_info)
+void clear_args(struct gengetopt_args_info *args_info)
 {
-  args_info->debug_flag = 0;
-  args_info->conf_arg = NULL;
-  args_info->conf_orig = NULL;
-  args_info->pidfile_arg = gengetopt_strdup ("./sgsnemu.pid");
-  args_info->pidfile_orig = NULL;
-  args_info->statedir_arg = gengetopt_strdup ("./");
-  args_info->statedir_orig = NULL;
-  args_info->dns_arg = NULL;
-  args_info->dns_orig = NULL;
-  args_info->listen_arg = NULL;
-  args_info->listen_orig = NULL;
-  args_info->remote_arg = NULL;
-  args_info->remote_orig = NULL;
-  args_info->contexts_arg = 1;
-  args_info->contexts_orig = NULL;
-  args_info->timelimit_arg = 0;
-  args_info->timelimit_orig = NULL;
-  args_info->gtpversion_arg = 1;
-  args_info->gtpversion_orig = NULL;
-  args_info->apn_arg = gengetopt_strdup ("internet");
-  args_info->apn_orig = NULL;
-  args_info->selmode_arg = 0x01;
-  args_info->selmode_orig = NULL;
-  args_info->rattype_arg = "1";
-  args_info->rattype_orig = NULL;
-  args_info->userloc_arg = strdup("02509946241207");
-  args_info->userloc_orig = NULL;
-  args_info->rai_arg = strdup("02509946241207");
-  args_info->rai_orig = NULL;
-  args_info->mstz_arg = strdup("0");
-  args_info->mstz_orig = NULL;
-  args_info->imeisv_arg = strdup("2143658709214365");
-  args_info->imeisv_orig = NULL;
-  args_info->imsi_arg = gengetopt_strdup ("240010123456789");
-  args_info->imsi_orig = NULL;
-  args_info->nsapi_arg = 0;
-  args_info->nsapi_orig = NULL;
-  args_info->msisdn_arg = gengetopt_strdup ("46702123456");
-  args_info->msisdn_orig = NULL;
-  args_info->qos_arg = 0x000b921f;
-  args_info->qos_orig = NULL;
-  args_info->qose1_arg = 0x9396404074f9ffff;
-  args_info->qose1_orig = NULL;
-  args_info->qose2_arg = 0x11;
-  args_info->qose2_orig = NULL;
-  args_info->qose3_arg = 0x0101;
-  args_info->qose3_orig = NULL;
-  args_info->qose4_arg = 0x4040;
-  args_info->qose4_orig = NULL;
-  args_info->charging_arg = 0x0800;
-  args_info->charging_orig = NULL;
-  args_info->uid_arg = gengetopt_strdup ("mig");
-  args_info->uid_orig = NULL;
-  args_info->pwd_arg = gengetopt_strdup ("hemmelig");
-  args_info->pwd_orig = NULL;
-  args_info->createif_flag = 0;
-  args_info->net_arg = NULL;
-  args_info->net_orig = NULL;
-  args_info->defaultroute_flag = 0;
-  args_info->ipup_arg = NULL;
-  args_info->ipup_orig = NULL;
-  args_info->ipdown_arg = NULL;
-  args_info->ipdown_orig = NULL;
-  args_info->pinghost_arg = NULL;
-  args_info->pinghost_orig = NULL;
-  args_info->pingrate_arg = 1;
-  args_info->pingrate_orig = NULL;
-  args_info->pingsize_arg = 56;
-  args_info->pingsize_orig = NULL;
-  args_info->pingcount_arg = 0;
-  args_info->pingcount_orig = NULL;
-  args_info->pingquiet_flag = 0;
-  args_info->norecovery_flag = 0;
-  
+	args_info->debug_flag = 0;
+	args_info->conf_arg = NULL;
+	args_info->conf_orig = NULL;
+	args_info->pidfile_arg = gengetopt_strdup("./sgsnemu.pid");
+	args_info->pidfile_orig = NULL;
+	args_info->statedir_arg = gengetopt_strdup("./");
+	args_info->statedir_orig = NULL;
+	args_info->dns_arg = NULL;
+	args_info->dns_orig = NULL;
+	args_info->listen_arg = NULL;
+	args_info->listen_orig = NULL;
+	args_info->remote_arg = NULL;
+	args_info->remote_orig = NULL;
+	args_info->contexts_arg = 1;
+	args_info->contexts_orig = NULL;
+	args_info->timelimit_arg = 0;
+	args_info->timelimit_orig = NULL;
+	args_info->gtpversion_arg = 1;
+	args_info->gtpversion_orig = NULL;
+	args_info->apn_arg = gengetopt_strdup("internet");
+	args_info->apn_orig = NULL;
+	args_info->selmode_arg = 0x01;
+	args_info->selmode_orig = NULL;
+	args_info->rattype_arg = "1";
+	args_info->rattype_orig = NULL;
+	args_info->userloc_arg = strdup("02509946241207");
+	args_info->userloc_orig = NULL;
+	args_info->rai_arg = strdup("02509946241207");
+	args_info->rai_orig = NULL;
+	args_info->mstz_arg = strdup("0");
+	args_info->mstz_orig = NULL;
+	args_info->imeisv_arg = strdup("2143658709214365");
+	args_info->imeisv_orig = NULL;
+	args_info->imsi_arg = gengetopt_strdup("240010123456789");
+	args_info->imsi_orig = NULL;
+	args_info->nsapi_arg = 0;
+	args_info->nsapi_orig = NULL;
+	args_info->msisdn_arg = gengetopt_strdup("46702123456");
+	args_info->msisdn_orig = NULL;
+	args_info->qos_arg = 0x000b921f;
+	args_info->qos_orig = NULL;
+	args_info->qose1_arg = 0x9396404074f9ffff;
+	args_info->qose1_orig = NULL;
+	args_info->qose2_arg = 0x11;
+	args_info->qose2_orig = NULL;
+	args_info->qose3_arg = 0x0101;
+	args_info->qose3_orig = NULL;
+	args_info->qose4_arg = 0x4040;
+	args_info->qose4_orig = NULL;
+	args_info->charging_arg = 0x0800;
+	args_info->charging_orig = NULL;
+	args_info->uid_arg = gengetopt_strdup("mig");
+	args_info->uid_orig = NULL;
+	args_info->pwd_arg = gengetopt_strdup("hemmelig");
+	args_info->pwd_orig = NULL;
+	args_info->createif_flag = 0;
+	args_info->net_arg = NULL;
+	args_info->net_orig = NULL;
+	args_info->defaultroute_flag = 0;
+	args_info->ipup_arg = NULL;
+	args_info->ipup_orig = NULL;
+	args_info->ipdown_arg = NULL;
+	args_info->ipdown_orig = NULL;
+	args_info->pinghost_arg = NULL;
+	args_info->pinghost_orig = NULL;
+	args_info->pingrate_arg = 1;
+	args_info->pingrate_orig = NULL;
+	args_info->pingsize_arg = 56;
+	args_info->pingsize_orig = NULL;
+	args_info->pingcount_arg = 0;
+	args_info->pingcount_orig = NULL;
+	args_info->pingquiet_flag = 0;
+	args_info->norecovery_flag = 0;
+
 }
 
 static
 void init_args_info(struct gengetopt_args_info *args_info)
 {
-  args_info->help_help = gengetopt_args_info_help[0] ;
-  args_info->version_help = gengetopt_args_info_help[1] ;
-  args_info->debug_help = gengetopt_args_info_help[2] ;
-  args_info->conf_help = gengetopt_args_info_help[3] ;
-  args_info->pidfile_help = gengetopt_args_info_help[4] ;
-  args_info->statedir_help = gengetopt_args_info_help[5] ;
-  args_info->dns_help = gengetopt_args_info_help[6] ;
-  args_info->listen_help = gengetopt_args_info_help[7] ;
-  args_info->remote_help = gengetopt_args_info_help[8] ;
-  args_info->contexts_help = gengetopt_args_info_help[9] ;
-  args_info->timelimit_help = gengetopt_args_info_help[10] ;
-  args_info->gtpversion_help = gengetopt_args_info_help[11] ;
-  args_info->apn_help = gengetopt_args_info_help[12] ;
-  args_info->selmode_help = gengetopt_args_info_help[13] ;
-  args_info->imsi_help = gengetopt_args_info_help[14] ;
-  args_info->nsapi_help = gengetopt_args_info_help[15] ;
-  args_info->msisdn_help = gengetopt_args_info_help[16] ;
-  args_info->qos_help = gengetopt_args_info_help[17] ;
-  args_info->charging_help = gengetopt_args_info_help[18] ;
-  args_info->uid_help = gengetopt_args_info_help[19] ;
-  args_info->pwd_help = gengetopt_args_info_help[20] ;
-  args_info->createif_help = gengetopt_args_info_help[21] ;
-  args_info->net_help = gengetopt_args_info_help[22] ;
-  args_info->defaultroute_help = gengetopt_args_info_help[23] ;
-  args_info->ipup_help = gengetopt_args_info_help[24] ;
-  args_info->ipdown_help = gengetopt_args_info_help[25] ;
-  args_info->pinghost_help = gengetopt_args_info_help[26] ;
-  args_info->pingrate_help = gengetopt_args_info_help[27] ;
-  args_info->pingsize_help = gengetopt_args_info_help[28] ;
-  args_info->pingcount_help = gengetopt_args_info_help[29] ;
-  args_info->pingquiet_help = gengetopt_args_info_help[30] ;
-  args_info->norecovery_help = gengetopt_args_info_help[31] ;
-  
+	args_info->help_help = gengetopt_args_info_help[0];
+	args_info->version_help = gengetopt_args_info_help[1];
+	args_info->debug_help = gengetopt_args_info_help[2];
+	args_info->conf_help = gengetopt_args_info_help[3];
+	args_info->pidfile_help = gengetopt_args_info_help[4];
+	args_info->statedir_help = gengetopt_args_info_help[5];
+	args_info->dns_help = gengetopt_args_info_help[6];
+	args_info->listen_help = gengetopt_args_info_help[7];
+	args_info->remote_help = gengetopt_args_info_help[8];
+	args_info->contexts_help = gengetopt_args_info_help[9];
+	args_info->timelimit_help = gengetopt_args_info_help[10];
+	args_info->gtpversion_help = gengetopt_args_info_help[11];
+	args_info->apn_help = gengetopt_args_info_help[12];
+	args_info->selmode_help = gengetopt_args_info_help[13];
+	args_info->imsi_help = gengetopt_args_info_help[14];
+	args_info->nsapi_help = gengetopt_args_info_help[15];
+	args_info->msisdn_help = gengetopt_args_info_help[16];
+	args_info->qos_help = gengetopt_args_info_help[17];
+	args_info->charging_help = gengetopt_args_info_help[18];
+	args_info->uid_help = gengetopt_args_info_help[19];
+	args_info->pwd_help = gengetopt_args_info_help[20];
+	args_info->createif_help = gengetopt_args_info_help[21];
+	args_info->net_help = gengetopt_args_info_help[22];
+	args_info->defaultroute_help = gengetopt_args_info_help[23];
+	args_info->ipup_help = gengetopt_args_info_help[24];
+	args_info->ipdown_help = gengetopt_args_info_help[25];
+	args_info->pinghost_help = gengetopt_args_info_help[26];
+	args_info->pingrate_help = gengetopt_args_info_help[27];
+	args_info->pingsize_help = gengetopt_args_info_help[28];
+	args_info->pingcount_help = gengetopt_args_info_help[29];
+	args_info->pingquiet_help = gengetopt_args_info_help[30];
+	args_info->norecovery_help = gengetopt_args_info_help[31];
+
 }
 
-void
-cmdline_parser_print_version (void)
+void cmdline_parser_print_version(void)
 {
-  printf ("%s %s\n", CMDLINE_PARSER_PACKAGE, CMDLINE_PARSER_VERSION);
+	printf("%s %s\n", CMDLINE_PARSER_PACKAGE, CMDLINE_PARSER_VERSION);
 }
 
-void
-cmdline_parser_print_help (void)
+void cmdline_parser_print_help(void)
 {
-  int i = 0;
-  cmdline_parser_print_version ();
+	int i = 0;
+	cmdline_parser_print_version();
 
-  if (strlen(gengetopt_args_info_purpose) > 0)
-    printf("\n%s\n", gengetopt_args_info_purpose);
+	if (strlen(gengetopt_args_info_purpose) > 0)
+		printf("\n%s\n", gengetopt_args_info_purpose);
 
-  printf("\n%s\n\n", gengetopt_args_info_usage);
-  while (gengetopt_args_info_help[i])
-    printf("%s\n", gengetopt_args_info_help[i++]);
+	printf("\n%s\n\n", gengetopt_args_info_usage);
+	while (gengetopt_args_info_help[i])
+		printf("%s\n", gengetopt_args_info_help[i++]);
 }
 
-void
-cmdline_parser_init (struct gengetopt_args_info *args_info)
+void cmdline_parser_init(struct gengetopt_args_info *args_info)
 {
-  clear_given (args_info);
-  clear_args (args_info);
-  init_args_info (args_info);
+	clear_given(args_info);
+	clear_args(args_info);
+	init_args_info(args_info);
 }
 
-static void
-cmdline_parser_release (struct gengetopt_args_info *args_info)
+static void cmdline_parser_release(struct gengetopt_args_info *args_info)
 {
-  
-  if (args_info->conf_arg)
-    {
-      free (args_info->conf_arg); /* free previous argument */
-      args_info->conf_arg = 0;
-    }
-  if (args_info->conf_orig)
-    {
-      free (args_info->conf_orig); /* free previous argument */
-      args_info->conf_orig = 0;
-    }
-  if (args_info->pidfile_arg)
-    {
-      free (args_info->pidfile_arg); /* free previous argument */
-      args_info->pidfile_arg = 0;
-    }
-  if (args_info->pidfile_orig)
-    {
-      free (args_info->pidfile_orig); /* free previous argument */
-      args_info->pidfile_orig = 0;
-    }
-  if (args_info->statedir_arg)
-    {
-      free (args_info->statedir_arg); /* free previous argument */
-      args_info->statedir_arg = 0;
-    }
-  if (args_info->statedir_orig)
-    {
-      free (args_info->statedir_orig); /* free previous argument */
-      args_info->statedir_orig = 0;
-    }
-  if (args_info->dns_arg)
-    {
-      free (args_info->dns_arg); /* free previous argument */
-      args_info->dns_arg = 0;
-    }
-  if (args_info->dns_orig)
-    {
-      free (args_info->dns_orig); /* free previous argument */
-      args_info->dns_orig = 0;
-    }
-  if (args_info->listen_arg)
-    {
-      free (args_info->listen_arg); /* free previous argument */
-      args_info->listen_arg = 0;
-    }
-  if (args_info->listen_orig)
-    {
-      free (args_info->listen_orig); /* free previous argument */
-      args_info->listen_orig = 0;
-    }
-  if (args_info->remote_arg)
-    {
-      free (args_info->remote_arg); /* free previous argument */
-      args_info->remote_arg = 0;
-    }
-  if (args_info->remote_orig)
-    {
-      free (args_info->remote_orig); /* free previous argument */
-      args_info->remote_orig = 0;
-    }
-  if (args_info->contexts_orig)
-    {
-      free (args_info->contexts_orig); /* free previous argument */
-      args_info->contexts_orig = 0;
-    }
-  if (args_info->timelimit_orig)
-    {
-      free (args_info->timelimit_orig); /* free previous argument */
-      args_info->timelimit_orig = 0;
-    }
-  if (args_info->gtpversion_orig)
-    {
-      free (args_info->gtpversion_orig); /* free previous argument */
-      args_info->gtpversion_orig = 0;
-    }
-  if (args_info->apn_arg)
-    {
-      free (args_info->apn_arg); /* free previous argument */
-      args_info->apn_arg = 0;
-    }
-  if (args_info->apn_orig)
-    {
-      free (args_info->apn_orig); /* free previous argument */
-      args_info->apn_orig = 0;
-    }
-  if (args_info->selmode_orig)
-    {
-      free (args_info->selmode_orig); /* free previous argument */
-      args_info->selmode_orig = 0;
-    }
-  if (args_info->imsi_arg)
-    {
-      free (args_info->imsi_arg); /* free previous argument */
-      args_info->imsi_arg = 0;
-    }
-  if (args_info->imsi_orig)
-    {
-      free (args_info->imsi_orig); /* free previous argument */
-      args_info->imsi_orig = 0;
-    }
-  if (args_info->nsapi_orig)
-    {
-      free (args_info->nsapi_orig); /* free previous argument */
-      args_info->nsapi_orig = 0;
-    }
-  if (args_info->msisdn_arg)
-    {
-      free (args_info->msisdn_arg); /* free previous argument */
-      args_info->msisdn_arg = 0;
-    }
-  if (args_info->msisdn_orig)
-    {
-      free (args_info->msisdn_orig); /* free previous argument */
-      args_info->msisdn_orig = 0;
-    }
-  if (args_info->qos_orig)
-    {
-      free (args_info->qos_orig); /* free previous argument */
-      args_info->qos_orig = 0;
-    }
-  if (args_info->charging_orig)
-    {
-      free (args_info->charging_orig); /* free previous argument */
-      args_info->charging_orig = 0;
-    }
-  if (args_info->uid_arg)
-    {
-      free (args_info->uid_arg); /* free previous argument */
-      args_info->uid_arg = 0;
-    }
-  if (args_info->uid_orig)
-    {
-      free (args_info->uid_orig); /* free previous argument */
-      args_info->uid_orig = 0;
-    }
-  if (args_info->pwd_arg)
-    {
-      free (args_info->pwd_arg); /* free previous argument */
-      args_info->pwd_arg = 0;
-    }
-  if (args_info->pwd_orig)
-    {
-      free (args_info->pwd_orig); /* free previous argument */
-      args_info->pwd_orig = 0;
-    }
-  if (args_info->net_arg)
-    {
-      free (args_info->net_arg); /* free previous argument */
-      args_info->net_arg = 0;
-    }
-  if (args_info->net_orig)
-    {
-      free (args_info->net_orig); /* free previous argument */
-      args_info->net_orig = 0;
-    }
-  if (args_info->ipup_arg)
-    {
-      free (args_info->ipup_arg); /* free previous argument */
-      args_info->ipup_arg = 0;
-    }
-  if (args_info->ipup_orig)
-    {
-      free (args_info->ipup_orig); /* free previous argument */
-      args_info->ipup_orig = 0;
-    }
-  if (args_info->ipdown_arg)
-    {
-      free (args_info->ipdown_arg); /* free previous argument */
-      args_info->ipdown_arg = 0;
-    }
-  if (args_info->ipdown_orig)
-    {
-      free (args_info->ipdown_orig); /* free previous argument */
-      args_info->ipdown_orig = 0;
-    }
-  if (args_info->pinghost_arg)
-    {
-      free (args_info->pinghost_arg); /* free previous argument */
-      args_info->pinghost_arg = 0;
-    }
-  if (args_info->pinghost_orig)
-    {
-      free (args_info->pinghost_orig); /* free previous argument */
-      args_info->pinghost_orig = 0;
-    }
-  if (args_info->pingrate_orig)
-    {
-      free (args_info->pingrate_orig); /* free previous argument */
-      args_info->pingrate_orig = 0;
-    }
-  if (args_info->pingsize_orig)
-    {
-      free (args_info->pingsize_orig); /* free previous argument */
-      args_info->pingsize_orig = 0;
-    }
-  if (args_info->pingcount_orig)
-    {
-      free (args_info->pingcount_orig); /* free previous argument */
-      args_info->pingcount_orig = 0;
-    }
-  
-  clear_given (args_info);
+
+	if (args_info->conf_arg) {
+		free(args_info->conf_arg);	/* free previous argument */
+		args_info->conf_arg = 0;
+	}
+	if (args_info->conf_orig) {
+		free(args_info->conf_orig);	/* free previous argument */
+		args_info->conf_orig = 0;
+	}
+	if (args_info->pidfile_arg) {
+		free(args_info->pidfile_arg);	/* free previous argument */
+		args_info->pidfile_arg = 0;
+	}
+	if (args_info->pidfile_orig) {
+		free(args_info->pidfile_orig);	/* free previous argument */
+		args_info->pidfile_orig = 0;
+	}
+	if (args_info->statedir_arg) {
+		free(args_info->statedir_arg);	/* free previous argument */
+		args_info->statedir_arg = 0;
+	}
+	if (args_info->statedir_orig) {
+		free(args_info->statedir_orig);	/* free previous argument */
+		args_info->statedir_orig = 0;
+	}
+	if (args_info->dns_arg) {
+		free(args_info->dns_arg);	/* free previous argument */
+		args_info->dns_arg = 0;
+	}
+	if (args_info->dns_orig) {
+		free(args_info->dns_orig);	/* free previous argument */
+		args_info->dns_orig = 0;
+	}
+	if (args_info->listen_arg) {
+		free(args_info->listen_arg);	/* free previous argument */
+		args_info->listen_arg = 0;
+	}
+	if (args_info->listen_orig) {
+		free(args_info->listen_orig);	/* free previous argument */
+		args_info->listen_orig = 0;
+	}
+	if (args_info->remote_arg) {
+		free(args_info->remote_arg);	/* free previous argument */
+		args_info->remote_arg = 0;
+	}
+	if (args_info->remote_orig) {
+		free(args_info->remote_orig);	/* free previous argument */
+		args_info->remote_orig = 0;
+	}
+	if (args_info->contexts_orig) {
+		free(args_info->contexts_orig);	/* free previous argument */
+		args_info->contexts_orig = 0;
+	}
+	if (args_info->timelimit_orig) {
+		free(args_info->timelimit_orig);	/* free previous argument */
+		args_info->timelimit_orig = 0;
+	}
+	if (args_info->gtpversion_orig) {
+		free(args_info->gtpversion_orig);	/* free previous argument */
+		args_info->gtpversion_orig = 0;
+	}
+	if (args_info->apn_arg) {
+		free(args_info->apn_arg);	/* free previous argument */
+		args_info->apn_arg = 0;
+	}
+	if (args_info->apn_orig) {
+		free(args_info->apn_orig);	/* free previous argument */
+		args_info->apn_orig = 0;
+	}
+	if (args_info->selmode_orig) {
+		free(args_info->selmode_orig);	/* free previous argument */
+		args_info->selmode_orig = 0;
+	}
+	if (args_info->imsi_arg) {
+		free(args_info->imsi_arg);	/* free previous argument */
+		args_info->imsi_arg = 0;
+	}
+	if (args_info->imsi_orig) {
+		free(args_info->imsi_orig);	/* free previous argument */
+		args_info->imsi_orig = 0;
+	}
+	if (args_info->nsapi_orig) {
+		free(args_info->nsapi_orig);	/* free previous argument */
+		args_info->nsapi_orig = 0;
+	}
+	if (args_info->msisdn_arg) {
+		free(args_info->msisdn_arg);	/* free previous argument */
+		args_info->msisdn_arg = 0;
+	}
+	if (args_info->msisdn_orig) {
+		free(args_info->msisdn_orig);	/* free previous argument */
+		args_info->msisdn_orig = 0;
+	}
+	if (args_info->qos_orig) {
+		free(args_info->qos_orig);	/* free previous argument */
+		args_info->qos_orig = 0;
+	}
+	if (args_info->charging_orig) {
+		free(args_info->charging_orig);	/* free previous argument */
+		args_info->charging_orig = 0;
+	}
+	if (args_info->uid_arg) {
+		free(args_info->uid_arg);	/* free previous argument */
+		args_info->uid_arg = 0;
+	}
+	if (args_info->uid_orig) {
+		free(args_info->uid_orig);	/* free previous argument */
+		args_info->uid_orig = 0;
+	}
+	if (args_info->pwd_arg) {
+		free(args_info->pwd_arg);	/* free previous argument */
+		args_info->pwd_arg = 0;
+	}
+	if (args_info->pwd_orig) {
+		free(args_info->pwd_orig);	/* free previous argument */
+		args_info->pwd_orig = 0;
+	}
+	if (args_info->net_arg) {
+		free(args_info->net_arg);	/* free previous argument */
+		args_info->net_arg = 0;
+	}
+	if (args_info->net_orig) {
+		free(args_info->net_orig);	/* free previous argument */
+		args_info->net_orig = 0;
+	}
+	if (args_info->ipup_arg) {
+		free(args_info->ipup_arg);	/* free previous argument */
+		args_info->ipup_arg = 0;
+	}
+	if (args_info->ipup_orig) {
+		free(args_info->ipup_orig);	/* free previous argument */
+		args_info->ipup_orig = 0;
+	}
+	if (args_info->ipdown_arg) {
+		free(args_info->ipdown_arg);	/* free previous argument */
+		args_info->ipdown_arg = 0;
+	}
+	if (args_info->ipdown_orig) {
+		free(args_info->ipdown_orig);	/* free previous argument */
+		args_info->ipdown_orig = 0;
+	}
+	if (args_info->pinghost_arg) {
+		free(args_info->pinghost_arg);	/* free previous argument */
+		args_info->pinghost_arg = 0;
+	}
+	if (args_info->pinghost_orig) {
+		free(args_info->pinghost_orig);	/* free previous argument */
+		args_info->pinghost_orig = 0;
+	}
+	if (args_info->pingrate_orig) {
+		free(args_info->pingrate_orig);	/* free previous argument */
+		args_info->pingrate_orig = 0;
+	}
+	if (args_info->pingsize_orig) {
+		free(args_info->pingsize_orig);	/* free previous argument */
+		args_info->pingsize_orig = 0;
+	}
+	if (args_info->pingcount_orig) {
+		free(args_info->pingcount_orig);	/* free previous argument */
+		args_info->pingcount_orig = 0;
+	}
+
+	clear_given(args_info);
 }
 
 int
-cmdline_parser_file_save(const char *filename, struct gengetopt_args_info *args_info)
+cmdline_parser_file_save(const char *filename,
+			 struct gengetopt_args_info *args_info)
 {
-  FILE *outfile;
-  int i = 0;
+	FILE *outfile;
+	int i = 0;
 
-  outfile = fopen(filename, "w");
+	outfile = fopen(filename, "w");
 
-  if (!outfile)
-    {
-      fprintf (stderr, "%s: cannot open file for writing: %s\n", CMDLINE_PARSER_PACKAGE, filename);
-      return EXIT_FAILURE;
-    }
+	if (!outfile) {
+		fprintf(stderr, "%s: cannot open file for writing: %s\n",
+			CMDLINE_PARSER_PACKAGE, filename);
+		return EXIT_FAILURE;
+	}
 
-  if (args_info->help_given) {
-    fprintf(outfile, "%s\n", "help");
-  }
-  if (args_info->version_given) {
-    fprintf(outfile, "%s\n", "version");
-  }
-  if (args_info->debug_given) {
-    fprintf(outfile, "%s\n", "debug");
-  }
-  if (args_info->conf_given) {
-    if (args_info->conf_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "conf", args_info->conf_orig);
-    } else {
-      fprintf(outfile, "%s\n", "conf");
-    }
-  }
-  if (args_info->pidfile_given) {
-    if (args_info->pidfile_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "pidfile", args_info->pidfile_orig);
-    } else {
-      fprintf(outfile, "%s\n", "pidfile");
-    }
-  }
-  if (args_info->statedir_given) {
-    if (args_info->statedir_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "statedir", args_info->statedir_orig);
-    } else {
-      fprintf(outfile, "%s\n", "statedir");
-    }
-  }
-  if (args_info->dns_given) {
-    if (args_info->dns_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "dns", args_info->dns_orig);
-    } else {
-      fprintf(outfile, "%s\n", "dns");
-    }
-  }
-  if (args_info->listen_given) {
-    if (args_info->listen_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "listen", args_info->listen_orig);
-    } else {
-      fprintf(outfile, "%s\n", "listen");
-    }
-  }
-  if (args_info->remote_given) {
-    if (args_info->remote_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "remote", args_info->remote_orig);
-    } else {
-      fprintf(outfile, "%s\n", "remote");
-    }
-  }
-  if (args_info->contexts_given) {
-    if (args_info->contexts_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "contexts", args_info->contexts_orig);
-    } else {
-      fprintf(outfile, "%s\n", "contexts");
-    }
-  }
-  if (args_info->timelimit_given) {
-    if (args_info->timelimit_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "timelimit", args_info->timelimit_orig);
-    } else {
-      fprintf(outfile, "%s\n", "timelimit");
-    }
-  }
-  if (args_info->gtpversion_given) {
-    if (args_info->gtpversion_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "gtpversion", args_info->gtpversion_orig);
-    } else {
-      fprintf(outfile, "%s\n", "gtpversion");
-    }
-  }
-  if (args_info->apn_given) {
-    if (args_info->apn_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "apn", args_info->apn_orig);
-    } else {
-      fprintf(outfile, "%s\n", "apn");
-    }
-  }
-  if (args_info->selmode_given) {
-    if (args_info->selmode_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "selmode", args_info->selmode_orig);
-    } else {
-      fprintf(outfile, "%s\n", "selmode");
-    }
-  }
-  if (args_info->imsi_given) {
-    if (args_info->imsi_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "imsi", args_info->imsi_orig);
-    } else {
-      fprintf(outfile, "%s\n", "imsi");
-    }
-  }
-  if (args_info->nsapi_given) {
-    if (args_info->nsapi_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "nsapi", args_info->nsapi_orig);
-    } else {
-      fprintf(outfile, "%s\n", "nsapi");
-    }
-  }
-  if (args_info->msisdn_given) {
-    if (args_info->msisdn_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "msisdn", args_info->msisdn_orig);
-    } else {
-      fprintf(outfile, "%s\n", "msisdn");
-    }
-  }
-  if (args_info->qos_given) {
-    if (args_info->qos_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "qos", args_info->qos_orig);
-    } else {
-      fprintf(outfile, "%s\n", "qos");
-    }
-  }
-  if (args_info->charging_given) {
-    if (args_info->charging_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "charging", args_info->charging_orig);
-    } else {
-      fprintf(outfile, "%s\n", "charging");
-    }
-  }
-  if (args_info->uid_given) {
-    if (args_info->uid_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "uid", args_info->uid_orig);
-    } else {
-      fprintf(outfile, "%s\n", "uid");
-    }
-  }
-  if (args_info->pwd_given) {
-    if (args_info->pwd_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "pwd", args_info->pwd_orig);
-    } else {
-      fprintf(outfile, "%s\n", "pwd");
-    }
-  }
-  if (args_info->createif_given) {
-    fprintf(outfile, "%s\n", "createif");
-  }
-  if (args_info->net_given) {
-    if (args_info->net_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "net", args_info->net_orig);
-    } else {
-      fprintf(outfile, "%s\n", "net");
-    }
-  }
-  if (args_info->defaultroute_given) {
-    fprintf(outfile, "%s\n", "defaultroute");
-  }
-  if (args_info->ipup_given) {
-    if (args_info->ipup_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "ipup", args_info->ipup_orig);
-    } else {
-      fprintf(outfile, "%s\n", "ipup");
-    }
-  }
-  if (args_info->ipdown_given) {
-    if (args_info->ipdown_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "ipdown", args_info->ipdown_orig);
-    } else {
-      fprintf(outfile, "%s\n", "ipdown");
-    }
-  }
-  if (args_info->pinghost_given) {
-    if (args_info->pinghost_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "pinghost", args_info->pinghost_orig);
-    } else {
-      fprintf(outfile, "%s\n", "pinghost");
-    }
-  }
-  if (args_info->pingrate_given) {
-    if (args_info->pingrate_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "pingrate", args_info->pingrate_orig);
-    } else {
-      fprintf(outfile, "%s\n", "pingrate");
-    }
-  }
-  if (args_info->pingsize_given) {
-    if (args_info->pingsize_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "pingsize", args_info->pingsize_orig);
-    } else {
-      fprintf(outfile, "%s\n", "pingsize");
-    }
-  }
-  if (args_info->pingcount_given) {
-    if (args_info->pingcount_orig) {
-      fprintf(outfile, "%s=\"%s\"\n", "pingcount", args_info->pingcount_orig);
-    } else {
-      fprintf(outfile, "%s\n", "pingcount");
-    }
-  }
-  if (args_info->pingquiet_given) {
-    fprintf(outfile, "%s\n", "pingquiet");
-  }
-  if (args_info->norecovery_given) {
-    fprintf(outfile, "%s\n", "norecovery");
-  }
-  
-  fclose (outfile);
+	if (args_info->help_given) {
+		fprintf(outfile, "%s\n", "help");
+	}
+	if (args_info->version_given) {
+		fprintf(outfile, "%s\n", "version");
+	}
+	if (args_info->debug_given) {
+		fprintf(outfile, "%s\n", "debug");
+	}
+	if (args_info->conf_given) {
+		if (args_info->conf_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "conf",
+				args_info->conf_orig);
+		} else {
+			fprintf(outfile, "%s\n", "conf");
+		}
+	}
+	if (args_info->pidfile_given) {
+		if (args_info->pidfile_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "pidfile",
+				args_info->pidfile_orig);
+		} else {
+			fprintf(outfile, "%s\n", "pidfile");
+		}
+	}
+	if (args_info->statedir_given) {
+		if (args_info->statedir_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "statedir",
+				args_info->statedir_orig);
+		} else {
+			fprintf(outfile, "%s\n", "statedir");
+		}
+	}
+	if (args_info->dns_given) {
+		if (args_info->dns_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "dns",
+				args_info->dns_orig);
+		} else {
+			fprintf(outfile, "%s\n", "dns");
+		}
+	}
+	if (args_info->listen_given) {
+		if (args_info->listen_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "listen",
+				args_info->listen_orig);
+		} else {
+			fprintf(outfile, "%s\n", "listen");
+		}
+	}
+	if (args_info->remote_given) {
+		if (args_info->remote_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "remote",
+				args_info->remote_orig);
+		} else {
+			fprintf(outfile, "%s\n", "remote");
+		}
+	}
+	if (args_info->contexts_given) {
+		if (args_info->contexts_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "contexts",
+				args_info->contexts_orig);
+		} else {
+			fprintf(outfile, "%s\n", "contexts");
+		}
+	}
+	if (args_info->timelimit_given) {
+		if (args_info->timelimit_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "timelimit",
+				args_info->timelimit_orig);
+		} else {
+			fprintf(outfile, "%s\n", "timelimit");
+		}
+	}
+	if (args_info->gtpversion_given) {
+		if (args_info->gtpversion_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "gtpversion",
+				args_info->gtpversion_orig);
+		} else {
+			fprintf(outfile, "%s\n", "gtpversion");
+		}
+	}
+	if (args_info->apn_given) {
+		if (args_info->apn_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "apn",
+				args_info->apn_orig);
+		} else {
+			fprintf(outfile, "%s\n", "apn");
+		}
+	}
+	if (args_info->selmode_given) {
+		if (args_info->selmode_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "selmode",
+				args_info->selmode_orig);
+		} else {
+			fprintf(outfile, "%s\n", "selmode");
+		}
+	}
+	if (args_info->imsi_given) {
+		if (args_info->imsi_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "imsi",
+				args_info->imsi_orig);
+		} else {
+			fprintf(outfile, "%s\n", "imsi");
+		}
+	}
+	if (args_info->nsapi_given) {
+		if (args_info->nsapi_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "nsapi",
+				args_info->nsapi_orig);
+		} else {
+			fprintf(outfile, "%s\n", "nsapi");
+		}
+	}
+	if (args_info->msisdn_given) {
+		if (args_info->msisdn_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "msisdn",
+				args_info->msisdn_orig);
+		} else {
+			fprintf(outfile, "%s\n", "msisdn");
+		}
+	}
+	if (args_info->qos_given) {
+		if (args_info->qos_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "qos",
+				args_info->qos_orig);
+		} else {
+			fprintf(outfile, "%s\n", "qos");
+		}
+	}
+	if (args_info->charging_given) {
+		if (args_info->charging_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "charging",
+				args_info->charging_orig);
+		} else {
+			fprintf(outfile, "%s\n", "charging");
+		}
+	}
+	if (args_info->uid_given) {
+		if (args_info->uid_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "uid",
+				args_info->uid_orig);
+		} else {
+			fprintf(outfile, "%s\n", "uid");
+		}
+	}
+	if (args_info->pwd_given) {
+		if (args_info->pwd_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "pwd",
+				args_info->pwd_orig);
+		} else {
+			fprintf(outfile, "%s\n", "pwd");
+		}
+	}
+	if (args_info->createif_given) {
+		fprintf(outfile, "%s\n", "createif");
+	}
+	if (args_info->net_given) {
+		if (args_info->net_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "net",
+				args_info->net_orig);
+		} else {
+			fprintf(outfile, "%s\n", "net");
+		}
+	}
+	if (args_info->defaultroute_given) {
+		fprintf(outfile, "%s\n", "defaultroute");
+	}
+	if (args_info->ipup_given) {
+		if (args_info->ipup_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "ipup",
+				args_info->ipup_orig);
+		} else {
+			fprintf(outfile, "%s\n", "ipup");
+		}
+	}
+	if (args_info->ipdown_given) {
+		if (args_info->ipdown_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "ipdown",
+				args_info->ipdown_orig);
+		} else {
+			fprintf(outfile, "%s\n", "ipdown");
+		}
+	}
+	if (args_info->pinghost_given) {
+		if (args_info->pinghost_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "pinghost",
+				args_info->pinghost_orig);
+		} else {
+			fprintf(outfile, "%s\n", "pinghost");
+		}
+	}
+	if (args_info->pingrate_given) {
+		if (args_info->pingrate_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "pingrate",
+				args_info->pingrate_orig);
+		} else {
+			fprintf(outfile, "%s\n", "pingrate");
+		}
+	}
+	if (args_info->pingsize_given) {
+		if (args_info->pingsize_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "pingsize",
+				args_info->pingsize_orig);
+		} else {
+			fprintf(outfile, "%s\n", "pingsize");
+		}
+	}
+	if (args_info->pingcount_given) {
+		if (args_info->pingcount_orig) {
+			fprintf(outfile, "%s=\"%s\"\n", "pingcount",
+				args_info->pingcount_orig);
+		} else {
+			fprintf(outfile, "%s\n", "pingcount");
+		}
+	}
+	if (args_info->pingquiet_given) {
+		fprintf(outfile, "%s\n", "pingquiet");
+	}
+	if (args_info->norecovery_given) {
+		fprintf(outfile, "%s\n", "norecovery");
+	}
 
-  i = EXIT_SUCCESS;
-  return i;
+	fclose(outfile);
+
+	i = EXIT_SUCCESS;
+	return i;
 }
 
-void
-cmdline_parser_free (struct gengetopt_args_info *args_info)
+void cmdline_parser_free(struct gengetopt_args_info *args_info)
 {
-  cmdline_parser_release (args_info);
+	cmdline_parser_release(args_info);
 }
-
 
 /* gengetopt_strdup() */
 /* strdup.c replacement of strdup, which is not standard */
-char *
-gengetopt_strdup (const char *s)
+char *gengetopt_strdup(const char *s)
 {
-  char *result = NULL;
-  if (!s)
-    return result;
+	char *result = NULL;
+	if (!s)
+		return result;
 
-  result = (char*)malloc(strlen(s) + 1);
-  if (result == (char*)0)
-    return (char*)0;
-  strcpy(result, s);
-  return result;
+	result = (char *)malloc(strlen(s) + 1);
+	if (result == (char *)0)
+		return (char *)0;
+	strcpy(result, s);
+	return result;
 }
 
 int
-cmdline_parser (int argc, char * const *argv, struct gengetopt_args_info *args_info)
+cmdline_parser(int argc, char *const *argv,
+	       struct gengetopt_args_info *args_info)
 {
-  return cmdline_parser2 (argc, argv, args_info, 0, 1, 1);
+	return cmdline_parser2(argc, argv, args_info, 0, 1, 1);
 }
 
 int
-cmdline_parser2 (int argc, char * const *argv, struct gengetopt_args_info *args_info, int override, int initialize, int check_required)
+cmdline_parser2(int argc, char *const *argv,
+		struct gengetopt_args_info *args_info, int override,
+		int initialize, int check_required)
 {
-  int result;
+	int result;
 
-  result = cmdline_parser_internal (argc, argv, args_info, override, initialize, check_required, NULL);
+	result =
+	    cmdline_parser_internal(argc, argv, args_info, override, initialize,
+				    check_required, NULL);
 
-  if (result == EXIT_FAILURE)
-    {
-      cmdline_parser_free (args_info);
-      exit (EXIT_FAILURE);
-    }
-  
-  return result;
+	if (result == EXIT_FAILURE) {
+		cmdline_parser_free(args_info);
+		exit(EXIT_FAILURE);
+	}
+
+	return result;
 }
 
 int
-cmdline_parser_required (struct gengetopt_args_info *args_info, const char *prog_name)
+cmdline_parser_required(struct gengetopt_args_info *args_info,
+			const char *prog_name)
 {
-  return EXIT_SUCCESS;
+	return EXIT_SUCCESS;
 }
 
 int
-cmdline_parser_internal (int argc, char * const *argv, struct gengetopt_args_info *args_info, int override, int initialize, int check_required, const char *additional_error)
+cmdline_parser_internal(int argc, char *const *argv,
+			struct gengetopt_args_info *args_info, int override,
+			int initialize, int check_required,
+			const char *additional_error)
 {
-  int c;	/* Character of the parsed option.  */
+	int c;			/* Character of the parsed option.  */
 
-  int error = 0;
-  struct gengetopt_args_info local_args_info;
+	int error = 0;
+	struct gengetopt_args_info local_args_info;
 
-  if (initialize)
-    cmdline_parser_init (args_info);
+	if (initialize)
+		cmdline_parser_init(args_info);
 
-  cmdline_parser_init (&local_args_info);
+	cmdline_parser_init(&local_args_info);
 
-  optarg = 0;
-  optind = 0;
-  opterr = 1;
-  optopt = '?';
+	optarg = 0;
+	optind = 0;
+	opterr = 1;
+	optopt = '?';
 
-  while (1)
-    {
-      int option_index = 0;
-      char *stop_char;
+	while (1) {
+		int option_index = 0;
+		char *stop_char;
 
-      static struct option long_options[] = {
-        { "help",	0, NULL, 'h' },
-        { "version",	0, NULL, 'V' },
-        { "debug",	0, NULL, 'd' },
-        { "conf",	1, NULL, 'c' },
-        { "pidfile",	1, NULL, 0 },
-        { "statedir",	1, NULL, 0 },
-        { "dns",	1, NULL, 0 },
-        { "listen",	1, NULL, 'l' },
-        { "remote",	1, NULL, 'r' },
-        { "contexts",	1, NULL, 0 },
-        { "timelimit",	1, NULL, 0 },
-        { "gtpversion",	1, NULL, 0 },
-        { "apn",	1, NULL, 'a' },
-        { "selmode",	1, NULL, 0 },
-        { "rattype",   1, NULL, 0},
-        { "userloc",   1, NULL, 0},
-        { "rai",       1, NULL, 0},
-        { "mstz",      1, NULL, 0},
-        { "imeisv",    1, NULL, 0},
-        { "imsi",	1, NULL, 'i' },
-        { "nsapi",	1, NULL, 0 },
-        { "msisdn",	1, NULL, 'm' },
-        { "qos",	1, NULL, 'q' },
-        { "qose1",	1, NULL, 0 },
-        { "qose2",	1, NULL, 0 },
-        { "qose3",	1, NULL, 0 },
-        { "qose4",	1, NULL, 0 },
-        { "charging",	1, NULL, 0 },
-        { "uid",	1, NULL, 'u' },
-        { "pwd",	1, NULL, 'p' },
-        { "createif",	0, NULL, 0 },
-        { "net",	1, NULL, 'n' },
-        { "defaultroute",	0, NULL, 0 },
-        { "ipup",	1, NULL, 0 },
-        { "ipdown",	1, NULL, 0 },
-        { "pinghost",	1, NULL, 0 },
-        { "pingrate",	1, NULL, 0 },
-        { "pingsize",	1, NULL, 0 },
-        { "pingcount",	1, NULL, 0 },
-        { "pingquiet",	0, NULL, 0 },
-        { "norecovery",	0, NULL, 0 },
-        { NULL,	0, NULL, 0 }
-      };
+		static struct option long_options[] = {
+			{"help", 0, NULL, 'h'},
+			{"version", 0, NULL, 'V'},
+			{"debug", 0, NULL, 'd'},
+			{"conf", 1, NULL, 'c'},
+			{"pidfile", 1, NULL, 0},
+			{"statedir", 1, NULL, 0},
+			{"dns", 1, NULL, 0},
+			{"listen", 1, NULL, 'l'},
+			{"remote", 1, NULL, 'r'},
+			{"contexts", 1, NULL, 0},
+			{"timelimit", 1, NULL, 0},
+			{"gtpversion", 1, NULL, 0},
+			{"apn", 1, NULL, 'a'},
+			{"selmode", 1, NULL, 0},
+			{"rattype", 1, NULL, 0},
+			{"userloc", 1, NULL, 0},
+			{"rai", 1, NULL, 0},
+			{"mstz", 1, NULL, 0},
+			{"imeisv", 1, NULL, 0},
+			{"imsi", 1, NULL, 'i'},
+			{"nsapi", 1, NULL, 0},
+			{"msisdn", 1, NULL, 'm'},
+			{"qos", 1, NULL, 'q'},
+			{"qose1", 1, NULL, 0},
+			{"qose2", 1, NULL, 0},
+			{"qose3", 1, NULL, 0},
+			{"qose4", 1, NULL, 0},
+			{"charging", 1, NULL, 0},
+			{"uid", 1, NULL, 'u'},
+			{"pwd", 1, NULL, 'p'},
+			{"createif", 0, NULL, 0},
+			{"net", 1, NULL, 'n'},
+			{"defaultroute", 0, NULL, 0},
+			{"ipup", 1, NULL, 0},
+			{"ipdown", 1, NULL, 0},
+			{"pinghost", 1, NULL, 0},
+			{"pingrate", 1, NULL, 0},
+			{"pingsize", 1, NULL, 0},
+			{"pingcount", 1, NULL, 0},
+			{"pingquiet", 0, NULL, 0},
+			{"norecovery", 0, NULL, 0},
+			{NULL, 0, NULL, 0}
+		};
 
-      stop_char = 0;
-      c = getopt_long (argc, argv, "hVdc:l:r:a:i:m:q:u:p:n:", long_options, &option_index);
+		stop_char = 0;
+		c = getopt_long(argc, argv, "hVdc:l:r:a:i:m:q:u:p:n:",
+				long_options, &option_index);
 
-      if (c == -1) break;	/* Exit from `while (1)' loop.  */
+		if (c == -1)
+			break;	/* Exit from `while (1)' loop.  */
 
-      switch (c)
-        {
-        case 'h':	/* Print help and exit.  */
-          cmdline_parser_print_help ();
-          cmdline_parser_free (&local_args_info);
-          exit (EXIT_SUCCESS);
+		switch (c) {
+		case 'h':	/* Print help and exit.  */
+			cmdline_parser_print_help();
+			cmdline_parser_free(&local_args_info);
+			exit(EXIT_SUCCESS);
 
-        case 'V':	/* Print version and exit.  */
-          cmdline_parser_print_version ();
-          cmdline_parser_free (&local_args_info);
-          exit (EXIT_SUCCESS);
+		case 'V':	/* Print version and exit.  */
+			cmdline_parser_print_version();
+			cmdline_parser_free(&local_args_info);
+			exit(EXIT_SUCCESS);
 
-        case 'd':	/* Run in debug mode.  */
-          if (local_args_info.debug_given)
-            {
-              fprintf (stderr, "%s: `--debug' (`-d') option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-              goto failure;
-            }
-          if (args_info->debug_given && ! override)
-            continue;
-          local_args_info.debug_given = 1;
-          args_info->debug_given = 1;
-          args_info->debug_flag = !(args_info->debug_flag);
-          break;
+		case 'd':	/* Run in debug mode.  */
+			if (local_args_info.debug_given) {
+				fprintf(stderr,
+					"%s: `--debug' (`-d') option given more than once%s\n",
+					argv[0],
+					(additional_error ? additional_error :
+					 ""));
+				goto failure;
+			}
+			if (args_info->debug_given && !override)
+				continue;
+			local_args_info.debug_given = 1;
+			args_info->debug_given = 1;
+			args_info->debug_flag = !(args_info->debug_flag);
+			break;
 
-        case 'c':	/* Read configuration file.  */
-          if (local_args_info.conf_given)
-            {
-              fprintf (stderr, "%s: `--conf' (`-c') option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-              goto failure;
-            }
-          if (args_info->conf_given && ! override)
-            continue;
-          local_args_info.conf_given = 1;
-          args_info->conf_given = 1;
-          if (args_info->conf_arg)
-            free (args_info->conf_arg); /* free previous string */
-          args_info->conf_arg = gengetopt_strdup (optarg);
-          if (args_info->conf_orig)
-            free (args_info->conf_orig); /* free previous string */
-          args_info->conf_orig = gengetopt_strdup (optarg);
-          break;
+		case 'c':	/* Read configuration file.  */
+			if (local_args_info.conf_given) {
+				fprintf(stderr,
+					"%s: `--conf' (`-c') option given more than once%s\n",
+					argv[0],
+					(additional_error ? additional_error :
+					 ""));
+				goto failure;
+			}
+			if (args_info->conf_given && !override)
+				continue;
+			local_args_info.conf_given = 1;
+			args_info->conf_given = 1;
+			if (args_info->conf_arg)
+				free(args_info->conf_arg);	/* free previous string */
+			args_info->conf_arg = gengetopt_strdup(optarg);
+			if (args_info->conf_orig)
+				free(args_info->conf_orig);	/* free previous string */
+			args_info->conf_orig = gengetopt_strdup(optarg);
+			break;
 
-        case 'l':	/* Local interface.  */
-          if (local_args_info.listen_given)
-            {
-              fprintf (stderr, "%s: `--listen' (`-l') option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-              goto failure;
-            }
-          if (args_info->listen_given && ! override)
-            continue;
-          local_args_info.listen_given = 1;
-          args_info->listen_given = 1;
-          if (args_info->listen_arg)
-            free (args_info->listen_arg); /* free previous string */
-          args_info->listen_arg = gengetopt_strdup (optarg);
-          if (args_info->listen_orig)
-            free (args_info->listen_orig); /* free previous string */
-          args_info->listen_orig = gengetopt_strdup (optarg);
-          break;
+		case 'l':	/* Local interface.  */
+			if (local_args_info.listen_given) {
+				fprintf(stderr,
+					"%s: `--listen' (`-l') option given more than once%s\n",
+					argv[0],
+					(additional_error ? additional_error :
+					 ""));
+				goto failure;
+			}
+			if (args_info->listen_given && !override)
+				continue;
+			local_args_info.listen_given = 1;
+			args_info->listen_given = 1;
+			if (args_info->listen_arg)
+				free(args_info->listen_arg);	/* free previous string */
+			args_info->listen_arg = gengetopt_strdup(optarg);
+			if (args_info->listen_orig)
+				free(args_info->listen_orig);	/* free previous string */
+			args_info->listen_orig = gengetopt_strdup(optarg);
+			break;
 
-        case 'r':	/* Remote host.  */
-          if (local_args_info.remote_given)
-            {
-              fprintf (stderr, "%s: `--remote' (`-r') option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-              goto failure;
-            }
-          if (args_info->remote_given && ! override)
-            continue;
-          local_args_info.remote_given = 1;
-          args_info->remote_given = 1;
-          if (args_info->remote_arg)
-            free (args_info->remote_arg); /* free previous string */
-          args_info->remote_arg = gengetopt_strdup (optarg);
-          if (args_info->remote_orig)
-            free (args_info->remote_orig); /* free previous string */
-          args_info->remote_orig = gengetopt_strdup (optarg);
-          break;
+		case 'r':	/* Remote host.  */
+			if (local_args_info.remote_given) {
+				fprintf(stderr,
+					"%s: `--remote' (`-r') option given more than once%s\n",
+					argv[0],
+					(additional_error ? additional_error :
+					 ""));
+				goto failure;
+			}
+			if (args_info->remote_given && !override)
+				continue;
+			local_args_info.remote_given = 1;
+			args_info->remote_given = 1;
+			if (args_info->remote_arg)
+				free(args_info->remote_arg);	/* free previous string */
+			args_info->remote_arg = gengetopt_strdup(optarg);
+			if (args_info->remote_orig)
+				free(args_info->remote_orig);	/* free previous string */
+			args_info->remote_orig = gengetopt_strdup(optarg);
+			break;
 
-        case 'a':	/* Access point name.  */
-          if (local_args_info.apn_given)
-            {
-              fprintf (stderr, "%s: `--apn' (`-a') option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-              goto failure;
-            }
-          if (args_info->apn_given && ! override)
-            continue;
-          local_args_info.apn_given = 1;
-          args_info->apn_given = 1;
-          if (args_info->apn_arg)
-            free (args_info->apn_arg); /* free previous string */
-          args_info->apn_arg = gengetopt_strdup (optarg);
-          if (args_info->apn_orig)
-            free (args_info->apn_orig); /* free previous string */
-          args_info->apn_orig = gengetopt_strdup (optarg);
-          break;
+		case 'a':	/* Access point name.  */
+			if (local_args_info.apn_given) {
+				fprintf(stderr,
+					"%s: `--apn' (`-a') option given more than once%s\n",
+					argv[0],
+					(additional_error ? additional_error :
+					 ""));
+				goto failure;
+			}
+			if (args_info->apn_given && !override)
+				continue;
+			local_args_info.apn_given = 1;
+			args_info->apn_given = 1;
+			if (args_info->apn_arg)
+				free(args_info->apn_arg);	/* free previous string */
+			args_info->apn_arg = gengetopt_strdup(optarg);
+			if (args_info->apn_orig)
+				free(args_info->apn_orig);	/* free previous string */
+			args_info->apn_orig = gengetopt_strdup(optarg);
+			break;
 
-        case 'i':	/* IMSI.  */
-          if (local_args_info.imsi_given)
-            {
-              fprintf (stderr, "%s: `--imsi' (`-i') option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-              goto failure;
-            }
-          if (args_info->imsi_given && ! override)
-            continue;
-          local_args_info.imsi_given = 1;
-          args_info->imsi_given = 1;
-          if (args_info->imsi_arg)
-            free (args_info->imsi_arg); /* free previous string */
-          args_info->imsi_arg = gengetopt_strdup (optarg);
-          if (args_info->imsi_orig)
-            free (args_info->imsi_orig); /* free previous string */
-          args_info->imsi_orig = gengetopt_strdup (optarg);
-          break;
+		case 'i':	/* IMSI.  */
+			if (local_args_info.imsi_given) {
+				fprintf(stderr,
+					"%s: `--imsi' (`-i') option given more than once%s\n",
+					argv[0],
+					(additional_error ? additional_error :
+					 ""));
+				goto failure;
+			}
+			if (args_info->imsi_given && !override)
+				continue;
+			local_args_info.imsi_given = 1;
+			args_info->imsi_given = 1;
+			if (args_info->imsi_arg)
+				free(args_info->imsi_arg);	/* free previous string */
+			args_info->imsi_arg = gengetopt_strdup(optarg);
+			if (args_info->imsi_orig)
+				free(args_info->imsi_orig);	/* free previous string */
+			args_info->imsi_orig = gengetopt_strdup(optarg);
+			break;
 
-        case 'm':	/* Mobile Station ISDN number.  */
-          if (local_args_info.msisdn_given)
-            {
-              fprintf (stderr, "%s: `--msisdn' (`-m') option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-              goto failure;
-            }
-          if (args_info->msisdn_given && ! override)
-            continue;
-          local_args_info.msisdn_given = 1;
-          args_info->msisdn_given = 1;
-          if (args_info->msisdn_arg)
-            free (args_info->msisdn_arg); /* free previous string */
-          args_info->msisdn_arg = gengetopt_strdup (optarg);
-          if (args_info->msisdn_orig)
-            free (args_info->msisdn_orig); /* free previous string */
-          args_info->msisdn_orig = gengetopt_strdup (optarg);
-          break;
+		case 'm':	/* Mobile Station ISDN number.  */
+			if (local_args_info.msisdn_given) {
+				fprintf(stderr,
+					"%s: `--msisdn' (`-m') option given more than once%s\n",
+					argv[0],
+					(additional_error ? additional_error :
+					 ""));
+				goto failure;
+			}
+			if (args_info->msisdn_given && !override)
+				continue;
+			local_args_info.msisdn_given = 1;
+			args_info->msisdn_given = 1;
+			if (args_info->msisdn_arg)
+				free(args_info->msisdn_arg);	/* free previous string */
+			args_info->msisdn_arg = gengetopt_strdup(optarg);
+			if (args_info->msisdn_orig)
+				free(args_info->msisdn_orig);	/* free previous string */
+			args_info->msisdn_orig = gengetopt_strdup(optarg);
+			break;
 
-        case 'q':	/* Requested quality of service.  */
-          if (local_args_info.qos_given)
-            {
-              fprintf (stderr, "%s: `--qos' (`-q') option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-              goto failure;
-            }
-          if (args_info->qos_given && ! override)
-            continue;
-          local_args_info.qos_given = 1;
-          args_info->qos_given = 1;
-          args_info->qos_arg = strtol (optarg, &stop_char, 0);
-          if (!(stop_char && *stop_char == '\0')) {
-            fprintf(stderr, "%s: invalid numeric value: %s\n", argv[0], optarg);
-            goto failure;
-          }
-          if (args_info->qos_orig)
-            free (args_info->qos_orig); /* free previous string */
-          args_info->qos_orig = gengetopt_strdup (optarg);
-          break;
+		case 'q':	/* Requested quality of service.  */
+			if (local_args_info.qos_given) {
+				fprintf(stderr,
+					"%s: `--qos' (`-q') option given more than once%s\n",
+					argv[0],
+					(additional_error ? additional_error :
+					 ""));
+				goto failure;
+			}
+			if (args_info->qos_given && !override)
+				continue;
+			local_args_info.qos_given = 1;
+			args_info->qos_given = 1;
+			args_info->qos_arg = strtol(optarg, &stop_char, 0);
+			if (!(stop_char && *stop_char == '\0')) {
+				fprintf(stderr,
+					"%s: invalid numeric value: %s\n",
+					argv[0], optarg);
+				goto failure;
+			}
+			if (args_info->qos_orig)
+				free(args_info->qos_orig);	/* free previous string */
+			args_info->qos_orig = gengetopt_strdup(optarg);
+			break;
 
-        case 'u':	/* Login user ID.  */
-          if (local_args_info.uid_given)
-            {
-              fprintf (stderr, "%s: `--uid' (`-u') option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-              goto failure;
-            }
-          if (args_info->uid_given && ! override)
-            continue;
-          local_args_info.uid_given = 1;
-          args_info->uid_given = 1;
-          if (args_info->uid_arg)
-            free (args_info->uid_arg); /* free previous string */
-          args_info->uid_arg = gengetopt_strdup (optarg);
-          if (args_info->uid_orig)
-            free (args_info->uid_orig); /* free previous string */
-          args_info->uid_orig = gengetopt_strdup (optarg);
-          break;
+		case 'u':	/* Login user ID.  */
+			if (local_args_info.uid_given) {
+				fprintf(stderr,
+					"%s: `--uid' (`-u') option given more than once%s\n",
+					argv[0],
+					(additional_error ? additional_error :
+					 ""));
+				goto failure;
+			}
+			if (args_info->uid_given && !override)
+				continue;
+			local_args_info.uid_given = 1;
+			args_info->uid_given = 1;
+			if (args_info->uid_arg)
+				free(args_info->uid_arg);	/* free previous string */
+			args_info->uid_arg = gengetopt_strdup(optarg);
+			if (args_info->uid_orig)
+				free(args_info->uid_orig);	/* free previous string */
+			args_info->uid_orig = gengetopt_strdup(optarg);
+			break;
 
-        case 'p':	/* Login password.  */
-          if (local_args_info.pwd_given)
-            {
-              fprintf (stderr, "%s: `--pwd' (`-p') option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-              goto failure;
-            }
-          if (args_info->pwd_given && ! override)
-            continue;
-          local_args_info.pwd_given = 1;
-          args_info->pwd_given = 1;
-          if (args_info->pwd_arg)
-            free (args_info->pwd_arg); /* free previous string */
-          args_info->pwd_arg = gengetopt_strdup (optarg);
-          if (args_info->pwd_orig)
-            free (args_info->pwd_orig); /* free previous string */
-          args_info->pwd_orig = gengetopt_strdup (optarg);
-          break;
+		case 'p':	/* Login password.  */
+			if (local_args_info.pwd_given) {
+				fprintf(stderr,
+					"%s: `--pwd' (`-p') option given more than once%s\n",
+					argv[0],
+					(additional_error ? additional_error :
+					 ""));
+				goto failure;
+			}
+			if (args_info->pwd_given && !override)
+				continue;
+			local_args_info.pwd_given = 1;
+			args_info->pwd_given = 1;
+			if (args_info->pwd_arg)
+				free(args_info->pwd_arg);	/* free previous string */
+			args_info->pwd_arg = gengetopt_strdup(optarg);
+			if (args_info->pwd_orig)
+				free(args_info->pwd_orig);	/* free previous string */
+			args_info->pwd_orig = gengetopt_strdup(optarg);
+			break;
 
-        case 'n':	/* Network address for local interface.  */
-          if (local_args_info.net_given)
-            {
-              fprintf (stderr, "%s: `--net' (`-n') option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-              goto failure;
-            }
-          if (args_info->net_given && ! override)
-            continue;
-          local_args_info.net_given = 1;
-          args_info->net_given = 1;
-          if (args_info->net_arg)
-            free (args_info->net_arg); /* free previous string */
-          args_info->net_arg = gengetopt_strdup (optarg);
-          if (args_info->net_orig)
-            free (args_info->net_orig); /* free previous string */
-          args_info->net_orig = gengetopt_strdup (optarg);
-          break;
+		case 'n':	/* Network address for local interface.  */
+			if (local_args_info.net_given) {
+				fprintf(stderr,
+					"%s: `--net' (`-n') option given more than once%s\n",
+					argv[0],
+					(additional_error ? additional_error :
+					 ""));
+				goto failure;
+			}
+			if (args_info->net_given && !override)
+				continue;
+			local_args_info.net_given = 1;
+			args_info->net_given = 1;
+			if (args_info->net_arg)
+				free(args_info->net_arg);	/* free previous string */
+			args_info->net_arg = gengetopt_strdup(optarg);
+			if (args_info->net_orig)
+				free(args_info->net_orig);	/* free previous string */
+			args_info->net_orig = gengetopt_strdup(optarg);
+			break;
 
+		case 0:	/* Long option with no short option */
+			/* Filename of process id file.  */
+			if (strcmp(long_options[option_index].name, "pidfile")
+			    == 0) {
+				if (local_args_info.pidfile_given) {
+					fprintf(stderr,
+						"%s: `--pidfile' option given more than once%s\n",
+						argv[0],
+						(additional_error ?
+						 additional_error : ""));
+					goto failure;
+				}
+				if (args_info->pidfile_given && !override)
+					continue;
+				local_args_info.pidfile_given = 1;
+				args_info->pidfile_given = 1;
+				if (args_info->pidfile_arg)
+					free(args_info->pidfile_arg);	/* free previous string */
+				args_info->pidfile_arg =
+				    gengetopt_strdup(optarg);
+				if (args_info->pidfile_orig)
+					free(args_info->pidfile_orig);	/* free previous string */
+				args_info->pidfile_orig =
+				    gengetopt_strdup(optarg);
+			}
+			/* Directory of nonvolatile data.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "statedir") == 0) {
+				if (local_args_info.statedir_given) {
+					fprintf(stderr,
+						"%s: `--statedir' option given more than once%s\n",
+						argv[0],
+						(additional_error ?
+						 additional_error : ""));
+					goto failure;
+				}
+				if (args_info->statedir_given && !override)
+					continue;
+				local_args_info.statedir_given = 1;
+				args_info->statedir_given = 1;
+				if (args_info->statedir_arg)
+					free(args_info->statedir_arg);	/* free previous string */
+				args_info->statedir_arg =
+				    gengetopt_strdup(optarg);
+				if (args_info->statedir_orig)
+					free(args_info->statedir_orig);	/* free previous string */
+				args_info->statedir_orig =
+				    gengetopt_strdup(optarg);
+			}
+			/* DNS Server to use.  */
+			else if (strcmp(long_options[option_index].name, "dns")
+				 == 0) {
+				if (local_args_info.dns_given) {
+					fprintf(stderr,
+						"%s: `--dns' option given more than once%s\n",
+						argv[0],
+						(additional_error ?
+						 additional_error : ""));
+					goto failure;
+				}
+				if (args_info->dns_given && !override)
+					continue;
+				local_args_info.dns_given = 1;
+				args_info->dns_given = 1;
+				if (args_info->dns_arg)
+					free(args_info->dns_arg);	/* free previous string */
+				args_info->dns_arg = gengetopt_strdup(optarg);
+				if (args_info->dns_orig)
+					free(args_info->dns_orig);	/* free previous string */
+				args_info->dns_orig = gengetopt_strdup(optarg);
+			}
+			/* Number of contexts.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "contexts") == 0) {
+				if (local_args_info.contexts_given) {
+					fprintf(stderr,
+						"%s: `--contexts' option given more than once%s\n",
+						argv[0],
+						(additional_error ?
+						 additional_error : ""));
+					goto failure;
+				}
+				if (args_info->contexts_given && !override)
+					continue;
+				local_args_info.contexts_given = 1;
+				args_info->contexts_given = 1;
+				args_info->contexts_arg =
+				    strtol(optarg, &stop_char, 0);
+				if (!(stop_char && *stop_char == '\0')) {
+					fprintf(stderr,
+						"%s: invalid numeric value: %s\n",
+						argv[0], optarg);
+					goto failure;
+				}
+				if (args_info->contexts_orig)
+					free(args_info->contexts_orig);	/* free previous string */
+				args_info->contexts_orig =
+				    gengetopt_strdup(optarg);
+			}
+			/* Exit after timelimit seconds.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "timelimit") == 0) {
+				if (local_args_info.timelimit_given) {
+					fprintf(stderr,
+						"%s: `--timelimit' option given more than once%s\n",
+						argv[0],
+						(additional_error ?
+						 additional_error : ""));
+					goto failure;
+				}
+				if (args_info->timelimit_given && !override)
+					continue;
+				local_args_info.timelimit_given = 1;
+				args_info->timelimit_given = 1;
+				args_info->timelimit_arg =
+				    strtol(optarg, &stop_char, 0);
+				if (!(stop_char && *stop_char == '\0')) {
+					fprintf(stderr,
+						"%s: invalid numeric value: %s\n",
+						argv[0], optarg);
+					goto failure;
+				}
+				if (args_info->timelimit_orig)
+					free(args_info->timelimit_orig);	/* free previous string */
+				args_info->timelimit_orig =
+				    gengetopt_strdup(optarg);
+			}
+			/* GTP version to use.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "gtpversion") == 0) {
+				if (local_args_info.gtpversion_given) {
+					fprintf(stderr,
+						"%s: `--gtpversion' option given more than once%s\n",
+						argv[0],
+						(additional_error ?
+						 additional_error : ""));
+					goto failure;
+				}
+				if (args_info->gtpversion_given && !override)
+					continue;
+				local_args_info.gtpversion_given = 1;
+				args_info->gtpversion_given = 1;
+				args_info->gtpversion_arg =
+				    strtol(optarg, &stop_char, 0);
+				if (!(stop_char && *stop_char == '\0')) {
+					fprintf(stderr,
+						"%s: invalid numeric value: %s\n",
+						argv[0], optarg);
+					goto failure;
+				}
+				if (args_info->gtpversion_orig)
+					free(args_info->gtpversion_orig);	/* free previous string */
+				args_info->gtpversion_orig =
+				    gengetopt_strdup(optarg);
+			}
+			/* Selection mode.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "selmode") == 0) {
+				if (local_args_info.selmode_given) {
+					fprintf(stderr,
+						"%s: `--selmode' option given more than once%s\n",
+						argv[0],
+						(additional_error ?
+						 additional_error : ""));
+					goto failure;
+				}
+				if (args_info->selmode_given && !override)
+					continue;
+				local_args_info.selmode_given = 1;
+				args_info->selmode_given = 1;
+				args_info->selmode_arg =
+				    strtol(optarg, &stop_char, 0);
+				if (!(stop_char && *stop_char == '\0')) {
+					fprintf(stderr,
+						"%s: invalid numeric value: %s\n",
+						argv[0], optarg);
+					goto failure;
+				}
+				if (args_info->selmode_orig)
+					free(args_info->selmode_orig);	/* free previous string */
+				args_info->selmode_orig =
+				    gengetopt_strdup(optarg);
+			}
+			/* QoS Extension 1.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "qose1") == 0) {
+				if (args_info->qose1_given) {
+					fprintf(stderr,
+						"%s: `--qose1' option given more than once\n",
+						PACKAGE);
+					exit(EXIT_FAILURE);
+				}
+				args_info->qose1_given = 1;
+				args_info->qose1_arg =
+				    strtoull(optarg, &stop_char, 0);
+				if (!(stop_char && *stop_char == '\0')) {
+					fprintf(stderr,
+						"%s: invalid numeric value: %s\n",
+						argv[0], optarg);
+					goto failure;
+				}
+				if (args_info->qose1_orig)
+					free(args_info->qose1_orig);	/* free previous string */
+				args_info->qose1_orig =
+				    gengetopt_strdup(optarg);
+				break;
+			}
+			/* QoS Extension 2.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "qose2") == 0) {
+				if (args_info->qose2_given) {
+					fprintf(stderr,
+						"%s: `--qose2' option given more than once\n",
+						PACKAGE);
+					exit(EXIT_FAILURE);
+				}
+				args_info->qose2_given = 1;
+				args_info->qose2_arg =
+				    strtol(optarg, &stop_char, 0);
+				if (!(stop_char && *stop_char == '\0')) {
+					fprintf(stderr,
+						"%s: invalid numeric value: %s\n",
+						argv[0], optarg);
+					goto failure;
+				}
+				if (args_info->qose2_orig)
+					free(args_info->qose2_orig);	/* free previous string */
+				args_info->qose2_orig =
+				    gengetopt_strdup(optarg);
+				break;
+			}
+			/* QoS Extension 3.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "qose3") == 0) {
+				if (args_info->qose3_given) {
+					fprintf(stderr,
+						"%s: `--qose3' option given more than once\n",
+						PACKAGE);
+					exit(EXIT_FAILURE);
+				}
+				args_info->qose3_given = 1;
+				args_info->qose3_arg =
+				    strtol(optarg, &stop_char, 0);
+				if (!(stop_char && *stop_char == '\0')) {
+					fprintf(stderr,
+						"%s: invalid numeric value: %s\n",
+						argv[0], optarg);
+					goto failure;
+				}
+				if (args_info->qose3_orig)
+					free(args_info->qose3_orig);	/* free previous string */
+				args_info->qose3_orig =
+				    gengetopt_strdup(optarg);
+				break;
+			}
+			/* QoS Extension 4.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "qose4") == 0) {
+				if (args_info->qose4_given) {
+					fprintf(stderr,
+						"%s: `--qose4' option given more than once\n",
+						PACKAGE);
+					exit(EXIT_FAILURE);
+				}
+				args_info->qose4_given = 1;
+				args_info->qose4_arg =
+				    strtol(optarg, &stop_char, 0);
+				if (!(stop_char && *stop_char == '\0')) {
+					fprintf(stderr,
+						"%s: invalid numeric value: %s\n",
+						argv[0], optarg);
+					goto failure;
+				}
+				if (args_info->qose4_orig)
+					free(args_info->qose4_orig);	/* free previous string */
+				args_info->qose4_orig =
+				    gengetopt_strdup(optarg);
+				break;
+			}
+			/* Radio Access Technology Type.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "rattype") == 0) {
+				if (args_info->rattype_given) {
+					fprintf(stderr,
+						"%s: `--rattype' option given more than once\n",
+						PACKAGE);
+					exit(EXIT_FAILURE);
+				}
+				args_info->rattype_given = 1;
+				/* args_info->rattype_arg = strtol (optarg,&stop_char,0); */
+				args_info->rattype_arg = strdup(optarg);
+				break;
+			}
+			/* User Location Information.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "userloc") == 0) {
+				if (args_info->userloc_given) {
+					fprintf(stderr,
+						"%s: `--userloc' option given more than once\n",
+						PACKAGE);
+					exit(EXIT_FAILURE);
+				}
+				args_info->userloc_given = 1;
+				args_info->userloc_arg = strdup(optarg);
+				break;
+			}
+			/* Routing Area Information.  */
+			else if (strcmp(long_options[option_index].name, "rai")
+				 == 0) {
+				if (args_info->rai_given) {
+					fprintf(stderr,
+						"%s: `--rai' option given more than once\n",
+						PACKAGE);
+					exit(EXIT_FAILURE);
+				}
+				args_info->rai_given = 1;
+				args_info->rai_arg = strdup(optarg);
+				break;
+			}
+			/* MS Time Zone  */
+			else if (strcmp(long_options[option_index].name, "mstz")
+				 == 0) {
+				if (args_info->mstz_given) {
+					fprintf(stderr,
+						"%s: `--mstz' option given more than once\n",
+						PACKAGE);
+					exit(EXIT_FAILURE);
+				}
+				args_info->mstz_given = 1;
+				args_info->mstz_arg = strdup(optarg);
+				break;
+			}
+			/* IMEI(SV)  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "imeisv") == 0) {
+				if (args_info->imeisv_given) {
+					fprintf(stderr,
+						"%s: `--imeisv' option given more than once\n",
+						PACKAGE);
+					exit(EXIT_FAILURE);
+				}
+				args_info->imeisv_given = 1;
+				args_info->imeisv_arg = strdup(optarg);
+				break;
+			}
+			/* NSAPI.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "nsapi") == 0) {
+				if (local_args_info.nsapi_given) {
+					fprintf(stderr,
+						"%s: `--nsapi' option given more than once%s\n",
+						argv[0],
+						(additional_error ?
+						 additional_error : ""));
+					goto failure;
+				}
+				if (args_info->nsapi_given && !override)
+					continue;
+				local_args_info.nsapi_given = 1;
+				args_info->nsapi_given = 1;
+				args_info->nsapi_arg =
+				    strtol(optarg, &stop_char, 0);
+				if (!(stop_char && *stop_char == '\0')) {
+					fprintf(stderr,
+						"%s: invalid numeric value: %s\n",
+						argv[0], optarg);
+					goto failure;
+				}
+				if (args_info->nsapi_orig)
+					free(args_info->nsapi_orig);	/* free previous string */
+				args_info->nsapi_orig =
+				    gengetopt_strdup(optarg);
+			}
+			/* Charging characteristics.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "charging") == 0) {
+				if (local_args_info.charging_given) {
+					fprintf(stderr,
+						"%s: `--charging' option given more than once%s\n",
+						argv[0],
+						(additional_error ?
+						 additional_error : ""));
+					goto failure;
+				}
+				if (args_info->charging_given && !override)
+					continue;
+				local_args_info.charging_given = 1;
+				args_info->charging_given = 1;
+				args_info->charging_arg =
+				    strtol(optarg, &stop_char, 0);
+				if (!(stop_char && *stop_char == '\0')) {
+					fprintf(stderr,
+						"%s: invalid numeric value: %s\n",
+						argv[0], optarg);
+					goto failure;
+				}
+				if (args_info->charging_orig)
+					free(args_info->charging_orig);	/* free previous string */
+				args_info->charging_orig =
+				    gengetopt_strdup(optarg);
+			}
+			/* Create local network interface.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "createif") == 0) {
+				if (local_args_info.createif_given) {
+					fprintf(stderr,
+						"%s: `--createif' option given more than once%s\n",
+						argv[0],
+						(additional_error ?
+						 additional_error : ""));
+					goto failure;
+				}
+				if (args_info->createif_given && !override)
+					continue;
+				local_args_info.createif_given = 1;
+				args_info->createif_given = 1;
+				args_info->createif_flag =
+				    !(args_info->createif_flag);
+			}
+			/* Create default route.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "defaultroute") == 0) {
+				if (local_args_info.defaultroute_given) {
+					fprintf(stderr,
+						"%s: `--defaultroute' option given more than once%s\n",
+						argv[0],
+						(additional_error ?
+						 additional_error : ""));
+					goto failure;
+				}
+				if (args_info->defaultroute_given && !override)
+					continue;
+				local_args_info.defaultroute_given = 1;
+				args_info->defaultroute_given = 1;
+				args_info->defaultroute_flag =
+				    !(args_info->defaultroute_flag);
+			}
+			/* Script to run after link-up.  */
+			else if (strcmp(long_options[option_index].name, "ipup")
+				 == 0) {
+				if (local_args_info.ipup_given) {
+					fprintf(stderr,
+						"%s: `--ipup' option given more than once%s\n",
+						argv[0],
+						(additional_error ?
+						 additional_error : ""));
+					goto failure;
+				}
+				if (args_info->ipup_given && !override)
+					continue;
+				local_args_info.ipup_given = 1;
+				args_info->ipup_given = 1;
+				if (args_info->ipup_arg)
+					free(args_info->ipup_arg);	/* free previous string */
+				args_info->ipup_arg = gengetopt_strdup(optarg);
+				if (args_info->ipup_orig)
+					free(args_info->ipup_orig);	/* free previous string */
+				args_info->ipup_orig = gengetopt_strdup(optarg);
+			}
+			/* Script to run after link-down.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "ipdown") == 0) {
+				if (local_args_info.ipdown_given) {
+					fprintf(stderr,
+						"%s: `--ipdown' option given more than once%s\n",
+						argv[0],
+						(additional_error ?
+						 additional_error : ""));
+					goto failure;
+				}
+				if (args_info->ipdown_given && !override)
+					continue;
+				local_args_info.ipdown_given = 1;
+				args_info->ipdown_given = 1;
+				if (args_info->ipdown_arg)
+					free(args_info->ipdown_arg);	/* free previous string */
+				args_info->ipdown_arg =
+				    gengetopt_strdup(optarg);
+				if (args_info->ipdown_orig)
+					free(args_info->ipdown_orig);	/* free previous string */
+				args_info->ipdown_orig =
+				    gengetopt_strdup(optarg);
+			}
+			/* Ping remote host.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "pinghost") == 0) {
+				if (local_args_info.pinghost_given) {
+					fprintf(stderr,
+						"%s: `--pinghost' option given more than once%s\n",
+						argv[0],
+						(additional_error ?
+						 additional_error : ""));
+					goto failure;
+				}
+				if (args_info->pinghost_given && !override)
+					continue;
+				local_args_info.pinghost_given = 1;
+				args_info->pinghost_given = 1;
+				if (args_info->pinghost_arg)
+					free(args_info->pinghost_arg);	/* free previous string */
+				args_info->pinghost_arg =
+				    gengetopt_strdup(optarg);
+				if (args_info->pinghost_orig)
+					free(args_info->pinghost_orig);	/* free previous string */
+				args_info->pinghost_orig =
+				    gengetopt_strdup(optarg);
+			}
+			/* Number of ping req per second.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "pingrate") == 0) {
+				if (local_args_info.pingrate_given) {
+					fprintf(stderr,
+						"%s: `--pingrate' option given more than once%s\n",
+						argv[0],
+						(additional_error ?
+						 additional_error : ""));
+					goto failure;
+				}
+				if (args_info->pingrate_given && !override)
+					continue;
+				local_args_info.pingrate_given = 1;
+				args_info->pingrate_given = 1;
+				args_info->pingrate_arg =
+				    strtol(optarg, &stop_char, 0);
+				if (!(stop_char && *stop_char == '\0')) {
+					fprintf(stderr,
+						"%s: invalid numeric value: %s\n",
+						argv[0], optarg);
+					goto failure;
+				}
+				if (args_info->pingrate_orig)
+					free(args_info->pingrate_orig);	/* free previous string */
+				args_info->pingrate_orig =
+				    gengetopt_strdup(optarg);
+			}
+			/* Number of ping data bytes.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "pingsize") == 0) {
+				if (local_args_info.pingsize_given) {
+					fprintf(stderr,
+						"%s: `--pingsize' option given more than once%s\n",
+						argv[0],
+						(additional_error ?
+						 additional_error : ""));
+					goto failure;
+				}
+				if (args_info->pingsize_given && !override)
+					continue;
+				local_args_info.pingsize_given = 1;
+				args_info->pingsize_given = 1;
+				args_info->pingsize_arg =
+				    strtol(optarg, &stop_char, 0);
+				if (!(stop_char && *stop_char == '\0')) {
+					fprintf(stderr,
+						"%s: invalid numeric value: %s\n",
+						argv[0], optarg);
+					goto failure;
+				}
+				if (args_info->pingsize_orig)
+					free(args_info->pingsize_orig);	/* free previous string */
+				args_info->pingsize_orig =
+				    gengetopt_strdup(optarg);
+			}
+			/* Number of ping req to send.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "pingcount") == 0) {
+				if (local_args_info.pingcount_given) {
+					fprintf(stderr,
+						"%s: `--pingcount' option given more than once%s\n",
+						argv[0],
+						(additional_error ?
+						 additional_error : ""));
+					goto failure;
+				}
+				if (args_info->pingcount_given && !override)
+					continue;
+				local_args_info.pingcount_given = 1;
+				args_info->pingcount_given = 1;
+				args_info->pingcount_arg =
+				    strtol(optarg, &stop_char, 0);
+				if (!(stop_char && *stop_char == '\0')) {
+					fprintf(stderr,
+						"%s: invalid numeric value: %s\n",
+						argv[0], optarg);
+					goto failure;
+				}
+				if (args_info->pingcount_orig)
+					free(args_info->pingcount_orig);	/* free previous string */
+				args_info->pingcount_orig =
+				    gengetopt_strdup(optarg);
+			}
+			/* Do not print ping packet info.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "pingquiet") == 0) {
+				if (local_args_info.pingquiet_given) {
+					fprintf(stderr,
+						"%s: `--pingquiet' option given more than once%s\n",
+						argv[0],
+						(additional_error ?
+						 additional_error : ""));
+					goto failure;
+				}
+				if (args_info->pingquiet_given && !override)
+					continue;
+				local_args_info.pingquiet_given = 1;
+				args_info->pingquiet_given = 1;
+				args_info->pingquiet_flag =
+				    !(args_info->pingquiet_flag);
+			}
+			/* Do not send recovery.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "norecovery") == 0) {
+				if (local_args_info.norecovery_given) {
+					fprintf(stderr,
+						"%s: `--norecovery' option given more than once%s\n",
+						argv[0],
+						(additional_error ?
+						 additional_error : ""));
+					goto failure;
+				}
+				if (args_info->norecovery_given && !override)
+					continue;
+				local_args_info.norecovery_given = 1;
+				args_info->norecovery_given = 1;
+				args_info->norecovery_flag =
+				    !(args_info->norecovery_flag);
+			}
 
-        case 0:	/* Long option with no short option */
-          /* Filename of process id file.  */
-          if (strcmp (long_options[option_index].name, "pidfile") == 0)
-          {
-            if (local_args_info.pidfile_given)
-              {
-                fprintf (stderr, "%s: `--pidfile' option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-                goto failure;
-              }
-            if (args_info->pidfile_given && ! override)
-              continue;
-            local_args_info.pidfile_given = 1;
-            args_info->pidfile_given = 1;
-            if (args_info->pidfile_arg)
-              free (args_info->pidfile_arg); /* free previous string */
-            args_info->pidfile_arg = gengetopt_strdup (optarg);
-            if (args_info->pidfile_orig)
-              free (args_info->pidfile_orig); /* free previous string */
-            args_info->pidfile_orig = gengetopt_strdup (optarg);
-          }
-          /* Directory of nonvolatile data.  */
-          else if (strcmp (long_options[option_index].name, "statedir") == 0)
-          {
-            if (local_args_info.statedir_given)
-              {
-                fprintf (stderr, "%s: `--statedir' option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-                goto failure;
-              }
-            if (args_info->statedir_given && ! override)
-              continue;
-            local_args_info.statedir_given = 1;
-            args_info->statedir_given = 1;
-            if (args_info->statedir_arg)
-              free (args_info->statedir_arg); /* free previous string */
-            args_info->statedir_arg = gengetopt_strdup (optarg);
-            if (args_info->statedir_orig)
-              free (args_info->statedir_orig); /* free previous string */
-            args_info->statedir_orig = gengetopt_strdup (optarg);
-          }
-          /* DNS Server to use.  */
-          else if (strcmp (long_options[option_index].name, "dns") == 0)
-          {
-            if (local_args_info.dns_given)
-              {
-                fprintf (stderr, "%s: `--dns' option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-                goto failure;
-              }
-            if (args_info->dns_given && ! override)
-              continue;
-            local_args_info.dns_given = 1;
-            args_info->dns_given = 1;
-            if (args_info->dns_arg)
-              free (args_info->dns_arg); /* free previous string */
-            args_info->dns_arg = gengetopt_strdup (optarg);
-            if (args_info->dns_orig)
-              free (args_info->dns_orig); /* free previous string */
-            args_info->dns_orig = gengetopt_strdup (optarg);
-          }
-          /* Number of contexts.  */
-          else if (strcmp (long_options[option_index].name, "contexts") == 0)
-          {
-            if (local_args_info.contexts_given)
-              {
-                fprintf (stderr, "%s: `--contexts' option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-                goto failure;
-              }
-            if (args_info->contexts_given && ! override)
-              continue;
-            local_args_info.contexts_given = 1;
-            args_info->contexts_given = 1;
-            args_info->contexts_arg = strtol (optarg, &stop_char, 0);
-            if (!(stop_char && *stop_char == '\0')) {
-              fprintf(stderr, "%s: invalid numeric value: %s\n", argv[0], optarg);
-              goto failure;
-            }
-            if (args_info->contexts_orig)
-              free (args_info->contexts_orig); /* free previous string */
-            args_info->contexts_orig = gengetopt_strdup (optarg);
-          }
-          /* Exit after timelimit seconds.  */
-          else if (strcmp (long_options[option_index].name, "timelimit") == 0)
-          {
-            if (local_args_info.timelimit_given)
-              {
-                fprintf (stderr, "%s: `--timelimit' option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-                goto failure;
-              }
-            if (args_info->timelimit_given && ! override)
-              continue;
-            local_args_info.timelimit_given = 1;
-            args_info->timelimit_given = 1;
-            args_info->timelimit_arg = strtol (optarg, &stop_char, 0);
-            if (!(stop_char && *stop_char == '\0')) {
-              fprintf(stderr, "%s: invalid numeric value: %s\n", argv[0], optarg);
-              goto failure;
-            }
-            if (args_info->timelimit_orig)
-              free (args_info->timelimit_orig); /* free previous string */
-            args_info->timelimit_orig = gengetopt_strdup (optarg);
-          }
-          /* GTP version to use.  */
-          else if (strcmp (long_options[option_index].name, "gtpversion") == 0)
-          {
-            if (local_args_info.gtpversion_given)
-              {
-                fprintf (stderr, "%s: `--gtpversion' option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-                goto failure;
-              }
-            if (args_info->gtpversion_given && ! override)
-              continue;
-            local_args_info.gtpversion_given = 1;
-            args_info->gtpversion_given = 1;
-            args_info->gtpversion_arg = strtol (optarg, &stop_char, 0);
-            if (!(stop_char && *stop_char == '\0')) {
-              fprintf(stderr, "%s: invalid numeric value: %s\n", argv[0], optarg);
-              goto failure;
-            }
-            if (args_info->gtpversion_orig)
-              free (args_info->gtpversion_orig); /* free previous string */
-            args_info->gtpversion_orig = gengetopt_strdup (optarg);
-          }
-          /* Selection mode.  */
-          else if (strcmp (long_options[option_index].name, "selmode") == 0)
-          {
-            if (local_args_info.selmode_given)
-              {
-                fprintf (stderr, "%s: `--selmode' option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-                goto failure;
-              }
-            if (args_info->selmode_given && ! override)
-              continue;
-            local_args_info.selmode_given = 1;
-            args_info->selmode_given = 1;
-            args_info->selmode_arg = strtol (optarg, &stop_char, 0);
-            if (!(stop_char && *stop_char == '\0')) {
-              fprintf(stderr, "%s: invalid numeric value: %s\n", argv[0], optarg);
-              goto failure;
-            }
-            if (args_info->selmode_orig)
-              free (args_info->selmode_orig); /* free previous string */
-            args_info->selmode_orig = gengetopt_strdup (optarg);
-          }
-         /* QoS Extension 1.  */
-          else if (strcmp (long_options[option_index].name, "qose1") == 0)
-          {
-            if (args_info->qose1_given)
-              {
-                fprintf (stderr, "%s: `--qose1' option given more than once\n", PACKAGE);
-                exit (EXIT_FAILURE);
-              }
-            args_info->qose1_given = 1;
-            args_info->qose1_arg = strtoull (optarg, &stop_char, 0);
-          if (!(stop_char && *stop_char == '\0')) {
-            fprintf(stderr, "%s: invalid numeric value: %s\n", argv[0], optarg);
-            goto failure;
-          }
-          if (args_info->qose1_orig)
-            free (args_info->qose1_orig); /* free previous string */
-          args_info->qose1_orig = gengetopt_strdup (optarg);
-          break;
-          }
-         /* QoS Extension 2.  */
-          else if (strcmp (long_options[option_index].name, "qose2") == 0)
-          {
-            if (args_info->qose2_given)
-              {
-                fprintf (stderr, "%s: `--qose2' option given more than once\n", PACKAGE);
-                exit (EXIT_FAILURE);
-              }
-            args_info->qose2_given = 1;
-            args_info->qose2_arg = strtol (optarg, &stop_char, 0);
-          if (!(stop_char && *stop_char == '\0')) {
-            fprintf(stderr, "%s: invalid numeric value: %s\n", argv[0], optarg);
-            goto failure;
-          }
-          if (args_info->qose2_orig)
-            free (args_info->qose2_orig); /* free previous string */
-          args_info->qose2_orig = gengetopt_strdup (optarg);
-          break;
-          }
-         /* QoS Extension 3.  */
-          else if (strcmp (long_options[option_index].name, "qose3") == 0)
-          {
-            if (args_info->qose3_given)
-              {
-                fprintf (stderr, "%s: `--qose3' option given more than once\n", PACKAGE);
-                exit (EXIT_FAILURE);
-              }
-            args_info->qose3_given = 1;
-            args_info->qose3_arg = strtol (optarg, &stop_char, 0);
-          if (!(stop_char && *stop_char == '\0')) {
-            fprintf(stderr, "%s: invalid numeric value: %s\n", argv[0], optarg);
-            goto failure;
-          }
-          if (args_info->qose3_orig)
-            free (args_info->qose3_orig); /* free previous string */
-          args_info->qose3_orig = gengetopt_strdup (optarg);
-          break;
-          }
-         /* QoS Extension 4.  */
-          else if (strcmp (long_options[option_index].name, "qose4") == 0)
-          {
-            if (args_info->qose4_given)
-              {
-                fprintf (stderr, "%s: `--qose4' option given more than once\n", PACKAGE);
-                exit (EXIT_FAILURE);
-              }
-            args_info->qose4_given = 1;
-            args_info->qose4_arg = strtol (optarg, &stop_char, 0);
-          if (!(stop_char && *stop_char == '\0')) {
-            fprintf(stderr, "%s: invalid numeric value: %s\n", argv[0], optarg);
-            goto failure;
-          }
-          if (args_info->qose4_orig)
-            free (args_info->qose4_orig); /* free previous string */
-          args_info->qose4_orig = gengetopt_strdup (optarg);
-          break;
-          }
-         /* Radio Access Technology Type.  */
-          else if (strcmp (long_options[option_index].name, "rattype") == 0)
-          {
-            if (args_info->rattype_given)
-              {
-                fprintf (stderr, "%s: `--rattype' option given more than once\n", PACKAGE);
-                exit (EXIT_FAILURE);
-              }
-            args_info->rattype_given = 1;
-            /* args_info->rattype_arg = strtol (optarg,&stop_char,0); */
-            args_info->rattype_arg = strdup (optarg);
-            break;
-          }
-         /* User Location Information.  */
-          else if (strcmp (long_options[option_index].name, "userloc") == 0)
-          {
-            if (args_info->userloc_given)
-              {
-                fprintf (stderr, "%s: `--userloc' option given more than once\n", PACKAGE);
-                exit (EXIT_FAILURE);
-              }
-            args_info->userloc_given = 1;
-            args_info->userloc_arg = strdup (optarg);
-            break;
-          }
-         /* Routing Area Information.  */
-          else if (strcmp (long_options[option_index].name, "rai") == 0)
-          {
-            if (args_info->rai_given)
-              {
-                fprintf (stderr, "%s: `--rai' option given more than once\n", PACKAGE);
-                exit (EXIT_FAILURE);
-              }
-            args_info->rai_given = 1;
-            args_info->rai_arg = strdup (optarg);
-            break;
-          }
-         /* MS Time Zone  */
-          else if (strcmp (long_options[option_index].name, "mstz") == 0)
-          {
-            if (args_info->mstz_given)
-              {
-                fprintf (stderr, "%s: `--mstz' option given more than once\n", PACKAGE);
-                exit (EXIT_FAILURE);
-              }
-            args_info->mstz_given = 1;
-            args_info->mstz_arg = strdup (optarg);
-            break;
-          }
-          /* IMEI(SV)  */
-          else if (strcmp (long_options[option_index].name, "imeisv") == 0)
-          {
-            if (args_info->imeisv_given)
-              {
-                fprintf (stderr, "%s: `--imeisv' option given more than once\n", PACKAGE);
-                exit (EXIT_FAILURE);
-              }
-            args_info->imeisv_given = 1;
-            args_info->imeisv_arg = strdup (optarg);
-            break;
-          }
-          /* NSAPI.  */
-          else if (strcmp (long_options[option_index].name, "nsapi") == 0)
-          {
-            if (local_args_info.nsapi_given)
-              {
-                fprintf (stderr, "%s: `--nsapi' option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-                goto failure;
-              }
-            if (args_info->nsapi_given && ! override)
-              continue;
-            local_args_info.nsapi_given = 1;
-            args_info->nsapi_given = 1;
-            args_info->nsapi_arg = strtol (optarg, &stop_char, 0);
-            if (!(stop_char && *stop_char == '\0')) {
-              fprintf(stderr, "%s: invalid numeric value: %s\n", argv[0], optarg);
-              goto failure;
-            }
-            if (args_info->nsapi_orig)
-              free (args_info->nsapi_orig); /* free previous string */
-            args_info->nsapi_orig = gengetopt_strdup (optarg);
-          }
-          /* Charging characteristics.  */
-          else if (strcmp (long_options[option_index].name, "charging") == 0)
-          {
-            if (local_args_info.charging_given)
-              {
-                fprintf (stderr, "%s: `--charging' option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-                goto failure;
-              }
-            if (args_info->charging_given && ! override)
-              continue;
-            local_args_info.charging_given = 1;
-            args_info->charging_given = 1;
-            args_info->charging_arg = strtol (optarg, &stop_char, 0);
-            if (!(stop_char && *stop_char == '\0')) {
-              fprintf(stderr, "%s: invalid numeric value: %s\n", argv[0], optarg);
-              goto failure;
-            }
-            if (args_info->charging_orig)
-              free (args_info->charging_orig); /* free previous string */
-            args_info->charging_orig = gengetopt_strdup (optarg);
-          }
-          /* Create local network interface.  */
-          else if (strcmp (long_options[option_index].name, "createif") == 0)
-          {
-            if (local_args_info.createif_given)
-              {
-                fprintf (stderr, "%s: `--createif' option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-                goto failure;
-              }
-            if (args_info->createif_given && ! override)
-              continue;
-            local_args_info.createif_given = 1;
-            args_info->createif_given = 1;
-            args_info->createif_flag = !(args_info->createif_flag);
-          }
-          /* Create default route.  */
-          else if (strcmp (long_options[option_index].name, "defaultroute") == 0)
-          {
-            if (local_args_info.defaultroute_given)
-              {
-                fprintf (stderr, "%s: `--defaultroute' option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-                goto failure;
-              }
-            if (args_info->defaultroute_given && ! override)
-              continue;
-            local_args_info.defaultroute_given = 1;
-            args_info->defaultroute_given = 1;
-            args_info->defaultroute_flag = !(args_info->defaultroute_flag);
-          }
-          /* Script to run after link-up.  */
-          else if (strcmp (long_options[option_index].name, "ipup") == 0)
-          {
-            if (local_args_info.ipup_given)
-              {
-                fprintf (stderr, "%s: `--ipup' option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-                goto failure;
-              }
-            if (args_info->ipup_given && ! override)
-              continue;
-            local_args_info.ipup_given = 1;
-            args_info->ipup_given = 1;
-            if (args_info->ipup_arg)
-              free (args_info->ipup_arg); /* free previous string */
-            args_info->ipup_arg = gengetopt_strdup (optarg);
-            if (args_info->ipup_orig)
-              free (args_info->ipup_orig); /* free previous string */
-            args_info->ipup_orig = gengetopt_strdup (optarg);
-          }
-          /* Script to run after link-down.  */
-          else if (strcmp (long_options[option_index].name, "ipdown") == 0)
-          {
-            if (local_args_info.ipdown_given)
-              {
-                fprintf (stderr, "%s: `--ipdown' option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-                goto failure;
-              }
-            if (args_info->ipdown_given && ! override)
-              continue;
-            local_args_info.ipdown_given = 1;
-            args_info->ipdown_given = 1;
-            if (args_info->ipdown_arg)
-              free (args_info->ipdown_arg); /* free previous string */
-            args_info->ipdown_arg = gengetopt_strdup (optarg);
-            if (args_info->ipdown_orig)
-              free (args_info->ipdown_orig); /* free previous string */
-            args_info->ipdown_orig = gengetopt_strdup (optarg);
-          }
-          /* Ping remote host.  */
-          else if (strcmp (long_options[option_index].name, "pinghost") == 0)
-          {
-            if (local_args_info.pinghost_given)
-              {
-                fprintf (stderr, "%s: `--pinghost' option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-                goto failure;
-              }
-            if (args_info->pinghost_given && ! override)
-              continue;
-            local_args_info.pinghost_given = 1;
-            args_info->pinghost_given = 1;
-            if (args_info->pinghost_arg)
-              free (args_info->pinghost_arg); /* free previous string */
-            args_info->pinghost_arg = gengetopt_strdup (optarg);
-            if (args_info->pinghost_orig)
-              free (args_info->pinghost_orig); /* free previous string */
-            args_info->pinghost_orig = gengetopt_strdup (optarg);
-          }
-          /* Number of ping req per second.  */
-          else if (strcmp (long_options[option_index].name, "pingrate") == 0)
-          {
-            if (local_args_info.pingrate_given)
-              {
-                fprintf (stderr, "%s: `--pingrate' option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-                goto failure;
-              }
-            if (args_info->pingrate_given && ! override)
-              continue;
-            local_args_info.pingrate_given = 1;
-            args_info->pingrate_given = 1;
-            args_info->pingrate_arg = strtol (optarg, &stop_char, 0);
-            if (!(stop_char && *stop_char == '\0')) {
-              fprintf(stderr, "%s: invalid numeric value: %s\n", argv[0], optarg);
-              goto failure;
-            }
-            if (args_info->pingrate_orig)
-              free (args_info->pingrate_orig); /* free previous string */
-            args_info->pingrate_orig = gengetopt_strdup (optarg);
-          }
-          /* Number of ping data bytes.  */
-          else if (strcmp (long_options[option_index].name, "pingsize") == 0)
-          {
-            if (local_args_info.pingsize_given)
-              {
-                fprintf (stderr, "%s: `--pingsize' option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-                goto failure;
-              }
-            if (args_info->pingsize_given && ! override)
-              continue;
-            local_args_info.pingsize_given = 1;
-            args_info->pingsize_given = 1;
-            args_info->pingsize_arg = strtol (optarg, &stop_char, 0);
-            if (!(stop_char && *stop_char == '\0')) {
-              fprintf(stderr, "%s: invalid numeric value: %s\n", argv[0], optarg);
-              goto failure;
-            }
-            if (args_info->pingsize_orig)
-              free (args_info->pingsize_orig); /* free previous string */
-            args_info->pingsize_orig = gengetopt_strdup (optarg);
-          }
-          /* Number of ping req to send.  */
-          else if (strcmp (long_options[option_index].name, "pingcount") == 0)
-          {
-            if (local_args_info.pingcount_given)
-              {
-                fprintf (stderr, "%s: `--pingcount' option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-                goto failure;
-              }
-            if (args_info->pingcount_given && ! override)
-              continue;
-            local_args_info.pingcount_given = 1;
-            args_info->pingcount_given = 1;
-            args_info->pingcount_arg = strtol (optarg, &stop_char, 0);
-            if (!(stop_char && *stop_char == '\0')) {
-              fprintf(stderr, "%s: invalid numeric value: %s\n", argv[0], optarg);
-              goto failure;
-            }
-            if (args_info->pingcount_orig)
-              free (args_info->pingcount_orig); /* free previous string */
-            args_info->pingcount_orig = gengetopt_strdup (optarg);
-          }
-          /* Do not print ping packet info.  */
-          else if (strcmp (long_options[option_index].name, "pingquiet") == 0)
-          {
-            if (local_args_info.pingquiet_given)
-              {
-                fprintf (stderr, "%s: `--pingquiet' option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-                goto failure;
-              }
-            if (args_info->pingquiet_given && ! override)
-              continue;
-            local_args_info.pingquiet_given = 1;
-            args_info->pingquiet_given = 1;
-            args_info->pingquiet_flag = !(args_info->pingquiet_flag);
-          }
-          /* Do not send recovery.  */
-          else if (strcmp (long_options[option_index].name, "norecovery") == 0)
-          {
-            if (local_args_info.norecovery_given)
-              {
-                fprintf (stderr, "%s: `--norecovery' option given more than once%s\n", argv[0], (additional_error ? additional_error : ""));
-                goto failure;
-              }
-            if (args_info->norecovery_given && ! override)
-              continue;
-            local_args_info.norecovery_given = 1;
-            args_info->norecovery_given = 1;
-            args_info->norecovery_flag = !(args_info->norecovery_flag);
-          }
-          
-          break;
-        case '?':	/* Invalid option.  */
-          /* `getopt_long' already printed an error message.  */
-          goto failure;
+			break;
+		case '?':	/* Invalid option.  */
+			/* `getopt_long' already printed an error message.  */
+			goto failure;
 
-        default:	/* bug: option not considered.  */
-          fprintf (stderr, "%s: option unknown: %c%s\n", CMDLINE_PARSER_PACKAGE, c, (additional_error ? additional_error : ""));
-          abort ();
-        } /* switch */
-    } /* while */
+		default:	/* bug: option not considered.  */
+			fprintf(stderr, "%s: option unknown: %c%s\n",
+				CMDLINE_PARSER_PACKAGE, c,
+				(additional_error ? additional_error : ""));
+			abort();
+		}		/* switch */
+	}			/* while */
 
+	cmdline_parser_release(&local_args_info);
 
+	if (error)
+		return (EXIT_FAILURE);
 
-
-  cmdline_parser_release (&local_args_info);
-
-  if ( error )
-    return (EXIT_FAILURE);
-
-  return 0;
+	return 0;
 
 failure:
-  
-  cmdline_parser_release (&local_args_info);
-  return (EXIT_FAILURE);
+
+	cmdline_parser_release(&local_args_info);
+	return (EXIT_FAILURE);
 }
 
 #ifndef CONFIG_FILE_LINE_SIZE
@@ -1587,168 +1759,167 @@ failure:
 #define CONFIG_FILE_LINE_BUFFER_SIZE (CONFIG_FILE_LINE_SIZE+3)
 /* 3 is for "--" and "=" */
 
-char my_argv[CONFIG_FILE_LINE_BUFFER_SIZE+1];
+char my_argv[CONFIG_FILE_LINE_BUFFER_SIZE + 1];
 
 int
-cmdline_parser_configfile (char * const filename, struct gengetopt_args_info *args_info, int override, int initialize, int check_required)
+cmdline_parser_configfile(char *const filename,
+			  struct gengetopt_args_info *args_info, int override,
+			  int initialize, int check_required)
 {
-  FILE* file;
-  char linebuf[CONFIG_FILE_LINE_SIZE];
-  int line_num = 0;
-  int i, result, equal;
-  char *fopt, *farg;
-  char *str_index;
-  size_t len, next_token;
-  char delimiter;
-  int my_argc = 0;
-  char **my_argv_arg;
-  char *additional_error;
+	FILE *file;
+	char linebuf[CONFIG_FILE_LINE_SIZE];
+	int line_num = 0;
+	int i, result, equal;
+	char *fopt, *farg;
+	char *str_index;
+	size_t len, next_token;
+	char delimiter;
+	int my_argc = 0;
+	char **my_argv_arg;
+	char *additional_error;
 
-  /* store the program name */
-  cmd_line_list_tmp = (struct line_list *) malloc (sizeof (struct line_list));
-  cmd_line_list_tmp->next = cmd_line_list;
-  cmd_line_list = cmd_line_list_tmp;
-  cmd_line_list->string_arg = gengetopt_strdup (CMDLINE_PARSER_PACKAGE);
+	/* store the program name */
+	cmd_line_list_tmp =
+	    (struct line_list *)malloc(sizeof(struct line_list));
+	cmd_line_list_tmp->next = cmd_line_list;
+	cmd_line_list = cmd_line_list_tmp;
+	cmd_line_list->string_arg = gengetopt_strdup(CMDLINE_PARSER_PACKAGE);
 
-  if ((file = fopen(filename, "r")) == NULL)
-    {
-      fprintf (stderr, "%s: Error opening configuration file '%s'\n",
-               CMDLINE_PARSER_PACKAGE, filename);
-      result = EXIT_FAILURE;
-      goto conf_failure;
-    }
+	if ((file = fopen(filename, "r")) == NULL) {
+		fprintf(stderr, "%s: Error opening configuration file '%s'\n",
+			CMDLINE_PARSER_PACKAGE, filename);
+		result = EXIT_FAILURE;
+		goto conf_failure;
+	}
 
-  while ((fgets(linebuf, CONFIG_FILE_LINE_SIZE, file)) != NULL)
-    {
-      ++line_num;
-      my_argv[0] = '\0';
-      len = strlen(linebuf);
-      if (len > (CONFIG_FILE_LINE_BUFFER_SIZE-1))
-        {
-          fprintf (stderr, "%s:%s:%d: Line too long in configuration file\n",
-                   CMDLINE_PARSER_PACKAGE, filename, line_num);
-          result = EXIT_FAILURE;
-          goto conf_failure;
-        }
+	while ((fgets(linebuf, CONFIG_FILE_LINE_SIZE, file)) != NULL) {
+		++line_num;
+		my_argv[0] = '\0';
+		len = strlen(linebuf);
+		if (len > (CONFIG_FILE_LINE_BUFFER_SIZE - 1)) {
+			fprintf(stderr,
+				"%s:%s:%d: Line too long in configuration file\n",
+				CMDLINE_PARSER_PACKAGE, filename, line_num);
+			result = EXIT_FAILURE;
+			goto conf_failure;
+		}
 
-      /* find first non-whitespace character in the line */
-      next_token = strspn ( linebuf, " \t\r\n");
-      str_index  = linebuf + next_token;
+		/* find first non-whitespace character in the line */
+		next_token = strspn(linebuf, " \t\r\n");
+		str_index = linebuf + next_token;
 
-      if ( str_index[0] == '\0' || str_index[0] == '#')
-        continue; /* empty line or comment line is skipped */
+		if (str_index[0] == '\0' || str_index[0] == '#')
+			continue;	/* empty line or comment line is skipped */
 
-      fopt = str_index;
+		fopt = str_index;
 
-      /* truncate fopt at the end of the first non-valid character */
-      next_token = strcspn (fopt, " \t\r\n=");
+		/* truncate fopt at the end of the first non-valid character */
+		next_token = strcspn(fopt, " \t\r\n=");
 
-      if (fopt[next_token] == '\0') /* the line is over */
-        {
-          farg  = NULL;
-          equal = 0;
-          goto noarg;
-        }
+		if (fopt[next_token] == '\0') {	/* the line is over */
+			farg = NULL;
+			equal = 0;
+			goto noarg;
+		}
 
-      /* remember if equal sign is present */
-      equal = (fopt[next_token] == '=');
-      fopt[next_token++] = '\0';
+		/* remember if equal sign is present */
+		equal = (fopt[next_token] == '=');
+		fopt[next_token++] = '\0';
 
-      /* advance pointers to the next token after the end of fopt */
-      next_token += strspn (fopt + next_token, " \t\r\n");
-      /* check for the presence of equal sign, and if so, skip it */
-      if ( !equal )
-        if ((equal = (fopt[next_token] == '=')))
-          {
-            next_token++;
-            next_token += strspn (fopt + next_token, " \t\r\n");
-          }
-      str_index  += next_token;
+		/* advance pointers to the next token after the end of fopt */
+		next_token += strspn(fopt + next_token, " \t\r\n");
+		/* check for the presence of equal sign, and if so, skip it */
+		if (!equal)
+			if ((equal = (fopt[next_token] == '='))) {
+				next_token++;
+				next_token +=
+				    strspn(fopt + next_token, " \t\r\n");
+			}
+		str_index += next_token;
 
-      /* find argument */
-      farg = str_index;
-      if ( farg[0] == '\"' || farg[0] == '\'' )
-        { /* quoted argument */
-          str_index = strchr (++farg, str_index[0] ); /* skip opening quote */
-          if (! str_index)
-            {
-              fprintf
-                (stderr,
-                 "%s:%s:%d: unterminated string in configuration file\n",
-                 CMDLINE_PARSER_PACKAGE, filename, line_num);
-              result = EXIT_FAILURE;
-              goto conf_failure;
-            }
-        }
-      else
-        { /* read up the remaining part up to a delimiter */
-          next_token = strcspn (farg, " \t\r\n#\'\"");
-          str_index += next_token;
-        }
+		/* find argument */
+		farg = str_index;
+		if (farg[0] == '\"' || farg[0] == '\'') {	/* quoted argument */
+			str_index = strchr(++farg, str_index[0]);	/* skip opening quote */
+			if (!str_index) {
+				fprintf
+				    (stderr,
+				     "%s:%s:%d: unterminated string in configuration file\n",
+				     CMDLINE_PARSER_PACKAGE, filename,
+				     line_num);
+				result = EXIT_FAILURE;
+				goto conf_failure;
+			}
+		} else {	/* read up the remaining part up to a delimiter */
+			next_token = strcspn(farg, " \t\r\n#\'\"");
+			str_index += next_token;
+		}
 
-      /* truncate farg at the delimiter and store it for further check */
-      delimiter = *str_index, *str_index++ = '\0';
+		/* truncate farg at the delimiter and store it for further check */
+		delimiter = *str_index, *str_index++ = '\0';
 
-      /* everything but comment is illegal at the end of line */
-      if (delimiter != '\0' && delimiter != '#')
-        {
-          str_index += strspn(str_index, " \t\r\n");
-          if (*str_index != '\0' && *str_index != '#')
-            {
-              fprintf
-                (stderr,
-                 "%s:%s:%d: malformed string in configuration file\n",
-                 CMDLINE_PARSER_PACKAGE, filename, line_num);
-              result = EXIT_FAILURE;
-              goto conf_failure;
-            }
-        }
+		/* everything but comment is illegal at the end of line */
+		if (delimiter != '\0' && delimiter != '#') {
+			str_index += strspn(str_index, " \t\r\n");
+			if (*str_index != '\0' && *str_index != '#') {
+				fprintf
+				    (stderr,
+				     "%s:%s:%d: malformed string in configuration file\n",
+				     CMDLINE_PARSER_PACKAGE, filename,
+				     line_num);
+				result = EXIT_FAILURE;
+				goto conf_failure;
+			}
+		}
 
-    noarg:
-      ++my_argc;
-      len = strlen(fopt);
+noarg:
+		++my_argc;
+		len = strlen(fopt);
 
-      strcat (my_argv, len > 1 ? "--" : "-");
-      strcat (my_argv, fopt);
-      if (len > 1 && ((farg &&*farg) || equal))
-          strcat (my_argv, "=");
-      if (farg && *farg)
-          strcat (my_argv, farg);
+		strcat(my_argv, len > 1 ? "--" : "-");
+		strcat(my_argv, fopt);
+		if (len > 1 && ((farg && *farg) || equal))
+			strcat(my_argv, "=");
+		if (farg && *farg)
+			strcat(my_argv, farg);
 
-      cmd_line_list_tmp = (struct line_list *) malloc (sizeof (struct line_list));
-      cmd_line_list_tmp->next = cmd_line_list;
-      cmd_line_list = cmd_line_list_tmp;
-      cmd_line_list->string_arg = gengetopt_strdup(my_argv);
-    } /* while */
+		cmd_line_list_tmp =
+		    (struct line_list *)malloc(sizeof(struct line_list));
+		cmd_line_list_tmp->next = cmd_line_list;
+		cmd_line_list = cmd_line_list_tmp;
+		cmd_line_list->string_arg = gengetopt_strdup(my_argv);
+	}			/* while */
 
-  ++my_argc; /* for program name */
-  my_argv_arg = (char **) malloc((my_argc+1) * sizeof(char *));
-  cmd_line_list_tmp = cmd_line_list;
-  for (i = my_argc - 1; i >= 0; --i) {
-    my_argv_arg[i] = cmd_line_list_tmp->string_arg;
-    cmd_line_list_tmp = cmd_line_list_tmp->next;
-  }
-  my_argv_arg[my_argc] = 0;
+	++my_argc;		/* for program name */
+	my_argv_arg = (char **)malloc((my_argc + 1) * sizeof(char *));
+	cmd_line_list_tmp = cmd_line_list;
+	for (i = my_argc - 1; i >= 0; --i) {
+		my_argv_arg[i] = cmd_line_list_tmp->string_arg;
+		cmd_line_list_tmp = cmd_line_list_tmp->next;
+	}
+	my_argv_arg[my_argc] = 0;
 
-  additional_error = (char *)malloc(strlen(filename) + strlen(ADDITIONAL_ERROR) + 1);
-  strcpy (additional_error, ADDITIONAL_ERROR);
-  strcat (additional_error, filename);
-  result =
-    cmdline_parser_internal (my_argc, my_argv_arg, args_info, override, initialize, check_required, additional_error);
+	additional_error =
+	    (char *)malloc(strlen(filename) + strlen(ADDITIONAL_ERROR) + 1);
+	strcpy(additional_error, ADDITIONAL_ERROR);
+	strcat(additional_error, filename);
+	result =
+	    cmdline_parser_internal(my_argc, my_argv_arg, args_info, override,
+				    initialize, check_required,
+				    additional_error);
 
-  free (additional_error);
-  free (my_argv_arg);
+	free(additional_error);
+	free(my_argv_arg);
 
 conf_failure:
-  if (file)
-    fclose(file);
+	if (file)
+		fclose(file);
 
-  free_cmd_list();
-  if (result == EXIT_FAILURE)
-    {
-      cmdline_parser_free (args_info);
-      exit (EXIT_FAILURE);
-    }
-  
-  return result;
+	free_cmd_list();
+	if (result == EXIT_FAILURE) {
+		cmdline_parser_free(args_info);
+		exit(EXIT_FAILURE);
+	}
+
+	return result;
 }

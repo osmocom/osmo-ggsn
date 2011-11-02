@@ -12,7 +12,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif /* __cplusplus */
+#endif				/* __cplusplus */
 
 #ifndef CMDLINE_PARSER_PACKAGE
 #define CMDLINE_PARSER_PACKAGE PACKAGE
@@ -22,105 +22,104 @@ extern "C" {
 #define CMDLINE_PARSER_VERSION VERSION
 #endif
 
-struct gengetopt_args_info
-{
-  const char *help_help; /* Print help and exit help description.  */
-  const char *version_help; /* Print version and exit help description.  */
-  int fg_flag;	/* Run in foreground (default=off).  */
-  const char *fg_help; /* Run in foreground help description.  */
-  int debug_flag;	/* Run in debug mode (default=off).  */
-  const char *debug_help; /* Run in debug mode help description.  */
-  char * conf_arg;	/* Read configuration file (default='/etc/ggsn.conf').  */
-  char * conf_orig;	/* Read configuration file original value given at command line.  */
-  const char *conf_help; /* Read configuration file help description.  */
-  char * pidfile_arg;	/* Filename of process id file (default='/var/run/ggsn.pid').  */
-  char * pidfile_orig;	/* Filename of process id file original value given at command line.  */
-  const char *pidfile_help; /* Filename of process id file help description.  */
-  char * statedir_arg;	/* Directory of nonvolatile data (default='/var/lib/ggsn/').  */
-  char * statedir_orig;	/* Directory of nonvolatile data original value given at command line.  */
-  const char *statedir_help; /* Directory of nonvolatile data help description.  */
-  char * listen_arg;	/* Local interface.  */
-  char * listen_orig;	/* Local interface original value given at command line.  */
-  const char *listen_help; /* Local interface help description.  */
-  char * net_arg;	/* Network (default='192.168.0.0/24').  */
-  char * net_orig;	/* Network original value given at command line.  */
-  const char *net_help; /* Network help description.  */
-  char * ipup_arg;	/* Script to run after link-up.  */
-  char * ipup_orig;	/* Script to run after link-up original value given at command line.  */
-  const char *ipup_help; /* Script to run after link-up help description.  */
-  char * ipdown_arg;	/* Script to run after link-down.  */
-  char * ipdown_orig;	/* Script to run after link-down original value given at command line.  */
-  const char *ipdown_help; /* Script to run after link-down help description.  */
-  char * dynip_arg;	/* Dynamic IP address pool.  */
-  char * dynip_orig;	/* Dynamic IP address pool original value given at command line.  */
-  const char *dynip_help; /* Dynamic IP address pool help description.  */
-  char * statip_arg;	/* Static IP address pool.  */
-  char * statip_orig;	/* Static IP address pool original value given at command line.  */
-  const char *statip_help; /* Static IP address pool help description.  */
-  char * pcodns1_arg;	/* PCO DNS Server 1 (default='0.0.0.0').  */
-  char * pcodns1_orig;	/* PCO DNS Server 1 original value given at command line.  */
-  const char *pcodns1_help; /* PCO DNS Server 1 help description.  */
-  char * pcodns2_arg;	/* PCO DNS Server 2 (default='0.0.0.0').  */
-  char * pcodns2_orig;	/* PCO DNS Server 2 original value given at command line.  */
-  const char *pcodns2_help; /* PCO DNS Server 2 help description.  */
-  int timelimit_arg;	/* Exit after timelimit seconds (default='0').  */
-  char * timelimit_orig;	/* Exit after timelimit seconds original value given at command line.  */
-  const char *timelimit_help; /* Exit after timelimit seconds help description.  */
-  char * apn_arg;	/* Access point name (default='internet').  */
-  char * apn_orig;	/* Access point name original value given at command line.  */
-  const char *apn_help; /* Access point name help description.  */
-  int qos_arg;	/* Requested quality of service (default='0x0b921f').  */
-  char * qos_orig;	/* Requested quality of service original value given at command line.  */
-  const char *qos_help; /* Requested quality of service help description.  */
-  
-  int help_given ;	/* Whether help was given.  */
-  int version_given ;	/* Whether version was given.  */
-  int fg_given ;	/* Whether fg was given.  */
-  int debug_given ;	/* Whether debug was given.  */
-  int conf_given ;	/* Whether conf was given.  */
-  int pidfile_given ;	/* Whether pidfile was given.  */
-  int statedir_given ;	/* Whether statedir was given.  */
-  int listen_given ;	/* Whether listen was given.  */
-  int net_given ;	/* Whether net was given.  */
-  int ipup_given ;	/* Whether ipup was given.  */
-  int ipdown_given ;	/* Whether ipdown was given.  */
-  int dynip_given ;	/* Whether dynip was given.  */
-  int statip_given ;	/* Whether statip was given.  */
-  int pcodns1_given ;	/* Whether pcodns1 was given.  */
-  int pcodns2_given ;	/* Whether pcodns2 was given.  */
-  int timelimit_given ;	/* Whether timelimit was given.  */
-  int apn_given ;	/* Whether apn was given.  */
-  int qos_given ;	/* Whether qos was given.  */
+	struct gengetopt_args_info {
+		const char *help_help;	/* Print help and exit help description.  */
+		const char *version_help;	/* Print version and exit help description.  */
+		int fg_flag;	/* Run in foreground (default=off).  */
+		const char *fg_help;	/* Run in foreground help description.  */
+		int debug_flag;	/* Run in debug mode (default=off).  */
+		const char *debug_help;	/* Run in debug mode help description.  */
+		char *conf_arg;	/* Read configuration file (default='/etc/ggsn.conf').  */
+		char *conf_orig;	/* Read configuration file original value given at command line.  */
+		const char *conf_help;	/* Read configuration file help description.  */
+		char *pidfile_arg;	/* Filename of process id file (default='/var/run/ggsn.pid').  */
+		char *pidfile_orig;	/* Filename of process id file original value given at command line.  */
+		const char *pidfile_help;	/* Filename of process id file help description.  */
+		char *statedir_arg;	/* Directory of nonvolatile data (default='/var/lib/ggsn/').  */
+		char *statedir_orig;	/* Directory of nonvolatile data original value given at command line.  */
+		const char *statedir_help;	/* Directory of nonvolatile data help description.  */
+		char *listen_arg;	/* Local interface.  */
+		char *listen_orig;	/* Local interface original value given at command line.  */
+		const char *listen_help;	/* Local interface help description.  */
+		char *net_arg;	/* Network (default='192.168.0.0/24').  */
+		char *net_orig;	/* Network original value given at command line.  */
+		const char *net_help;	/* Network help description.  */
+		char *ipup_arg;	/* Script to run after link-up.  */
+		char *ipup_orig;	/* Script to run after link-up original value given at command line.  */
+		const char *ipup_help;	/* Script to run after link-up help description.  */
+		char *ipdown_arg;	/* Script to run after link-down.  */
+		char *ipdown_orig;	/* Script to run after link-down original value given at command line.  */
+		const char *ipdown_help;	/* Script to run after link-down help description.  */
+		char *dynip_arg;	/* Dynamic IP address pool.  */
+		char *dynip_orig;	/* Dynamic IP address pool original value given at command line.  */
+		const char *dynip_help;	/* Dynamic IP address pool help description.  */
+		char *statip_arg;	/* Static IP address pool.  */
+		char *statip_orig;	/* Static IP address pool original value given at command line.  */
+		const char *statip_help;	/* Static IP address pool help description.  */
+		char *pcodns1_arg;	/* PCO DNS Server 1 (default='0.0.0.0').  */
+		char *pcodns1_orig;	/* PCO DNS Server 1 original value given at command line.  */
+		const char *pcodns1_help;	/* PCO DNS Server 1 help description.  */
+		char *pcodns2_arg;	/* PCO DNS Server 2 (default='0.0.0.0').  */
+		char *pcodns2_orig;	/* PCO DNS Server 2 original value given at command line.  */
+		const char *pcodns2_help;	/* PCO DNS Server 2 help description.  */
+		int timelimit_arg;	/* Exit after timelimit seconds (default='0').  */
+		char *timelimit_orig;	/* Exit after timelimit seconds original value given at command line.  */
+		const char *timelimit_help;	/* Exit after timelimit seconds help description.  */
+		char *apn_arg;	/* Access point name (default='internet').  */
+		char *apn_orig;	/* Access point name original value given at command line.  */
+		const char *apn_help;	/* Access point name help description.  */
+		int qos_arg;	/* Requested quality of service (default='0x0b921f').  */
+		char *qos_orig;	/* Requested quality of service original value given at command line.  */
+		const char *qos_help;	/* Requested quality of service help description.  */
 
-} ;
+		int help_given;	/* Whether help was given.  */
+		int version_given;	/* Whether version was given.  */
+		int fg_given;	/* Whether fg was given.  */
+		int debug_given;	/* Whether debug was given.  */
+		int conf_given;	/* Whether conf was given.  */
+		int pidfile_given;	/* Whether pidfile was given.  */
+		int statedir_given;	/* Whether statedir was given.  */
+		int listen_given;	/* Whether listen was given.  */
+		int net_given;	/* Whether net was given.  */
+		int ipup_given;	/* Whether ipup was given.  */
+		int ipdown_given;	/* Whether ipdown was given.  */
+		int dynip_given;	/* Whether dynip was given.  */
+		int statip_given;	/* Whether statip was given.  */
+		int pcodns1_given;	/* Whether pcodns1 was given.  */
+		int pcodns2_given;	/* Whether pcodns2 was given.  */
+		int timelimit_given;	/* Whether timelimit was given.  */
+		int apn_given;	/* Whether apn was given.  */
+		int qos_given;	/* Whether qos was given.  */
 
-extern const char *gengetopt_args_info_purpose;
-extern const char *gengetopt_args_info_usage;
-extern const char *gengetopt_args_info_help[];
+	};
 
-int cmdline_parser (int argc, char * const *argv,
-  struct gengetopt_args_info *args_info);
-int cmdline_parser2 (int argc, char * const *argv,
-  struct gengetopt_args_info *args_info,
-  int override, int initialize, int check_required);
-int cmdline_parser_file_save(const char *filename,
-  struct gengetopt_args_info *args_info);
+	extern const char *gengetopt_args_info_purpose;
+	extern const char *gengetopt_args_info_usage;
+	extern const char *gengetopt_args_info_help[];
 
-void cmdline_parser_print_help(void);
-void cmdline_parser_print_version(void);
+	int cmdline_parser(int argc, char *const *argv,
+			   struct gengetopt_args_info *args_info);
+	int cmdline_parser2(int argc, char *const *argv,
+			    struct gengetopt_args_info *args_info,
+			    int override, int initialize, int check_required);
+	int cmdline_parser_file_save(const char *filename,
+				     struct gengetopt_args_info *args_info);
 
-void cmdline_parser_init (struct gengetopt_args_info *args_info);
-void cmdline_parser_free (struct gengetopt_args_info *args_info);
+	void cmdline_parser_print_help(void);
+	void cmdline_parser_print_version(void);
 
-int cmdline_parser_configfile (char * const filename,
-  struct gengetopt_args_info *args_info,
-  int override, int initialize, int check_required);
+	void cmdline_parser_init(struct gengetopt_args_info *args_info);
+	void cmdline_parser_free(struct gengetopt_args_info *args_info);
 
-int cmdline_parser_required (struct gengetopt_args_info *args_info,
-  const char *prog_name);
+	int cmdline_parser_configfile(char *const filename,
+				      struct gengetopt_args_info *args_info,
+				      int override, int initialize,
+				      int check_required);
 
+	int cmdline_parser_required(struct gengetopt_args_info *args_info,
+				    const char *prog_name);
 
 #ifdef __cplusplus
 }
-#endif /* __cplusplus */
-#endif /* CMDLINE_H */
+#endif				/* __cplusplus */
+#endif				/* CMDLINE_H */
