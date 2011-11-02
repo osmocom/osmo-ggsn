@@ -2718,7 +2718,7 @@ int gtp_decaps0(struct gsn_t *gsn)
 {
 	unsigned char buffer[PACKET_MAX];
 	struct sockaddr_in peer;
-	size_t peerlen;
+	socklen_t peerlen;
 	int status;
 	struct gtp0_header *pheader;
 	int version = 0;	/* GTP version should be determined from header! */
@@ -2863,7 +2863,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 {
 	unsigned char buffer[PACKET_MAX];
 	struct sockaddr_in peer;
-	size_t peerlen;
+	socklen_t peerlen;
 	int status;
 	struct gtp1_header_short *pheader;
 	int version = 1;	/* TODO GTP version should be determined from header! */
@@ -3038,7 +3038,7 @@ int gtp_decaps1u(struct gsn_t *gsn)
 {
 	unsigned char buffer[PACKET_MAX];
 	struct sockaddr_in peer;
-	size_t peerlen;
+	socklen_t peerlen;
 	int status;
 	struct gtp1_header_short *pheader;
 	int version = 1;	/* GTP version should be determined from header! */
