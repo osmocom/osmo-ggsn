@@ -29,7 +29,7 @@
 #include "gtp.h"
 #include "queue.h"
 
-int queue_print(struct queue_t *queue)
+static int queue_print(struct queue_t *queue)
 {
 	int n;
 	printf("Queue: %p Next: %d First: %d Last: %d\n", queue,
@@ -47,7 +47,7 @@ int queue_print(struct queue_t *queue)
 	return 0;
 }
 
-int queue_seqhash(struct sockaddr_in *peer, uint16_t seq)
+static int queue_seqhash(struct sockaddr_in *peer, uint16_t seq)
 {
 	/* With QUEUE_HASH_SIZE = 2^16 this describes all possible
 	   seq values. Thus we have perfect hash for the request queue.
@@ -58,8 +58,8 @@ int queue_seqhash(struct sockaddr_in *peer, uint16_t seq)
 	return seq % QUEUE_HASH_SIZE;
 }
 
-int queue_seqset(struct queue_t *queue, struct qmsg_t *qmsg,
-		 struct sockaddr_in *peer, uint16_t seq)
+static int queue_seqset(struct queue_t *queue, struct qmsg_t *qmsg,
+		 	struct sockaddr_in *peer, uint16_t seq)
 {
 	int hash = queue_seqhash(peer, seq);
 	struct qmsg_t *qmsg2;
@@ -85,7 +85,7 @@ int queue_seqset(struct queue_t *queue, struct qmsg_t *qmsg,
 	return 0;
 }
 
-int queue_seqdel(struct queue_t *queue, struct qmsg_t *qmsg)
+static int queue_seqdel(struct queue_t *queue, struct qmsg_t *qmsg)
 {
 	int hash = queue_seqhash(&qmsg->peer, qmsg->seq);
 	struct qmsg_t *qmsg2;
