@@ -32,7 +32,7 @@
 int queue_print(struct queue_t *queue)
 {
 	int n;
-	printf("Queue: %x Next: %d First: %d Last: %d\n", (int)queue,
+	printf("Queue: %p Next: %d First: %d Last: %d\n", queue,
 	       queue->next, queue->first, queue->last);
 	printf("# State seq next prev timeout retrans\n");
 	for (n = 0; n < QUEUE_SIZE; n++) {
