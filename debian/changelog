@@ -1,3 +1,9 @@
+openggsn (0.91+git33) precise; urgency=low
+
+  * Update package for Ubuntu Precise.
+
+ -- Eric Butler <eric@codebutler.com>  Tue, 14 Aug 2012 16:48:59 -0700
+
 openggsn (0.91-2) unstable; urgency=low
 
   * Switch to source/format (git)
