@@ -1,3 +1,9 @@
+openggsn (0.91+git33-1) precise; urgency=low
+
+  * Fix init script.
+
+ -- Eric Butler <eric@codebutler.com>  Fri, 24 Aug 2012 21:15:32 -0700
+
 openggsn (0.91+git33) precise; urgency=low
 
   * Update package for Ubuntu Precise.
