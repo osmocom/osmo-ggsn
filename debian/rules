@@ -20,3 +20,5 @@ CFLAGS = -Wall -g
 
 %:
 	dh --with autoreconf $@
+
+override_dh_auto_clean:
