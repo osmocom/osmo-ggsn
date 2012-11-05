@@ -677,7 +677,6 @@ int tun_new(struct tun_t **tun)
 	/* Find suitable device */
 	for (devnum = 0; devnum < 255; devnum++) {	/* TODO 255 */
 		snprintf(devname, sizeof(devname), "/dev/tun%d", devnum);
-		devname[sizeof(devname)] = 0;
 		if (((*tun)->fd = open(devname, O_RDWR)) >= 0)
 			break;
 		if (errno != EBUSY)
