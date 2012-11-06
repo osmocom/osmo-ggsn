@@ -29,7 +29,7 @@ AC_SUBST(EXEC_LDFLAGS)
 
 case "${host}" in
   i*86-*-linux-gnu*) 
-    EXEC_LDADD="-Wl,--rpath -Wl,/usr/local/lib" ;;
+    EXEC_LDADD="" ;;
   *solaris*) 
     EXEC_LDADD="-lresolv -lsocket -lnsl" ;;
 esac
