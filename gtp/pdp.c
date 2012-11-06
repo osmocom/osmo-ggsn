@@ -31,8 +31,8 @@
  * Global variables TODO: most should be moved to gsn_t
  *************************************************************/
 
-struct pdp_t pdpa[PDP_MAX];	/* PDP storage */
-struct pdp_t *hashtid[PDP_MAX];	/* Hash table for IMSI + NSAPI */
+static struct pdp_t pdpa[PDP_MAX];	/* PDP storage */
+static struct pdp_t *hashtid[PDP_MAX];	/* Hash table for IMSI + NSAPI */
 /* struct pdp_t* haship[PDP_MAX];  Hash table for IP and network interface */
 
 /* ***********************************************************
