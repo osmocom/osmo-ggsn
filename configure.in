@@ -112,7 +112,6 @@ AC_CONFIG_FILES([Makefile
                  intl/Makefile
                  po/Makefile
                  sgsnemu/Makefile
-                 src/Makefile
                  tests/Makefile
                  libgtp.pc
                  openggsn.spec])
