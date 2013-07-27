@@ -133,6 +133,9 @@
 #define GTPCAUSE_221                      221	/* For Future Use 221-240 */
 #define GTPCAUSE_241                      241	/* Cause Values Reserved For Gprs Charging Protocol Use (See Gtp' In Gsm 12.15) 241-255 */
 
+struct ul66_t;
+struct ul16_t;
+
 /* GTP 0 header. 
  * Explanation to some of the fields:
  * SNDCP NPDU Number flag = 0 except for inter SGSN handover situations
