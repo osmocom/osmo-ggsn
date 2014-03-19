@@ -161,7 +161,7 @@ struct gtp0_header {		/*    Descriptions from 3GPP 09.60 */
 	uint8_t spare2;		/* 11 Spare */
 	uint8_t spare3;		/* 12 Spare */
 	uint64_t tid;		/* 13 Tunnel ID */
-};				/* 20 */
+} __attribute__((packed));	/* 20 */
 
 struct gtp1_header_short {	/*    Descriptions from 3GPP 29060 */
 	uint8_t flags;		/* 01 bitfield, with typical values */
@@ -174,7 +174,7 @@ struct gtp1_header_short {	/*    Descriptions from 3GPP 29060 */
 	uint8_t type;		/* 02 Message type. T-PDU = 0xff */
 	uint16_t length;	/* 03 Length (of IP packet or signalling) */
 	uint32_t tei;		/* 05 - 08 Tunnel Endpoint ID */
-};
+} __attribute__((packed));
 
 struct gtp1_header_long {	/*    Descriptions from 3GPP 29060 */
 	uint8_t flags;		/* 01 bitfield, with typical values */
@@ -190,7 +190,7 @@ struct gtp1_header_long {	/*    Descriptions from 3GPP 29060 */
 	uint16_t seq;		/* 10 Sequence Number */
 	uint8_t npdu;		/* 11 N-PDU Number */
 	uint8_t next;		/* 12 Next extension header type. Empty = 0 */
-};
+} __attribute__((packed));
 
 struct gtp0_packet {
 	struct gtp0_header h;
