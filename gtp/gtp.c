@@ -250,7 +250,7 @@ static uint64_t get_tid(void *pack)
 	union gtp_packet *packet = (union gtp_packet *)pack;
 
 	if ((packet->flags & 0xe0) == 0x00) {	/* Version 0 */
-		return packet->gtp0.h.tid;
+		return be64toh(packet->gtp0.h.tid);
 	}
 	return 0;
 }
@@ -425,10 +425,11 @@ int gtp_req(struct gsn_t *gsn, int version, struct pdp_t *pdp,
 		addr.sin_port = htons(GTP0_PORT);
 		packet->gtp0.h.length = hton16(len - GTP0_HEADER_SIZE);
 		packet->gtp0.h.seq = hton16(gsn->seq_next);
-		if (pdp)
+		if (pdp) {
 			packet->gtp0.h.tid =
-			    (pdp->imsi & 0x0fffffffffffffffull) +
-			    ((uint64_t) pdp->nsapi << 60);
+			    htobe64((pdp->imsi & 0x0fffffffffffffffull) +
+				    ((uint64_t) pdp->nsapi << 60));
+		}
 		if (pdp && ((packet->gtp0.h.type == GTP_GPDU)
 			    || (packet->gtp0.h.type == GTP_ERROR)))
 			packet->gtp0.h.flow = hton16(pdp->flru);
@@ -581,7 +582,7 @@ int gtp_resp(int version, struct gsn_t *gsn, struct pdp_t *pdp,
 	if ((packet->flags & 0xe0) == 0x00) {	/* Version 0 */
 		packet->gtp0.h.length = hton16(len - GTP0_HEADER_SIZE);
 		packet->gtp0.h.seq = hton16(seq);
-		packet->gtp0.h.tid = tid;
+		packet->gtp0.h.tid = htobe64(tid);
 		if (pdp && ((packet->gtp0.h.type == GTP_GPDU) ||
 			    (packet->gtp0.h.type == GTP_ERROR)))
 			packet->gtp0.h.flow = hton16(pdp->flru);
@@ -1329,12 +1330,10 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 	memset(pdp, 0, sizeof(struct pdp_t));
 
 	if (version == 0) {
-		pdp->imsi =
-		    ((union gtp_packet *)pack)->gtp0.
-		    h.tid & 0x0fffffffffffffffull;
-		pdp->nsapi =
-		    (((union gtp_packet *)pack)->gtp0.
-		     h.tid & 0xf000000000000000ull) >> 60;
+		uint64_t tid = be64toh(((union gtp_packet *)pack)->gtp0.h.tid);
+
+		pdp->imsi = tid & 0x0fffffffffffffffull;
+		pdp->nsapi = (tid & 0xf000000000000000ull) >> 60;
 	}
 
 	pdp->seq = seq;
@@ -2051,12 +2050,10 @@ int gtp_update_pdp_ind(struct gsn_t *gsn, int version,
 	/* For GTP1 we must use imsi and nsapi if imsi is present. Otherwise */
 	/* we have to use the tunnel endpoint identifier */
 	if (version == 0) {
-		imsi =
-		    ((union gtp_packet *)pack)->gtp0.
-		    h.tid & 0x0fffffffffffffffull;
-		nsapi =
-		    (((union gtp_packet *)pack)->gtp0.
-		     h.tid & 0xf000000000000000ull) >> 60;
+		uint64_t tid = be64toh(((union gtp_packet *)pack)->gtp0.h.tid);
+
+		imsi = tid & 0x0fffffffffffffffull;
+		nsapi = (tid & 0xf000000000000000ull) >> 60;
 
 		/* Find the context in question */
 		if (pdp_getimsi(&pdp, imsi, nsapi)) {
@@ -2645,7 +2642,7 @@ int gtp_error_ind_conf(struct gsn_t *gsn, int version,
 	struct pdp_t *pdp;
 
 	/* Find the context in question */
-	if (pdp_tidget(&pdp, ((union gtp_packet *)pack)->gtp0.h.tid)) {
+	if (pdp_tidget(&pdp, be64toh(((union gtp_packet *)pack)->gtp0.h.tid))) {
 		gsn->err_unknownpdp++;
 		gtp_errpack(LOG_ERR, __FILE__, __LINE__, peer, pack, len,
 			    "Unknown PDP context");
@@ -3197,8 +3194,8 @@ int gtp_data_req(struct gsn_t *gsn, struct pdp_t *pdp, void *pack, unsigned len)
 		packet.gtp0.h.seq = hton16(pdp->gtpsntx++);
 		packet.gtp0.h.flow = hton16(pdp->flru);
 		packet.gtp0.h.tid =
-		    (pdp->imsi & 0x0fffffffffffffffull) +
-		    ((uint64_t) pdp->nsapi << 60);
+		    htobe64((pdp->imsi & 0x0fffffffffffffffull) +
+			    ((uint64_t) pdp->nsapi << 60));
 
 		if (len > sizeof(union gtp_packet) - sizeof(struct gtp0_header)) {
 			gsn->err_memcpy++;
