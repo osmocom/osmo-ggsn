@@ -6,3 +6,4 @@ Type=simple
 Restart=always
 ExecStart=/usr/bin/ggsn -c /etc/ggsn.conf -f
 RestartSec=2
+RestartPreventExitStatus=1
