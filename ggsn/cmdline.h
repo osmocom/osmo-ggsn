@@ -89,6 +89,9 @@ struct gengetopt_args_info
   int qos_arg;	/**< @brief Requested quality of service (default='0x0b921f').  */
   char * qos_orig;	/**< @brief Requested quality of service original value given at command line.  */
   const char *qos_help; /**< @brief Requested quality of service help description.  */
+  char * logfile_arg;	/**< @brief Logfile for errors.  */
+  char * logfile_orig;	/**< @brief Logfile for errors original value given at command line.  */
+  const char *logfile_help; /**< @brief Logfile for errors help description.  */
   
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
@@ -108,6 +111,7 @@ struct gengetopt_args_info
   unsigned int timelimit_given ;	/**< @brief Whether timelimit was given.  */
   unsigned int apn_given ;	/**< @brief Whether apn was given.  */
   unsigned int qos_given ;	/**< @brief Whether qos was given.  */
+  unsigned int logfile_given ;	/**< @brief Whether logfile was given.  */
 
 } ;
 

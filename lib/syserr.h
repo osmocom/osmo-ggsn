@@ -14,6 +14,8 @@
 
 #define SYSERR_MSGSIZE 256
 
+void sys_err_setlogfile(FILE*);
+
 void sys_err(int pri, char *filename, int en, int line, char *fmt, ...);
 void sys_errpack(int pri, char *fn, int ln, int en, struct sockaddr_in *peer,
 		 void *pack, unsigned len, char *fmt, ...);

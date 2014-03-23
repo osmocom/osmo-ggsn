@@ -283,6 +283,18 @@ int main(int argc, char **argv)
 	if (cmdline_parser_configfile(args_info.conf_arg, &args_info, 0, 0, 0)
 	    != 0)
 		exit(1);
+
+	/* Open a log file */
+	if (args_info.logfile_arg) {
+		FILE* log_file = fopen(args_info.logfile_arg, "a");
+		if (!log_file) {
+			printf("Failed to open logfile: '%s'\n",
+				args_info.logfile_arg);
+			exit(1);
+		}
+		sys_err_setlogfile(log_file);
+	}
+
 	if (args_info.debug_flag) {
 		printf("cmdline_parser_configfile\n");
 		printf("listen: %s\n", args_info.listen_arg);

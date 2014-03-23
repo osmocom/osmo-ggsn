@@ -52,6 +52,7 @@ const char *gengetopt_args_info_help[] = {
   "      --timelimit=INT    Exit after timelimit seconds  (default=`0')",
   "  -a, --apn=STRING       Access point name  (default=`internet')",
   "  -q, --qos=INT          Requested quality of service  (default=`0x0b921f')",
+  "      --logfile=STRING   Logfile for errors",
     0
 };
 
@@ -119,6 +120,7 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->timelimit_given = 0 ;
   args_info->apn_given = 0 ;
   args_info->qos_given = 0 ;
+  args_info->logfile_given = 0 ;
 }
 
 static
@@ -155,6 +157,8 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->apn_orig = NULL;
   args_info->qos_arg = 0x0b921f;
   args_info->qos_orig = NULL;
+  args_info->logfile_arg = NULL;
+  args_info->logfile_orig = NULL;
   
 }
 
@@ -181,6 +185,7 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->timelimit_help = gengetopt_args_info_help[15] ;
   args_info->apn_help = gengetopt_args_info_help[16] ;
   args_info->qos_help = gengetopt_args_info_help[17] ;
+  args_info->logfile_help = gengetopt_args_info_help[18] ;
   
 }
 
@@ -290,6 +295,8 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
   free_string_field (&(args_info->apn_arg));
   free_string_field (&(args_info->apn_orig));
   free_string_field (&(args_info->qos_orig));
+  free_string_field (&(args_info->logfile_arg));
+  free_string_field (&(args_info->logfile_orig));
   
   
 
@@ -356,6 +363,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "apn", args_info->apn_orig, 0);
   if (args_info->qos_given)
     write_into_file(outfile, "qos", args_info->qos_orig, 0);
+  if (args_info->logfile_given)
+    write_into_file(outfile, "logfile", args_info->logfile_orig, 0);
   
 
   i = EXIT_SUCCESS;
@@ -626,6 +635,7 @@ cmdline_parser_internal (
         { "timelimit",	1, NULL, 0 },
         { "apn",	1, NULL, 'a' },
         { "qos",	1, NULL, 'q' },
+        { "logfile",	1, NULL, 0 },
         { 0,  0, 0, 0 }
       };
 
@@ -849,6 +859,20 @@ cmdline_parser_internal (
                 &(local_args_info.timelimit_given), optarg, 0, "0", ARG_INT,
                 check_ambiguity, override, 0, 0,
                 "timelimit", '-',
+                additional_error))
+              goto failure;
+          
+          }
+          /* Logfile for errors.  */
+          else if (strcmp (long_options[option_index].name, "logfile") == 0)
+          {
+          
+          
+            if (update_arg( (void *)&(args_info->logfile_arg), 
+                 &(args_info->logfile_orig), &(args_info->logfile_given),
+                &(local_args_info.logfile_given), optarg, 0, 0, ARG_STRING,
+                check_ambiguity, override, 0, 0,
+                "logfile", '-',
                 additional_error))
               goto failure;
           

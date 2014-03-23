@@ -31,5 +31,5 @@ option  "timelimit"   - "Exit after timelimit seconds"  int default="0" no
 
 option  "apn"         a "Access point name"             string default="internet" no
 option  "qos"         q "Requested quality of service"  int    default="0x0b921f" no
-
+option  "logfile"     - "Logfile for errors"            string no
 
