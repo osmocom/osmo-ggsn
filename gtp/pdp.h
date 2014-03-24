@@ -242,6 +242,8 @@ int pdp_tidset(struct pdp_t *pdp, uint64_t tid);
 int pdp_tiddel(struct pdp_t *pdp);
 int pdp_tidget(struct pdp_t **pdp, uint64_t tid);
 
+void pdp_set_imsi_nsapi(struct pdp_t *pdp, uint64_t teid);
+
 /*
 int pdp_iphash(void* ipif, struct ul66_t *eua);
 int pdp_ipset(struct pdp_t *pdp, void* ipif, struct ul66_t *eua);

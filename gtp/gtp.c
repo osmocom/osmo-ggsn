@@ -427,8 +427,7 @@ int gtp_req(struct gsn_t *gsn, int version, struct pdp_t *pdp,
 		packet->gtp0.h.seq = hton16(gsn->seq_next);
 		if (pdp) {
 			packet->gtp0.h.tid =
-			    htobe64((pdp->imsi & 0x0fffffffffffffffull) +
-				    ((uint64_t) pdp->nsapi << 60));
+				htobe64(pdp_gettid(pdp->imsi, pdp->nsapi));
 		}
 		if (pdp && ((packet->gtp0.h.type == GTP_GPDU)
 			    || (packet->gtp0.h.type == GTP_ERROR)))
@@ -1332,8 +1331,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 	if (version == 0) {
 		uint64_t tid = be64toh(((union gtp_packet *)pack)->gtp0.h.tid);
 
-		pdp->imsi = tid & 0x0fffffffffffffffull;
-		pdp->nsapi = (tid & 0xf000000000000000ull) >> 60;
+		pdp_set_imsi_nsapi(pdp, tid);
 	}
 
 	pdp->seq = seq;
@@ -2052,8 +2050,7 @@ int gtp_update_pdp_ind(struct gsn_t *gsn, int version,
 	if (version == 0) {
 		uint64_t tid = be64toh(((union gtp_packet *)pack)->gtp0.h.tid);
 
-		imsi = tid & 0x0fffffffffffffffull;
-		nsapi = (tid & 0xf000000000000000ull) >> 60;
+		pdp_set_imsi_nsapi(pdp, tid);
 
 		/* Find the context in question */
 		if (pdp_getimsi(&pdp, imsi, nsapi)) {
@@ -3193,9 +3190,7 @@ int gtp_data_req(struct gsn_t *gsn, struct pdp_t *pdp, void *pack, unsigned len)
 		packet.gtp0.h.length = hton16(len);
 		packet.gtp0.h.seq = hton16(pdp->gtpsntx++);
 		packet.gtp0.h.flow = hton16(pdp->flru);
-		packet.gtp0.h.tid =
-		    htobe64((pdp->imsi & 0x0fffffffffffffffull) +
-			    ((uint64_t) pdp->nsapi << 60));
+		packet.gtp0.h.tid = htobe64(pdp_gettid(pdp->imsi, pdp->nsapi));
 
 		if (len > sizeof(union gtp_packet) - sizeof(struct gtp0_header)) {
 			gsn->err_memcpy++;
