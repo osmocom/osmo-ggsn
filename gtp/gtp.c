@@ -21,6 +21,10 @@
 #define _GNU_SOURCE 1
 #endif
 
+#if defined(__FreeBSD__)
+#include <sys/endian.h>
+#endif
+
 #include "../config.h"
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
