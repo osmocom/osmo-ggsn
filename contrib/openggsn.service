@@ -7,3 +7,6 @@ Restart=always
 ExecStart=/usr/bin/ggsn -c /etc/ggsn.conf -f
 RestartSec=2
 RestartPreventExitStatus=1
+
+[Install]
+WantedBy=multi-user.target
