@@ -24,3 +24,10 @@ Depends: ${misc:Depends}, libgtp0
 Architecture: any
 Section: libdevel
 Description: Development files for libgtp
+
+Package: openggsn-dbg
+Section: debug
+Architecture: any
+Priority: extra
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Debug symbols for OpenGGSN
