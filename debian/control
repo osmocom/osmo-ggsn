@@ -3,7 +3,7 @@ Section: net
 Priority: optional
 Maintainer: Harald Welte <laforge@gnumonks.org>
 Build-Depends: debhelper (>= 7.0.50~), autotools-dev, pkg-config, libdpkg-perl, git, dh-autoreconf
-Standards-Version: 3.8.4
+Standards-Version: 3.9.5
 Homepage: http://sourceforge.net/projects/ggsn/
 Vcs-Git: git://ggsn.git.sourceforge.net/gitroot/ggsn/ggsn
 Vcs-Browser: http://ggsn.git.sourceforge.net/git/gitweb.cgi?p=ggsn/ggsn;a=summary
@@ -13,13 +13,14 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Gateway GPRS Support Node
 
-Package: libgtp
+Package: libgtp0
 Architecture: any
 Section: libs
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: library implementing the GTP protocol between SGSN and GGSN
 
-Package: libgtp-dev
-Depends: libgtp
+Package: libgtp0-dev
+Depends: ${misc:Depends}, libgtp0
 Architecture: any
 Section: libdevel
 Description: Development files for libgtp
