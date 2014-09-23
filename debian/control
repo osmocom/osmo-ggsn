@@ -20,7 +20,7 @@ Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: library implementing the GTP protocol between SGSN and GGSN
 
 Package: libgtp0-dev
-Depends: ${misc:Depends}, libgtp0
+Depends: ${misc:Depends}, libgtp0 (= ${binary:Version})
 Architecture: any
 Section: libdevel
 Description: Development files for libgtp
