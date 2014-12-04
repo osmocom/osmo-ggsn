@@ -280,6 +280,8 @@ int main(int argc, char **argv)
 	/* Open a log file */
 	if (args_info.logfile_arg) {
 		struct log_target *tgt;
+		int lvl;
+
 		tgt = log_target_find(LOG_TGT_TYPE_FILE, args_info.logfile_arg);
 		if (!tgt) {
 			tgt = log_target_create_file(args_info.logfile_arg);
@@ -290,6 +292,16 @@ int main(int argc, char **argv)
 				exit(1);
 			}
 			log_add_target(tgt);
+		}
+		log_set_all_filter(tgt, 1);
+		log_set_use_color(tgt, 0);
+
+		if (args_info.loglevel_arg) {
+			lvl = log_parse_level(args_info.loglevel_arg);
+			log_set_log_level(tgt, lvl);
+			LOGP(DGGSN, LOGL_NOTICE,
+				"Set file log level to %s\n",
+				log_level_str(lvl));
 		}
 	}
 

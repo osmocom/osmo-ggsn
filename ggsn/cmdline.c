@@ -53,6 +53,7 @@ const char *gengetopt_args_info_help[] = {
   "  -a, --apn=STRING       Access point name  (default=`internet')",
   "  -q, --qos=INT          Requested quality of service  (default=`0x0b921f')",
   "      --logfile=STRING   Logfile for errors",
+  "      --loglevel=STRING  Global log ldevel  (default=`error')",
     0
 };
 
@@ -121,6 +122,7 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->apn_given = 0 ;
   args_info->qos_given = 0 ;
   args_info->logfile_given = 0 ;
+  args_info->loglevel_given = 0 ;
 }
 
 static
@@ -159,6 +161,8 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->qos_orig = NULL;
   args_info->logfile_arg = NULL;
   args_info->logfile_orig = NULL;
+  args_info->loglevel_arg = gengetopt_strdup ("error");
+  args_info->loglevel_orig = NULL;
   
 }
 
@@ -186,6 +190,7 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->apn_help = gengetopt_args_info_help[16] ;
   args_info->qos_help = gengetopt_args_info_help[17] ;
   args_info->logfile_help = gengetopt_args_info_help[18] ;
+  args_info->loglevel_help = gengetopt_args_info_help[19] ;
   
 }
 
@@ -297,6 +302,8 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
   free_string_field (&(args_info->qos_orig));
   free_string_field (&(args_info->logfile_arg));
   free_string_field (&(args_info->logfile_orig));
+  free_string_field (&(args_info->loglevel_arg));
+  free_string_field (&(args_info->loglevel_orig));
   
   
 
@@ -365,6 +372,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "qos", args_info->qos_orig, 0);
   if (args_info->logfile_given)
     write_into_file(outfile, "logfile", args_info->logfile_orig, 0);
+  if (args_info->loglevel_given)
+    write_into_file(outfile, "loglevel", args_info->loglevel_orig, 0);
   
 
   i = EXIT_SUCCESS;
@@ -594,12 +603,14 @@ cmdline_parser_internal (
   
   int override;
   int initialize;
+  int check_required;
   int check_ambiguity;
   
   package_name = argv[0];
   
   override = params->override;
   initialize = params->initialize;
+  check_required = params->check_required;
   check_ambiguity = params->check_ambiguity;
 
   if (initialize)
@@ -636,6 +647,7 @@ cmdline_parser_internal (
         { "apn",	1, NULL, 'a' },
         { "qos",	1, NULL, 'q' },
         { "logfile",	1, NULL, 0 },
+        { "loglevel",	1, NULL, 0 },
         { 0,  0, 0, 0 }
       };
 
@@ -873,6 +885,20 @@ cmdline_parser_internal (
                 &(local_args_info.logfile_given), optarg, 0, 0, ARG_STRING,
                 check_ambiguity, override, 0, 0,
                 "logfile", '-',
+                additional_error))
+              goto failure;
+          
+          }
+          /* Global log ldevel.  */
+          else if (strcmp (long_options[option_index].name, "loglevel") == 0)
+          {
+          
+          
+            if (update_arg( (void *)&(args_info->loglevel_arg), 
+                 &(args_info->loglevel_orig), &(args_info->loglevel_given),
+                &(local_args_info.loglevel_given), optarg, 0, "error", ARG_STRING,
+                check_ambiguity, override, 0, 0,
+                "loglevel", '-',
                 additional_error))
               goto failure;
           

@@ -92,6 +92,9 @@ struct gengetopt_args_info
   char * logfile_arg;	/**< @brief Logfile for errors.  */
   char * logfile_orig;	/**< @brief Logfile for errors original value given at command line.  */
   const char *logfile_help; /**< @brief Logfile for errors help description.  */
+  char * loglevel_arg;	/**< @brief Global log ldevel (default='error').  */
+  char * loglevel_orig;	/**< @brief Global log ldevel original value given at command line.  */
+  const char *loglevel_help; /**< @brief Global log ldevel help description.  */
   
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
@@ -112,6 +115,7 @@ struct gengetopt_args_info
   unsigned int apn_given ;	/**< @brief Whether apn was given.  */
   unsigned int qos_given ;	/**< @brief Whether qos was given.  */
   unsigned int logfile_given ;	/**< @brief Whether logfile was given.  */
+  unsigned int loglevel_given ;	/**< @brief Whether loglevel was given.  */
 
 } ;
 
