@@ -12,10 +12,25 @@
 #ifndef _SYSERR_H
 #define _SYSERR_H
 
-#define SYSERR_MSGSIZE 256
+#include <osmocom/core/logging.h>
 
-void sys_err_setlogfile(FILE*);
+enum {
+	DIP,
+	DTUN,
+	DGGSN,
+	DSGSN,
+};
 
-void sys_err(int pri, char *filename, int en, int line, char *fmt, ...);
+#define SYS_ERR(sub, pri, en, fmt, args...)				\
+	if (en) {							\
+		logp2(sub, pri, __FILE__, __LINE__, 0,			\
+			"errno=%d/%s " fmt "\n", en, strerror(en),	\
+			##args);					\
+	} else {							\
+		logp2(sub, pri, __FILE__, __LINE__, 0,			\
+			fmt "\n", ##args);				\
+	}
+
+extern const struct log_info log_info;
 
 #endif /* !_SYSERR_H */

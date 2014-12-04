@@ -18,7 +18,8 @@
 #define _GNU_SOURCE 1		/* strdup() prototype, broken arpa/inet.h */
 #endif
 
-#include <syslog.h>
+#include <osmocom/core/application.h>
+
 #include <ctype.h>
 #include <netdb.h>
 #include <signal.h>
@@ -377,7 +378,7 @@ int process_options(int argc, char **argv)
 	printf("\n");
 	if (args_info.dns_arg) {
 		if (!(host = gethostbyname(args_info.dns_arg))) {
-			sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+			SYS_ERR(DSGSN, LOGL_ERROR, 0,
 				"Invalid DNS address: %s!", args_info.dns_arg);
 			return -1;
 		} else {
@@ -398,7 +399,7 @@ int process_options(int argc, char **argv)
 	/* Do hostname lookup to translate hostname to IP address       */
 	if (args_info.listen_arg) {
 		if (!(host = gethostbyname(args_info.listen_arg))) {
-			sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+			SYS_ERR(DSGSN, LOGL_ERROR, 0,
 				"Invalid listening address: %s!",
 				args_info.listen_arg);
 			return -1;
@@ -409,7 +410,7 @@ int process_options(int argc, char **argv)
 			       args_info.listen_arg, inet_ntoa(options.listen));
 		}
 	} else {
-		sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+		SYS_ERR(DSGSN, LOGL_ERROR, 0,
 			"Listening address must be specified: %s!",
 			args_info.listen_arg);
 		return -1;
@@ -420,7 +421,7 @@ int process_options(int argc, char **argv)
 	/* Do hostname lookup to translate hostname to IP address       */
 	if (args_info.remote_arg) {
 		if (!(host = gethostbyname(args_info.remote_arg))) {
-			sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+			SYS_ERR(DSGSN, LOGL_ERROR, 0,
 				"Invalid remote address: %s!",
 				args_info.remote_arg);
 			return -1;
@@ -431,7 +432,7 @@ int process_options(int argc, char **argv)
 			       args_info.remote_arg, inet_ntoa(options.remote));
 		}
 	} else {
-		sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+		SYS_ERR(DSGSN, LOGL_ERROR, 0,
 			"No remote address given!");
 		return -1;
 	}
@@ -844,7 +845,7 @@ int process_options(int argc, char **argv)
 	if (args_info.net_arg) {
 		if (ippool_aton
 		    (&options.net, &options.mask, args_info.net_arg, 0)) {
-			sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+			SYS_ERR(DSGSN, LOGL_ERROR, 0,
 				"Invalid network address: %s!",
 				args_info.net_arg);
 			exit(1);
@@ -880,7 +881,7 @@ int process_options(int argc, char **argv)
 	/* Store ping host as in_addr                                   */
 	if (args_info.pinghost_arg) {
 		if (!(host = gethostbyname(args_info.pinghost_arg))) {
-			sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+			SYS_ERR(DSGSN, LOGL_ERROR, 0,
 				"Invalid ping host: %s!",
 				args_info.pinghost_arg);
 			return -1;
@@ -1179,7 +1180,7 @@ int create_ping(void *gsn, struct pdp_t *pdp,
 	    (struct timeval *)&p8[CREATEPING_IP + CREATEPING_ICMP];
 
 	if (datasize > CREATEPING_MAX) {
-		sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+		SYS_ERR(DSGSN, LOGL_ERROR, 0,
 			"Ping size to large: %d!", datasize);
 		return -1;
 	}
@@ -1410,15 +1411,7 @@ int main(int argc, char **argv)
 	struct timeval tv;
 	int diff;
 
-	/* open a connection to the syslog daemon */
-	/*openlog(PACKAGE, LOG_PID, LOG_DAEMON); */
-	/* TODO: Only use LOG__PERROR for linux */
-
-#ifdef __linux__
-	openlog(PACKAGE, (LOG_PID | LOG_PERROR), LOG_DAEMON);
-#else
-	openlog(PACKAGE, (LOG_PID), LOG_DAEMON);
-#endif
+	osmo_init_logging(&log_info);
 
 	/* Process options given in configuration file and command line */
 	if (process_options(argc, argv))
@@ -1426,7 +1419,7 @@ int main(int argc, char **argv)
 
 	printf("\nInitialising GTP library\n");
 	if (gtp_new(&gsn, options.statedir, &options.listen, GTP_MODE_SGSN)) {
-		sys_err(LOG_ERR, __FILE__, __LINE__, 0, "Failed to create gtp");
+		SYS_ERR(DSGSN, LOGL_ERROR, 0, "Failed to create gtp");
 		exit(1);
 	}
 	if (gsn->fd0 > maxfd)
@@ -1447,7 +1440,7 @@ int main(int argc, char **argv)
 		printf("Setting up interface\n");
 		/* Create a tunnel interface */
 		if (tun_new((struct tun_t **)&tun)) {
-			sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+			SYS_ERR(DSGSN, LOGL_ERROR, 0,
 				"Failed to create tun");
 			exit(1);
 		}
@@ -1498,7 +1491,7 @@ int main(int argc, char **argv)
 
 		if (options.gtpversion == 0) {
 			if (options.qos.l - 1 > sizeof(pdp->qos_req0)) {
-				sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+				SYS_ERR(DSGSN, LOGL_ERROR, 0,
 					"QoS length too big");
 				exit(1);
 			} else {
@@ -1535,7 +1528,7 @@ int main(int argc, char **argv)
 		pdp->norecovery_given = options.norecovery_given;
 
 		if (options.apn.l > sizeof(pdp->apn_use.v)) {
-			sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+			SYS_ERR(DSGSN, LOGL_ERROR, 0,
 				"APN length too big");
 			exit(1);
 		} else {
@@ -1549,7 +1542,7 @@ int main(int argc, char **argv)
 		memcpy(pdp->gsnlu.v, &options.listen, sizeof(options.listen));
 
 		if (options.msisdn.l > sizeof(pdp->msisdn.v)) {
-			sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+			SYS_ERR(DSGSN, LOGL_ERROR, 0,
 				"MSISDN length too big");
 			exit(1);
 		} else {
@@ -1559,7 +1552,7 @@ int main(int argc, char **argv)
 		ipv42eua(&pdp->eua, NULL);	/* Request dynamic IP address */
 
 		if (options.pco.l > sizeof(pdp->pco_req.v)) {
-			sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+			SYS_ERR(DSGSN, LOGL_ERROR, 0,
 				"PCO length too big");
 			exit(1);
 		} else {
@@ -1674,7 +1667,7 @@ int main(int argc, char **argv)
 
 		switch (select(maxfd + 1, &fds, NULL, NULL, &idleTime)) {
 		case -1:
-			sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+			SYS_ERR(DSGSN, LOGL_ERROR, 0,
 				"Select returned -1");
 			break;
 		case 0:
@@ -1685,7 +1678,7 @@ int main(int argc, char **argv)
 		}
 
 		if ((tun) && FD_ISSET(tun->fd, &fds) && tun_decaps(tun) < 0) {
-			sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+			SYS_ERR(DSGSN, LOGL_ERROR, 0,
 				"TUN decaps failed");
 		}
 

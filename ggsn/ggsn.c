@@ -19,11 +19,12 @@
 
 #include "../config.h"
 
+#include <osmocom/core/application.h>
+
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
 #endif
 
-#include <syslog.h>
 #include <ctype.h>
 #include <netdb.h>
 #include <signal.h>
@@ -88,7 +89,7 @@ void log_pid(char *pidfile)
 	file = fopen(pidfile, "w");
 	umask(oldmask);
 	if (!file) {
-		sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"Failed to create process ID file: %s!", pidfile);
 		return;
 	}
@@ -149,7 +150,7 @@ int delete_context(struct pdp_t *pdp)
 	if (pdp->peer)
 		ippool_freeip(ippool, (struct ippoolm_t *)pdp->peer);
 	else
-		sys_err(LOG_ERR, __FILE__, __LINE__, 0, "Peer not defined!");
+		SYS_ERR(DGGSN, LOGL_ERROR, 0, "Peer not defined!");
 	return 0;
 }
 
@@ -240,15 +241,7 @@ int main(int argc, char **argv)
 	int timelimit;		/* Number of seconds to be connected */
 	int starttime;		/* Time program was started */
 
-	/* open a connection to the syslog daemon */
-	/*openlog(PACKAGE, LOG_PID, LOG_DAEMON); */
-
-	/* TODO: Only use LOG__PERROR for linux */
-#ifdef __linux__
-	openlog(PACKAGE, (LOG_PID | LOG_PERROR), LOG_DAEMON);
-#else
-	openlog(PACKAGE, (LOG_PID), LOG_DAEMON);
-#endif
+	osmo_init_logging(&log_info);
 
 	if (cmdline_parser(argc, argv, &args_info) != 0)
 		exit(1);
@@ -286,13 +279,18 @@ int main(int argc, char **argv)
 
 	/* Open a log file */
 	if (args_info.logfile_arg) {
-		FILE* log_file = fopen(args_info.logfile_arg, "a");
-		if (!log_file) {
-			printf("Failed to open logfile: '%s'\n",
-				args_info.logfile_arg);
-			exit(1);
+		struct log_target *tgt;
+		tgt = log_target_find(LOG_TGT_TYPE_FILE, args_info.logfile_arg);
+		if (!tgt) {
+			tgt = log_target_create_file(args_info.logfile_arg);
+			if (!tgt) {
+				LOGP(DGGSN, LOGL_ERROR,
+					"Failed to create logfile: %s\n",
+					args_info.logfile_arg);
+				exit(1);
+			}
+			log_add_target(tgt);
 		}
-		sys_err_setlogfile(log_file);
 	}
 
 	if (args_info.debug_flag) {
@@ -332,7 +330,7 @@ int main(int argc, char **argv)
 	/* required for create_pdp_context_response messages            */
 	if (args_info.listen_arg) {
 		if (!(host = gethostbyname(args_info.listen_arg))) {
-			sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+			SYS_ERR(DGGSN, LOGL_ERROR, 0,
 				"Invalid listening address: %s!",
 				args_info.listen_arg);
 			exit(1);
@@ -340,7 +338,7 @@ int main(int argc, char **argv)
 			memcpy(&listen_.s_addr, host->h_addr, host->h_length);
 		}
 	} else {
-		sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"Listening address must be specified! "
 			"Please use command line option --listen or "
 			"edit %s configuration file\n", args_info.conf_arg);
@@ -351,7 +349,7 @@ int main(int argc, char **argv)
 	/* Store net as in_addr net and mask                            */
 	if (args_info.net_arg) {
 		if (ippool_aton(&net, &mask, args_info.net_arg, 0)) {
-			sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+			SYS_ERR(DGGSN, LOGL_ERROR, 0,
 				"Invalid network address: %s!",
 				args_info.net_arg);
 			exit(1);
@@ -359,7 +357,7 @@ int main(int argc, char **argv)
 		netaddr.s_addr = htonl(ntohl(net.s_addr) + 1);
 		destaddr.s_addr = htonl(ntohl(net.s_addr) + 1);
 	} else {
-		sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"Network address must be specified: %s!",
 			args_info.net_arg);
 		exit(1);
@@ -370,7 +368,7 @@ int main(int argc, char **argv)
 		if (ippool_new(&ippool, args_info.net_arg, NULL, 1, 0,
 			       IPPOOL_NONETWORK | IPPOOL_NOGATEWAY |
 			       IPPOOL_NOBROADCAST)) {
-			sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+			SYS_ERR(DGGSN, LOGL_ERROR, 0,
 				"Failed to allocate IP pool!");
 			exit(1);
 		}
@@ -378,7 +376,7 @@ int main(int argc, char **argv)
 		if (ippool_new(&ippool, args_info.dynip_arg, NULL, 1, 0,
 			       IPPOOL_NONETWORK | IPPOOL_NOGATEWAY |
 			       IPPOOL_NOBROADCAST)) {
-			sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+			SYS_ERR(DGGSN, LOGL_ERROR, 0,
 				"Failed to allocate IP pool!");
 			exit(1);
 		}
@@ -389,7 +387,7 @@ int main(int argc, char **argv)
 	dns1.s_addr = 0;
 	if (args_info.pcodns1_arg) {
 		if (0 == inet_aton(args_info.pcodns1_arg, &dns1)) {
-			sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+			SYS_ERR(DGGSN, LOGL_ERROR, 0,
 				"Failed to convert pcodns1!");
 			exit(1);
 		}
@@ -397,7 +395,7 @@ int main(int argc, char **argv)
 	dns2.s_addr = 0;
 	if (args_info.pcodns2_arg) {
 		if (0 == inet_aton(args_info.pcodns2_arg, &dns2)) {
-			sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+			SYS_ERR(DGGSN, LOGL_ERROR, 0,
 				"Failed to convert pcodns2!");
 			exit(1);
 		}
@@ -407,7 +405,7 @@ int main(int argc, char **argv)
 	if (args_info.pcodns1_arg) {
 		dns1.s_addr = inet_addr(args_info.pcodns1_arg);
 		if (dns1.s_addr == -1) {
-			sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+			SYS_ERR(DGGSN, LOGL_ERROR, 0,
 				"Failed to convert pcodns1!");
 			exit(1);
 		}
@@ -416,7 +414,7 @@ int main(int argc, char **argv)
 	if (args_info.pcodns2_arg) {
 		dns2.s_addr = inet_addr(args_info.pcodns2_arg);
 		if (dns2.s_addr == -1) {
-			sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+			SYS_ERR(DGGSN, LOGL_ERROR, 0,
 				"Failed to convert pcodns2!");
 			exit(1);
 		}
@@ -469,32 +467,29 @@ int main(int argc, char **argv)
 	if (!args_info.fg_flag) {
 		FILE *f;
 		int rc;
-		closelog();
 		/* Close the standard file descriptors. */
 		/* Is this really needed ? */
 		f = freopen("/dev/null", "w", stdout);
 		if (f == NULL) {
-			sys_err(LOG_WARNING, __FILE__, __LINE__, 0,
+			SYS_ERR(DGGSN, LOGL_NOTICE, 0,
 				"Could not redirect stdout to /dev/null");
 		}
 		f = freopen("/dev/null", "w", stderr);
 		if (f == NULL) {
-			sys_err(LOG_WARNING, __FILE__, __LINE__, 0,
+			SYS_ERR(DGGSN, LOGL_NOTICE, 0,
 				"Could not redirect stderr to /dev/null");
 		}
 		f = freopen("/dev/null", "r", stdin);
 		if (f == NULL) {
-			sys_err(LOG_WARNING, __FILE__, __LINE__, 0,
+			SYS_ERR(DGGSN, LOGL_NOTICE, 0,
 				"Could not redirect stdin to /dev/null");
 		}
 		rc = daemon(0, 0);
 		if (rc != 0) {
-			sys_err(LOG_ERR, __FILE__, __LINE__, rc,
+			SYS_ERR(DGGSN, LOGL_ERROR, rc,
 				"Could not daemonize");
 			exit(1);
 		}
-		/* Open log again. This time with new pid */
-		openlog(PACKAGE, LOG_PID, LOG_DAEMON);
 	}
 
 	/* pidfile */
@@ -507,7 +502,7 @@ int main(int argc, char **argv)
 		printf("gtpclient: Initialising GTP tunnel\n");
 
 	if (gtp_new(&gsn, args_info.statedir_arg, &listen_, GTP_MODE_GGSN)) {
-		sys_err(LOG_ERR, __FILE__, __LINE__, 0, "Failed to create gtp");
+		SYS_ERR(DGGSN, LOGL_ERROR, 0, "Failed to create gtp");
 		exit(1);
 	}
 	if (gsn->fd0 > maxfd)
@@ -525,7 +520,7 @@ int main(int argc, char **argv)
 	if (debug)
 		printf("Creating tun interface\n");
 	if (tun_new((struct tun_t **)&tun)) {
-		sys_err(LOG_ERR, __FILE__, __LINE__, 0, "Failed to create tun");
+		SYS_ERR(DGGSN, LOGL_ERROR, 0, "Failed to create tun");
 		if (debug)
 			printf("Failed to create tun\n");
 		exit(1);
@@ -534,7 +529,7 @@ int main(int argc, char **argv)
 	if (debug)
 		printf("Setting tun IP address\n");
 	if (tun_setaddr(tun, &netaddr, &destaddr, &mask)) {
-		sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"Failed to set tun IP address");
 		if (debug)
 			printf("Failed to set tun IP address\n");
@@ -565,7 +560,7 @@ int main(int argc, char **argv)
 		gtp_retranstimeout(gsn, &idleTime);
 		switch (select(maxfd + 1, &fds, NULL, NULL, &idleTime)) {
 		case -1:	/* errno == EINTR : unblocked signal */
-			sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+			SYS_ERR(DGGSN, LOGL_ERROR, 0,
 				"select() returned -1");
 			/* On error, select returns without modifying fds */
 			FD_ZERO(&fds);
@@ -580,7 +575,7 @@ int main(int argc, char **argv)
 
 		if (tun->fd != -1 && FD_ISSET(tun->fd, &fds) &&
 		    tun_decaps(tun) < 0) {
-			sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+			SYS_ERR(DGGSN, LOGL_ERROR, 0,
 				"TUN read failed (fd)=(%d)", tun->fd);
 		}
 

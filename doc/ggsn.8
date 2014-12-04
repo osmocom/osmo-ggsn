@@ -95,9 +95,8 @@ radio access network and the SGSN. When a connection request is
 received the ggsn will allocate a dynamic IP address for the mobile
 station, and allow the mobile station to access the Gi
 interface. Connections are terminated by either the mobile station or
-the SGSN. Runtime errors are reported using the
-.B syslogd (8)
-facility.
+the SGSN. Runtime errors are reported using the Osmocom logging
+framework.
 
 Typically 
 .B ggsn
@@ -219,8 +218,7 @@ billing mechanisms are missing.
 
 
 .SH "SEE ALSO"
-.BR sgsnemu (8), 
-.BR syslogd (8)
+.BR sgsnemu (8)
 
 .SH NOTES 
 .LP
