@@ -12,8 +12,6 @@
 #ifndef _GTP_H
 #define _GTP_H
 
-#define GTP_DEBUG 0		/* Print debug information */
-
 #define GTP_MODE_GGSN 1
 #define GTP_MODE_SGSN 2
 

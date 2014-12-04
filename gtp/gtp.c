@@ -185,7 +185,7 @@ static unsigned int get_default_gtp(int version, uint8_t type, void *packet)
 		return GTP1_HEADER_SIZE_LONG;
 	default:
 		LOGP(DLGTP, LOGL_ERROR,
-			"Unknown GTP packet version\n");
+			"Unknown GTP packet version: %d\n", version);
 		return 0;
 	}
 }
@@ -204,7 +204,7 @@ static uint16_t get_seq(void *pack)
 	} else if ((packet->flags & 0xe2) == 0x22) {	/* Version 1 with seq */
 		return ntoh16(packet->gtp1l.h.seq);
 	} else {
-		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flag\n");
+		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flag: %u\n", packet->flags);
 		return 0;
 	}
 }
@@ -240,7 +240,7 @@ static uint16_t get_hlen(void *pack)
 	} else if ((packet->flags & 0xe7) == 0x20) {	/* Short version 1 */
 		return GTP1_HEADER_SIZE_SHORT;
 	} else {
-		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flag\n");
+		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flag: %u\n", packet->flags);
 		return 0;
 	}
 }
@@ -259,7 +259,7 @@ static uint32_t get_tei(void *pack)
 	} else if ((packet->flags & 0xe0) == 0x20) {	/* Version 1 */
 		return ntoh32(packet->gtp1l.h.tei);
 	} else {
-		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flag\n");
+		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flag: %u\n", packet->flags);
 		return 0xffffffff;
 	}
 }
@@ -382,7 +382,7 @@ int gtp_req(struct gsn_t *gsn, int version, struct pdp_t *pdp,
 			packet->gtp1l.h.tei = hton32(pdp->teic_gn);
 		fd = gsn->fd1c;
 	} else {
-		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flag\n");
+		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flag: %u\n", packet->flags);
 		return -1;
 	}
 
@@ -531,7 +531,7 @@ int gtp_resp(int version, struct gsn_t *gsn, struct pdp_t *pdp,
 		else if (pdp)
 			packet->gtp1l.h.tei = hton32(pdp->teic_gn);
 	} else {
-		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flag\n");
+		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flag: %u\n", packet->flags);
 		return -1;
 	}
 
@@ -552,8 +552,7 @@ int gtp_resp(int version, struct gsn_t *gsn, struct pdp_t *pdp,
 	/* Use new queue structure */
 	if (queue_newmsg(gsn->queue_resp, &qmsg, peer, seq)) {
 		gsn->err_queuefull++;
-		LOGP(DLGTP, LOGL_ERROR,
-			"Retransmit queue is full\n");
+		LOGP(DLGTP, LOGL_ERROR, "Retransmit queue is full\n");
 	} else {
 		memcpy(&qmsg->p, packet, sizeof(union gtp_packet));
 		qmsg->l = len;
@@ -590,7 +589,7 @@ int gtp_notification(struct gsn_t *gsn, int version,
 		packet->gtp1l.h.length = hton16(len - GTP1_HEADER_SIZE_SHORT);
 		packet->gtp1l.h.seq = hton16(seq);
 	} else {
-		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flag\n");
+		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flag: %u\n", packet->flags);
 		return -1;
 	}
 
@@ -651,8 +650,7 @@ static void log_restart(struct gsn_t *gsn)
 
 	/* We try to open file. On failure we will later try to create file */
 	if (!(f = fopen(filename, "r"))) {
-
-		LOGP(DLGTP, LOGL_ERROR,
+		LOGP(DLGTP, LOGL_NOTICE,
 			"State information file (%s) not found. Creating new file.\n",
 			filename);
 	} else {
@@ -1019,7 +1017,7 @@ extern int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
 	if (pdp->secondary) {
 		if (pdp_getgtp1(&linked_pdp, pdp->teic_own)) {
 			LOGP(DLGTP, LOGL_ERROR,
-				"Unknown linked PDP context\n");
+				"Unknown linked PDP context: %u\n", pdp->teic_own);
 			return EOF;
 		}
 	}
@@ -1506,16 +1504,14 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 	in_addr2gsna(&pdp->gsnlc, &gsn->gsnc);
 	in_addr2gsna(&pdp->gsnlu, &gsn->gsnu);
 
-	if (GTP_DEBUG)
-		printf("gtp_create_pdp_ind: Before pdp_tidget\n");
+	DEBUGP(DLGTP, "gtp_create_pdp_ind: Before pdp_tidget\n");
 
 	if (!pdp_getimsi(&pdp_old, pdp->imsi, pdp->nsapi)) {
 		/* Found old pdp with same tid. Now the voodoo begins! */
 		/* 09.60 / 29.060 allows create on existing context to "steal" */
 		/* the context which was allready established */
 		/* We check that the APN, selection mode and MSISDN is the same */
-		if (GTP_DEBUG)
-			printf("gtp_create_pdp_ind: Old context found\n");
+		DEBUGP(DLGTP, "gtp_create_pdp_ind: Old context found\n");
 		if ((pdp->apn_req.l == pdp_old->apn_req.l)
 		    &&
 		    (!memcmp
@@ -1531,10 +1527,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 			 * QoS: MS will get originally negotiated QoS.
 			 * End user address (EUA). MS will get old EUA anyway.
 			 * Protocol configuration option (PCO): Only application can verify */
-
-			if (GTP_DEBUG)
-				printf
-				    ("gtp_create_pdp_ind: Old context found\n");
+			DEBUGP(DLGTP, "gtp_create_pdp_ind: Old context found\n");
 
 			/* Copy remote flow label */
 			pdp_old->flru = pdp->flru;
@@ -1564,16 +1557,13 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 						   GTPCAUSE_ACC_REQ);
 		} else {	/* This is not the same PDP context. Delete the old one. */
 
-			if (GTP_DEBUG)
-				printf
-				    ("gtp_create_pdp_ind: Deleting old context\n");
+			DEBUGP(DLGTP, "gtp_create_pdp_ind: Deleting old context\n");
 
 			if (gsn->cb_delete_context)
 				gsn->cb_delete_context(pdp_old);
 			pdp_freepdp(pdp_old);
 
-			if (GTP_DEBUG)
-				printf("gtp_create_pdp_ind: Deleted...\n");
+			DEBUGP(DLGTP, "gtp_create_pdp_ind: Deleted...\n");
 		}
 	}
 
@@ -1609,7 +1599,7 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 	if (pdp_getgtp1(&pdp, get_tei(pack))) {
 		gsn->err_unknownpdp++;
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
-			    "Unknown PDP context\n");
+			    "Unknown PDP context: %u\n", get_tei(pack));
 		if (gsn->cb_conf)
 			gsn->cb_conf(type, EOF, NULL, cbp);
 		return EOF;
@@ -2014,7 +2004,8 @@ int gtp_update_pdp_ind(struct gsn_t *gsn, int version,
 			if (pdp_getgtp1(&pdp, get_tei(pack))) {
 				gsn->err_unknownpdp++;
 				GTP_LOGPKG(LOGL_ERROR, peer,
-					    pack, len, "Unknown PDP context\n");
+					pack, len, "Unknown PDP context: %u\n",
+					get_tei(pack));
 				return gtp_update_pdp_resp(gsn, version, peer,
 							   fd, pack, len, NULL,
 							   GTPCAUSE_NON_EXIST);
@@ -2031,7 +2022,7 @@ int gtp_update_pdp_ind(struct gsn_t *gsn, int version,
 			}
 		}
 	} else {
-		LOGP(DLGTP, LOGL_ERROR, "Unknown version\n");
+		LOGP(DLGTP, LOGL_ERROR, "Unknown version: %d\n", version);
 		return EOF;
 	}
 
@@ -2300,7 +2291,7 @@ int gtp_delete_context_req(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 
 	if (pdp_getgtp1(&linked_pdp, pdp->teic_own)) {
 		LOGP(DLGTP, LOGL_ERROR,
-			"Unknown linked PDP context\n");
+			"Unknown linked PDP context: %u\n", pdp->teic_own);
 		return EOF;
 	}
 
@@ -2310,7 +2301,7 @@ int gtp_delete_context_req(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 				count++;
 		if (count <= 1) {
 			LOGP(DLGTP, LOGL_ERROR,
-				"Must use teardown for last context\n");
+				"Must use teardown for last context: %d\n", count);
 			return EOF;
 		}
 	}
@@ -2440,7 +2431,7 @@ int gtp_delete_pdp_ind(struct gsn_t *gsn, int version,
 	if (pdp_getgtp1(&linked_pdp, get_tei(pack))) {
 		gsn->err_unknownpdp++;
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
-			    "Unknown PDP context\n");
+			    "Unknown PDP context: %u\n", get_tei(pack));
 		return gtp_delete_pdp_resp(gsn, version, peer, fd, pack, len,
 					   NULL, NULL, GTPCAUSE_NON_EXIST,
 					   teardown);
@@ -2627,7 +2618,7 @@ int gtp_gpdu_ind(struct gsn_t *gsn, int version,
 			hlen = GTP1_HEADER_SIZE_SHORT;
 	} else {
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
-			    "Unknown version\n");
+			    "Unknown version: %d\n", version);
 	}
 
 	/* If the GPDU was not from the peer GSN tell him to delete context */
@@ -2787,9 +2778,9 @@ int gtp_decaps0(struct gsn_t *gsn)
 			break;
 		default:
 			gsn->unknown++;
-			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
-				    status,
-				    "Unknown GTP message type received\n");
+			GTP_LOGPKG(LOGL_ERROR, &peer, buffer, status,
+				"Unknown GTP message type received: %d\n",
+				pheader->type);
 			break;
 		}
 	}
@@ -2962,9 +2953,9 @@ int gtp_decaps1c(struct gsn_t *gsn)
 			break;
 		default:
 			gsn->unknown++;
-			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
-				    status,
-				    "Unknown GTP message type received\n");
+			GTP_LOGPKG(LOGL_ERROR, &peer, buffer, status,
+				"Unknown GTP message type received: %u\n",
+				pheader->type);
 			break;
 		}
 	}
@@ -3092,9 +3083,9 @@ int gtp_decaps1u(struct gsn_t *gsn)
 			break;
 		default:
 			gsn->unknown++;
-			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
-				    status,
-				    "Unknown GTP message type received\n");
+			GTP_LOGPKG(LOGL_ERROR, &peer, buffer, status,
+				"Unknown GTP message type received: %u\n",
+				pheader->type);
 			break;
 		}
 	}
@@ -3160,7 +3151,7 @@ int gtp_data_req(struct gsn_t *gsn, struct pdp_t *pdp, void *pack, unsigned len)
 		}
 		memcpy(packet.gtp1l.p, pack, len);	/* TODO Should be avoided! */
 	} else {
-		LOGP(DLGTP, LOGL_ERROR, "Unknown version\n");
+		LOGP(DLGTP, LOGL_ERROR, "Unknown version: %d\n", pdp->version);
 		return EOF;
 	}
 

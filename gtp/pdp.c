@@ -16,6 +16,8 @@
 
 #include <../config.h>
 
+#include <osmocom/core/logging.h>
+
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
 #endif
@@ -209,8 +211,7 @@ int pdp_tidset(struct pdp_t *pdp, uint64_t tid)
 	int hash = pdp_tidhash(tid);
 	struct pdp_t *pdp2;
 	struct pdp_t *pdp_prev = NULL;
-	if (PDP_DEBUG)
-		printf("Begin pdp_tidset tid = %llx\n", tid);
+	DEBUGP(DLGTP, "Begin pdp_tidset tid = %llx\n", tid);
 	pdp->tidnext = NULL;
 	pdp->tid = tid;
 	for (pdp2 = hashtid[hash]; pdp2; pdp2 = pdp2->tidnext)
@@ -219,8 +220,7 @@ int pdp_tidset(struct pdp_t *pdp, uint64_t tid)
 		hashtid[hash] = pdp;
 	else
 		pdp_prev->tidnext = pdp;
-	if (PDP_DEBUG)
-		printf("End pdp_tidset\n");
+	DEBUGP(DLGTP, "End pdp_tidset\n");
 	return 0;
 }
 
@@ -229,22 +229,19 @@ int pdp_tiddel(struct pdp_t *pdp)
 	int hash = pdp_tidhash(pdp->tid);
 	struct pdp_t *pdp2;
 	struct pdp_t *pdp_prev = NULL;
-	if (PDP_DEBUG)
-		printf("Begin pdp_tiddel tid = %llx\n", pdp->tid);
+	DEBUGP(DLGTP, "Begin pdp_tiddel tid = %llx\n", pdp->tid);
 	for (pdp2 = hashtid[hash]; pdp2; pdp2 = pdp2->tidnext) {
 		if (pdp2 == pdp) {
 			if (!pdp_prev)
 				hashtid[hash] = pdp2->tidnext;
 			else
 				pdp_prev->tidnext = pdp2->tidnext;
-			if (PDP_DEBUG)
-				printf("End pdp_tiddel: PDP found\n");
+			DEBUGP(DLGTP, "End pdp_tiddel: PDP found\n");
 			return 0;
 		}
 		pdp_prev = pdp2;
 	}
-	if (PDP_DEBUG)
-		printf("End pdp_tiddel: PDP not found\n");
+	DEBUGP(DLGTP, "End pdp_tiddel: PDP not found\n");
 	return EOF;		/* End of linked list and not found */
 }
 
@@ -252,18 +249,15 @@ int pdp_tidget(struct pdp_t **pdp, uint64_t tid)
 {
 	int hash = pdp_tidhash(tid);
 	struct pdp_t *pdp2;
-	if (PDP_DEBUG)
-		printf("Begin pdp_tidget tid = %llx\n", tid);
+	DEBUGP(DLGTP, "Begin pdp_tidget tid = %llx\n", tid);
 	for (pdp2 = hashtid[hash]; pdp2; pdp2 = pdp2->tidnext) {
 		if (pdp2->tid == tid) {
 			*pdp = pdp2;
-			if (PDP_DEBUG)
-				printf("Begin pdp_tidget. Found\n");
+			DEBUGP(DLGTP, "Begin pdp_tidget. Found\n");
 			return 0;
 		}
 	}
-	if (PDP_DEBUG)
-		printf("Begin pdp_tidget. Not found\n");
+	DEBUGP(DLGTP, "Begin pdp_tidget. Not found\n");
 	return EOF;		/* End of linked list and not found */
 }
 
