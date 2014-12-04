@@ -264,39 +264,6 @@ static uint32_t get_tei(void *pack)
 	}
 }
 
-int print_packet(void *packet, unsigned len)
-{
-	unsigned int i;
-	printf("The packet looks like this (%d bytes):\n", len);
-	for (i = 0; i < len; i++) {
-		printf("%02x ", (unsigned char)*(char *)(packet + i));
-		if (!((i + 1) % 16))
-			printf("\n");
-	};
-	printf("\n");
-	return 0;
-}
-
-char *snprint_packet(struct gsn_t *gsn, struct sockaddr_in *peer,
-		     void *pack, unsigned len, char *buf, int size)
-{
-	unsigned int n;
-	int pos;
-	snprintf(buf, size, "Packet from %s:%u, length: %d, content:",
-		 inet_ntoa(peer->sin_addr), ntohs(peer->sin_port), len);
-	buf[size - 1] = 0;
-	pos = strlen(buf);
-	for (n = 0; n < len; n++) {
-		if ((pos + 4) < size) {
-			sprintf((buf + pos), " %02hhx",
-				((unsigned char *)pack)[n]);
-			pos += 3;
-		}
-	}
-	buf[pos] = 0;
-	return buf;
-}
-
 /* ***********************************************************
  * Reliable delivery of signalling messages
  * 
