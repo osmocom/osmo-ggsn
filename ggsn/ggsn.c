@@ -74,8 +74,7 @@ struct ippool_t *ippool;	/* Pool of IP addresses    */
 /* To exit gracefully. Used with GCC compilation flag -pg and gprof */
 void signal_handler(int s)
 {
-	if (debug)
-		printf("Received signal %d, exiting.\n", s);
+	DEBUGP(DGGSN, "Received signal %d, exiting.\n", s);
 	end = 1;
 }
 
@@ -130,8 +129,7 @@ int daemon(int nochdir, int noclose)
 
 int delete_context(struct pdp_t *pdp)
 {
-	if (debug)
-		printf("Deleting PDP context\n");
+	DEBUGP(DGGSN, "Deleting PDP context\n");
 	if (pdp->peer)
 		ippool_freeip(ippool, (struct ippoolm_t *)pdp->peer);
 	else
@@ -144,8 +142,7 @@ int create_context_ind(struct pdp_t *pdp)
 	struct in_addr addr;
 	struct ippoolm_t *member;
 
-	if (debug)
-		printf("Received create PDP context request\n");
+	DEBUGP(DGGSN, "Received create PDP context request\n");
 
 	pdp->eua.l = 0;		/* TODO: Indicates dynamic IP */
 
@@ -183,12 +180,10 @@ int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 
 	dst.s_addr = iph->dst;
 
-	if (debug)
-		printf("Received packet from tun!\n");
+	DEBUGP(DGGSN, "Received packet from tun!\n");
 
 	if (ippool_getip(ippool, &ipm, &dst)) {
-		if (debug)
-			printf("Received packet with no destination!!!\n");
+		DEBUGP(DGGSN, "Received packet with no destination!!!\n");
 		return 0;
 	}
 
@@ -199,8 +194,7 @@ int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 
 int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
 {
-	if (debug)
-		printf("encaps_tun. Packet received: forwarding to tun\n");
+	DEBUGP(DGGSN, "encaps_tun. Packet received: forwarding to tun\n");
 	return tun_encaps((struct tun_t *)pdp->ipif, pack, len);
 }
 
@@ -452,7 +446,7 @@ int main(int argc, char **argv)
 
 	/* apn                                                             */
 	if (strlen(args_info.apn_arg) > (sizeof(apn.v) - 1)) {
-		printf("Invalid APN\n");
+		LOGP(DGGSN, LOGL_ERROR, "Invalid APN\n");
 		return -1;
 	}
 	apn.l = strlen(args_info.apn_arg) + 1;
@@ -495,8 +489,7 @@ int main(int argc, char **argv)
 		log_pid(args_info.pidfile_arg);
 	}
 
-	if (debug)
-		printf("gtpclient: Initialising GTP tunnel\n");
+	DEBUGP(DGGSN, "gtpclient: Initialising GTP tunnel\n");
 
 	if (gtp_new(&gsn, args_info.statedir_arg, &listen_, GTP_MODE_GGSN)) {
 		SYS_ERR(DGGSN, LOGL_ERROR, 0, "Failed to create gtp");
@@ -514,22 +507,15 @@ int main(int argc, char **argv)
 	gtp_set_cb_create_context_ind(gsn, create_context_ind);
 
 	/* Create a tunnel interface */
-	if (debug)
-		printf("Creating tun interface\n");
+	DEBUGP(DGGSN, "Creating tun interface\n");
 	if (tun_new((struct tun_t **)&tun)) {
 		SYS_ERR(DGGSN, LOGL_ERROR, 0, "Failed to create tun");
-		if (debug)
-			printf("Failed to create tun\n");
 		exit(1);
 	}
 
-	if (debug)
-		printf("Setting tun IP address\n");
+	DEBUGP(DGGSN, "Setting tun IP address\n");
 	if (tun_setaddr(tun, &netaddr, &destaddr, &mask)) {
-		SYS_ERR(DGGSN, LOGL_ERROR, 0,
-			"Failed to set tun IP address");
-		if (debug)
-			printf("Failed to set tun IP address\n");
+		SYS_ERR(DGGSN, LOGL_ERROR, 0, "Failed to set tun IP address");
 		exit(1);
 	}
 
