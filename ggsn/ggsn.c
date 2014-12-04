@@ -128,21 +128,6 @@ int daemon(int nochdir, int noclose)
 }
 #endif
 
-int encaps_printf(void *p, void *packet, unsigned len)
-{
-	unsigned int i;
-	if (debug) {
-		printf("The packet looks like this:\n");
-		for (i = 0; i < len; i++) {
-			printf("%02x ", (unsigned char)*(char *)(packet + i));
-			if (!((i + 1) % 16))
-				printf("\n");
-		};
-		printf("\n");
-	}
-	return 0;
-}
-
 int delete_context(struct pdp_t *pdp)
 {
 	if (debug)
