@@ -14,15 +14,11 @@
 #export DH_VERBOSE=1
 
 # This has to be exported to make some magic below work.
-export DH_OPTIONS
+#export DH_OPTIONS
 export DEB_BUILD_HARDENING=1
 
-CFLAGS = -Wall -g
-
 %:
-	dh --with autoreconf $@
-
-override_dh_auto_clean:
+	dh $@ --with autoreconf
 
 override_dh_strip:
 	dh_strip --dbg-package=openggsn-dbg
