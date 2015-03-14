@@ -31,6 +31,6 @@ Package: openggsn-dbg
 Section: debug
 Architecture: any
 Priority: extra
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, libgtp0 (= ${binary:Version}), openggsn (= ${binary:Version})
 Multi-Arch: same
 Description: Debug symbols for OpenGGSN
