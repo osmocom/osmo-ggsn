@@ -117,6 +117,7 @@ int tun_sifflags(struct tun_t *this, int flags)
 	ifr.ifr_name[IFNAMSIZ - 1] = 0;	/* Make sure to terminate */
 	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
 		SYS_ERR(DTUN, LOGL_ERROR, errno, "socket() failed");
+		return -1;
 	}
 	if (ioctl(fd, SIOCSIFFLAGS, &ifr)) {
 		SYS_ERR(DTUN, LOGL_ERROR, errno,
@@ -304,7 +305,8 @@ int tun_addaddr(struct tun_t *this,
 	iov.iov_len = req.n.nlmsg_len;
 
 	msg.msg_name = (void *)&nladdr;
-	msg.msg_namelen = sizeof(nladdr), msg.msg_iov = &iov;
+	msg.msg_namelen = sizeof(nladdr);
+	msg.msg_iov = &iov;
 	msg.msg_iovlen = 1;
 	msg.msg_control = NULL;
 	msg.msg_controllen = 0;
@@ -318,9 +320,20 @@ int tun_addaddr(struct tun_t *this,
 	req.n.nlmsg_seq = 0;
 	req.n.nlmsg_flags |= NLM_F_ACK;
 
-	status = sendmsg(fd, &msg, 0);	/* TODO Error check */
+	status = sendmsg(fd, &msg, 0);
+	if (status != req.n.nlmsg_len) {
+		SYS_ERR(DTUN, LOGL_ERROR, errno, "sendmsg() failed, returned %d", status);
+		close(fd);
+		return -1;
+	}
 
-	tun_sifflags(this, IFF_UP | IFF_RUNNING);	/* TODO */
+	status = tun_sifflags(this, IFF_UP | IFF_RUNNING);
+	if (status == -1) {
+		close(fd);
+		return -1;
+	}
+
+
 	close(fd);
 	this->addrs++;
 	return 0;
