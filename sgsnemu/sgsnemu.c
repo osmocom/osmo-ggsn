@@ -1569,7 +1569,7 @@ int main(int argc, char **argv)
 						   512 = Flat rate, 256 = Hot billing */
 
 		/* Create context */
-		/* We send this of once. Retransmissions are handled by gtplib */
+		/* We send this off once. Retransmissions are handled by gtplib */
 		gtp_create_context_req(gsn, pdp, &iparr[n]);
 	}
 
@@ -1577,9 +1577,9 @@ int main(int argc, char **argv)
 
 	printf("Waiting for response from ggsn........\n\n");
 
-  /******************************************************************/
+	/******************************************************************/
 	/* Main select loop                                               */
-  /******************************************************************/
+	/******************************************************************/
 
 	while ((0 != state) && (5 != state)) {
 
@@ -1613,7 +1613,7 @@ int main(int argc, char **argv)
 				state = 3;
 		}
 
-		/* Send off disconnect */
+		/* Send disconnect */
 		if (3 == state) {
 			state = 4;
 			stoptime = time(NULL) + 5;	/* Extra seconds to allow disconnect */
@@ -1628,11 +1628,11 @@ int main(int argc, char **argv)
 			}
 		}
 
-		/* Send of ping packets */
+		/* Send ping packets */
 		diff = 0;
 		while ((diff <= 0) &&
 		       /* Send off an ICMP ping packet */
-		       /*if ( */ (options.pinghost.s_addr) && (2 == state) &&
+		       /*if */ (options.pinghost.s_addr) && (2 == state) &&
 		       ((pingseq < options.pingcount)
 			|| (options.pingcount == 0))) {
 			if (!pingseq)

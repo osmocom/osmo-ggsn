@@ -307,8 +307,8 @@ static uint32_t get_tei(void *pack)
  *
  * Echo: Automatically duplicates the original response
  * Create pdp context: The SGSN may send create context request even if
- *   a context allready exist (imsi+nsapi?). This means that the reply will
-     automatically duplicate the original response. It might however have
+ *   a context already exist (imsi+nsapi?). This means that the reply will
+ *   automatically duplicate the original response. It might however have
  *   side effects in the application which is asked twice to validate
  *   the login.
  * Update pdp context: Automatically duplicates the original response???
@@ -317,7 +317,7 @@ static uint32_t get_tei(void *pack)
  *
  * The correct solution will be to make a queue containing response messages.
  * This queue should be checked whenever a request is received. If the 
- * response is allready in the queue that response should be transmitted.
+ * response is already in the queue that response should be transmitted.
  * It should be possible to find messages in this queue on the basis of
  * the sequence number and peer GSN IP address (The sequense number is unique
  * within each path). This need to be implemented by a hash table. Furthermore
@@ -1511,7 +1511,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 	if (!pdp_getimsi(&pdp_old, pdp->imsi, pdp->nsapi)) {
 		/* Found old pdp with same tid. Now the voodoo begins! */
 		/* 09.60 / 29.060 allows create on existing context to "steal" */
-		/* the context which was allready established */
+		/* the context which was already established */
 		/* We check that the APN, selection mode and MSISDN is the same */
 		DEBUGP(DLGTP, "gtp_create_pdp_ind: Old context found\n");
 		if ((pdp->apn_req.l == pdp_old->apn_req.l)
@@ -1955,7 +1955,7 @@ int gtp_update_pdp_ind(struct gsn_t *gsn, int version,
 
 	/* Is this a duplicate ? */
 	if (!gtp_duplicate(gsn, version, peer, seq)) {
-		return 0;	/* We allready send of response once */
+		return 0;	/* We already sent of response once */
 	}
 
 	/* Decode information elements */
@@ -2085,7 +2085,7 @@ int gtp_update_pdp_ind(struct gsn_t *gsn, int version,
 		}
 
 		/* TEIC (conditional) */
-		/* If TEIC is not included it means that we have allready received it */
+		/* If TEIC is not included it means that we have already received it */
 		/* TODO: From 29.060 it is not clear if TEI_C MUST be included for */
 		/* all updated contexts, or only for one of the linked contexts */
 		gtpie_gettv4(ie, GTPIE_TEI_C, 0, &pdp->teic_gn);
@@ -2426,7 +2426,7 @@ int gtp_delete_pdp_ind(struct gsn_t *gsn, int version,
 
 	/* Is this a duplicate ? */
 	if (!gtp_duplicate(gsn, version, peer, seq)) {
-		return 0;	/* We allready send off response once */
+		return 0;	/* We already sent off response once */
 	}
 
 	/* Find the linked context in question */
@@ -2638,7 +2638,7 @@ int gtp_gpdu_ind(struct gsn_t *gsn, int version,
 	return 0;
 }
 
-/* Receives GTP packet and sends off for further processing 
+/* Receives GTP packet and sends off for further processing.
  * Function will check the validity of the header. If the header
  * is not valid the packet is either dropped or a version not 
  * supported is returned to the peer. 

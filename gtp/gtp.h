@@ -147,7 +147,7 @@ struct ul16_t;
 
 struct gtp0_header {		/*    Descriptions from 3GPP 09.60 */
 	uint8_t flags;		/* 01 bitfield, with typical values */
-	/*    000..... Version: 1 (0) */
+	/*    000..... Version: 0 */
 	/*    ...1111. Spare (7) */
 	/*    .......0 SNDCP N-PDU Number flag (0) */
 	uint8_t type;		/* 02 Message type. T-PDU = 0xff */
@@ -223,7 +223,7 @@ union gtp_packet {
  * application this struct is provided in order to store all
  * relevant information related to the gsn.
  * 
- * Note that this does not include information storage for '
+ * Note that this does not include information storage for
  * each pdp context. This is stored in another struct.
  *************************************************************/
 
