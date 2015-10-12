@@ -795,8 +795,8 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 	if (bind((*gsn)->fd1u, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 		(*gsn)->err_socket++;
 		LOGP_WITH_ADDR(DLGTP, LOGL_ERROR, addr,
-			"bind(fd1c=%d) failed: Error = %s\n",
-			(*gsn)->fd1c, strerror(errno));
+			"bind(fd1u=%d) failed: Error = %s\n",
+			(*gsn)->fd1u, strerror(errno));
 		return -1;
 	}
 
