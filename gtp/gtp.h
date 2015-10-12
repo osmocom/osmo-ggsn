@@ -276,7 +276,7 @@ struct gsn_t {
 	uint64_t tooshort;	/* Number of too short headers 29.60 11.1.2 */
 	uint64_t unknown;	/* Number of unknown messages 29.60 11.1.3 */
 	uint64_t unexpect;	/* Number of unexpected messages 29.60 11.1.4 */
-	uint64_t dublicate;	/* Number of dublicate or unsolicited replies */
+	uint64_t duplicate;	/* Number of duplicate or unsolicited replies */
 	uint64_t missing;	/* Number of missing information field messages */
 	uint64_t incorrect;	/* Number of incorrect information field messages */
 	uint64_t invalid;	/* Number of invalid message format messages */
