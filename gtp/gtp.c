@@ -2179,6 +2179,9 @@ int gtp_update_pdp_conf(struct gsn_t *gsn, int version,
 	if (gtp_conf(gsn, 0, peer, pack, len, &type, &cbp))
 		return EOF;
 
+	/* TODO This function is called from gtp_decaps1c() (for GTP v1) but
+	 * uses gtp0.h.flow (GTP v0 data element)
+	 */
 	/* Find the context in question */
 	if (pdp_getgtp0(&pdp, ntoh16(((union gtp_packet *)pack)->gtp0.h.flow))) {
 		gsn->err_unknownpdp++;
@@ -2192,6 +2195,9 @@ int gtp_update_pdp_conf(struct gsn_t *gsn, int version,
 	/* Register that we have received a valid teic from GGSN */
 	pdp->teic_confirmed = 1;
 
+	/* TODO This function is called from gtp_decaps1c() (for GTP v1) but
+	 * explicitly passes version 0 and GTP0_HEADER_SIZE to gtpie_decaps()
+	 */
 	/* Decode information elements */
 	if (gtpie_decaps
 	    (ie, 0, pack + GTP0_HEADER_SIZE, len - GTP0_HEADER_SIZE)) {
