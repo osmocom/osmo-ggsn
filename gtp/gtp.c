@@ -71,6 +71,11 @@
 		len, osmo_hexdump((const uint8_t *) pack, len),		\
 		##args);
 
+#define LOGP_WITH_ADDR(ss, level, addr, fmt, args...)                    \
+		LOGP(ss, level, "addr(%s:%d) " fmt,                      \
+		     inet_ntoa((addr).sin_addr), htons((addr).sin_port), \
+		     ##args);
+
 /* API Functions */
 
 const char *gtp_version()
@@ -739,10 +744,9 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 
 	if (bind((*gsn)->fd0, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 		(*gsn)->err_socket++;
-		LOGP(DLGTP, LOGL_ERROR,
-			"bind(fd0=%d, addr=%lx, len=%d) failed: Error = %s\n",
-			(*gsn)->fd0, (unsigned long)&addr, sizeof(addr),
-			strerror(errno));
+		LOGP_WITH_ADDR(DLGTP, LOGL_ERROR, addr,
+			       "bind(fd0=%d) failed: Error = %s\n",
+			       (*gsn)->fd0, strerror(errno));
 		return -1;
 	}
 
@@ -765,10 +769,9 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 
 	if (bind((*gsn)->fd1c, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 		(*gsn)->err_socket++;
-		LOGP(DLGTP, LOGL_ERROR,
-			"bind(fd1c=%d, addr=%lx, len=%d) failed: Error = %s\n",
-			(*gsn)->fd1c, (unsigned long)&addr, sizeof(addr),
-			strerror(errno));
+		LOGP_WITH_ADDR(DLGTP, LOGL_ERROR, addr,
+				"bind(fd1c=%d) failed: Error = %s\n",
+				(*gsn)->fd1c, strerror(errno));
 		return -1;
 	}
 
@@ -791,10 +794,9 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 
 	if (bind((*gsn)->fd1u, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 		(*gsn)->err_socket++;
-		LOGP(DLGTP, LOGL_ERROR,
-			"bind(fd1c=%d, addr=%lx, len=%d) failed: Error = %s\n",
-			(*gsn)->fd1c, (unsigned long)&addr, sizeof(addr),
-			strerror(errno));
+		LOGP_WITH_ADDR(DLGTP, LOGL_ERROR, addr,
+			"bind(fd1c=%d) failed: Error = %s\n",
+			(*gsn)->fd1c, strerror(errno));
 		return -1;
 	}
 
