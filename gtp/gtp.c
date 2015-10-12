@@ -614,6 +614,15 @@ int gtp_notification(struct gsn_t *gsn, int version,
 	return 0;
 }
 
+/* Look for a message in the response queue for the given peer and sequence
+ * number seq. If found, (re-)send the response message and return 0. Otherwise
+ * return nonzero. This allows catching duplicate messages.
+ * A response message stays in the response queue until it times out.
+ * So, for any number of identical requests within that timeout period, the
+ * same packet can be resent.
+ * TODO this only checks the peer and sequence number, and does not verify that
+ * the GTP request is identical to the previous one for this peer and sequence
+ * nr: a mere peer or seq glitch can cause leaks of previous responses. */
 int gtp_duplicate(struct gsn_t *gsn, int version,
 		  struct sockaddr_in *peer, uint16_t seq)
 {
@@ -636,6 +645,8 @@ int gtp_duplicate(struct gsn_t *gsn, int version,
 			qmsg->fd, (unsigned long)&qmsg->p, qmsg->l,
 			strerror(errno));
 	}
+
+	/* TODO: qmsg->retrans++ ? */
 	return 0;
 }
 
@@ -873,7 +884,7 @@ int gtp_echo_ind(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
 		 int fd, void *pack, unsigned len)
 {
 
-	/* Check if it was a duplicate request */
+	/* Repeat previous response in case of duplicate request */
 	if (!gtp_duplicate(gsn, 0, peer, get_seq(pack)))
 		return 0;
 
@@ -1258,6 +1269,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 	uint8_t linked_nsapi = 0;
 	struct pdp_t *linked_pdp = NULL;
 
+	/* Repeat previous response in case of duplicate request */
 	if (!gtp_duplicate(gsn, version, peer, seq))
 		return 0;
 
@@ -1265,6 +1277,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 	memset(pdp, 0, sizeof(struct pdp_t));
 
 	if (version == 0) {
+		/* TODO code dup: get_tid() */
 		uint64_t tid = be64toh(((union gtp_packet *)pack)->gtp0.h.tid);
 
 		pdp_set_imsi_nsapi(pdp, tid);
@@ -1953,10 +1966,9 @@ int gtp_update_pdp_ind(struct gsn_t *gsn, int version,
 	uint64_t imsi;
 	uint8_t nsapi;
 
-	/* Is this a duplicate ? */
-	if (!gtp_duplicate(gsn, version, peer, seq)) {
-		return 0;	/* We already sent of response once */
-	}
+	/* Repeat previous response in case of duplicate request */
+	if (!gtp_duplicate(gsn, version, peer, seq))
+		return 0;
 
 	/* Decode information elements */
 	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
@@ -2179,6 +2191,9 @@ int gtp_update_pdp_conf(struct gsn_t *gsn, int version,
 	if (gtp_conf(gsn, 0, peer, pack, len, &type, &cbp))
 		return EOF;
 
+	/* TODO This function is called from gtp_decaps1c() (for GTP v1) but
+	 * uses gtp0.h.flow (GTP v0 data element)
+	 */
 	/* Find the context in question */
 	if (pdp_getgtp0(&pdp, ntoh16(((union gtp_packet *)pack)->gtp0.h.flow))) {
 		gsn->err_unknownpdp++;
@@ -2192,6 +2207,9 @@ int gtp_update_pdp_conf(struct gsn_t *gsn, int version,
 	/* Register that we have received a valid teic from GGSN */
 	pdp->teic_confirmed = 1;
 
+	/* TODO This function is called from gtp_decaps1c() (for GTP v1) but
+	 * explicitly passes version 0 and GTP0_HEADER_SIZE to gtpie_decaps()
+	 */
 	/* Decode information elements */
 	if (gtpie_decaps
 	    (ie, 0, pack + GTP0_HEADER_SIZE, len - GTP0_HEADER_SIZE)) {
@@ -2424,10 +2442,9 @@ int gtp_delete_pdp_ind(struct gsn_t *gsn, int version,
 	int n;
 	int count = 0;
 
-	/* Is this a duplicate ? */
-	if (!gtp_duplicate(gsn, version, peer, seq)) {
-		return 0;	/* We already sent off response once */
-	}
+	/* Repeat previous response in case of duplicate request */
+	if (!gtp_duplicate(gsn, version, peer, seq))
+		return 0;
 
 	/* Find the linked context in question */
 	if (pdp_getgtp1(&linked_pdp, get_tei(pack))) {
