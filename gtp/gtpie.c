@@ -150,10 +150,9 @@ int gtpie_gettv0(union gtpie_member *ie[], int type, int instance,
 {
 	int ien;
 	ien = gtpie_getie(ie, type, instance);
-	if (ien >= 0)
-		memcpy(dst, ie[ien]->tv0.v, size);
-	else
+	if (ien < 0)
 		return EOF;
+	memcpy(dst, ie[ien]->tv0.v, size);
 	return 0;
 }
 
