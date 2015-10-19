@@ -1267,7 +1267,8 @@ int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 	src.s_addr = iph->src;
 
 	if (ipget(&ipm, &src)) {
-		printf("Received packet without a valid source address!!!\n");
+		printf("Dropping packet from invalid source address: %s\n",
+		       inet_ntoa(src));
 		return 0;
 	}
 
