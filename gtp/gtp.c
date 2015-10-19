@@ -305,13 +305,13 @@ static uint32_t get_tei(void *pack)
  * requires the receiving GSN to send a response, with the same information
  * as in the original response. For most messages this happens automatically:
  *
- * Echo: Automatically dublicates the original response
+ * Echo: Automatically duplicates the original response
  * Create pdp context: The SGSN may send create context request even if
  *   a context allready exist (imsi+nsapi?). This means that the reply will
-     automatically dublicate the original response. It might however have
+     automatically duplicate the original response. It might however have
  *   side effects in the application which is asked twice to validate
  *   the login.
- * Update pdp context: Automatically dublicates the original response???
+ * Update pdp context: Automatically duplicates the original response???
  * Delete pdp context. Automatically in gtp0, but in gtp1 will generate
  *   a nonexist reply message.
  *
@@ -614,7 +614,7 @@ int gtp_notification(struct gsn_t *gsn, int version,
 	return 0;
 }
 
-int gtp_dublicate(struct gsn_t *gsn, int version,
+int gtp_duplicate(struct gsn_t *gsn, int version,
 		  struct sockaddr_in *peer, uint16_t seq)
 {
 	struct qmsg_t *qmsg;
@@ -873,8 +873,8 @@ int gtp_echo_ind(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
 		 int fd, void *pack, unsigned len)
 {
 
-	/* Check if it was a dublicate request */
-	if (!gtp_dublicate(gsn, 0, peer, get_seq(pack)))
+	/* Check if it was a duplicate request */
+	if (!gtp_duplicate(gsn, 0, peer, get_seq(pack)))
 		return 0;
 
 	/* Send off reply to request */
@@ -1258,7 +1258,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 	uint8_t linked_nsapi = 0;
 	struct pdp_t *linked_pdp = NULL;
 
-	if (!gtp_dublicate(gsn, version, peer, seq))
+	if (!gtp_duplicate(gsn, version, peer, seq))
 		return 0;
 
 	pdp = &pdp_buf;
@@ -1953,8 +1953,8 @@ int gtp_update_pdp_ind(struct gsn_t *gsn, int version,
 	uint64_t imsi;
 	uint8_t nsapi;
 
-	/* Is this a dublicate ? */
-	if (!gtp_dublicate(gsn, version, peer, seq)) {
+	/* Is this a duplicate ? */
+	if (!gtp_duplicate(gsn, version, peer, seq)) {
 		return 0;	/* We allready send of response once */
 	}
 
@@ -2424,8 +2424,8 @@ int gtp_delete_pdp_ind(struct gsn_t *gsn, int version,
 	int n;
 	int count = 0;
 
-	/* Is this a dublicate ? */
-	if (!gtp_dublicate(gsn, version, peer, seq)) {
+	/* Is this a duplicate ? */
+	if (!gtp_duplicate(gsn, version, peer, seq)) {
 		return 0;	/* We allready send off response once */
 	}
 
