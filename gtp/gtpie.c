@@ -135,13 +135,14 @@ int gtpie_gettlv(union gtpie_member *ie[], int type, int instance,
 {
 	int ien;
 	ien = gtpie_getie(ie, type, instance);
-	if (ien >= 0) {
-		*length = ntoh16(ie[ien]->tlv.l);
-		if (*length <= size)
-			memcpy(dst, ie[ien]->tlv.v, *length);
-		else
-			return EOF;
-	}
+	if (ien < 0)
+		return EOF;
+
+	*length = ntoh16(ie[ien]->tlv.l);
+	if (*length > size)
+		return EOF;
+
+	memcpy(dst, ie[ien]->tlv.v, *length);
 	return 0;
 }
 
