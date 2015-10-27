@@ -1,6 +1,6 @@
 lib_LTLIBRARIES = libgtp.la
 
-include_HEADERS = gtp.h pdp.h
+include_HEADERS = gtp.h pdp.h gtpie.h
 
 AM_CFLAGS = -O2 -fno-builtin -Wall -DSBINDIR='"$(sbindir)"' -ggdb $(LIBOSMOCORE_CFLAGS)
 
