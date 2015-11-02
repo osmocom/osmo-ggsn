@@ -251,26 +251,6 @@ int queue_getfirst(struct queue_t *queue, struct qmsg_t **qmsg)
 	return 0;
 }
 
-/*! \brief Linear search over entire queue to get given peer + seq*/
-/* FIXME: unused, dead code! */
-int queue_getseqx(struct queue_t *queue, struct qmsg_t **qmsg,
-		  struct sockaddr_in *peer, uint16_t seq)
-{
-	int n;
-	if (QUEUE_DEBUG)
-		printf("queue_getseq, %d\n", (int)seq);
-	if (QUEUE_DEBUG)
-		queue_print(queue);
-	for (n = 0; n < QUEUE_SIZE; n++) {
-		if ((queue->qmsga[n].seq == seq) &&
-		    (!memcmp(&queue->qmsga[n].peer, peer, sizeof(*peer)))) {
-			*qmsg = &queue->qmsga[n];
-			return 0;
-		}
-	}
-	return EOF;		/* Not found */
-}
-
 /*! \brief Get a queue entry for a given peer + seq */
 int queue_seqget(struct queue_t *queue, struct qmsg_t **qmsg,
 		 struct sockaddr_in *peer, uint16_t seq)
