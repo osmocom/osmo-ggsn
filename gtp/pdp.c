@@ -26,6 +26,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <inttypes.h>
 #include "pdp.h"
 #include "lookupa.h"
 
@@ -211,7 +212,7 @@ int pdp_tidset(struct pdp_t *pdp, uint64_t tid)
 	int hash = pdp_tidhash(tid);
 	struct pdp_t *pdp2;
 	struct pdp_t *pdp_prev = NULL;
-	DEBUGP(DLGTP, "Begin pdp_tidset tid = %llx\n", tid);
+	DEBUGP(DLGTP, "Begin pdp_tidset tid = %"PRIx64"\n", tid);
 	pdp->tidnext = NULL;
 	pdp->tid = tid;
 	for (pdp2 = hashtid[hash]; pdp2; pdp2 = pdp2->tidnext)
@@ -229,7 +230,7 @@ int pdp_tiddel(struct pdp_t *pdp)
 	int hash = pdp_tidhash(pdp->tid);
 	struct pdp_t *pdp2;
 	struct pdp_t *pdp_prev = NULL;
-	DEBUGP(DLGTP, "Begin pdp_tiddel tid = %llx\n", pdp->tid);
+	DEBUGP(DLGTP, "Begin pdp_tiddel tid = %"PRIx64"\n", pdp->tid);
 	for (pdp2 = hashtid[hash]; pdp2; pdp2 = pdp2->tidnext) {
 		if (pdp2 == pdp) {
 			if (!pdp_prev)
@@ -249,7 +250,7 @@ int pdp_tidget(struct pdp_t **pdp, uint64_t tid)
 {
 	int hash = pdp_tidhash(tid);
 	struct pdp_t *pdp2;
-	DEBUGP(DLGTP, "Begin pdp_tidget tid = %llx\n", tid);
+	DEBUGP(DLGTP, "Begin pdp_tidget tid = %"PRIx64"\n", tid);
 	for (pdp2 = hashtid[hash]; pdp2; pdp2 = pdp2->tidnext) {
 		if (pdp2->tid == tid) {
 			*pdp = pdp2;

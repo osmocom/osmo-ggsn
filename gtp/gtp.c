@@ -47,6 +47,7 @@
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <inttypes.h>
 
 #include <arpa/inet.h>
 
@@ -2676,7 +2677,7 @@ int gtp_decaps0(struct gsn_t *gsn)
 				return 0;
 			gsn->err_readfrom++;
 			LOGP(DLGTP, LOGL_ERROR,
-				"recvfrom(fd0=%d, buffer=%lx, len=%d) failed: status = %d error = %s\n",
+				"recvfrom(fd0=%d, buffer=%lx, len=%zu) failed: status = %d error = %s\n",
 				gsn->fd0, (unsigned long)buffer, sizeof(buffer),
 				status, status ? strerror(errno) : "No error");
 			return -1;
@@ -2821,7 +2822,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 				return 0;
 			gsn->err_readfrom++;
 			LOGP(DLGTP, LOGL_ERROR,
-				"recvfrom(fd=%d, buffer=%lx, len=%d) failed: status = %d error = %s\n",
+				"recvfrom(fd=%d, buffer=%lx, len=%zu) failed: status = %d error = %s\n",
 				fd, (unsigned long)buffer, sizeof(buffer),
 				status, status ? strerror(errno) : "No error");
 			return -1;
@@ -2996,7 +2997,7 @@ int gtp_decaps1u(struct gsn_t *gsn)
 				return 0;
 			gsn->err_readfrom++;
 			LOGP(DLGTP, LOGL_ERROR,
-				"recvfrom(fd1u=%d, buffer=%lx, len=%d) failed: status = %d error = %s\n",
+				"recvfrom(fd1u=%d, buffer=%lx, len=%zu) failed: status = %d error = %s\n",
 				gsn->fd1u, (unsigned long)buffer,
 				sizeof(buffer), status,
 				status ? strerror(errno) : "No error");
@@ -3129,7 +3130,7 @@ int gtp_data_req(struct gsn_t *gsn, struct pdp_t *pdp, void *pack, unsigned len)
 		if (len > sizeof(union gtp_packet) - sizeof(struct gtp0_header)) {
 			gsn->err_memcpy++;
 			LOGP(DLGTP, LOGL_ERROR,
-				"Memcpy failed: %d > %d\n", len,
+				"Memcpy failed: %u > %zu\n", len,
 				sizeof(union gtp_packet) -
 				sizeof(struct gtp0_header));
 			return EOF;
@@ -3152,7 +3153,7 @@ int gtp_data_req(struct gsn_t *gsn, struct pdp_t *pdp, void *pack, unsigned len)
 		    sizeof(struct gtp1_header_long)) {
 			gsn->err_memcpy++;
 			LOGP(DLGTP, LOGL_ERROR,
-				"Memcpy failed: %d > %d\n", len,
+				"Memcpy failed: %u > %zu\n", len,
 				sizeof(union gtp_packet) -
 				sizeof(struct gtp0_header));
 			return EOF;
