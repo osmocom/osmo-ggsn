@@ -231,6 +231,7 @@ int process_options(int argc, char **argv)
 	char *type;
 	char *mcc;
 	char *mnc;
+	char *tok, *apn;
 	char *lac;
 	int lac_d;
 	char *rest;
@@ -534,10 +535,19 @@ int process_options(int argc, char **argv)
 		printf("Invalid APN\n");
 		return -1;
 	}
-	options.apn.l = strlen(args_info.apn_arg);
-	strncpy((char *)options.apn.v, args_info.apn_arg,
-		sizeof(options.apn.v));
-	options.apn.v[sizeof(options.apn.v) - 1] = 0;
+	options.apn.l = strlen(args_info.apn_arg) + 1;
+
+	apn = (char *)options.apn.v;
+	for (tok = strtok(args_info.apn_arg, ".");
+	     tok != NULL;
+	     tok = strtok(NULL, ".")) {
+		     size_t len = strlen(tok);
+
+		     *apn++ = (char)len;
+		     strncpy(apn, tok, len);
+		     apn += len;
+	     }
+
 	printf("Using APN:             %s\n", args_info.apn_arg);
 
 	/* selmode */
