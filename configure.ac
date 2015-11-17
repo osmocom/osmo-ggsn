@@ -50,9 +50,9 @@ AC_ARG_ENABLE([gtp-kernel],
 	AS_HELP_STRING([--enable-gtp-kernel], [Build GTP tunneling kernel]),
 	[enable_gtp_kernel="$enableval"], [enable_gtp_kernel="no"])
 
-if test "x$enable_gtp_kernel" = "xyes"; then
+AS_IF([test "x$enable_gtp_kernel" = "xyes"], [
 	PKG_CHECK_MODULES([LIBGTPNL], [libgtpnl >= 1.0.0])
-fi
+])
 
 AM_CONDITIONAL([ENABLE_GTP_KERNEL], [test "$enable_gtp_kernel" = "yes"])
 
