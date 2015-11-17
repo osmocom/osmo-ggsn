@@ -33,3 +33,6 @@ option  "apn"         a "Access point name"             string default="internet
 option  "qos"         q "Requested quality of service"  int    default="0x0b921f" no
 option  "logfile"     - "Logfile for errors"            string no
 option  "loglevel"    - "Global log ldevel"		string default="error" no
+
+option  "gtpnl"       g "GTP kernel support"            string default="eth0" no
+

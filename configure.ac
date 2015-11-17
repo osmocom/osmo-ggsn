@@ -45,6 +45,17 @@ AC_SUBST(EXEC_LDADD)
 # FIXME: Replace `main' with a function in `-links':
 #AC_CHECK_LIB([inks], [main])
 
+dnl GTP kernel dependencies
+AC_ARG_ENABLE([gtp-kernel],
+	AS_HELP_STRING([--enable-gtp-kernel], [Build GTP tunneling kernel]),
+	[enable_gtp_kernel="$enableval"], [enable_gtp_kernel="no"])
+
+if test "x$enable_gtp_kernel" = "xyes"; then
+	PKG_CHECK_MODULES([LIBGTPNL], [libgtpnl >= 1.0.0])
+fi
+
+AM_CONDITIONAL([ENABLE_GTP_KERNEL], [test "$enable_gtp_kernel" = "yes"])
+
 # Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
@@ -119,3 +130,7 @@ AC_CONFIG_FILES([Makefile
                  libgtp.pc
                  openggsn.spec])
 AC_OUTPUT
+
+echo "
+openggsn Configuration:
+  GTP kernel support:			${enable_gtp_kernel}"
