@@ -176,7 +176,7 @@ int create_context_ind(struct pdp_t *pdp)
 	member->peer = pdp;
 
 	if (gtp_kernel_tunnel_add(pdp) < 0) {
-		sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"Cannot add tunnel to kernel: %s\n", strerror(errno));
 	}
 

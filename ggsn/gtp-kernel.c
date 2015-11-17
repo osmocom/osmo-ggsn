@@ -8,7 +8,6 @@
 #include <stdint.h>
 #endif
 
-#include <syslog.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -100,7 +99,7 @@ int gtp_kernel_init(struct gsn_t *gsn, struct in_addr *net,
 
 	if (gtp_dev_create(GTP_DEVNAME, args_info->gtpnl_orig,
 			   gsn->fd0, gsn->fd1u) < 0) {
-		sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"cannot create GTP tunnel device: %s\n",
 			strerror(errno));
 		return -1;
@@ -109,29 +108,27 @@ int gtp_kernel_init(struct gsn_t *gsn, struct in_addr *net,
 
 	gtp_nl.nl = genl_socket_open();
 	if (gtp_nl.nl == NULL) {
-		sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"cannot create genetlink socket\n");
 		return -1;
 	}
 	gtp_nl.genl_id = genl_lookup_family(gtp_nl.nl, "gtp");
 	if (gtp_nl.genl_id < 0) {
-		sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"cannot lookup GTP genetlink ID\n");
 		return -1;
 	}
 	if (debug) {
-		sys_err(LOG_NOTICE, __FILE__, __LINE__, 0,
+		SYS_ERR(DGGSN, LOGL_NOTICE, 0,
 			"Using the GTP kernel mode (genl ID is %d)\n",
 			gtp_nl.genl_id);
 	}
 
-	if (debug) {
-		printf("Setting route to reach %s via %s\n",
-		       args_info->net_arg, GTP_DEVNAME);
-	}
+	DEBUGP(DGGSN, "Setting route to reach %s via %s\n",
+	       args_info->net_arg, GTP_DEVNAME);
 
 	if (gtp_dev_config(GTP_DEVNAME, net, mask2prefix(mask)) < 0) {
-		sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"Cannot add route to reach network %s\n",
 			args_info->net_arg);
 	}
@@ -152,12 +149,12 @@ int gtp_kernel_init(struct gsn_t *gsn, struct in_addr *net,
 
 		err = system(cmd);
 		if (err < 0) {
-			sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+			SYS_ERR(DGGSN, LOGL_ERROR, 0,
 				"Failed to launch script `%s'", ipup);
 			return -1;
 		}
 	}
-	sys_err(LOG_NOTICE, __FILE__, __LINE__, 0, "GTP kernel configured\n");
+	SYS_ERR(DGGSN, LOGL_NOTICE, 0, "GTP kernel configured\n");
 
 	return 0;
 }

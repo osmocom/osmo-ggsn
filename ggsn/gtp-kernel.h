@@ -23,7 +23,7 @@ static inline int gtp_kernel_init(struct gsn_t *gsn, struct in_addr *net,
 				  struct gengetopt_args_info *args_info)
 {
 	if (args_info->gtpnl_given) {
-		sys_err(LOG_ERR, __FILE__, __LINE__, 0,
+		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"ggsn compiled without GTP kernel support!\n");
 		return -1;
 	}
