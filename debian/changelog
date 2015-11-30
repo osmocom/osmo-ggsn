@@ -1,4 +1,10 @@
-openggsn (0.91+git34) UNRELEASED; urgency=medium
+openggsn (0.92) precise; urgency=medium
+
+  * Release 0.92
+
+ -- Holger Hans Peter Freyther <holger@moiji-mobile.com>  Mon, 30 Nov 2015 14:05:59 +0100
+
+openggsn (0.91+git34) precise; urgency=medium
 
   * Non-maintainer upload.
 
