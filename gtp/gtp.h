@@ -133,6 +133,7 @@
 
 struct ul66_t;
 struct ul16_t;
+struct pdp_t;
 
 /* GTP 0 header. 
  * Explanation to some of the fields:
