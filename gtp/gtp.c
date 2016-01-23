@@ -665,7 +665,7 @@ static void log_restart(struct gsn_t *gsn)
 		if (rc != 1) {
 			LOGP(DLGTP, LOGL_ERROR,
 				"fscanf failed to read counter value\n");
-			return;
+			goto close_file;
 		}
 		if (fclose(f)) {
 			LOGP(DLGTP, LOGL_ERROR,
@@ -685,6 +685,7 @@ static void log_restart(struct gsn_t *gsn)
 
 	umask(i);
 	fprintf(f, "%d\n", gsn->restart_counter);
+close_file:
 	if (fclose(f)) {
 		LOGP(DLGTP, LOGL_ERROR,
 			"fclose failed: Error = %s\n", strerror(errno));
