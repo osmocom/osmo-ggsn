@@ -1872,7 +1872,7 @@ int gtp_update_context(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 		gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_OMC_ID,
 			  pdp->omcid.l, pdp->omcid.v);
 
-	gtp_req(gsn, pdp->version, NULL, &packet, length, inetaddr, cbp);
+	gtp_req(gsn, pdp->version, pdp, &packet, length, inetaddr, cbp);
 
 	return 0;
 }
