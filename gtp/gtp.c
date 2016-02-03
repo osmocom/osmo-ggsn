@@ -2176,33 +2176,27 @@ int gtp_update_pdp_conf(struct gsn_t *gsn, int version,
 	uint8_t cause, recovery;
 	void *cbp = NULL;
 	uint8_t type = 0;
+	int hlen = get_hlen(pack);
 
 	/* Remove packet from queue */
 	if (gtp_conf(gsn, 0, peer, pack, len, &type, &cbp))
 		return EOF;
 
-	/* TODO This function is called from gtp_decaps1c() (for GTP v1) but
-	 * uses gtp0.h.flow (GTP v0 data element)
-	 */
 	/* Find the context in question */
-	if (pdp_getgtp0(&pdp, ntoh16(((union gtp_packet *)pack)->gtp0.h.flow))) {
+	if (pdp_getgtp1(&pdp, get_tei(pack))) {
 		gsn->err_unknownpdp++;
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
-			    "Unknown PDP context\n");
+			    "Unknown PDP context: %u\n", get_tei(pack));
 		if (gsn->cb_conf)
-			gsn->cb_conf(type, cause, NULL, cbp);
+			gsn->cb_conf(type, EOF, NULL, cbp);
 		return EOF;
 	}
 
 	/* Register that we have received a valid teic from GGSN */
 	pdp->teic_confirmed = 1;
 
-	/* TODO This function is called from gtp_decaps1c() (for GTP v1) but
-	 * explicitly passes version 0 and GTP0_HEADER_SIZE to gtpie_decaps()
-	 */
 	/* Decode information elements */
-	if (gtpie_decaps
-	    (ie, 0, pack + GTP0_HEADER_SIZE, len - GTP0_HEADER_SIZE)) {
+	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
 		gsn->invalid++;
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Invalid message format\n");
