@@ -2187,9 +2187,8 @@ int gtp_update_pdp_conf(struct gsn_t *gsn, int version,
 		gsn->err_unknownpdp++;
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Unknown PDP context: %u\n", get_tei(pack));
-		if (gsn->cb_conf)
-			gsn->cb_conf(type, EOF, NULL, cbp);
-		return EOF;
+		pdp = NULL;
+		goto err_out;
 	}
 
 	/* Register that we have received a valid teic from GGSN */
@@ -2200,23 +2199,12 @@ int gtp_update_pdp_conf(struct gsn_t *gsn, int version,
 		gsn->invalid++;
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Invalid message format\n");
-		if (gsn->cb_conf)
-			gsn->cb_conf(type, EOF, pdp, cbp);
-		/*    if (gsn->cb_delete_context) gsn->cb_delete_context(pdp);
-		   pdp_freepdp(pdp); */
-		return EOF;
+		goto err_out;
 	}
 
 	/* Extract cause value (mandatory) */
 	if (gtpie_gettv1(ie, GTPIE_CAUSE, 0, &cause)) {
-		gsn->missing++;
-		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
-			    "Missing mandatory information field\n");
-		if (gsn->cb_conf)
-			gsn->cb_conf(type, EOF, pdp, cbp);
-		/*    if (gsn->cb_delete_context) gsn->cb_delete_context(pdp);
-		   pdp_freepdp(pdp); */
-		return EOF;
+		goto err_missing;
 	}
 
 	/* Extract recovery (optional) */
@@ -2226,51 +2214,69 @@ int gtp_update_pdp_conf(struct gsn_t *gsn, int version,
 	}
 
 	/* Check all conditional information elements */
-	if (GTPCAUSE_ACC_REQ != cause) {
-		if (gsn->cb_conf)
-			gsn->cb_conf(type, cause, pdp, cbp);
-		/*    if (gsn->cb_delete_context) gsn->cb_delete_context(pdp);
-		   pdp_freepdp(pdp); */
-		return 0;
-	} else {
-		/* Check for missing conditionary information elements */
-		if (!(gtpie_exist(ie, GTPIE_QOS_PROFILE0, 0) &&
-		      gtpie_exist(ie, GTPIE_REORDER, 0) &&
-		      gtpie_exist(ie, GTPIE_FL_DI, 0) &&
-		      gtpie_exist(ie, GTPIE_FL_C, 0) &&
-		      gtpie_exist(ie, GTPIE_CHARGING_ID, 0) &&
-		      gtpie_exist(ie, GTPIE_EUA, 0) &&
-		      gtpie_exist(ie, GTPIE_GSN_ADDR, 0) &&
-		      gtpie_exist(ie, GTPIE_GSN_ADDR, 1))) {
-			gsn->missing++;
-			GTP_LOGPKG(LOGL_ERROR, peer, pack,
-				    len,
-				    "Missing conditional information field\n");
-			if (gsn->cb_conf)
-				gsn->cb_conf(type, EOF, pdp, cbp);
-			/*    if (gsn->cb_delete_context) gsn->cb_delete_context(pdp);
-			   pdp_freepdp(pdp); */
-			return EOF;
+	/* TODO: This does not handle GGSN-initiated update responses */
+	if (GTPCAUSE_ACC_REQ == cause) {
+		if (version == 0) {
+			if (gtpie_gettv0(ie, GTPIE_QOS_PROFILE0, 0,
+					 &pdp->qos_neg0,
+					 sizeof(pdp->qos_neg0))) {
+				goto err_missing;
+			}
+
+			if (gtpie_gettv2(ie, GTPIE_FL_DI, 0, &pdp->flru)) {
+				goto err_missing;
+			}
+
+			if (gtpie_gettv2(ie, GTPIE_FL_C, 0, &pdp->flrc)) {
+				goto err_missing;
+			}
 		}
 
-		/* Update pdp with new values */
-		gtpie_gettv0(ie, GTPIE_QOS_PROFILE0, 0,
-			     pdp->qos_neg0, sizeof(pdp->qos_neg0));
-		gtpie_gettv1(ie, GTPIE_REORDER, 0, &pdp->reorder);
-		gtpie_gettv2(ie, GTPIE_FL_DI, 0, &pdp->flru);
-		gtpie_gettv2(ie, GTPIE_FL_C, 0, &pdp->flrc);
-		gtpie_gettv4(ie, GTPIE_CHARGING_ID, 0, &pdp->cid);
-		gtpie_gettlv(ie, GTPIE_EUA, 0, &pdp->eua.l,
-			     &pdp->eua.v, sizeof(pdp->eua.v));
-		gtpie_gettlv(ie, GTPIE_GSN_ADDR, 0, &pdp->gsnrc.l,
-			     &pdp->gsnrc.v, sizeof(pdp->gsnrc.v));
-		gtpie_gettlv(ie, GTPIE_GSN_ADDR, 1, &pdp->gsnru.l,
-			     &pdp->gsnru.v, sizeof(pdp->gsnru.v));
+		if (version == 1) {
+			if (gtpie_gettv4(ie, GTPIE_TEI_DI, 0, &pdp->teid_gn)) {
+				goto err_missing;
+			}
 
-		if (gsn->cb_conf)
-			gsn->cb_conf(type, cause, pdp, cbp);
-		return 0;	/* Succes */
+			if (gtpie_gettv4(ie, GTPIE_TEI_C, 0, &pdp->teic_gn)) {
+				goto err_missing;
+			}
+		}
+
+		if (gtpie_gettv4(ie, GTPIE_CHARGING_ID, 0, &pdp->cid)) {
+			goto err_missing;
+		}
+
+		if (gtpie_gettlv(ie, GTPIE_GSN_ADDR, 0, &pdp->gsnrc.l,
+				 &pdp->gsnrc.v, sizeof(pdp->gsnrc.v))) {
+			goto err_missing;
+		}
+
+		if (gtpie_gettlv(ie, GTPIE_GSN_ADDR, 1, &pdp->gsnru.l,
+				 &pdp->gsnru.v, sizeof(pdp->gsnru.v))) {
+			goto err_missing;
+		}
+
+		if (version == 1) {
+			if (gtpie_gettlv
+			    (ie, GTPIE_QOS_PROFILE, 0, &pdp->qos_neg.l,
+			     &pdp->qos_neg.v, sizeof(pdp->qos_neg.v))) {
+				goto err_missing;
+			}
+		}
 	}
+
+	if (gsn->cb_conf)
+		gsn->cb_conf(type, cause, pdp, cbp);
+	return 0;	/* Succes */
+
+err_missing:
+	gsn->missing++;
+	GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
+		    "Missing information field\n");
+err_out:
+	if (gsn->cb_conf)
+		gsn->cb_conf(type, EOF, pdp, cbp);
+	return EOF;
 }
 
 /* API: Send Delete PDP Context Request */
