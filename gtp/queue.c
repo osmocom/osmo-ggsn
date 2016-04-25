@@ -127,16 +127,15 @@ int queue_new(struct queue_t **queue)
 	if (QUEUE_DEBUG)
 		printf("queue_new\n");
 	*queue = calloc(1, sizeof(struct queue_t));
+	if (!(*queue))
+		return EOF;
 	(*queue)->next = 0;
 	(*queue)->first = -1;
 	(*queue)->last = -1;
 
 	if (QUEUE_DEBUG)
 		queue_print(*queue);
-	if (*queue)
-		return 0;
-	else
-		return EOF;
+	return 0;
 }
 
 /*! \brief Deallocates queue structure */
