@@ -260,8 +260,8 @@ int main(int argc, char **argv)
 			printf("pidfile: %s\n", args_info.pidfile_arg);
 		if (args_info.statedir_arg)
 			printf("statedir: %s\n", args_info.statedir_arg);
-		if (args_info.gtpnl_arg)
-			printf("gtpnl: %s\n", args_info.gtpnl_arg);
+		if (args_info.gtp_linux_flag)
+			printf("gtp_linux: %d\n", args_info.gtp_linux_flag);
 		printf("timelimit: %d\n", args_info.timelimit_arg);
 	}
 
@@ -322,8 +322,8 @@ int main(int argc, char **argv)
 			printf("pidfile: %s\n", args_info.pidfile_arg);
 		if (args_info.statedir_arg)
 			printf("statedir: %s\n", args_info.statedir_arg);
-		if (args_info.gtpnl_arg)
-			printf("gtpnl: %s\n", args_info.gtpnl_arg);
+		if (args_info.gtp_linux_flag)
+			printf("gtp-linux: %d\n", args_info.gtp_linux_flag);
 		printf("timelimit: %d\n", args_info.timelimit_arg);
 	}
 

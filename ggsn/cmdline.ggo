@@ -34,5 +34,5 @@ option  "qos"         q "Requested quality of service"  int    default="0x0b921f
 option  "logfile"     - "Logfile for errors"            string no
 option  "loglevel"    - "Global log ldevel"		string default="error" no
 
-option  "gtpnl"       g "GTP kernel support"            string default="eth0" no
+option  "gtp-linux"   g "GTP linux kernel support"      flag	off
 

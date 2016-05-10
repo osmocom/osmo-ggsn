@@ -94,7 +94,7 @@ int gtp_kernel_init(struct gsn_t *gsn, struct in_addr *net,
 		    struct in_addr *mask,
 		    struct gengetopt_args_info *args_info)
 {
-	if (!args_info->gtpnl_given)
+	if (!args_info->gtp_linux_given)
 		return 0;
 
 	if (gtp_dev_create(-1, GTP_DEVNAME, gsn->fd0, gsn->fd1u) < 0) {
