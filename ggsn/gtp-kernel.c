@@ -97,8 +97,7 @@ int gtp_kernel_init(struct gsn_t *gsn, struct in_addr *net,
 	if (!args_info->gtpnl_given)
 		return 0;
 
-	if (gtp_dev_create(GTP_DEVNAME, args_info->gtpnl_orig,
-			   gsn->fd0, gsn->fd1u) < 0) {
+	if (gtp_dev_create(-1, GTP_DEVNAME, gsn->fd0, gsn->fd1u) < 0) {
 		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"cannot create GTP tunnel device: %s\n",
 			strerror(errno));
