@@ -434,7 +434,6 @@ int gtpie_encaps(union gtpie_member *ie[], void *pack, unsigned *len)
 	int i;
 	unsigned char *p;
 	unsigned char *end;
-	union gtpie_member *m;
 	int iesize;
 
 	p = pack;
@@ -445,7 +444,6 @@ int gtpie_encaps(union gtpie_member *ie[], void *pack, unsigned *len)
 		if (ie[i] != 0) {
 			if (GTPIE_DEBUG)
 				printf("gtpie_encaps. Type %d\n", i);
-			m = (union gtpie_member *)p;
 			switch (i) {
 			case GTPIE_CAUSE:	/* TV GTPIE types with value length 1 */
 			case GTPIE_REORDER:
@@ -534,7 +532,6 @@ int gtpie_encaps2(union gtpie_member ie[], unsigned int size,
 	unsigned int i, j;
 	unsigned char *p;
 	unsigned char *end;
-	union gtpie_member *m;
 	int iesize;
 
 	p = pack;
@@ -548,7 +545,6 @@ int gtpie_encaps2(union gtpie_member ie[], unsigned int size,
 					printf
 					    ("gtpie_encaps. Number %d, Type %d\n",
 					     i, ie[i].t);
-				m = (union gtpie_member *)p;
 				switch (ie[i].t) {
 				case GTPIE_CAUSE:	/* TV GTPIE types with value length 1 */
 				case GTPIE_REORDER:

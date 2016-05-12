@@ -37,7 +37,6 @@ register unsigned long int level;	/* the previous hash, or an arbitrary value */
 }
 
 	typedef unsigned long int ub4;	/* unsigned 4-byte quantities */
-	typedef unsigned char ub1;	/* unsigned 1-byte quantities */
 	register unsigned long int a, b, c, len;
 
 	/* Set up the internal state */
