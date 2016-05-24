@@ -592,7 +592,7 @@ int process_options(int argc, char **argv)
 		mcc = userloc_el[1];
 		printf("->mcc : %s\n", mcc);
 		if (strlen(mcc) != 3) {
-			printf("Invalid MCC lenght\n");
+			printf("Invalid MCC length\n");
 			return -1;
 		}
 
@@ -611,7 +611,7 @@ int process_options(int argc, char **argv)
 		a = (uint8_t) (mcc[2] - 48);
 
 		if ((strlen(mnc) > 3) || (strlen(mnc) < 2)) {
-			printf("Invalid MNC lenght\n");
+			printf("Invalid MNC length\n");
 			return -1;
 		}
 		if (strlen(mnc) == 2) {
@@ -676,7 +676,7 @@ int process_options(int argc, char **argv)
 		mcc = rai_el[0];
 		printf("->mcc : %s\n", mcc);
 		if (strlen(mcc) != 3) {
-			printf("Invalid MCC lenght\n");
+			printf("Invalid MCC length\n");
 			return -1;
 		}
 
@@ -692,7 +692,7 @@ int process_options(int argc, char **argv)
 		a = (uint8_t) (mcc[2] - 48);
 
 		if ((strlen(mnc) > 3) || (strlen(mnc) < 2)) {
-			printf("Invalid MNC lenght\n");
+			printf("Invalid MNC length\n");
 			return -1;
 		}
 		if (strlen(mnc) == 2) {
