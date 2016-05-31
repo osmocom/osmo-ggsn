@@ -105,8 +105,7 @@ static int queue_seqdel(struct queue_t *queue, struct qmsg_t *qmsg)
 		printf("Begin queue_seqdel seq = %d\n", (int)qmsg->seq);
 
 	for (qmsg2 = queue->hashseq[hash]; qmsg2; qmsg2 = qmsg2->seqnext) {
-		/* FIXME: this is always true !?! */
-		if (qmsg == qmsg) {
+		if (qmsg == qmsg2) {
 			if (!qmsg_prev)
 				queue->hashseq[hash] = qmsg2->seqnext;
 			else
