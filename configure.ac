@@ -117,6 +117,7 @@ AM_INIT_AUTOMAKE()
 
 PKG_CHECK_MODULES(LIBOSMOCORE, libosmocore >= 0.6.4)
 PKG_CHECK_MODULES(LIBOSMOVTY, libosmovty >= 0.3.0)
+PKG_CHECK_MODULES(LIBOSMOCTRL, libosmoctrl)
 
 AC_CONFIG_FILES([Makefile
                  doc/Makefile

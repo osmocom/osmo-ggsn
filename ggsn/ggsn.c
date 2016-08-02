@@ -39,7 +39,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-
+#include <inttypes.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
@@ -47,6 +47,11 @@
 #include <errno.h>
 
 #include <time.h>
+
+#include <osmocom/core/select.h>
+#include <osmocom/ctrl/control_if.h>
+#include <osmocom/ctrl/control_cmd.h>
+#include <osmocom/ctrl/ports.h>
 
 #include "../lib/tun.h"
 #include "../lib/ippool.h"
@@ -131,6 +136,9 @@ int daemon(int nochdir, int noclose)
 int delete_context(struct pdp_t *pdp)
 {
 	DEBUGP(DGGSN, "Deleting PDP context\n");
+	struct ippoolm_t *member = pdp->peer;
+	char v[NAMESIZE];
+	snprintf(v, sizeof(v), "%" PRIu64 ",%s", pdp->imsi, inet_ntoa(member->addr));
 	if (pdp->peer)
 		ippool_freeip(ippool, (struct ippoolm_t *)pdp->peer);
 	else
@@ -141,6 +149,9 @@ int delete_context(struct pdp_t *pdp)
 			"Cannot delete tunnel from kernel: %s\n",
 			strerror(errno));
 	}
+/* FIXME: naming? */
+	if (ctrl_cmd_send_trap(gsn->ctrl, "imsi-rem-ip", v) < 0)
+		LOGP(DGGSN, LOGL_ERROR, "Trap creation failed.\n");
 
 	return 0;
 }
@@ -149,6 +160,7 @@ int create_context_ind(struct pdp_t *pdp)
 {
 	struct in_addr addr;
 	struct ippoolm_t *member;
+	char v[NAMESIZE];
 
 	DEBUGP(DGGSN, "Received create PDP context request\n");
 
@@ -177,6 +189,13 @@ int create_context_ind(struct pdp_t *pdp)
 	if (gtp_kernel_tunnel_add(pdp) < 0) {
 		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"Cannot add tunnel to kernel: %s\n", strerror(errno));
+	}
+/* FIXME: naming? */
+	snprintf(v, sizeof(v), "%" PRIu64 ",%s", pdp->imsi, inet_ntoa(member->addr));
+	if (ctrl_cmd_send_trap(gsn->ctrl, "imsi-ass-ip", v) < 0) {
+		LOGP(DGGSN, LOGL_ERROR, "Trap creation failed.\n");
+		gtp_create_context_resp(gsn, pdp, GTPCAUSE_NO_RESOURCES);
+		return 0;
 	}
 
 	gtp_create_context_resp(gsn, pdp, GTPCAUSE_ACC_REQ);
@@ -526,6 +545,12 @@ int main(int argc, char **argv)
 	gtp_set_cb_delete_context(gsn, delete_context);
 	gtp_set_cb_create_context_ind(gsn, create_context_ind);
 
+	gsn->ctrl = ctrl_interface_setup(NULL, OSMO_CTRL_PORT_GGSN, NULL);
+	if (!gsn->ctrl) {
+		LOGP(DGGSN, LOGL_ERROR, "Failed to create CTRL interface.\n");
+		exit(1);
+	}
+
 	/* skip the configuration of the tun0 if we're using the gtp0 device */
 	if (gtp_kernel_enabled())
 		goto skip_tun;
@@ -597,6 +622,7 @@ skip_tun:
 		if (FD_ISSET(gsn->fd1u, &fds))
 			gtp_decaps1u(gsn);
 
+		osmo_select_main(1);
 	}
 err:
 	gtp_kernel_stop();
