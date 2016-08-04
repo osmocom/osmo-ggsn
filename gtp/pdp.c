@@ -370,14 +370,3 @@ void pdp_set_imsi_nsapi(struct pdp_t *pdp, uint64_t teid)
 	pdp->imsi = teid & 0x0fffffffffffffffull;
 	pdp->nsapi = (teid & 0xf000000000000000ull) >> 60;
 }
-
-int ulcpy(void *dst, void *src, size_t size)
-{
-	if (((struct ul255_t *)src)->l <= size) {
-		((struct ul255_t *)dst)->l = ((struct ul255_t *)src)->l;
-		memcpy(((struct ul255_t *)dst)->v, ((struct ul255_t *)src)->v,
-		       ((struct ul255_t *)dst)->l);
-		return 0;
-	} else
-		return EOF;
-}
