@@ -646,13 +646,11 @@ static void log_restart(struct gsn_t *gsn)
 	FILE *f;
 	int i, rc;
 	int counter = 0;
-	char filename[NAMESIZE];
-
-	filename[NAMESIZE - 1] = 0;	/* No null term. guarantee by strncpy */
-	strncpy(filename, gsn->statedir, NAMESIZE - 1);
-	strncat(filename, RESTART_FILE, NAMESIZE - 1 - sizeof(RESTART_FILE));
+	char *filename;
 
 	i = umask(022);
+	filename = talloc_asprintf(NULL, "%s/%s", gsn->statedir, RESTART_FILE);
+	OSMO_ASSERT(filename);
 
 	/* We try to open file. On failure we will later try to create file */
 	if (!(f = fopen(filename, "r"))) {
@@ -680,17 +678,17 @@ static void log_restart(struct gsn_t *gsn)
 		LOGP(DLGTP, LOGL_ERROR,
 			"fopen(path=%s, mode=%s) failed: Error = %s\n", filename,
 			"w", strerror(errno));
-		return;
+		goto free_filename;
 	}
 
 	umask(i);
 	fprintf(f, "%d\n", gsn->restart_counter);
 close_file:
-	if (fclose(f)) {
+	if (fclose(f))
 		LOGP(DLGTP, LOGL_ERROR,
 			"fclose failed: Error = %s\n", strerror(errno));
-		return;
-	}
+free_filename:
+	talloc_free(filename);
 }
 
 int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
