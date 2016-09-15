@@ -243,6 +243,7 @@ int gtpie_decaps(union gtpie_member *ie[], int version, void *pack,
 		case GTPIE_RP_SMS:
 		case GTPIE_RP:
 		case GTPIE_MS_NOT_REACH:
+		case GTPIE_BCM:
 			if (j < GTPIE_SIZE) {
 				ie[j] = (union gtpie_member *)p;
 				if (GTPIE_DEBUG)
@@ -457,6 +458,7 @@ int gtpie_encaps(union gtpie_member *ie[], void *pack, unsigned *len)
 			case GTPIE_RP_SMS:
 			case GTPIE_RP:
 			case GTPIE_MS_NOT_REACH:
+			case GTPIE_BCM:
 				iesize = 2;
 				break;
 			case GTPIE_FL_DI:	/* TV GTPIE types with value length 2 */
@@ -558,6 +560,7 @@ int gtpie_encaps2(union gtpie_member ie[], unsigned int size,
 				case GTPIE_RP_SMS:
 				case GTPIE_RP:
 				case GTPIE_MS_NOT_REACH:
+				case GTPIE_BCM:
 					iesize = 2;
 					break;
 				case GTPIE_PFI:	/* TV GTPIE types with value length 2 */

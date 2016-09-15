@@ -106,6 +106,7 @@ static __inline uint64_t hton64(uint64_t q)
 #define GTPIE_USER_LOC      152	/* User Location Information  */
 #define GTPIE_MS_TZ         153	/* MS Time Zone */
 #define GTPIE_IMEI_SV       154	/* IMEI Software Version */
+#define GTPIE_BCM           184	/* Bearer control mode */
 /* 239-250 Reserved for the GPRS charging protocol (see GTP' in GSM 12.15) */
 #define GTPIE_CHARGING_ADDR 251	/* Charging Gateway Address */
 /* 252-254 Reserved for the GPRS charging protocol (see GTP' in GSM 12.15) */
