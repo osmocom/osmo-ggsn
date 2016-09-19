@@ -648,7 +648,6 @@ static void log_restart(struct gsn_t *gsn)
 	int counter = 0;
 	char *filename;
 
-	i = umask(022);
 	filename = talloc_asprintf(NULL, "%s/%s", gsn->statedir, RESTART_FILE);
 	OSMO_ASSERT(filename);
 
@@ -658,7 +657,6 @@ static void log_restart(struct gsn_t *gsn)
 			"State information file (%s) not found. Creating new file.\n",
 			filename);
 	} else {
-		umask(i);
 		rc = fscanf(f, "%d", &counter);
 		if (rc != 1) {
 			LOGP(DLGTP, LOGL_ERROR,
@@ -674,14 +672,18 @@ static void log_restart(struct gsn_t *gsn)
 	gsn->restart_counter = (unsigned char)counter;
 	gsn->restart_counter++;
 
-	if (!(f = fopen(filename, "w"))) {
+	/* Keep the umask closely wrapped around our fopen() call in case the
+	 * log outputs cause file creation. */
+	i = umask(022);
+	f = fopen(filename, "w");
+	umask(i);
+	if (!f) {
 		LOGP(DLGTP, LOGL_ERROR,
 			"fopen(path=%s, mode=%s) failed: Error = %s\n", filename,
 			"w", strerror(errno));
 		goto free_filename;
 	}
 
-	umask(i);
 	fprintf(f, "%d\n", gsn->restart_counter);
 close_file:
 	if (fclose(f))
