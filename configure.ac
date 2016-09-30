@@ -4,6 +4,9 @@ AC_CONFIG_SRCDIR([gtp/gtp.c])
 AM_CONFIG_HEADER([config.h])
 #AC_CONFIG_HEADER([config.h])
 
+dnl *This* is the root dir, even if an install-sh exists in ../ or ../../
+AC_CONFIG_AUX_DIR([.])
+
 AC_CANONICAL_SYSTEM
 
 dnl kernel style compile messages
