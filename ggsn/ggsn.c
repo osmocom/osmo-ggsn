@@ -138,10 +138,15 @@ int delete_context(struct pdp_t *pdp)
 	DEBUGP(DGGSN, "Deleting PDP context\n");
 	struct ippoolm_t *member = pdp->peer;
 	char v[NAMESIZE];
-	snprintf(v, sizeof(v), "%" PRIu64 ",%s", pdp->imsi, inet_ntoa(member->addr));
-	if (pdp->peer)
+
+	if (pdp->peer) {
+		snprintf(v, sizeof(v), "%" PRIu64 ",%s", pdp->imsi,
+			 inet_ntoa(member->addr));
+		if (ctrl_cmd_send_trap(gsn->ctrl, "imsi-rem-ip", v) < 0)
+			LOGP(DGGSN, LOGL_ERROR, "Failed to create and send TRAP"
+			     " for IMSI %" PRIu64 " PDP deletion.\n", pdp->imsi);
 		ippool_freeip(ippool, (struct ippoolm_t *)pdp->peer);
-	else
+	} else
 		SYS_ERR(DGGSN, LOGL_ERROR, 0, "Peer not defined!");
 
 	if (gtp_kernel_tunnel_del(pdp)) {
@@ -149,9 +154,6 @@ int delete_context(struct pdp_t *pdp)
 			"Cannot delete tunnel from kernel: %s\n",
 			strerror(errno));
 	}
-/* FIXME: naming? */
-	if (ctrl_cmd_send_trap(gsn->ctrl, "imsi-rem-ip", v) < 0)
-		LOGP(DGGSN, LOGL_ERROR, "Trap creation failed.\n");
 
 	return 0;
 }
