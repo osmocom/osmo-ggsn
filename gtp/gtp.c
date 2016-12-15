@@ -210,7 +210,7 @@ static uint16_t get_seq(void *pack)
 	} else if ((packet->flags & 0xe2) == 0x22) {	/* Version 1 with seq */
 		return ntoh16(packet->gtp1l.h.seq);
 	} else {
-		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flag: %u\n", packet->flags);
+		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flags: 0x%02x\n", packet->flags);
 		return 0;
 	}
 }
@@ -246,7 +246,7 @@ static uint16_t get_hlen(void *pack)
 	} else if ((packet->flags & 0xe7) == 0x20) {	/* Short version 1 */
 		return GTP1_HEADER_SIZE_SHORT;
 	} else {
-		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flag: %u\n", packet->flags);
+		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flags: 0x%02x\n", packet->flags);
 		return 0;
 	}
 }
@@ -265,7 +265,7 @@ static uint32_t get_tei(void *pack)
 	} else if ((packet->flags & 0xe0) == 0x20) {	/* Version 1 */
 		return ntoh32(packet->gtp1l.h.tei);
 	} else {
-		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flag: %u\n", packet->flags);
+		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flags: 0x%02x\n", packet->flags);
 		return 0xffffffff;
 	}
 }
@@ -388,7 +388,7 @@ int gtp_req(struct gsn_t *gsn, int version, struct pdp_t *pdp,
 			packet->gtp1l.h.tei = hton32(pdp->teic_gn);
 		fd = gsn->fd1c;
 	} else {
-		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flag: %u\n", packet->flags);
+		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flags: 0x%02x\n", packet->flags);
 		return -1;
 	}
 
@@ -537,7 +537,7 @@ int gtp_resp(int version, struct gsn_t *gsn, struct pdp_t *pdp,
 		else if (pdp)
 			packet->gtp1l.h.tei = hton32(pdp->teic_gn);
 	} else {
-		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flag: %u\n", packet->flags);
+		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flags: 0x%02x\n", packet->flags);
 		return -1;
 	}
 
@@ -595,7 +595,7 @@ int gtp_notification(struct gsn_t *gsn, int version,
 		packet->gtp1l.h.length = hton16(len - GTP1_HEADER_SIZE_SHORT);
 		packet->gtp1l.h.seq = hton16(seq);
 	} else {
-		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flag: %u\n", packet->flags);
+		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flags: 0x%02x\n", packet->flags);
 		return -1;
 	}
 
@@ -2864,7 +2864,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 		if (((pheader->flags & 0xf7) != 0x32)) {
 			gsn->unsup++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
-				    status, "Unsupported packet flag\n");
+				    status, "Unsupported packet flags: 0x%02x\n", pheader->flags);
 			continue;
 		}
 
@@ -3039,7 +3039,7 @@ int gtp_decaps1u(struct gsn_t *gsn)
 		if (((pheader->flags & 0xf5) != 0x30)) {
 			gsn->unsup++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
-				    status, "Unsupported packet flag\n");
+				    status, "Unsupported packet flags 0x%02x\n", pheader->flags);
 			continue;
 		}
 
