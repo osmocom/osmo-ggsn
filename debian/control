@@ -1,31 +1,54 @@
 Source: openggsn
+Maintainer: Harald Welte <laforge@gnumonks.org>
 Section: net
 Priority: optional
-Maintainer: Harald Welte <laforge@gnumonks.org>
-Build-Depends: debhelper (>= 9), autotools-dev, pkg-config, libdpkg-perl, git, dh-autoreconf, libosmocore-dev (>= 0.8.0)
+Build-Depends: debhelper (>= 9),
+               autotools-dev,
+               pkg-config,
+               libdpkg-perl, git,
+               dh-autoreconf,
+               libosmocore-dev (>= 0.8.0)
 Standards-Version: 3.9.6
-Homepage: http://sourceforge.net/projects/ggsn/
-Vcs-Git: git://ggsn.git.sourceforge.net/gitroot/ggsn/ggsn
 Vcs-Browser: http://ggsn.git.sourceforge.net/git/gitweb.cgi?p=ggsn/ggsn;a=summary
+Vcs-Git: git://ggsn.git.sourceforge.net/gitroot/ggsn/ggsn
+Homepage: https://projects.osmocom.org/projects/openggsn
 
 Package: openggsn
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: Gateway GPRS Support Node
+Depends: ${shlibs:Depends},
+         ${misc:Depends}
+Description: Gateway GPRS Support Node (GGSN)
+ OpenGGSN is a Gateway GPRS Support Node (GGSN). It is used by mobile
+ operators as the interface between the Internet and the rest of the
+ mobile network infrastructure.
 
 Package: libgtp0
 Architecture: any
-Section: libs
-Depends: ${shlibs:Depends}, ${misc:Depends}
 Multi-Arch: same
+Section: libs
+Depends: ${shlibs:Depends},
+         ${misc:Depends}
 Description: library implementing the GTP protocol between SGSN and GGSN
+ OpenGGSN is a Gateway GPRS Support Node (GGSN). It is used by mobile
+ operators as the interface between the Internet and the rest of the
+ mobile network infrastructure.
+ .
+ This library is part of openggsn and implements the GTP protocol between
+ SGSN (Serving GPRS support node) and GGSN.
 
 Package: libgtp0-dev
-Depends: ${misc:Depends}, libgtp0 (= ${binary:Version})
-Multi-Arch: same
 Architecture: any
+Multi-Arch: same
 Section: libdevel
+Depends: ${misc:Depends},
+         libgtp0 (= ${binary:Version})
 Description: Development files for libgtp
+ OpenGGSN is a Gateway GPRS Support Node (GGSN). It is used by mobile
+ operators as the interface between the Internet and the rest of the
+ mobile network infrastructure.
+ .
+ The library libgtp implements the GTP protocol between SGSN and GGSN
+ and this package contains the development files for this library.
 
 Package: openggsn-dbg
 Section: debug

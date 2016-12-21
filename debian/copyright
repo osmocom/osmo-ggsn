@@ -1,46 +1,55 @@
-This work was packaged for Debian by:
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: openggsn
+Source: http://sourceforge.net/projects/ggsn/
 
-    Harald Welte <laforge@gnumonks.org> on Tue, 24 Aug 2010 11:23:40 +0200
+Files: *
+Copyright: 2002      Jens Jakobsen <jj@openggsn.org>
+           2002-2004 Mondru AB
+           2010-2011 Harald Welte <laforge@gnumonks.org>
+License: GPL-2
 
-It was downloaded from:
+Files: lib/getopt.c
+       lib/gnugetopt.h
+       lib/getopt1.c
+Copyright: 1987-2001 Free Software Foundation, Inc.
+License: LGPL-2.1+
 
-    http://sourceforge.net/projects/ggsn
+Files: debian/*
+Copyright: 2010-2015  Harald Welte <laforge@gnumonks.org>
+           2016       Ruben Undheim <ruben.undheim@gmail.com>
+License: GPL-2
 
-Upstream Author(s):
 
-    Jens Jakobsen <jj@openggsn.org>
-    Harald Welte <laforge@gnumonks.org>
+License: GPL-2
+ This package is free software: you can redistribute it and/or modify it
+ under the terms of the GNU General Public License as published by
+ the Free Software Foundation; version 2 of the License
+ .
+ This program is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ .
+ On Debian systems, the complete text of the GNU General Public
+ License version 2 can be found in "/usr/share/common-licenses/GPL-2".
 
-Copyright:
 
-    Copyright (C) 2002 Mondru AB
-    Copyright (C) 2010 Harald Welte <laforge@gnumonks.org>
-
-License:
-
-   This package is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License version 2 as
-   published by the Free Software Foundation.
-
-    This package is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program. If not, see <http://www.gnu.org/licenses/>
-
-On Debian systems, the complete text of the GNU General
-Public License version 2 can be found in "/usr/share/common-licenses/GPL-2".
-
-The Debian packaging is:
-
-    Copyright (C) 2010 Harald Welte <laforge@gnumonks.org>
-
-you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-# Please also look if there are files or directories which have a
-# different copyright/license attached and list them here.
+License: LGPL-2.1+
+ This package is free software: you can redistribute it and/or modify it
+ under the terms of the GNU Lesser General Public License as published by
+ the Free Software Foundation, either version 2.1 of the License, or (at
+ your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ for more details.
+ .
+ You should have received a copy of the GNU Lesser General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ .
+ On Debian systems, the complete text of the GNU Lesser General Public
+ License version 2.1 can be found in "/usr/share/common-licenses/LGPL-2.1".
