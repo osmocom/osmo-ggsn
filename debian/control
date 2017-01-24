@@ -22,7 +22,7 @@ Description: Gateway GPRS Support Node (GGSN)
  operators as the interface between the Internet and the rest of the
  mobile network infrastructure.
 
-Package: libgtp0
+Package: libgtp1
 Architecture: any
 Multi-Arch: same
 Section: libs
@@ -36,12 +36,12 @@ Description: library implementing the GTP protocol between SGSN and GGSN
  This library is part of openggsn and implements the GTP protocol between
  SGSN (Serving GPRS support node) and GGSN.
 
-Package: libgtp0-dev
+Package: libgtp-dev
 Architecture: any
 Multi-Arch: same
 Section: libdevel
 Depends: ${misc:Depends},
-         libgtp0 (= ${binary:Version})
+         libgtp1 (= ${binary:Version})
 Description: Development files for libgtp
  OpenGGSN is a Gateway GPRS Support Node (GGSN). It is used by mobile
  operators as the interface between the Internet and the rest of the
@@ -54,6 +54,6 @@ Package: openggsn-dbg
 Section: debug
 Architecture: any
 Priority: extra
-Depends: ${shlibs:Depends}, ${misc:Depends}, libgtp0 (= ${binary:Version}), openggsn (= ${binary:Version})
+Depends: ${shlibs:Depends}, ${misc:Depends}, libgtp1 (= ${binary:Version}), openggsn (= ${binary:Version})
 Multi-Arch: same
 Description: Debug symbols for OpenGGSN

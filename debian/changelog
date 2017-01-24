@@ -1,8 +1,9 @@
 openggsn (0.93) UNRELEASED; urgency=medium
 
   * Bump version to ease upgrading from Debian SID.
+  * Bump libgtp SO version after ABI change.
 
- -- Holger Hans Peter Freyther <holger@moiji-mobile.com>  Tue, 24 May 2016 22:53:16 +0200
+ -- Holger Hans Peter Freyther <holger@moiji-mobile.com>  Tue, 24 Jan 2017 17:26:26 +0100
 
 openggsn (0.92) precise; urgency=medium
 
