@@ -1,9 +1,16 @@
 OpenGGSN - Gateway GPRS Support Node
-Copyright (C) 2002 Mondru AB.
+Copyright (C) 2002-2004 Mondru AB, Author: Jens Jakobsen <jj@openggsn.org>
+Copyright (C) 2010-2017 Harald Welte <laforge@gnumonks.org>
+Copyright (C) 2012-2016 Holger Hans Peter Freyther <zecke@selfish.org>
+Copyright (C) 2014-2016 Pablo Neira Ayuso <pablo@gnumonks.org>
+Copyright (C) 2014-2016 sysmocom - s.f.m.c. GmbH
 
-The initial developer of the original code is
-Jens Jakobsen <jj@openggsn.org>
-
-Contributor(s):
-
-
+Contributors:
+Emmanuel Bretelle <chantra@debuntu.org>
+Yann BONNAMY <yann_bonnamy@yahoo.fr>
+Eric Butler <eric@codebutler.com>
+Michael McTernan <mike.mcternan@wavemobile.com>
+Alexander Huemer <alexander.huemer@xx.vu>
+BJovke <bjovan@gmail.com>
+Alexander Couzens <lynxis@fe80.eu>
+Ruben Undheim <ruben.undheim@gmail.com>
