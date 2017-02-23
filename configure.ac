@@ -123,7 +123,7 @@ AC_CHECK_FUNCS(inet_aton inet_addr, break)
 # check for getopt in standard library
 adl_FUNC_GETOPT_LONG
 
-AM_INIT_AUTOMAKE()
+AM_INIT_AUTOMAKE([foreign])
 
 PKG_CHECK_MODULES(LIBOSMOCORE, libosmocore >= 0.6.4)
 PKG_CHECK_MODULES(LIBOSMOVTY, libosmovty >= 0.3.0)

@@ -257,9 +257,8 @@ Documentation can be converted to html by issuing:
 
  1. txt2html -pm -tf README > README.html
  2. txt2html -pm -tf NEWS > NEWS.html
- 3. txt2html -pm -tf ChangeLog > ChangeLog.html
- 4. man2htm ggsn.8 > ggsn.html
- 5. man2htm sgsnemu.8 > sgsnemu.html
+ 3. man2htm ggsn.8 > ggsn.html
+ 4. man2htm sgsnemu.8 > sgsnemu.html
 
 
 Installation from binary
