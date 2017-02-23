@@ -210,7 +210,6 @@ static uint16_t get_seq(void *pack)
 	} else if ((packet->flags & 0xe2) == 0x22) {	/* Version 1 with seq */
 		return ntoh16(packet->gtp1l.h.seq);
 	} else {
-		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flags: 0x%02x\n", packet->flags);
 		return 0;
 	}
 }
