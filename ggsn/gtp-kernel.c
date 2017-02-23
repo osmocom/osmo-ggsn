@@ -192,7 +192,10 @@ int gtp_kernel_tunnel_add(struct pdp_t *pdp)
 		gtp_tunnel_set_tid(t, pdp_gettid(pdp->imsi, pdp->nsapi));
 		gtp_tunnel_set_flowid(t, pdp->flru);
 	} else {
-		gtp_tunnel_set_tid(t, pdp->teid_gn); /* GTPIE_TEI_DI */
+		gtp_tunnel_set_i_tei(t, pdp->teid_own);
+		/* use the TEI advertised by SGSN when sending packets
+		 * towards the SGSN */
+		gtp_tunnel_set_o_tei(t, pdp->teid_gn);
 	}
 
 	ret = gtp_add_tunnel(gtp_nl.genl_id, gtp_nl.nl, t);
@@ -221,7 +224,7 @@ int gtp_kernel_tunnel_del(struct pdp_t *pdp)
 		gtp_tunnel_set_tid(t, pdp_gettid(pdp->imsi, pdp->nsapi));
 		gtp_tunnel_set_flowid(t, pdp->flru);
 	} else {
-		gtp_tunnel_set_tid(t, pdp->teid_gn); /* GTPIE_TEI_DI */
+		gtp_tunnel_set_i_tei(t, pdp->teid_own);
 	}
 
 	ret = gtp_del_tunnel(gtp_nl.genl_id, gtp_nl.nl, t);
