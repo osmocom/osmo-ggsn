@@ -70,7 +70,7 @@ struct iphash_t *iphash[MAXCONTEXTS];
 /* 3: Done                       */
 /* 4: Wait_disconnect            */
 /* 5: Disconnected               */
-int state = 0;
+volatile sig_atomic_t state = 0;
 
 struct gsn_t *gsn = NULL;	/* GSN instance */
 struct tun_t *tun = NULL;	/* TUN instance */
@@ -153,6 +153,12 @@ int tmax = 0;
 int tsum = 0;
 int pingseq = 0;		/* Ping sequence counter */
 struct timeval firstping;
+
+void signal_handler(int signo)
+{
+	if (state == 2)
+		state = 3;  /* Tell main loop to finish. */
+}
 
 int ipset(struct iphash_t *ipaddr, struct in_addr *addr)
 {
@@ -1417,10 +1423,15 @@ int main(int argc, char **argv)
 	int starttime = time(NULL);	/* Time program was started */
 	int stoptime = 0;	/* Time to exit */
 	int pingtimeout = 0;	/* Time to print ping statistics */
+	int signal_received;	/* If select() on fd_set is interrupted by signal. */
 
 	struct timezone tz;	/* Used for calculating ping times */
 	struct timeval tv;
 	int diff;
+
+	signal(SIGTERM, signal_handler);
+	signal(SIGHUP,  signal_handler);
+	signal(SIGINT,  signal_handler);
 
 	osmo_init_logging(&log_info);
 
@@ -1676,10 +1687,14 @@ int main(int argc, char **argv)
 			printf("idletime.tv_sec %d, idleTime.tv_usec %d\n",
 			       (int)idleTime.tv_sec, (int)idleTime.tv_usec);
 
+		signal_received = 0;
 		switch (select(maxfd + 1, &fds, NULL, NULL, &idleTime)) {
 		case -1:
-			SYS_ERR(DSGSN, LOGL_ERROR, 0,
-				"Select returned -1");
+			if (errno == EINTR)
+				signal_received = 1;
+			else
+				SYS_ERR(DSGSN, LOGL_ERROR, 0,
+					"Select returned -1");
 			break;
 		case 0:
 			gtp_retrans(gsn);	/* Only retransmit if nothing else */
@@ -1688,19 +1703,23 @@ int main(int argc, char **argv)
 			break;
 		}
 
-		if ((tun) && FD_ISSET(tun->fd, &fds) && tun_decaps(tun) < 0) {
-			SYS_ERR(DSGSN, LOGL_ERROR, 0,
-				"TUN decaps failed");
+		if (!signal_received) {
+
+			if ((tun) && FD_ISSET(tun->fd, &fds) && tun_decaps(tun) < 0) {
+				SYS_ERR(DSGSN, LOGL_ERROR, 0,
+					"TUN decaps failed");
+			}
+
+			if (FD_ISSET(gsn->fd0, &fds))
+				gtp_decaps0(gsn);
+
+			if (FD_ISSET(gsn->fd1c, &fds))
+				gtp_decaps1c(gsn);
+
+			if (FD_ISSET(gsn->fd1u, &fds))
+				gtp_decaps1u(gsn);
+
 		}
-
-		if (FD_ISSET(gsn->fd0, &fds))
-			gtp_decaps0(gsn);
-
-		if (FD_ISSET(gsn->fd1c, &fds))
-			gtp_decaps1c(gsn);
-
-		if (FD_ISSET(gsn->fd1u, &fds))
-			gtp_decaps1u(gsn);
 	}
 
 	gtp_free(gsn);		/* Clean up the gsn instance */
