@@ -1,3 +1,61 @@
+OpenGGSN - Open Source GGSN
+===========================
+
+This repository contains a C-language implementation of a GGSN (Gateway
+GPRS Support Node), a core network element of ETSI/3GPP cellular
+networks such as GPRS, EDGE, UMTS or HSPA.
+
+OpenGGSN is part of the [Osmocom](https://osmocom.org/) Open Source
+Mobile Communications projects, even thogh it was previously developed
+by Mondru AB.
+
+Homepage
+--------
+
+The official homepage of the project is
+https://osmocom.org/projects/openggsn/wiki
+
+GIT Repository
+--------------
+
+You can clone from the official libosmocore.git repository using
+
+	git clone git://git.osmocom.org/openggsn.git
+
+There is a cgit interface at http://git.osmocom.org/openggsn/
+
+Documentation
+-------------
+
+There currently is no other documentation other than the wiki on the
+homepage.  It would be great if somebody would work towards a user
+manual that can become part of the osmo-gsm-manuals project.
+
+Mailing List
+------------
+
+Discussions related to openggsn are happening on the
+osmocom-net-gprs@lists.osmocom.org mailing list, please see
+https://lists.osmocom.org/mailman/listinfo/osmocom-net-gprs for
+subscription options and the list archive.
+
+Please observe the [Osmocom Mailing List
+Rules](https://osmocom.org/projects/cellular-infrastructure/wiki/Mailing_List_Rules)
+when posting.
+
+Contributing
+------------
+
+Our coding standards are described at
+https://osmocom.org/projects/cellular-infrastructure/wiki/Coding_standards
+
+We us a gerrit based patch submission/review process for managing
+contributions.  Please see
+https://osmocom.org/projects/cellular-infrastructure/wiki/Gerrit for
+more details
+
+The current patch queue for OpenGGSN can be seen at
+https://gerrit.osmocom.org/#/q/project:openggsn+status:open
 OPENGGSN README
 ===============
 
@@ -5,19 +63,19 @@ OPENGGSN README
 QuickStart
 ==========
 
-
 Requirements
 ------------
 
 *Linux* 
-OpenGGSN was developed and tested using Redhat 8.0 and 9.0. It should
-run also on other Linux distributions as well as FreeBSD, but this is
+OpenGGSN was originally developed and tested using Redhat 8.0 and 9.0
+and is these days mostly developed on Debian GNU/Linux.  It should run
+also on other Linux distributions as well as FreeBSD, but this is
 untested. Compilation on Solaris 2.8 has also been verified.
 
 *Tun*
-The tun driver is required for proper operation of openggsn. For linux
-kernels later than 2.4.7 the driver is typically included, but need
-to be configured for automatic loading:
+The tun driver is required for proper operation of openggsn. For Linux
+kernels later than 2.4.7 the driver is typically included, but might
+need to be configured for automatic loading:
 
 1. Add the following line to /etc/modules.conf: alias char-major-10-200 tun 
 2. depmod -a
@@ -26,10 +84,10 @@ to be configured for automatic loading:
 Installation from binary
 ------------------------
 
-rpm -i openggsn-<version>.rpm
-
-This will install binaries, man pages, configuration files as well as
-a Sys V init script for the ggsn.
+OpenGGSN is built for common versions of Debian and Ubuntu as part of
+the [Osmocom Nightly Builds](https://osmocom.org/projects/cellular-infrastructure/wiki/Nightly_Builds)
+project.  If you don't want to do development, it is suggested to simply
+use those binary packages, rather than building yourself from source.
 
 
 Installation from source
@@ -77,7 +135,7 @@ can use sgsnemu to test the GGSN.
 Support
 -------
 
-If you have any questions drop me a line at jj@openggsn.org.
+Please contact the Mailing List above for community-based support.
 
 
 Features
@@ -336,7 +394,6 @@ sgsnemu --listen 10.0.0.50 --remote 10.0.0.40 --dns 10.20.38.51 --timelimit 10 -
 
 sgsnemu will print something like the following on the screen:
 
-<PRE>
 
   Using DNS server:      10.20.38.51 (10.20.38.51)
   Local IP address is:   10.0.0.50 (10.0.0.50)
@@ -353,8 +410,6 @@ sgsnemu will print something like the following on the screen:
   Waiting for response from ggsn........
 
   Received echo response. Cause value: 0
-
-</PRE>
 
 This is quite good. It means that you managed to send off an echo
 request to a remote GGSN, and it was friendly enough to answer you. If
@@ -375,8 +430,6 @@ GPRS core network! Assuming you know what you are doing:
 sgsnemu --listen 10.0.0.50 --remote 10.0.0.40 --dns 10.20.38.51 --timelimit 10 --contexts 1 --apn internet --imsi 240011234567890 --msisdn 46702123456 --createif --defaultroute
 
 sgsnemu will print something like the following on the screen:
-
-<PRE>
 
   Using DNS server:      10.20.38.51 (10.20.38.51)
   Local IP address is:   10.0.0.50 (10.0.0.50)
@@ -399,7 +452,6 @@ sgsnemu will print something like the following on the screen:
   /sbin/ifconfig tun0 192.168.0.1
   /sbin/route add -net 192.168.0.0 netmask 255.255.255.0 gw 192.168.0.1
 
-</PRE>
 
 Now a context is established to the remote GGSN. The IP address of the
 context is 192.168.0.1. You should be able to ping a known address on
@@ -419,11 +471,7 @@ After --timelimit seconds the PDP context is disconnected with the
 following messages from sgsnemu:
 
 
-<PRE>
-
   Disconnecting PDP context #0
   Received delete PDP context response. Cause value: 128
   Deleting tun interface
-
-</PRE>
 

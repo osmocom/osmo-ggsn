@@ -4,4 +4,4 @@ SUBDIRS = lib gtp ggsn sgsnemu doc
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libgtp.pc
 
-EXTRA_DIST = README README.FreeBSD README.MacOSX README.Solaris
+EXTRA_DIST = README.md README.FreeBSD README.MacOSX README.Solaris
