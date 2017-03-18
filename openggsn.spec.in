@@ -63,7 +63,7 @@ make clean
 %dir /var/lib/ggsn
 /var/lib/ggsn/gsn_restart
 
-%doc AUTHORS COPYING INSTALL NEWS README 
+%doc AUTHORS COPYING INSTALL NEWS README.md
 %doc examples/ggsn.conf
 %doc examples/sgsnemu.conf
 %doc examples/ggsn.init
