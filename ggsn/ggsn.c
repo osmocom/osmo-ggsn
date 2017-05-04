@@ -133,18 +133,26 @@ int daemon(int nochdir, int noclose)
 }
 #endif
 
+static bool send_trap(const struct gsn_t *gsn, const struct pdp_t *pdp, const struct ippoolm_t *member, const char *var)
+{
+	char val[NAMESIZE];
+
+	snprintf(val, sizeof(val), "%" PRIu64 ",%s", pdp->imsi, inet_ntoa(member->addr));
+
+	if (ctrl_cmd_send_trap(gsn->ctrl, var, val) < 0) {
+		LOGP(DGGSN, LOGL_ERROR, "Failed to create and send TRAP for IMSI %" PRIu64 " [%s].\n", pdp->imsi, var);
+		return false;
+	}
+	return true;
+}
+
 int delete_context(struct pdp_t *pdp)
 {
 	DEBUGP(DGGSN, "Deleting PDP context\n");
 	struct ippoolm_t *member = pdp->peer;
-	char v[NAMESIZE];
 
 	if (pdp->peer) {
-		snprintf(v, sizeof(v), "%" PRIu64 ",%s", pdp->imsi,
-			 inet_ntoa(member->addr));
-		if (ctrl_cmd_send_trap(gsn->ctrl, "imsi-rem-ip", v) < 0)
-			LOGP(DGGSN, LOGL_ERROR, "Failed to create and send TRAP"
-			     " for IMSI %" PRIu64 " PDP deletion.\n", pdp->imsi);
+		send_trap(gsn, pdp, member, "imsi-rem-ip"); /* TRAP with IP removal */
 		ippool_freeip(ippool, (struct ippoolm_t *)pdp->peer);
 	} else
 		SYS_ERR(DGGSN, LOGL_ERROR, 0, "Peer not defined!");
@@ -162,7 +170,6 @@ int create_context_ind(struct pdp_t *pdp)
 {
 	struct in_addr addr;
 	struct ippoolm_t *member;
-	char v[NAMESIZE];
 
 	DEBUGP(DGGSN, "Received create PDP context request\n");
 
@@ -192,10 +199,8 @@ int create_context_ind(struct pdp_t *pdp)
 		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"Cannot add tunnel to kernel: %s\n", strerror(errno));
 	}
-/* FIXME: naming? */
-	snprintf(v, sizeof(v), "%" PRIu64 ",%s", pdp->imsi, inet_ntoa(member->addr));
-	if (ctrl_cmd_send_trap(gsn->ctrl, "imsi-ass-ip", v) < 0) {
-		LOGP(DGGSN, LOGL_ERROR, "Trap creation failed.\n");
+
+	if (!send_trap(gsn, pdp, member, "imsi-ass-ip")) { /* TRAP with IP assignment */
 		gtp_create_context_resp(gsn, pdp, GTPCAUSE_NO_RESOURCES);
 		return 0;
 	}
