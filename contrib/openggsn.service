@@ -1,5 +1,6 @@
 [Unit]
 Description=OpenGGSN
+After=networking.service
 
 [Service]
 Type=simple
