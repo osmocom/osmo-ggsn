@@ -730,9 +730,9 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 	if (((*gsn)->fd0 = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
 		(*gsn)->err_socket++;
 		LOGP(DLGTP, LOGL_ERROR,
-			"socket(domain=%d, type=%d, protocol=%d) failed: Error = %s\n",
+		     "GTPv0 socket(domain=%d, type=%d, protocol=%d) failed: Error = %s\n",
 			AF_INET, SOCK_DGRAM, 0, strerror(errno));
-		return -1;
+		return -errno;
 	}
 
 	memset(&addr, 0, sizeof(addr));
@@ -748,16 +748,16 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 		LOGP_WITH_ADDR(DLGTP, LOGL_ERROR, addr,
 			       "bind(fd0=%d) failed: Error = %s\n",
 			       (*gsn)->fd0, strerror(errno));
-		return -1;
+		return -errno;
 	}
 
 	/* Create GTP version 1 control plane socket */
 	if (((*gsn)->fd1c = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
 		(*gsn)->err_socket++;
 		LOGP(DLGTP, LOGL_ERROR,
-			"socket(domain=%d, type=%d, protocol=%d) failed: Error = %s\n",
+		     "GTPv1 control plane socket(domain=%d, type=%d, protocol=%d) failed: Error = %s\n",
 			AF_INET, SOCK_DGRAM, 0, strerror(errno));
-		return -1;
+		return -errno;
 	}
 
 	memset(&addr, 0, sizeof(addr));
@@ -773,16 +773,16 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 		LOGP_WITH_ADDR(DLGTP, LOGL_ERROR, addr,
 				"bind(fd1c=%d) failed: Error = %s\n",
 				(*gsn)->fd1c, strerror(errno));
-		return -1;
+		return -errno;
 	}
 
 	/* Create GTP version 1 user plane socket */
 	if (((*gsn)->fd1u = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
 		(*gsn)->err_socket++;
 		LOGP(DLGTP, LOGL_ERROR,
-			"socket(domain=%d, type=%d, protocol=%d) failed: Error = %s\n",
+		     "GTPv1 user plane socket(domain=%d, type=%d, protocol=%d) failed: Error = %s\n",
 			AF_INET, SOCK_DGRAM, 0, strerror(errno));
-		return -1;
+		return -errno;
 	}
 
 	memset(&addr, 0, sizeof(addr));
@@ -798,7 +798,7 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 		LOGP_WITH_ADDR(DLGTP, LOGL_ERROR, addr,
 			"bind(fd1u=%d) failed: Error = %s\n",
 			(*gsn)->fd1u, strerror(errno));
-		return -1;
+		return -errno;
 	}
 
 	return 0;
@@ -2730,7 +2730,7 @@ int gtp_decaps0(struct gsn_t *gsn)
 			gsn->unexpect++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status,
-				    "Unexpected GTP Signalling Message\n");
+				    "Unexpected GTPv0 Signalling Message\n");
 			continue;	/* Silently discard 29.60: 11.1.4 */
 		}
 
@@ -2741,7 +2741,7 @@ int gtp_decaps0(struct gsn_t *gsn)
 			gsn->unexpect++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status,
-				    "Unexpected GTP Signalling Message\n");
+				    "Unexpected GTPv0 Signalling Message\n");
 			continue;	/* Silently discard 29.60: 11.1.4 */
 		}
 
@@ -2905,7 +2905,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 			gsn->unexpect++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status,
-				    "Unexpected GTP Signalling Message\n");
+				    "Unexpected GTPv1 Signalling Message\n");
 			continue;	/* Silently discard 29.60: 11.1.4 */
 		}
 
@@ -2916,7 +2916,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 			gsn->unexpect++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status,
-				    "Unexpected GTP Signalling Message\n");
+				    "Unexpected GTPv1 Signalling Message\n");
 			continue;	/* Silently discard 29.60: 11.1.4 */
 		}
 
