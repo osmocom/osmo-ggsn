@@ -56,6 +56,7 @@
 #include "../lib/tun.h"
 #include "../lib/ippool.h"
 #include "../lib/syserr.h"
+#include "../lib/in46_addr.h"
 #include "../gtp/pdp.h"
 #include "../gtp/gtp.h"
 #include "cmdline.h"
@@ -65,7 +66,8 @@ int end = 0;
 int maxfd = 0;			/* For select()            */
 
 struct in_addr listen_;
-struct in_addr netaddr, destaddr, net, mask;	/* Network interface       */
+struct in_addr netaddr, destaddr, net;	/* Network interface       */
+size_t prefixlen;
 struct in_addr dns1, dns2;	/* PCO DNS address         */
 char *ipup, *ipdown;		/* Filename of scripts     */
 int debug;			/* Print debug output      */
@@ -135,9 +137,12 @@ int daemon(int nochdir, int noclose)
 
 static bool send_trap(const struct gsn_t *gsn, const struct pdp_t *pdp, const struct ippoolm_t *member, const char *var)
 {
+	char addrbuf[256];
 	char val[NAMESIZE];
 
-	snprintf(val, sizeof(val), "%" PRIu64 ",%s", pdp->imsi, inet_ntoa(member->addr));
+	const char *addrstr = in46a_ntop(&member->addr, addrbuf, sizeof(addrbuf));
+
+	snprintf(val, sizeof(val), "%" PRIu64 ",%s", pdp->imsi, addrstr);
 
 	if (ctrl_cmd_send_trap(gsn->ctrl, var, val) < 0) {
 		LOGP(DGGSN, LOGL_ERROR, "Failed to create and send TRAP for IMSI %" PRIu64 " [%s].\n", pdp->imsi, var);
@@ -168,7 +173,7 @@ int delete_context(struct pdp_t *pdp)
 
 int create_context_ind(struct pdp_t *pdp)
 {
-	struct in_addr addr;
+	struct in46_addr addr;
 	struct ippoolm_t *member;
 
 	DEBUGP(DGGSN, "Received create PDP context request\n");
@@ -183,8 +188,8 @@ int create_context_ind(struct pdp_t *pdp)
 	memcpy(pdp->qos_neg.v, pdp->qos_req.v, pdp->qos_req.l);	/* TODO */
 	pdp->qos_neg.l = pdp->qos_req.l;
 
-	if (pdp_euaton(&pdp->eua, &addr)) {
-		addr.s_addr = 0;	/* Request dynamic */
+	if (pdp_euaton(&pdp->eua, &addr.v4)) {
+		addr.v4.s_addr = 0;	/* Request dynamic */
 	}
 
 	if (ippool_newip(ippool, &member, &addr, 0)) {
@@ -192,7 +197,7 @@ int create_context_ind(struct pdp_t *pdp)
 		return 0;	/* Allready in use, or no more available */
 	}
 
-	pdp_ntoeua(&member->addr, &pdp->eua);
+	pdp_ntoeua(&member->addr.v4, &pdp->eua);
 	pdp->peer = member;
 	pdp->ipif = tun;	/* TODO */
 	member->peer = pdp;
@@ -215,10 +220,18 @@ int create_context_ind(struct pdp_t *pdp)
 int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 {
 	struct ippoolm_t *ipm;
-	struct in_addr dst;
+	struct in46_addr dst;
 	struct tun_packet_t *iph = (struct tun_packet_t *)pack;
 
-	dst.s_addr = iph->dst;
+	if (iph->ver == 4) {
+		if (len < sizeof(*iph) || len < 4*iph->ihl)
+			return -1;
+		dst.len = 4;
+		dst.v4.s_addr = iph->dst;
+	} else {
+		LOGP(DGGSN, LOGL_NOTICE, "non-IPv4 packet received from tun\n");
+		return -1;
+	}
 
 	DEBUGP(DGGSN, "Received packet from tun!\n");
 
@@ -383,12 +396,14 @@ int main(int argc, char **argv)
 	/* net                                                          */
 	/* Store net as in_addr net and mask                            */
 	if (args_info.net_arg) {
-		if (ippool_aton(&net, &mask, args_info.net_arg, 0)) {
+		struct in46_addr in46;
+		if (ippool_aton(&in46, &prefixlen, args_info.net_arg, 0)) {
 			SYS_ERR(DGGSN, LOGL_ERROR, 0,
 				"Invalid network address: %s!",
 				args_info.net_arg);
 			exit(1);
 		}
+		net.s_addr = in46.v4.s_addr;
 		netaddr.s_addr = htonl(ntohl(net.s_addr) + 1);
 		destaddr.s_addr = htonl(ntohl(net.s_addr) + 1);
 	} else {
@@ -547,7 +562,7 @@ int main(int argc, char **argv)
 		maxfd = gsn->fd1u;
 
 	/* use GTP kernel module for data packet encapsulation */
-	if (gtp_kernel_init(gsn, &net, &mask, &args_info) < 0)
+	if (gtp_kernel_init(gsn, &net, prefixlen, &args_info) < 0)
 		goto err;
 
 	gtp_set_cb_data_ind(gsn, encaps_tun);
@@ -572,7 +587,7 @@ int main(int argc, char **argv)
 	}
 
 	DEBUGP(DGGSN, "Setting tun IP address\n");
-	if (tun_setaddr(tun, &netaddr, &destaddr, &mask)) {
+	if (tun_setaddr(tun, &netaddr, &destaddr, &prefixlen)) {
 		SYS_ERR(DGGSN, LOGL_ERROR, 0, "Failed to set tun IP address");
 		exit(1);
 	}

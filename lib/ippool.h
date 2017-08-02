@@ -12,6 +12,8 @@
 #ifndef _IPPOOL_H
 #define _IPPOOL_H
 
+#include "../lib/in46_addr.h"
+
 /* Assuming that the address space is fragmented we need a hash table
    in order to return the addresses.
 
@@ -26,8 +28,6 @@
    in RFC2373.
 */
 
-#define IPPOOL_NOIP6
-
 #define IPPOOL_NONETWORK   0x01
 #define IPPOOL_NOBROADCAST 0x02
 #define IPPOOL_NOGATEWAY   0x04
@@ -40,8 +40,8 @@ struct ippool_t {
 	unsigned int listsize;	/* Total number of addresses */
 	int allowdyn;		/* Allow dynamic IP address allocation */
 	int allowstat;		/* Allow static IP address allocation */
-	struct in_addr stataddr;	/* Static address range network address */
-	struct in_addr statmask;	/* Static address range network mask */
+	struct in46_addr stataddr;	/* Static address range network address */
+	size_t stataddrprefixlen;	/* IPv6 prefix length of stataddr */
 	struct ippoolm_t *member;	/* Listsize array of members */
 	unsigned int hashsize;	/* Size of hash table */
 	int hashlog;		/* Log2 size of hash table */
@@ -54,11 +54,7 @@ struct ippool_t {
 };
 
 struct ippoolm_t {
-#ifndef IPPOOL_NOIP6
-	struct in6_addr addr;	/* IP address of this member */
-#else
-	struct in_addr addr;	/* IP address of this member */
-#endif
+	struct in46_addr addr;	/* IP address of this member */
 	int inuse;		/* 0=available; 1= dynamic; 2 = static */
 	struct ippoolm_t *nexthash;	/* Linked list part of hash table */
 	struct ippoolm_t *prev, *next;	/* Linked list of free dynamic or static */
@@ -70,7 +66,7 @@ struct ippoolm_t {
    bytes for each address. */
 
 /* Hash an IP address using code based on Bob Jenkins lookupa */
-extern unsigned long int ippool_hash4(struct in_addr *addr);
+extern unsigned long int ippool_hash(struct in46_addr *addr);
 
 /* Create new address pool */
 extern int ippool_new(struct ippool_t **this, char *dyn, char *stat,
@@ -81,24 +77,20 @@ extern int ippool_free(struct ippool_t *this);
 
 /* Find an IP address in the pool */
 extern int ippool_getip(struct ippool_t *this, struct ippoolm_t **member,
-			struct in_addr *addr);
+			struct in46_addr *addr);
 
 /* Get an IP address. If addr = 0.0.0.0 get a dynamic IP address. Otherwise
    check to see if the given address is available */
 extern int ippool_newip(struct ippool_t *this, struct ippoolm_t **member,
-			struct in_addr *addr, int statip);
+			struct in46_addr *addr, int statip);
 
 /* Return a previously allocated IP address */
 extern int ippool_freeip(struct ippool_t *this, struct ippoolm_t *member);
 
 /* Get net and mask based on ascii string */
-extern int ippool_aton(struct in_addr *addr, struct in_addr *mask,
-		       char *pool, int number);
+int ippool_aton(struct in46_addr *addr, size_t *prefixlen, const char *pool, int number);
 
-#ifndef IPPOOL_NOIP6
-extern unsigned long int ippool_hash6(struct in6_addr *addr);
-extern int ippool_getip6(struct ippool_t *this, struct in6_addr *addr);
-extern int ippool_returnip6(struct ippool_t *this, struct in6_addr *addr);
-#endif
+/* Increase IPv4/IPv6 address by 1 */
+extern void in46a_inc(struct in46_addr *addr);
 
 #endif /* !_IPPOOL_H */

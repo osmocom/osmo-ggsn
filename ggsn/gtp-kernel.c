@@ -70,17 +70,6 @@ static void pdp_debug(struct pdp_t *pdp)
 	printf("\n");
 }
 
-static int mask2prefix(struct in_addr *mask)
-{
-	uint32_t tmp = ntohl(mask->s_addr);
-	int k;
-
-	for (k=0; tmp > 0; k++)
-		tmp = (tmp << 1);
-
-	return k;
-}
-
 static struct {
 	int			genl_id;
 	struct mnl_socket	*nl;
@@ -91,7 +80,7 @@ static struct {
 #define GTP_DEVNAME	"gtp0"
 
 int gtp_kernel_init(struct gsn_t *gsn, struct in_addr *net,
-		    struct in_addr *mask,
+		    size_t prefixlen,
 		    struct gengetopt_args_info *args_info)
 {
 	if (!args_info->gtp_linux_given)
@@ -126,7 +115,7 @@ int gtp_kernel_init(struct gsn_t *gsn, struct in_addr *net,
 	DEBUGP(DGGSN, "Setting route to reach %s via %s\n",
 	       args_info->net_arg, GTP_DEVNAME);
 
-	if (gtp_dev_config(GTP_DEVNAME, net, mask2prefix(mask)) < 0) {
+	if (gtp_dev_config(GTP_DEVNAME, net, prefixlen) < 0) {
 		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"Cannot add route to reach network %s\n",
 			args_info->net_arg);

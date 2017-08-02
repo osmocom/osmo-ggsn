@@ -58,7 +58,7 @@ struct iphash_t {
 	uint8_t inuse;		/* 0=free. 1=used by somebody */
 	struct iphash_t *ipnext;
 	struct pdp_t *pdp;
-	struct in_addr addr;
+	struct in46_addr addr;
 };
 struct iphash_t iparr[MAXCONTEXTS];
 struct iphash_t *iphash[MAXCONTEXTS];
@@ -81,7 +81,8 @@ int echoversion = 1;		/* First try this version */
 struct {
 	int debug;		/* Print debug messages */
 	int createif;		/* Create local network interface */
-	struct in_addr netaddr, destaddr, net, mask;	/* Network interface  */
+	struct in_addr netaddr, destaddr, net;	/* Network interface  */
+	size_t prefixlen;
 	char *ipup, *ipdown;	/* Filename of scripts */
 	int defaultroute;	/* Set up default route */
 	struct in_addr pinghost;	/* Remote ping host    */
@@ -160,13 +161,13 @@ void signal_handler(int signo)
 		state = 3;  /* Tell main loop to finish. */
 }
 
-int ipset(struct iphash_t *ipaddr, struct in_addr *addr)
+int ipset(struct iphash_t *ipaddr, struct in46_addr *addr)
 {
-	int hash = ippool_hash4(addr) % MAXCONTEXTS;
+	int hash = ippool_hash(addr) % MAXCONTEXTS;
 	struct iphash_t *h;
 	struct iphash_t *prev = NULL;
 	ipaddr->ipnext = NULL;
-	ipaddr->addr.s_addr = addr->s_addr;
+	ipaddr->addr = *addr;
 	for (h = iphash[hash]; h; h = h->ipnext)
 		prev = h;
 	if (!prev)
@@ -178,7 +179,7 @@ int ipset(struct iphash_t *ipaddr, struct in_addr *addr)
 
 int ipdel(struct iphash_t *ipaddr)
 {
-	int hash = ippool_hash4(&ipaddr->addr) % MAXCONTEXTS;
+	int hash = ippool_hash(&ipaddr->addr) % MAXCONTEXTS;
 	struct iphash_t *h;
 	struct iphash_t *prev = NULL;
 	for (h = iphash[hash]; h; h = h->ipnext) {
@@ -194,12 +195,12 @@ int ipdel(struct iphash_t *ipaddr)
 	return EOF;		/* End of linked list and not found */
 }
 
-int ipget(struct iphash_t **ipaddr, struct in_addr *addr)
+int ipget(struct iphash_t **ipaddr, struct in46_addr *addr)
 {
-	int hash = ippool_hash4(addr) % MAXCONTEXTS;
+	int hash = ippool_hash(addr) % MAXCONTEXTS;
 	struct iphash_t *h;
 	for (h = iphash[hash]; h; h = h->ipnext) {
-		if ((h->addr.s_addr == addr->s_addr)) {
+		if (in46a_equal(&h->addr, addr)) {
 			*ipaddr = h;
 			return 0;
 		}
@@ -859,15 +860,17 @@ int process_options(int argc, char **argv)
 	/* net                                                          */
 	/* Store net as in_addr net and mask                            */
 	if (args_info.net_arg) {
+		struct in46_addr in46;
 		if (ippool_aton
-		    (&options.net, &options.mask, args_info.net_arg, 0)) {
+		    (&in46, &options.prefixlen, args_info.net_arg, 0)) {
 			SYS_ERR(DSGSN, LOGL_ERROR, 0,
 				"Invalid network address: %s!",
 				args_info.net_arg);
 			exit(1);
 		}
+		options.net.s_addr = in46.v4.s_addr;
 #if defined (__sun__)
-		options.netaddr.s_addr = htonl(ntohl(options.net.s_addr) + 1);
+		options.netaddrs_addr = htonl(ntohl(options.net.s_addr) + 1);
 		options.destaddr.s_addr = htonl(ntohl(options.net.s_addr) + 1);
 #else
 		options.netaddr.s_addr = options.net.s_addr;
@@ -876,7 +879,7 @@ int process_options(int argc, char **argv)
 
 	} else {
 		options.net.s_addr = 0;
-		options.mask.s_addr = 0;
+		options.prefixlen = 0;
 		options.netaddr.s_addr = 0;
 		options.destaddr.s_addr = 0;
 	}
@@ -1277,14 +1280,15 @@ int delete_context(struct pdp_t *pdp)
 int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 {
 	struct iphash_t *ipm;
-	struct in_addr src;
+	struct in46_addr src;
 	struct tun_packet_t *iph = (struct tun_packet_t *)pack;
 
-	src.s_addr = iph->src;
+	src.len = 4;
+	src.v4.s_addr = iph->src;
 
 	if (ipget(&ipm, &src)) {
 		printf("Dropping packet from invalid source address: %s\n",
-		       inet_ntoa(src));
+		       inet_ntoa(src.v4));
 		return 0;
 	}
 
@@ -1295,7 +1299,7 @@ int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 
 int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 {
-	struct in_addr addr;
+	struct in46_addr addr;
 
 	struct iphash_t *iph = (struct iphash_t *)cbp;
 
@@ -1324,7 +1328,7 @@ int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 		return EOF;	/* Not what we expected */
 	}
 
-	if (pdp_euaton(&pdp->eua, &addr)) {
+	if (pdp_euaton(&pdp->eua, &addr.v4)) {
 		printf
 		    ("Received create PDP context response. Cause value: %d\n",
 		     cause);
@@ -1335,7 +1339,7 @@ int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 	}
 
 	printf("Received create PDP context response. IP address: %s\n",
-	       inet_ntoa(addr));
+	       inet_ntoa(addr.v4));
 
 	if ((options.createif) && (!options.net.s_addr)) {
 		struct in_addr m;
@@ -1345,11 +1349,11 @@ int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 		m.s_addr = -1;
 #endif
 		/* printf("Setting up interface and routing\n"); */
-		tun_addaddr(tun, &addr, &addr, &m);
+		tun_addaddr(tun, &addr.v4, &addr.v4, &m);
 		if (options.defaultroute) {
 			struct in_addr rm;
 			rm.s_addr = 0;
-			tun_addroute(tun, &rm, &addr, &rm);
+			tun_addroute(tun, &rm, &addr.v4, &rm);
 		}
 		if (options.ipup)
 			tun_runscript(tun, options.ipup);
@@ -1472,9 +1476,10 @@ int main(int argc, char **argv)
 	}
 
 	if ((options.createif) && (options.net.s_addr)) {
+		struct in_addr mask;
+		mask.s_addr = options.prefixlen ? (0xFFFFFFFF >> (32 - options.prefixlen)) : 0;
 		/* printf("Setting up interface and routing\n"); */
-		tun_addaddr(tun, &options.netaddr, &options.destaddr,
-			    &options.mask);
+		tun_addaddr(tun, &options.netaddr, &options.destaddr, &mask);
 		if (options.defaultroute) {
 			struct in_addr rm;
 			rm.s_addr = 0;
