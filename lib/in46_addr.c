@@ -146,3 +146,63 @@ int in46a_within_mask(const struct in46_addr *addr, const struct in46_addr *net,
 		return 0;
 	}
 }
+
+/*! Convert given PDP End User Address to in46_addr
+ *  \returns 0 on success; negative on error */
+int in46a_to_eua(const struct in46_addr *src, struct ul66_t *eua)
+{
+	switch (src->len) {
+	case 4:
+		eua->l = 6;
+		eua->v[0] = 0xf1;	/* IETF */
+		eua->v[1] = 0x21;	/* IPv4 */
+		memcpy(&eua->v[2], &src->v4, 4);	/* Copy a 4 byte address */
+		break;
+	case 16:
+		eua->l = 18;
+		eua->v[0] = 0xf1;	/* IETF */
+		eua->v[1] = 0x57;	/* IPv6 */
+		memcpy(&eua->v[2], &src->v6, 16);	/* Copy a 16 byte address */
+		break;
+	default:
+		return -1;
+	}
+	return 0;
+}
+
+/*! Convert given in46_addr to PDP End User Address
+ *  \returns 0 on success; negative on error */
+int in46a_from_eua(const struct ul66_t *eua, struct in46_addr *dst)
+{
+	if (eua->l < 2)
+		goto default_to_dyn_v4;
+
+	if (eua->v[0] != 0xf1)
+		return -1;
+
+	switch (eua->v[1]) {
+	case 0x21:
+		dst->len = 4;
+		if (eua->l >= 6)
+			memcpy(&dst->v4, &eua->v[2], 4);	/* Copy a 4 byte address */
+		else
+			dst->v4.s_addr = 0;
+		break;
+	case 0x57:
+		dst->len = 16;
+		if (eua->l >= 18)
+			memcpy(&dst->v6, &eua->v[2], 16);	/* Copy a 16 byte address */
+		else
+			memset(&dst->v6, 0, 16);
+		break;
+	default:
+		return -1;
+	}
+	return 0;
+
+default_to_dyn_v4:
+	/* assume dynamic IPv4 by default */
+	dst->len = 4;
+	dst->v4.s_addr = 0;
+	return 0;
+}

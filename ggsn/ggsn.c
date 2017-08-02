@@ -35,6 +35,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
+#include <netinet/ip6.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
@@ -190,7 +191,7 @@ int create_context_ind(struct pdp_t *pdp)
 	memcpy(pdp->qos_neg.v, pdp->qos_req.v, pdp->qos_req.l);	/* TODO */
 	pdp->qos_neg.l = pdp->qos_req.l;
 
-	if (pdp_euaton(&pdp->eua, &addr.v4)) {
+	if (in46a_from_eua(&pdp->eua, &addr)) {
 		addr.v4.s_addr = 0;	/* Request dynamic */
 	}
 
@@ -199,7 +200,7 @@ int create_context_ind(struct pdp_t *pdp)
 		return 0;	/* Allready in use, or no more available */
 	}
 
-	pdp_ntoeua(&member->addr.v4, &pdp->eua);
+	in46a_to_eua(&member->addr, &pdp->eua);
 	pdp->peer = member;
 	pdp->ipif = tun;	/* TODO */
 	member->peer = pdp;
@@ -224,14 +225,18 @@ int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 	struct ippoolm_t *ipm;
 	struct in46_addr dst;
 	struct iphdr *iph = (struct iphdr *)pack;
+	struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
 
 	if (iph->version == 4) {
 		if (len < sizeof(*iph) || len < 4*iph->ihl)
 			return -1;
 		dst.len = 4;
 		dst.v4.s_addr = iph->daddr;
+	} else if (iph->version == 6) {
+		dst.len = 16;
+		dst.v6 = ip6h->ip6_dst;
 	} else {
-		LOGP(DGGSN, LOGL_NOTICE, "non-IPv4 packet received from tun\n");
+		LOGP(DGGSN, LOGL_NOTICE, "non-IPv packet received from tun\n");
 		return -1;
 	}
 
