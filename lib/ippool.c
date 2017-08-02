@@ -402,7 +402,7 @@ int ippool_newip(struct ippool_t *this, struct ippoolm_t **member,
 		if (!this->allowstat) {
 			SYS_ERR(DIP, LOGL_ERROR, 0,
 				"Static IP address not allowed");
-			return -1;
+			return -GTPCAUSE_NOT_SUPPORTED;
 		}
 		if (!in46a_within_mask(addr, &this->stataddr, this->stataddrprefixlen)) {
 			SYS_ERR(DIP, LOGL_ERROR, 0, "Static out of range");
@@ -412,7 +412,7 @@ int ippool_newip(struct ippool_t *this, struct ippoolm_t **member,
 		if (!this->allowdyn) {
 			SYS_ERR(DIP, LOGL_ERROR, 0,
 				"Dynamic IP address not allowed");
-			return -1;
+			return -GTPCAUSE_NOT_SUPPORTED;
 		}
 	}
 
@@ -438,7 +438,7 @@ int ippool_newip(struct ippool_t *this, struct ippoolm_t **member,
 		if (!this->firstdyn) {
 			SYS_ERR(DIP, LOGL_ERROR, 0,
 				"No more IP addresses available");
-			return -1;
+			return -GTPCAUSE_ADDR_OCCUPIED;
 		} else
 			p2 = this->firstdyn;
 	}
@@ -447,12 +447,12 @@ int ippool_newip(struct ippool_t *this, struct ippoolm_t **member,
 		if (p2->inuse) {
 			SYS_ERR(DIP, LOGL_ERROR, 0,
 				"IP address allready in use");
-			return -1;	/* Allready in use / Should not happen */
+			return -GTPCAUSE_SYS_FAIL;	/* Allready in use / Should not happen */
 		}
 
 		if (p2->addr.len != addr->len) {
 			SYS_ERR(DIP, LOGL_ERROR, 0, "MS requested unsupported PDP context type");
-			return -1;
+			return -GTPCAUSE_UNKNOWN_PDP;
 		}
 
 		/* Remove from linked list of free dynamic addresses */
@@ -481,13 +481,13 @@ int ippool_newip(struct ippool_t *this, struct ippoolm_t **member,
 		if (!this->firststat) {
 			SYS_ERR(DIP, LOGL_ERROR, 0,
 				"No more IP addresses available");
-			return -1;	/* No more available */
+			return -GTPCAUSE_ADDR_OCCUPIED;	/* No more available */
 		} else
 			p2 = this->firststat;
 
 		if (p2->addr.len != addr->len) {
 			SYS_ERR(DIP, LOGL_ERROR, 0, "MS requested unsupported PDP context type");
-			return -1;
+			return -GTPCAUSE_UNKNOWN_PDP;
 		}
 
 		/* Remove from linked list of free static addresses */
@@ -512,7 +512,7 @@ int ippool_newip(struct ippool_t *this, struct ippoolm_t **member,
 
 	SYS_ERR(DIP, LOGL_ERROR, 0,
 		"Could not allocate IP address");
-	return -1;		/* Should never get here. TODO: Bad code */
+	return -GTPCAUSE_SYS_FAIL;		/* Should never get here. TODO: Bad code */
 }
 
 int ippool_freeip(struct ippool_t *this, struct ippoolm_t *member)

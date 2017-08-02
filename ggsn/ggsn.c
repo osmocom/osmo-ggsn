@@ -178,6 +178,7 @@ int create_context_ind(struct pdp_t *pdp)
 {
 	struct in46_addr addr;
 	struct ippoolm_t *member;
+	int rc;
 
 	DEBUGP(DGGSN, "Received create PDP context request\n");
 
@@ -192,11 +193,16 @@ int create_context_ind(struct pdp_t *pdp)
 	pdp->qos_neg.l = pdp->qos_req.l;
 
 	if (in46a_from_eua(&pdp->eua, &addr)) {
-		addr.v4.s_addr = 0;	/* Request dynamic */
+		SYS_ERR(DGGSN, LOGL_ERROR, 0, "Cannot decode EUA from MS/SGSN: %s",
+			osmo_hexdump(pdp->eua.v, pdp->eua.l));
+		gtp_create_context_resp(gsn, pdp, GTPCAUSE_UNKNOWN_PDP);
+		return 0;
 	}
 
-	if (ippool_newip(ippool, &member, &addr, 0)) {
-		gtp_create_context_resp(gsn, pdp, GTPCAUSE_NO_RESOURCES);
+	rc = ippool_newip(ippool, &member, &addr, 0);
+	if (rc < 0) {
+		SYS_ERR(DGGSN, LOGL_ERROR, 0, "Cannot allocate IP address in pool\n");
+		gtp_create_context_resp(gsn, pdp, -rc);
 		return 0;	/* Allready in use, or no more available */
 	}
 
@@ -208,6 +214,8 @@ int create_context_ind(struct pdp_t *pdp)
 	if (gtp_kernel_tunnel_add(pdp) < 0) {
 		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"Cannot add tunnel to kernel: %s\n", strerror(errno));
+		gtp_create_context_resp(gsn, pdp, GTPCAUSE_SYS_FAIL);
+		return 0;
 	}
 
 	if (!send_trap(gsn, pdp, member, "imsi-ass-ip")) { /* TRAP with IP assignment */
