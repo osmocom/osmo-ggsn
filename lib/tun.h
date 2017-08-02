@@ -1,6 +1,7 @@
 /* 
  * TUN interface functions.
  * Copyright (C) 2002, 2003 Mondru AB.
+ * Copyright (C) 2017 by Harald Welte <laforge@gnumonks.org>
  * 
  * The contents of this file may be used under the terms of the GNU
  * General Public License Version 2, provided that the above copyright
@@ -11,6 +12,8 @@
 
 #ifndef _TUN_H
 #define _TUN_H
+
+#include "../lib/in46_addr.h"
 
 #define PACKET_MAX      8196	/* Maximum packet size we receive */
 #define TUN_SCRIPTSIZE   256
@@ -66,8 +69,8 @@ extern int tun_encaps(struct tun_t *tun, void *pack, unsigned len);
 extern int tun_addaddr(struct tun_t *this, struct in_addr *addr,
 		       struct in_addr *dstaddr, struct in_addr *netmask);
 
-extern int tun_setaddr(struct tun_t *this, struct in_addr *our_adr,
-		       struct in_addr *his_adr, struct in_addr *net_mask);
+extern int tun_setaddr(struct tun_t *this, struct in46_addr *our_adr,
+		       struct in46_addr *his_adr, size_t prefixlen);
 
 int tun_addroute(struct tun_t *this, struct in_addr *dst,
 		 struct in_addr *gateway, struct in_addr *mask);

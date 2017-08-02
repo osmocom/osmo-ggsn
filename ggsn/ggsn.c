@@ -70,7 +70,7 @@ int end = 0;
 int maxfd = 0;			/* For select()            */
 
 struct in_addr listen_;
-struct in_addr netaddr, destaddr, net;	/* Network interface       */
+struct in46_addr netaddr, destaddr, net;	/* Network interface       */
 size_t prefixlen;
 struct in46_addr dns1, dns2;	/* PCO DNS address         */
 char *ipup, *ipdown;		/* Filename of scripts     */
@@ -547,16 +547,16 @@ int main(int argc, char **argv)
 	/* net                                                          */
 	/* Store net as in_addr net and mask                            */
 	if (args_info.net_arg) {
-		struct in46_addr in46;
-		if (ippool_aton(&in46, &prefixlen, args_info.net_arg, 0)) {
+		if (ippool_aton(&net, &prefixlen, args_info.net_arg, 0)) {
 			SYS_ERR(DGGSN, LOGL_ERROR, 0,
 				"Invalid network address: %s!",
 				args_info.net_arg);
 			exit(1);
 		}
-		net.s_addr = in46.v4.s_addr;
-		netaddr.s_addr = htonl(ntohl(net.s_addr) + 1);
-		destaddr.s_addr = htonl(ntohl(net.s_addr) + 1);
+		/* default for network + destination address = net + 1 */
+		netaddr = net;
+		in46a_inc(&netaddr);
+		destaddr = netaddr;
 	} else {
 		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"Network address must be specified: %s!",
@@ -710,7 +710,7 @@ int main(int argc, char **argv)
 		maxfd = gsn->fd1u;
 
 	/* use GTP kernel module for data packet encapsulation */
-	if (gtp_kernel_init(gsn, &net, prefixlen, &args_info) < 0)
+	if (gtp_kernel_init(gsn, &net.v4, prefixlen, &args_info) < 0)
 		goto err;
 
 	gtp_set_cb_data_ind(gsn, encaps_tun);
@@ -735,7 +735,7 @@ int main(int argc, char **argv)
 	}
 
 	DEBUGP(DGGSN, "Setting tun IP address\n");
-	if (tun_setaddr(tun, &netaddr, &destaddr, &prefixlen)) {
+	if (tun_setaddr(tun, &netaddr, &destaddr, prefixlen)) {
 		SYS_ERR(DGGSN, LOGL_ERROR, 0, "Failed to set tun IP address");
 		exit(1);
 	}
