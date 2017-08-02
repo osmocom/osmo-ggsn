@@ -112,6 +112,12 @@ AC_EGREP_HEADER(rt_msghdr, net/route.h,
  AC_DEFINE([HAVE_RT_MSGHDR])],
  AC_MSG_RESULT(no))
 
+AC_MSG_CHECKING(whether struct iphdr exists)
+AH_TEMPLATE(HAVE_IPHDR)
+AC_EGREP_HEADER(struct iphdr, netinet/ip.h,
+[AC_MSG_RESULT(yes)
+ AC_DEFINE([HAVE_IPHDR])],
+ AC_MSG_RESULT(no))
 
 # Checks for library functions.
 AC_PROG_GCC_TRADITIONAL

@@ -34,6 +34,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/ip.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
@@ -42,6 +43,7 @@
 #include <inttypes.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
+#include <net/if.h>
 #include <net/if.h>
 
 #include <errno.h>
@@ -221,13 +223,13 @@ int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 {
 	struct ippoolm_t *ipm;
 	struct in46_addr dst;
-	struct tun_packet_t *iph = (struct tun_packet_t *)pack;
+	struct iphdr *iph = (struct iphdr *)pack;
 
-	if (iph->ver == 4) {
+	if (iph->version == 4) {
 		if (len < sizeof(*iph) || len < 4*iph->ihl)
 			return -1;
 		dst.len = 4;
-		dst.v4.s_addr = iph->dst;
+		dst.v4.s_addr = iph->daddr;
 	} else {
 		LOGP(DGGSN, LOGL_NOTICE, "non-IPv4 packet received from tun\n");
 		return -1;

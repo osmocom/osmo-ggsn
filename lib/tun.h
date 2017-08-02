@@ -17,21 +17,31 @@
 #define TUN_ADDRSIZE     128
 #define TUN_NLBUFSIZE   1024
 
-struct tun_packet_t {
-	unsigned int ver:4;
-	unsigned int ihl:4;
-	unsigned int dscp:6;
-	unsigned int ecn:2;
-	unsigned int length:16;
-	unsigned int id:16;
-	unsigned int flags:3;
-	unsigned int fragment:13;
-	unsigned int ttl:8;
-	unsigned int protocol:8;
-	unsigned int check:16;
-	unsigned int src:32;
-	unsigned int dst:32;
-};
+#include "config.h"
+#ifndef HAVE_IPHDR
+struct iphdr
+  {
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    unsigned int ihl:4;
+    unsigned int version:4;
+#elif __BYTE_ORDER == __BIG_ENDIAN
+    unsigned int version:4;
+    unsigned int ihl:4;
+#else
+# error	"Please fix <bits/endian.h>"
+#endif
+    u_int8_t tos;
+    u_int16_t tot_len;
+    u_int16_t id;
+    u_int16_t frag_off;
+    u_int8_t ttl;
+    u_int8_t protocol;
+    u_int16_t check;
+    u_int32_t saddr;
+    u_int32_t daddr;
+    /*The options start here. */
+  };
+#endif /* !HAVE_IPHDR */
 
 /* ***********************************************************
  * Information storage for each tun instance

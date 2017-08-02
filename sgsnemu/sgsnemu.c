@@ -29,6 +29,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/ip.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
@@ -1281,10 +1282,10 @@ int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 {
 	struct iphash_t *ipm;
 	struct in46_addr src;
-	struct tun_packet_t *iph = (struct tun_packet_t *)pack;
+	struct iphdr *iph = (struct iphdr *)pack;
 
 	src.len = 4;
-	src.v4.s_addr = iph->src;
+	src.v4.s_addr = iph->saddr;
 
 	if (ipget(&ipm, &src)) {
 		printf("Dropping packet from invalid source address: %s\n",
