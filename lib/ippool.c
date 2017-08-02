@@ -186,7 +186,7 @@ void in46a_inc(struct in46_addr *addr)
 }
 
 /* Create new address pool */
-int ippool_new(struct ippool_t **this, char *dyn, char *stat,
+int ippool_new(struct ippool_t **this, const char *dyn, const char *stat,
 	       int allowdyn, int allowstat, int flags)
 {
 
