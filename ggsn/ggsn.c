@@ -173,7 +173,9 @@ int create_context_ind(struct pdp_t *pdp)
 
 	DEBUGP(DGGSN, "Received create PDP context request\n");
 
-	pdp->eua.l = 0;		/* TODO: Indicates dynamic IP */
+	/* FIXME: we manually force all context requests to dynamic here! */
+	if (pdp->eua.l > 2)
+		pdp->eua.l = 2;
 
 	memcpy(pdp->qos_neg0, pdp->qos_req0, sizeof(pdp->qos_req0));
 	memcpy(&pdp->pco_neg, &pco, sizeof(pdp->pco_neg));
