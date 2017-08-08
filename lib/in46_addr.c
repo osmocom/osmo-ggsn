@@ -25,6 +25,7 @@ int in46a_to_af(const struct in46_addr *in)
 	switch (in->len) {
 	case 4:
 		return AF_INET;
+	case 8:
 	case 16:
 		return AF_INET6;
 	default:
@@ -175,6 +176,7 @@ int in46a_to_eua(const struct in46_addr *src, struct ul66_t *eua)
 		eua->v[1] = 0x21;	/* IPv4 */
 		memcpy(&eua->v[2], &src->v4, 4);	/* Copy a 4 byte address */
 		break;
+	case 8:
 	case 16:
 		eua->l = 18;
 		eua->v[0] = 0xf1;	/* IETF */

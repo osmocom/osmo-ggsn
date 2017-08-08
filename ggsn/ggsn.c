@@ -241,7 +241,11 @@ int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 		dst.len = 4;
 		dst.v4.s_addr = iph->daddr;
 	} else if (iph->version == 6) {
-		dst.len = 16;
+		/* Due to the fact that 3GPP requires an allocation of a
+		 * /64 prefix to each MS, we must instruct
+		 * ippool_getip() below to match only the leading /64
+		 * prefix, i.e. the first 8 bytes of the address */
+		dst.len = 8;
 		dst.v6 = ip6h->ip6_dst;
 	} else {
 		LOGP(DGGSN, LOGL_NOTICE, "non-IPv packet received from tun\n");

@@ -96,11 +96,10 @@ static unsigned long int ippool_hash4(struct in_addr *addr)
 	return lookup((unsigned char *)&addr->s_addr, sizeof(addr->s_addr), 0);
 }
 
-static unsigned long int ippool_hash6(struct in6_addr *addr)
+static unsigned long int ippool_hash6(struct in6_addr *addr, unsigned int len)
 {
 	/* TODO: Review hash spread for IPv6 */
-	return lookup((unsigned char *)addr->s6_addr, sizeof(addr->s6_addr),
-		      0);
+	return lookup((unsigned char *)addr->s6_addr, len, 0);
 }
 
 unsigned long int ippool_hash(struct in46_addr *addr)
@@ -108,7 +107,7 @@ unsigned long int ippool_hash(struct in46_addr *addr)
 	if (addr->len == 4)
 		return ippool_hash4(&addr->v4);
 	else
-		return ippool_hash6(&addr->v6);
+		return ippool_hash6(&addr->v6, addr->len);
 }
 
 /* Get IP address and mask */
@@ -209,6 +208,10 @@ int ippool_new(struct ippool_t **this, const char *dyn, const char *stat,
 				"Failed to parse dynamic pool");
 			return -1;
 		}
+		/* we want to work with /64 prefixes, i.e. allocate /64 prefixes rather
+		 * than /128 (single IPv6 addresses) */
+		if (addr.len == sizeof(struct in6_addr))
+			addr.len = 64/8;
 
 		/* Set IPPOOL_NONETWORK if IPPOOL_NOGATEWAY is set */
 		if (flags & IPPOOL_NOGATEWAY) {
@@ -348,7 +351,7 @@ int ippool_getip(struct ippool_t *this, struct ippoolm_t **member,
 	/* Find in hash table */
 	hash = ippool_hash(addr) & this->hashmask;
 	for (p = this->hash[hash]; p; p = p->nexthash) {
-		if (in46a_equal(&p->addr, addr)) {
+		if (in46a_prefix_equal(&p->addr, addr)) {
 			if (member)
 				*member = p;
 			return 0;
@@ -421,7 +424,7 @@ int ippool_newip(struct ippool_t *this, struct ippoolm_t **member,
 		/* Find in hash table */
 		hash = ippool_hash(addr) & this->hashmask;
 		for (p = this->hash[hash]; p; p = p->nexthash) {
-			if (in46a_equal(&p->addr, addr)) {
+			if (in46a_prefix_equal(&p->addr, addr)) {
 				p2 = p;
 				break;
 			}
@@ -450,7 +453,7 @@ int ippool_newip(struct ippool_t *this, struct ippoolm_t **member,
 			return -GTPCAUSE_SYS_FAIL;	/* Allready in use / Should not happen */
 		}
 
-		if (p2->addr.len != addr->len) {
+		if (p2->addr.len != addr->len && !(addr->len == 16 && p2->addr.len == 8)) {
 			SYS_ERR(DIP, LOGL_ERROR, 0, "MS requested unsupported PDP context type");
 			return -GTPCAUSE_UNKNOWN_PDP;
 		}
