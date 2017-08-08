@@ -74,6 +74,23 @@ int in46a_equal(const struct in46_addr *a, const struct in46_addr *b)
 		return 0;
 }
 
+/*! Determine if two in46_addr prefix are equal or not
+ *  The prefix length is determined by the shortest of the prefixes of a and b
+ *  \returns 1 in case the common prefix are equal; 0 otherwise */
+int in46a_prefix_equal(const struct in46_addr *a, const struct in46_addr *b)
+{
+	unsigned int len;
+	if (a->len > b->len)
+		len = b->len;
+	else
+		len = a->len;
+
+	if (!memcmp(&a->v6, &b->v6, len))
+		return 1;
+	else
+		return 0;
+}
+
 /*! Match if IPv6 addr1 + addr2 are within same \a mask */
 static int ipv6_within_mask(const struct in6_addr *addr1, const struct in6_addr *addr2,
 			    const struct in6_addr *mask)
