@@ -64,6 +64,7 @@
 #include "../gtp/gtp.h"
 #include "cmdline.h"
 #include "gtp-kernel.h"
+#include "icmpv6.h"
 
 int end = 0;
 int maxfd = 0;			/* For select()            */
@@ -206,11 +207,23 @@ int create_context_ind(struct pdp_t *pdp)
 		return 0;	/* Allready in use, or no more available */
 	}
 
-	in46a_to_eua(&member->addr, &pdp->eua);
+	if (addr.len == sizeof(struct in6_addr)) {
+		struct in46_addr tmp;
+		/* IPv6 doesn't really send the real/allocated address at this point, but just
+		 * the link-identifier which the MS shall use for router solicitation */
+		tmp.len = addr.len;
+		/* initialize upper 64 bits to prefix, they are discarded by MS anyway */
+		memcpy(tmp.v6.s6_addr, &member->addr.v6, 8);
+		/* use allocated 64bit prefix as lower 64bit, used as link id by MS */
+		memcpy(tmp.v6.s6_addr+8, &member->addr.v6, 8);
+		in46a_to_eua(&tmp, &pdp->eua);
+	} else
+		in46a_to_eua(&member->addr, &pdp->eua);
 	pdp->peer = member;
 	pdp->ipif = tun;	/* TODO */
 	member->peer = pdp;
 
+	/* TODO: In IPv6, EUA doesn't contain the actual IP addr/prefix! */
 	if (gtp_kernel_tunnel_add(pdp) < 0) {
 		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"Cannot add tunnel to kernel: %s\n", strerror(errno));
@@ -264,9 +277,30 @@ int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 	return 0;
 }
 
+/* RFC3307 link-local scope multicast address */
+static const struct in6_addr all_router_mcast_addr = {
+	.s6_addr = { 0xff,0x02,0,0,  0,0,0,0, 0,0,0,0,  0,0,0,2 }
+};
+
 int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
 {
+	struct iphdr *iph = (struct iphdr *)pack;
+	struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
+
 	DEBUGP(DGGSN, "encaps_tun. Packet received: forwarding to tun\n");
+
+	switch (iph->version) {
+	case 6:
+		/* daddr: all-routers multicast addr */
+		if (IN6_ARE_ADDR_EQUAL(&ip6h->ip6_dst, &all_router_mcast_addr))
+			return handle_router_mcast(gsn, pdp, pack, len);
+		break;
+	case 4:
+		break;
+	default:
+		LOGP(DGGSN, LOGL_ERROR, "Packet from MS is neither IPv4 nor IPv6\n");
+		return -1;
+	}
 	return tun_encaps((struct tun_t *)pdp->ipif, pack, len);
 }
 

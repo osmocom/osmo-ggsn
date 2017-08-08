@@ -19,6 +19,7 @@ enum {
 	DTUN,
 	DGGSN,
 	DSGSN,
+	DICMP6,
 };
 
 #define SYS_ERR(sub, pri, en, fmt, args...)				\

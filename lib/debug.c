@@ -26,6 +26,11 @@ static const struct log_info_cat default_categories[] = {
 		.description = "SGSN Emulator",
 		.enabled = 1, .loglevel = LOGL_NOTICE,
 	},
+	[DICMP6] = {
+		.name = "DICMP6",
+		.description = "ICMPv6",
+		.enabled = 1, .loglevel = LOGL_DEBUG,
+	},
 };
 
 const struct log_info log_info = {
