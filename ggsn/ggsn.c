@@ -72,7 +72,7 @@ int maxfd = 0;			/* For select()            */
 struct in_addr listen_;
 struct in_addr netaddr, destaddr, net;	/* Network interface       */
 size_t prefixlen;
-struct in_addr dns1, dns2;	/* PCO DNS address         */
+struct in46_addr dns1, dns2;	/* PCO DNS address         */
 char *ipup, *ipdown;		/* Filename of scripts     */
 int debug;			/* Print debug output      */
 struct ul255_t pco;
@@ -175,6 +175,103 @@ int delete_context(struct pdp_t *pdp)
 	return 0;
 }
 
+#include <osmocom/gsm/tlv.h>
+
+/* 3GPP TS 24.008 10.6.5.3 */
+enum pco_protocols {
+	PCO_P_LCP		= 0xC021,
+	PCO_P_PAP		= 0xC023,
+	PCO_P_CHAP		= 0xC223,
+	PCO_P_IPCP		= 0x8021,
+	PCO_P_PCSCF_ADDR	= 0x0001,
+	PCO_P_IM_CN_SS_F	= 0x0002,
+	PCO_P_DNS_IPv6_ADDR	= 0x0003,
+	PCO_P_POLICY_CTRL_REJ	= 0x0004,	/* only in Network->MS */
+	PCO_P_MS_SUP_NETREQ_BCI	= 0x0005,
+	/* reserved */
+	PCO_P_DSMIPv6_HA_ADDR	= 0x0007,
+	PCO_P_DSMIPv6_HN_PREF	= 0x0008,
+	PCO_P_DSMIPv6_v4_HA_ADDR= 0x0009,
+	PCO_P_IP_ADDR_VIA_NAS	= 0x000a,	/* only MS->Network */
+	PCO_P_IPv4_ADDR_VIA_DHCP= 0x000b,	/* only MS->Netowrk */
+	PCO_P_PCSCF_IPv4_ADDR	= 0x000c,
+	PCO_P_DNS_IPv4_ADDR	= 0x000d,
+	PCO_P_MSISDN		= 0x000e,
+	PCO_P_IFOM_SUPPORT	= 0x000f,
+	PCO_P_IPv4_LINK_MTU	= 0x0010,
+	PCO_P_MS_SUPP_LOC_A_TFT	= 0x0011,
+	PCO_P_PCSCF_RESEL_SUP	= 0x0012,	/* only MS->Network */
+	PCO_P_NBIFOM_REQ	= 0x0013,
+	PCO_P_NBIFOM_MODE	= 0x0014,
+	PCO_P_NONIP_LINK_MTU	= 0x0015,
+	PCO_P_APN_RATE_CTRL_SUP	= 0x0016,
+	PCO_P_PS_DATA_OFF_UE	= 0x0017,
+	PCO_P_REL_DATA_SVC	= 0x0018,
+};
+
+/* determine if PCO contains given protocol */
+static bool pco_contains_proto(struct ul255_t *pco, uint16_t prot)
+{
+	uint8_t *cur = pco->v + 1;
+
+	/* iterate over PCO and check if protocol contained */
+	while (cur + 2 < pco->v + pco->l) {
+		uint16_t cur_prot = osmo_load16be(cur);
+		uint8_t cur_len = cur[2];
+		if (cur_prot == prot)
+			return true;
+		if (cur_len == 0)
+			break;
+		cur += cur_len;
+	}
+	return false;
+}
+
+/* determine if PDP context has IPv6 support */
+static bool pdp_has_v4(struct pdp_t *pdp)
+{
+	if (pdp->eua.l == 4+2)
+		return true;
+	else
+		return false;
+}
+
+/* process one PCO request from a MS/UE, putting together the proper responses */
+static void process_pco(struct pdp_t *pdp)
+{
+	struct msgb *msg = msgb_alloc(256, "PCO");
+	msgb_put_u8(msg, 0x80); /* ext-bit + configuration protocol byte */
+
+	/* FIXME: also check if primary / secondary DNS was requested */
+	if (pdp_has_v4(pdp) && pco_contains_proto(&pdp->pco_req, PCO_P_IPCP)) {
+		/* FIXME: properly implement this for IPCP */
+		uint8_t *cur = msgb_put(msg, pco.l-1);
+		memcpy(cur, pco.v+1, pco.l-1);
+	}
+
+	if (pco_contains_proto(&pdp->pco_req, PCO_P_DNS_IPv6_ADDR)) {
+		if (dns1.len == 16)
+			msgb_t16lv_put(msg, PCO_P_DNS_IPv6_ADDR, dns1.len, dns1.v6.s6_addr);
+		if (dns2.len == 16)
+			msgb_t16lv_put(msg, PCO_P_DNS_IPv6_ADDR, dns2.len, dns2.v6.s6_addr);
+	}
+
+	if (pco_contains_proto(&pdp->pco_req, PCO_P_DNS_IPv4_ADDR)) {
+		if (dns1.len == 4)
+			msgb_t16lv_put(msg, PCO_P_DNS_IPv4_ADDR, dns1.len, (uint8_t *)&dns1.v4);
+		if (dns2.len == 4)
+			msgb_t16lv_put(msg, PCO_P_DNS_IPv4_ADDR, dns2.len, (uint8_t *)&dns2.v4);
+	}
+
+	if (msgb_length(msg) > 1) {
+		memcpy(pdp->pco_neg.v, msgb_data(msg), msgb_length(msg));
+		pdp->pco_neg.l = msgb_length(msg);
+	} else
+		pdp->pco_neg.l = 0;
+
+	msgb_free(msg);
+}
+
 int create_context_ind(struct pdp_t *pdp)
 {
 	struct in46_addr addr;
@@ -188,7 +285,6 @@ int create_context_ind(struct pdp_t *pdp)
 		pdp->eua.l = 2;
 
 	memcpy(pdp->qos_neg0, pdp->qos_req0, sizeof(pdp->qos_req0));
-	memcpy(&pdp->pco_neg, &pco, sizeof(pdp->pco_neg));
 
 	memcpy(pdp->qos_neg.v, pdp->qos_req.v, pdp->qos_req.l);	/* TODO */
 	pdp->qos_neg.l = pdp->qos_req.l;
@@ -235,6 +331,8 @@ int create_context_ind(struct pdp_t *pdp)
 		gtp_create_context_resp(gsn, pdp, GTPCAUSE_NO_RESOURCES);
 		return 0;
 	}
+
+	process_pco(pdp);
 
 	gtp_create_context_resp(gsn, pdp, GTPCAUSE_ACC_REQ);
 	return 0;		/* Success */
@@ -486,59 +584,56 @@ int main(int argc, char **argv)
 	}
 
 	/* DNS1 and DNS2 */
-#ifdef HAVE_INET_ATON
-	dns1.s_addr = 0;
+	memset(&dns1, 0, sizeof(dns1));
 	if (args_info.pcodns1_arg) {
-		if (0 == inet_aton(args_info.pcodns1_arg, &dns1)) {
+		size_t tmp;
+		if (ippool_aton(&dns1, &tmp, args_info.pcodns1_arg, 0) != 0) {
 			SYS_ERR(DGGSN, LOGL_ERROR, 0,
 				"Failed to convert pcodns1!");
 			exit(1);
 		}
 	}
-	dns2.s_addr = 0;
+	memset(&dns2, 0, sizeof(dns2));
 	if (args_info.pcodns2_arg) {
-		if (0 == inet_aton(args_info.pcodns2_arg, &dns2)) {
+		size_t tmp;
+		if (ippool_aton(&dns2, &tmp, args_info.pcodns2_arg, 0) != 0) {
 			SYS_ERR(DGGSN, LOGL_ERROR, 0,
 				"Failed to convert pcodns2!");
 			exit(1);
 		}
 	}
-#else
-	dns1.s_addr = 0;
-	if (args_info.pcodns1_arg) {
-		dns1.s_addr = inet_addr(args_info.pcodns1_arg);
-		if (dns1.s_addr == -1) {
-			SYS_ERR(DGGSN, LOGL_ERROR, 0,
-				"Failed to convert pcodns1!");
-			exit(1);
-		}
-	}
-	dns2.s_addr = 0;
-	if (args_info.pcodns2_arg) {
-		dns2.s_addr = inet_addr(args_info.pcodns2_arg);
-		if (dns2.s_addr == -1) {
-			SYS_ERR(DGGSN, LOGL_ERROR, 0,
-				"Failed to convert pcodns2!");
-			exit(1);
-		}
-	}
-#endif
 
-	pco.l = 20;
-	pco.v[0] = 0x80;	/* x0000yyy x=1, yyy=000: PPP */
-	pco.v[1] = 0x80;	/* IPCP */
-	pco.v[2] = 0x21;
-	pco.v[3] = 0x10;	/* Length of contents */
-	pco.v[4] = 0x02;	/* ACK */
-	pco.v[5] = 0x00;	/* ID: Need to match request */
-	pco.v[6] = 0x00;	/* Length */
-	pco.v[7] = 0x10;
-	pco.v[8] = 0x81;	/* DNS 1 */
-	pco.v[9] = 0x06;
-	memcpy(&pco.v[10], &dns1, sizeof(dns1));
-	pco.v[14] = 0x83;
-	pco.v[15] = 0x06;	/* DNS 2 */
-	memcpy(&pco.v[16], &dns2, sizeof(dns2));
+	unsigned int cur = 0;
+	pco.v[cur++] = 0x80;	/* x0000yyy x=1, yyy=000: PPP */
+	pco.v[cur++] = 0x80;	/* IPCP */
+	pco.v[cur++] = 0x21;
+	pco.v[cur++] = 0xFF;	/* Length of contents */
+	pco.v[cur++] = 0x02;	/* ACK */
+	pco.v[cur++] = 0x00;	/* ID: Need to match request */
+	pco.v[cur++] = 0x00;	/* Length */
+	pco.v[cur++] = 0xFF;	/* overwritten  */
+	if (dns1.len == 4) {
+		pco.v[cur++] = 0x81;	/* DNS 1 */
+		pco.v[cur++] = 2 + dns1.len;
+		if (dns1.len == 4)
+			memcpy(&pco.v[cur], &dns1.v4, dns1.len);
+		else
+			memcpy(&pco.v[cur], &dns1.v6, dns1.len);
+		cur += dns1.len;
+	}
+	if (dns2.len == 4) {
+		pco.v[cur++] = 0x83;
+		pco.v[cur++] = 2 + dns2.len;	/* DNS 2 */
+		if (dns2.len == 4)
+			memcpy(&pco.v[cur], &dns2.v4, dns2.len);
+		else
+			memcpy(&pco.v[cur], &dns2.v6, dns2.len);
+		cur += dns2.len;
+	}
+	pco.l = cur;
+	/* patch in length values */
+	pco.v[3] = pco.l - 4;
+	pco.v[7] = pco.l - 4;
 
 	/* ipup */
 	ipup = args_info.ipup_arg;
