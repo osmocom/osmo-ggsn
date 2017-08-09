@@ -11,6 +11,8 @@
 
 #include "../lib/in46_addr.h"
 
+#include <osmocom/core/utils.h>
+
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -29,6 +31,7 @@ int in46a_to_af(const struct in46_addr *in)
 	case 16:
 		return AF_INET6;
 	default:
+		OSMO_ASSERT(0);
 		return -1;
 	}
 }
@@ -49,6 +52,7 @@ int in46a_to_sas(struct sockaddr_storage *out, const struct in46_addr *in)
 		sin6->sin6_addr = in->v6;
 		break;
 	default:
+		OSMO_ASSERT(0);
 		return -1;
 	}
 
@@ -161,6 +165,7 @@ int in46a_within_mask(const struct in46_addr *addr, const struct in46_addr *net,
 		create_ipv6_netmask(&netmask6, prefixlen);
 		return ipv6_within_mask(&addr->v6, &net->v6, &netmask6);
 	default:
+		OSMO_ASSERT(0);
 		return 0;
 	}
 }
@@ -184,6 +189,7 @@ int in46a_to_eua(const struct in46_addr *src, struct ul66_t *eua)
 		memcpy(&eua->v[2], &src->v6, 16);	/* Copy a 16 byte address */
 		break;
 	default:
+		OSMO_ASSERT(0);
 		return -1;
 	}
 	return 0;
