@@ -87,30 +87,6 @@ int tun_nlattr(struct nlmsghdr *n, int nsize, int type, void *d, int dlen)
 	n->nlmsg_len = alen + len;
 	return 0;
 }
-
-int tun_gifindex(struct tun_t *this, __u32 * index)
-{
-	struct ifreq ifr;
-	int fd;
-
-	memset(&ifr, '\0', sizeof(ifr));
-	ifr.ifr_addr.sa_family = AF_INET;
-	ifr.ifr_dstaddr.sa_family = AF_INET;
-	ifr.ifr_netmask.sa_family = AF_INET;
-	strncpy(ifr.ifr_name, this->devname, IFNAMSIZ);
-	ifr.ifr_name[IFNAMSIZ - 1] = 0;	/* Make sure to terminate */
-	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno, "socket() failed");
-	}
-	if (ioctl(fd, SIOCGIFINDEX, &ifr)) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno, "ioctl() failed");
-		close(fd);
-		return -1;
-	}
-	close(fd);
-	*index = ifr.ifr_ifindex;
-	return 0;
-}
 #endif
 
 int tun_sifflags(struct tun_t *this, int flags)
@@ -264,7 +240,9 @@ int tun_addaddr(struct tun_t *this,
 	req.i.ifa_prefixlen = 32;	/* 32 FOR IPv4 */
 	req.i.ifa_flags = 0;
 	req.i.ifa_scope = RT_SCOPE_HOST;	/* TODO or 0 */
-	if (tun_gifindex(this, &req.i.ifa_index)) {
+	req.i.ifa_index = if_nametoindex(this->devname);
+	if (!req.i.ifa_index) {
+		SYS_ERR(DTUN, LOGL_ERROR, errno, "Unable to get ifindex for %s", this->devname);
 		return -1;
 	}
 
