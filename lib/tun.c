@@ -784,7 +784,7 @@ int tun_new(struct tun_t **tun)
 	}
 
 	snprintf((*tun)->devname, sizeof((*tun)->devname), "tun%d", devnum);
-	(*tun)->devname[sizeof((*tun)->devname)] = 0;
+	(*tun)->devname[sizeof((*tun)->devname)-1] = 0;
 
 	/* The tun device we found might have "old" IP addresses allocated */
 	/* We need to delete those. This problem is not present on Linux */
