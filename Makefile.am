@@ -4,4 +4,10 @@ SUBDIRS = lib gtp ggsn sgsnemu doc
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libgtp.pc
 
-EXTRA_DIST = README.md README.FreeBSD README.MacOSX README.Solaris
+BUILT_SOURCES = $(top_srcdir)/.version
+$(top_srcdir)/.version:
+	echo $(VERSION) > $@-t && mv $@-t $@
+dist-hook:
+	echo $(VERSION) > $(distdir)/.tarball-version
+
+EXTRA_DIST = git-version-gen .version README.md README.FreeBSD README.MacOSX README.Solaris
