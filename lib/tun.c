@@ -53,13 +53,6 @@
 #elif defined (__APPLE__)
 #include <net/if.h>
 
-#elif defined (__sun__)
-#include <stropts.h>
-#include <sys/sockio.h>
-#include <net/if.h>
-#include <net/if_tun.h>
-/*#include "sun_if_tun.h"*/
-
 #else
 #error  "Unknown platform!"
 #endif
@@ -111,102 +104,6 @@ int tun_sifflags(struct tun_t *this, int flags)
 	close(fd);
 	return 0;
 }
-
-/* Currently unused 
-int tun_addroute2(struct tun_t *this,
-		  struct in_addr *dst,
-		  struct in_addr *gateway,
-		  struct in_addr *mask) {
-  
-  struct {
-    struct nlmsghdr 	n;
-    struct rtmsg 	r;
-    char buf[TUN_NLBUFSIZE];
-  } req;
-  
-  struct sockaddr_nl local;
-  int addr_len;
-  int fd;
-  int status;
-  struct sockaddr_nl nladdr;
-  struct iovec iov;
-  struct msghdr msg;
-
-  memset(&req, 0, sizeof(req));
-  req.n.nlmsg_len = NLMSG_LENGTH(sizeof(struct rtmsg));
-  req.n.nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE;
-  req.n.nlmsg_type = RTM_NEWROUTE;
-  req.r.rtm_family = AF_INET;
-  req.r.rtm_table  = RT_TABLE_MAIN;
-  req.r.rtm_protocol = RTPROT_BOOT;
-  req.r.rtm_scope  = RT_SCOPE_UNIVERSE;
-  req.r.rtm_type  = RTN_UNICAST;
-  tun_nlattr(&req.n, sizeof(req), RTA_DST, dst, 4);
-  tun_nlattr(&req.n, sizeof(req), RTA_GATEWAY, gateway, 4);
-  
-  if ((fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE)) < 0) {
-    SYS_ERR(DTUN, LOGL_ERROR, errno,
-	    "socket() failed");
-    return -1;
-  }
-
-  memset(&local, 0, sizeof(local));
-  local.nl_family = AF_NETLINK;
-  local.nl_groups = 0;
-  
-  if (bind(fd, (struct sockaddr*)&local, sizeof(local)) < 0) {
-    SYS_ERR(DTUN, LOGL_ERROR, errno,
-	    "bind() failed");
-    close(fd);
-    return -1;
-  }
-
-  addr_len = sizeof(local);
-  if (getsockname(fd, (struct sockaddr*)&local, &addr_len) < 0) {
-    SYS_ERR(DTUN, LOGL_ERROR, errno,
-	    "getsockname() failed");
-    close(fd);
-    return -1;
-  }
-
-  if (addr_len != sizeof(local)) {
-    SYS_ERR(DTUN, LOGL_ERROR, 0,
-	    "Wrong address length %d", addr_len);
-    close(fd);
-    return -1;
-  }
-
-  if (local.nl_family != AF_NETLINK) {
-    SYS_ERR(DTUN, LOGL_ERROR, 0,
-	    "Wrong address family %d", local.nl_family);
-    close(fd);
-    return -1;
-  }
-  
-  iov.iov_base = (void*)&req.n;
-  iov.iov_len = req.n.nlmsg_len;
-
-  msg.msg_name = (void*)&nladdr;
-  msg.msg_namelen = sizeof(nladdr),
-  msg.msg_iov = &iov;
-  msg.msg_iovlen = 1;
-  msg.msg_control = NULL;
-  msg.msg_controllen = 0;
-  msg.msg_flags = 0;
-
-  memset(&nladdr, 0, sizeof(nladdr));
-  nladdr.nl_family = AF_NETLINK;
-  nladdr.nl_pid = 0;
-  nladdr.nl_groups = 0;
-
-  req.n.nlmsg_seq = 0;
-  req.n.nlmsg_flags |= NLM_F_ACK;
-
-  status = sendmsg(fd, &msg, 0);  * TODO: Error check *
-  close(fd);
-  return 0;
-}
-*/
 
 int tun_addaddr(struct tun_t *this,
 		struct in_addr *addr,
@@ -373,17 +270,6 @@ int tun_addaddr(struct tun_t *this,
 	this->addrs++;
 	return 0;
 
-#elif defined (__sun__)
-
-	if (!this->addrs)	/* Use ioctl for first addr to make ping work */
-		return tun_setaddr4(this, addr, dstaddr, netmask);
-
-	SYS_ERR(DTUN, LOGL_ERROR, errno,
-		"Setting multiple addresses not possible on Solaris");
-	return -1;
-
-#else
-#error  "Unknown platform!"
 #endif
 
 }
@@ -455,12 +341,6 @@ static int tun_setaddr4(struct tun_t *this, struct in_addr *addr,
 #elif defined(__FreeBSD__) || defined (__APPLE__)
 		((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr =
 		    netmask->s_addr;
-
-#elif defined(__sun__)
-		((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr =
-		    netmask->s_addr;
-#else
-#error  "Unknown platform!"
 #endif
 
 		if (ioctl(fd, SIOCSIFNETMASK, (void *)&ifr) < 0) {
@@ -593,8 +473,6 @@ int tun_route(struct tun_t *this,
 	      struct in_addr *gateway, struct in_addr *mask, int delete)
 {
 
-	/* TODO: Learn how to set routing table on sun  */
-
 #if defined(__linux__)
 
 	struct rtentry r;
@@ -687,14 +565,6 @@ int tun_route(struct tun_t *this,
 	}
 	close(fd);
 	return 0;
-
-#elif defined(__sun__)
-	SYS_ERR(DTUN, LOGL_NOTICE, errno,
-		"Could not set up routing on Solaris. Please add route manually.");
-	return 0;
-
-#else
-#error  "Unknown platform!"
 #endif
 
 }
@@ -724,15 +594,6 @@ int tun_new(struct tun_t **tun)
 	int devnum;
 	struct ifaliasreq areq;
 	int fd;
-
-#elif defined(__sun__)
-	int if_fd, ppa = -1;
-	static int ip_fd = 0;
-	int muxid;
-	struct ifreq ifr;
-
-#else
-#error  "Unknown platform!"
 #endif
 
 	if (!(*tun = calloc(1, sizeof(struct tun_t)))) {
@@ -805,90 +666,6 @@ int tun_new(struct tun_t **tun)
 
 	close(fd);
 	return 0;
-
-#elif defined(__sun__)
-
-	if ((ip_fd = open("/dev/udp", O_RDWR, 0)) < 0) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno,
-			"Can't open /dev/udp");
-		goto err_free;
-	}
-
-	if (((*tun)->fd = open("/dev/tun", O_RDWR, 0)) < 0) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno,
-			"Can't open /dev/tun");
-		close(ip_fd);
-		goto err_free;
-	}
-
-	/* Assign a new PPA and get its unit number. */
-	if ((ppa = ioctl((*tun)->fd, TUNNEWPPA, -1)) < 0) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno,
-			"Can't assign new interface");
-		goto sun_close_ip;
-	}
-
-	if ((if_fd = open("/dev/tun", O_RDWR, 0)) < 0) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno,
-			"Can't open /dev/tun (2)");
-		goto sun_close_ip;
-	}
-	if (ioctl(if_fd, I_PUSH, "ip") < 0) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno,
-			"Can't push IP module");
-		goto sun_close_if;
-	}
-
-	/* Assign ppa according to the unit number returned by tun device */
-	if (ioctl(if_fd, IF_UNITSEL, (char *)&ppa) < 0) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno, "Can't set PPA %d",
-			ppa);
-		goto sun_close_if;
-	}
-
-	/* Link the two streams */
-	if ((muxid = ioctl(ip_fd, I_LINK, if_fd)) < 0) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno,
-			"Can't link TUN device to IP");
-		goto sun_close_if;
-	}
-
-	/* Link the two streams */
-	if ((muxid = ioctl(ip_fd, I_LINK, if_fd)) < 0) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno,
-			"Can't link TUN device to IP");
-		goto sun_close_if;
-	}
-
-	close(if_fd);
-
-	snprintf((*tun)->devname, sizeof((*tun)->devname), "tun%d", ppa);
-	(*tun)->devname[sizeof((*tun)->devname)] = 0;
-
-	memset(&ifr, 0, sizeof(ifr));
-	strcpy(ifr.ifr_name, (*tun)->devname);
-	ifr.ifr_ip_muxid = muxid;
-
-	if (ioctl(ip_fd, SIOCSIFMUXID, &ifr) < 0) {
-		ioctl(ip_fd, I_PUNLINK, muxid);
-		SYS_ERR(DTUN, LOGL_ERROR, errno,
-			"Can't set multiplexor id");
-		goto sun_close_ip;
-	}
-
-	/*  if (fcntl (fd, F_SETFL, O_NONBLOCK) < 0)
-	   msg (M_ERR, "Set file descriptor to non-blocking failed"); */
-
-	return 0;
-
-sun_close_if:
-	close(if_fd);
-sun_close_ip:
-	close(ip_fd);
-	goto err_close;
-
-#else
-#error  "Unknown platform!"
 #endif
 
 err_close:
@@ -925,9 +702,6 @@ int tun_set_cb_ind(struct tun_t *this,
 
 int tun_decaps(struct tun_t *this)
 {
-
-#if defined(__linux__) || defined (__FreeBSD__) || defined (__APPLE__)
-
 	unsigned char buffer[PACKET_MAX];
 	int status;
 
@@ -940,44 +714,11 @@ int tun_decaps(struct tun_t *this)
 		return this->cb_ind(this, buffer, status);
 
 	return 0;
-
-#elif defined (__sun__)
-
-	unsigned char buffer[PACKET_MAX];
-	struct strbuf sbuf;
-	int f = 0;
-
-	sbuf.maxlen = PACKET_MAX;
-	sbuf.buf = buffer;
-	if (getmsg(this->fd, NULL, &sbuf, &f) < 0) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno, "getmsg() failed");
-		return -1;
-	}
-
-	if (this->cb_ind)
-		return this->cb_ind(this, buffer, sbuf.len);
-
-	return 0;
-
-#endif
-
 }
 
 int tun_encaps(struct tun_t *tun, void *pack, unsigned len)
 {
-
-#if defined(__linux__) || defined (__FreeBSD__) || defined (__APPLE__)
-
 	return write(tun->fd, pack, len);
-
-#elif defined (__sun__)
-
-	struct strbuf sbuf;
-	sbuf.len = len;
-	sbuf.buf = pack;
-	return putmsg(tun->fd, NULL, &sbuf, 0);
-
-#endif
 }
 
 int tun_runscript(struct tun_t *tun, char *script)

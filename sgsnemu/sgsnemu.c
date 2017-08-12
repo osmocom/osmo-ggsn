@@ -870,13 +870,8 @@ int process_options(int argc, char **argv)
 			exit(1);
 		}
 		options.net.s_addr = in46.v4.s_addr;
-#if defined (__sun__)
-		options.netaddrs_addr = htonl(ntohl(options.net.s_addr) + 1);
-		options.destaddr.s_addr = htonl(ntohl(options.net.s_addr) + 1);
-#else
 		options.netaddr.s_addr = options.net.s_addr;
 		options.destaddr.s_addr = options.net.s_addr;
-#endif
 
 	} else {
 		options.net.s_addr = 0;
