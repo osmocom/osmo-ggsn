@@ -67,7 +67,7 @@ static int tun_setaddr4(struct tun_t *this, struct in_addr *addr,
 
 #include <linux/ipv6.h>
 
-int tun_nlattr(struct nlmsghdr *n, int nsize, int type, void *d, int dlen)
+static int tun_nlattr(struct nlmsghdr *n, int nsize, int type, void *d, int dlen)
 {
 	int len = RTA_LENGTH(dlen);
 	int alen = NLMSG_ALIGN(n->nlmsg_len);
@@ -82,7 +82,7 @@ int tun_nlattr(struct nlmsghdr *n, int nsize, int type, void *d, int dlen)
 }
 #endif
 
-int tun_sifflags(struct tun_t *this, int flags)
+static int tun_sifflags(struct tun_t *this, int flags)
 {
 	struct ifreq ifr;
 	int fd;
@@ -468,7 +468,7 @@ int tun_setaddr(struct tun_t *this, struct in46_addr *addr, struct in46_addr *ds
 	}
 }
 
-int tun_route(struct tun_t *this,
+static int tun_route(struct tun_t *this,
 	      struct in_addr *dst,
 	      struct in_addr *gateway, struct in_addr *mask, int delete)
 {
