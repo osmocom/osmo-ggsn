@@ -65,7 +65,7 @@ struct tun_t {
 	void *priv;
 };
 
-extern int tun_new(struct tun_t **tun);
+extern int tun_new(struct tun_t **tun, const char *dev_name);
 extern int tun_free(struct tun_t *tun);
 extern int tun_decaps(struct tun_t *this);
 extern int tun_encaps(struct tun_t *tun, void *pack, unsigned len);

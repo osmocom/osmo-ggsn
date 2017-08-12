@@ -583,7 +583,7 @@ int tun_delroute(struct tun_t *this,
 	return tun_route(this, dst, gateway, mask, 1);
 }
 
-int tun_new(struct tun_t **tun)
+int tun_new(struct tun_t **tun, const char *dev_name)
 {
 
 #if defined(__linux__)
@@ -615,6 +615,8 @@ int tun_new(struct tun_t **tun)
 	/* Set device flags. For some weird reason this is also the method
 	   used to obtain the network interface name */
 	memset(&ifr, 0, sizeof(ifr));
+	if (dev_name)
+		strcpy(ifr.ifr_name, dev_name);
 	ifr.ifr_flags = IFF_TUN | IFF_NO_PI;	/* Tun device, no packet info */
 	if (ioctl((*tun)->fd, TUNSETIFF, (void *)&ifr) < 0) {
 		SYS_ERR(DTUN, LOGL_ERROR, errno, "ioctl() failed");

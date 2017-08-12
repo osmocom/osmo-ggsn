@@ -1,6 +1,7 @@
 /* 
  * OpenGGSN - Gateway GPRS Support Node
  * Copyright (C) 2002, 2003, 2004 Mondru AB.
+ * Copyright (C) 2017 by Harald Welte <laforge@gnumonks.org>
  * 
  * The contents of this file may be used under the terms of the GNU
  * General Public License Version 2, provided that the above copyright
@@ -19,42 +20,43 @@
 
 #include "../config.h"
 
-#include <osmocom/core/application.h>
-
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
 #endif
 
+#include <getopt.h>
 #include <ctype.h>
-#include <netdb.h>
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <inttypes.h>
+#include <errno.h>
 #include <sys/types.h>
-#include <sys/socket.h>
+#include <sys/ioctl.h>
+
+#include <net/if.h>
+#include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <netinet/ip6.h>
-#include <arpa/inet.h>
-#include <sys/wait.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <inttypes.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <net/if.h>
-#include <net/if.h>
 
-#include <errno.h>
-
-#include <time.h>
-
+#include <osmocom/core/application.h>
 #include <osmocom/core/select.h>
+#include <osmocom/core/stats.h>
+#include <osmocom/core/rate_ctr.h>
+#include <osmocom/core/timer.h>
 #include <osmocom/ctrl/control_if.h>
 #include <osmocom/ctrl/control_cmd.h>
+#include <osmocom/ctrl/control_vty.h>
 #include <osmocom/ctrl/ports.h>
+#include <osmocom/vty/telnet_interface.h>
+#include <osmocom/vty/logging.h>
+#include <osmocom/vty/stats.h>
+#include <osmocom/vty/ports.h>
+#include <osmocom/vty/command.h>
+#include <osmocom/gsm/apn.h>
 
 #include "../lib/tun.h"
 #include "../lib/ippool.h"
@@ -62,82 +64,188 @@
 #include "../lib/in46_addr.h"
 #include "../gtp/pdp.h"
 #include "../gtp/gtp.h"
-#include "cmdline.h"
 #include "gtp-kernel.h"
 #include "icmpv6.h"
+#include "ggsn.h"
 
-int end = 0;
-int maxfd = 0;			/* For select()            */
+void *tall_ggsn_ctx;
 
-struct in_addr listen_;
-struct in46_addr netaddr, destaddr, net;	/* Network interface       */
-size_t prefixlen;
-struct in46_addr dns1, dns2;	/* PCO DNS address         */
-char *ipup, *ipdown;		/* Filename of scripts     */
-int debug;			/* Print debug output      */
-struct ul255_t pco;
+static int end = 0;
+static int daemonize = 0;
+static struct ctrl_handle *g_ctrlh;
+
 struct ul255_t qos;
 struct ul255_t apn;
 
-struct gsn_t *gsn;		/* GSN instance            */
-struct tun_t *tun;		/* TUN instance            */
-struct ippool_t *ippool;	/* Pool of IP addresses    */
+#define LOGPAPN(level, apn, fmt, args...)			\
+	LOGP(DGGSN, level, "APN(%s): " fmt, (apn)->cfg.name, ## args)
 
-/* To exit gracefully. Used with GCC compilation flag -pg and gprof */
-void signal_handler(int s)
+#define LOGPGGSN(level, ggsn, fmt, args...)			\
+	LOGP(DGGSN, level, "GGSN(%s): " fmt, (ggsn)->cfg.name, ## args)
+
+#define LOGPPDP(level, pdp, fmt, args...)			\
+	LOGP(DGGSN, level, "PDP(%s:%u): " fmt, imsi_gtp2str(&(pdp)->imsi), (pdp)->nsapi, ## args)
+
+static int ggsn_tun_fd_cb(struct osmo_fd *fd, unsigned int what);
+static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len);
+
+
+static void pool_close_all_pdp(struct ippool_t *pool)
 {
-	DEBUGP(DGGSN, "Received signal %d, exiting.\n", s);
-	end = 1;
-}
+	unsigned int i;
 
-/* Used to write process ID to file. Assume someone else will delete */
-void log_pid(char *pidfile)
-{
-	FILE *file;
-	mode_t oldmask;
-
-	oldmask = umask(022);
-	file = fopen(pidfile, "w");
-	umask(oldmask);
-	if (!file) {
-		SYS_ERR(DGGSN, LOGL_ERROR, 0,
-			"Failed to create process ID file: %s!", pidfile);
+	if (!pool)
 		return;
+
+	for (i = 0; i < pool->listsize; i++) {
+		struct ippoolm_t *member = &pool->member[i];
+		struct pdp_t *pdp;
+
+		if (!member->inuse)
+			continue;
+		pdp = member->peer;
+		if (!pdp)
+			continue;
+		LOGPPDP(LOGL_DEBUG, pdp, "Sending DELETE PDP CTX due to shutdown\n");
+		gtp_delete_context_req(pdp->gsn, pdp, NULL, 1);
 	}
-	fprintf(file, "%d\n", (int)getpid());
-	fclose(file);
 }
 
-#if defined(__sun__)
-int daemon(int nochdir, int noclose)
+int apn_stop(struct apn_ctx *apn, bool force)
 {
-	int fd;
+	if (!apn->started)
+		return 0;
 
-	switch (fork()) {
-	case -1:
-		return (-1);
-	case 0:
+	LOGPAPN(LOGL_NOTICE, apn, "%sStopping\n", force ? "FORCED " : "");
+	/* check if pools have any active PDP contexts and bail out */
+	pool_close_all_pdp(apn->v4.pool);
+	pool_close_all_pdp(apn->v6.pool);
+
+	/* shutdown whatever old state might be left */
+	if (apn->tun.tun) {
+		/* run ip-down script */
+		if (apn->tun.cfg.ipdown_script) {
+			LOGPAPN( LOGL_INFO, apn, "Running %s\n", apn->tun.cfg.ipdown_script);
+			tun_runscript(apn->tun.tun, apn->tun.cfg.ipdown_script);
+		}
+		/* release tun device */
+		LOGPAPN(LOGL_INFO, apn, "Closing TUN device\n");
+		osmo_fd_unregister(&apn->tun.fd);
+		tun_free(apn->tun.tun);
+		apn->tun.tun = NULL;
+	}
+
+	if (apn->v4.pool) {
+		LOGPAPN(LOGL_INFO, apn, "Releasing IPv4 pool\n");
+		ippool_free(apn->v4.pool);
+		apn->v4.pool = NULL;
+	}
+	if (apn->v6.pool) {
+		LOGPAPN(LOGL_INFO, apn, "Releasing IPv6 pool\n");
+		ippool_free(apn->v6.pool);
+		apn->v6.pool = NULL;
+	}
+
+	apn->started = false;
+	return 0;
+}
+
+/* actually start the APN with its current config */
+int apn_start(struct apn_ctx *apn)
+{
+	if (apn->started)
+		return 0;
+
+	LOGPAPN(LOGL_INFO, apn, "Starting\n");
+	switch (apn->cfg.gtpu_mode) {
+	case APN_GTPU_MODE_TUN:
+		LOGPAPN(LOGL_INFO, apn, "Opening TUN device %s\n", apn->tun.cfg.dev_name);
+		if (tun_new(&apn->tun.tun, apn->tun.cfg.dev_name)) {
+			LOGPAPN(LOGL_ERROR, apn, "Failed to configure tun device\n");
+			return -1;
+		}
+		LOGPAPN(LOGL_INFO, apn, "Opened TUN device %s\n", apn->tun.tun->devname);
+
+		/* Register with libosmcoore */
+		osmo_fd_setup(&apn->tun.fd, apn->tun.tun->fd, BSC_FD_READ, ggsn_tun_fd_cb, apn, 0);
+		osmo_fd_register(&apn->tun.fd);
+
+		/* Set TUN library callback */
+		tun_set_cb_ind(apn->tun.tun, cb_tun_ind);
+
+		if (apn->v4.cfg.ifconfig_prefix.addr.len) {
+			LOGPAPN(LOGL_INFO, apn, "Setting tun IP address %s\n",
+				in46p_ntoa(&apn->v4.cfg.ifconfig_prefix));
+			if (tun_setaddr(apn->tun.tun, &apn->v4.cfg.ifconfig_prefix.addr, NULL,
+					apn->v4.cfg.ifconfig_prefix.prefixlen)) {
+				LOGPAPN(LOGL_ERROR, apn, "Failed to set tun IPv4 address %s: %s\n",
+					in46p_ntoa(&apn->v4.cfg.ifconfig_prefix), strerror(errno));
+				apn_stop(apn, false);
+				return -1;
+			}
+		}
+
+		if (apn->v6.cfg.ifconfig_prefix.addr.len) {
+			LOGPAPN(LOGL_INFO, apn, "Setting tun IPv6 address %s\n",
+				in46p_ntoa(&apn->v6.cfg.ifconfig_prefix));
+			if (tun_setaddr(apn->tun.tun, &apn->v6.cfg.ifconfig_prefix.addr, NULL,
+					apn->v6.cfg.ifconfig_prefix.prefixlen)) {
+				LOGPAPN(LOGL_ERROR, apn, "Failed to set tun IPv6 address %s: %s\n",
+					in46p_ntoa(&apn->v6.cfg.ifconfig_prefix), strerror(errno));
+				apn_stop(apn, false);
+				return -1;
+			}
+		}
+
+		if (apn->tun.cfg.ipup_script) {
+			LOGPAPN(LOGL_INFO, apn, "Running ip-up script %s\n",
+				apn->tun.cfg.ipup_script);
+			tun_runscript(apn->tun.tun, apn->tun.cfg.ipup_script);
+		}
+		/* set back-pointer from TUN device to APN */
+		apn->tun.tun->priv = apn;
+		break;
+	case APN_GTPU_MODE_KERNEL_GTP:
+		LOGPAPN(LOGL_ERROR, apn, "FIXME: Kernel GTP\n");
+#if 0
+		/* use GTP kernel module for data packet encapsulation */
+		if (gtp_kernel_init(gsn, &net.v4, prefixlen, net_arg) < 0)
+			goto err;
+#endif
 		break;
 	default:
-		_exit(0);
+		LOGPAPN(LOGL_ERROR, apn, "Unknown GTPU Mode %d\n", apn->cfg.gtpu_mode);
+		return -1;
 	}
 
-	if (setsid() == -1)
-		return (-1);
-
-	if (!nochdir)
-		chdir("/");
-
-	if (!noclose && (fd = open("/dev/null", O_RDWR, 0)) != -1) {
-		dup2(fd, STDIN_FILENO);
-		dup2(fd, STDOUT_FILENO);
-		dup2(fd, STDERR_FILENO);
-		if (fd > 2)
-			close(fd);
+	/* Create IPv4 pool */
+	if (apn->v4.cfg.dynamic_prefix.addr.len) {
+		LOGPAPN(LOGL_INFO, apn, "Creating IPv4 pool %s\n",
+			in46p_ntoa(&apn->v4.cfg.dynamic_prefix));
+		if (ippool_new(&apn->v4.pool, &apn->v4.cfg.dynamic_prefix,
+				&apn->v4.cfg.static_prefix, 0)) {
+			LOGPAPN(LOGL_ERROR, apn, "Failed to create IPv4 pool\n");
+			apn_stop(apn, false);
+			return -1;
+		}
 	}
-	return (0);
+
+	/* Create IPv6 pool */
+	if (apn->v6.cfg.dynamic_prefix.addr.len) {
+		LOGPAPN(LOGL_INFO, apn, "Creating IPv6 pool %s\n",
+			in46p_ntoa(&apn->v6.cfg.dynamic_prefix));
+		if (ippool_new(&apn->v6.pool, &apn->v6.cfg.dynamic_prefix,
+				&apn->v6.cfg.static_prefix, 0)) {
+			LOGPAPN(LOGL_ERROR, apn, "Failed to create IPv6 pool\n");
+			apn_stop(apn, false);
+			return -1;
+		}
+	}
+
+	LOGPAPN(LOGL_NOTICE, apn, "Successfully started\n");
+	apn->started = true;
+	return 0;
 }
-#endif
 
 static bool send_trap(const struct gsn_t *gsn, const struct pdp_t *pdp, const struct ippoolm_t *member, const char *var)
 {
@@ -148,27 +256,29 @@ static bool send_trap(const struct gsn_t *gsn, const struct pdp_t *pdp, const st
 
 	snprintf(val, sizeof(val), "%s,%s", imsi_gtp2str(&pdp->imsi), addrstr);
 
-	if (ctrl_cmd_send_trap(gsn->priv, var, val) < 0) {
-		LOGP(DGGSN, LOGL_ERROR, "Failed to create and send TRAP for IMSI %" PRIu64 " [%s].\n", pdp->imsi, var);
+	if (ctrl_cmd_send_trap(g_ctrlh, var, val) < 0) {
+		LOGPPDP(LOGL_ERROR, pdp, "Failed to create and send TRAP %s\n", var);
 		return false;
 	}
 	return true;
 }
 
-int delete_context(struct pdp_t *pdp)
+static int delete_context(struct pdp_t *pdp)
 {
-	DEBUGP(DGGSN, "Deleting PDP context\n");
+	struct gsn_t *gsn = pdp->gsn;
+	struct ippoolm_t *ipp = (struct ippoolm_t *)pdp->peer;
+
+	LOGPPDP(LOGL_INFO, pdp, "Deleting PDP context\n");
 	struct ippoolm_t *member = pdp->peer;
 
 	if (pdp->peer) {
 		send_trap(gsn, pdp, member, "imsi-rem-ip"); /* TRAP with IP removal */
-		ippool_freeip(ippool, (struct ippoolm_t *)pdp->peer);
+		ippool_freeip(ipp->pool, ipp);
 	} else
-		SYS_ERR(DGGSN, LOGL_ERROR, 0, "Peer not defined!");
+		LOGPPDP(LOGL_ERROR, pdp, "Cannot find/free IP Pool member\n");
 
 	if (gtp_kernel_tunnel_del(pdp)) {
-		SYS_ERR(DGGSN, LOGL_ERROR, 0,
-			"Cannot delete tunnel from kernel: %s\n",
+		LOGPPDP(LOGL_ERROR, pdp, "Cannot delete tunnel from kernel:%s\n",
 			strerror(errno));
 	}
 
@@ -236,31 +346,74 @@ static bool pdp_has_v4(struct pdp_t *pdp)
 		return false;
 }
 
+/* construct an IPCP PCO from up to two given DNS addreses */
+static int build_ipcp_pco(struct msgb *msg, uint8_t id, const struct in46_addr *dns1,
+			  const struct in46_addr *dns2)
+{
+	uint8_t *len1, *len2;
+	uint8_t *start = msg->tail;
+	unsigned int len_appended;
+
+	/* Three byte T16L header */
+	msgb_put_u16(msg, 0x8021);	/* IPCP */
+	len1 = msgb_put(msg, 1);	/* Length of contents: delay */
+
+	msgb_put_u8(msg, 0x02);		/* ACK */
+	msgb_put_u8(msg, id);		/* ID: Needs to match request */
+	msgb_put_u8(msg, 0x00);		/* Length MSB */
+	len2 = msgb_put(msg, 1);	/* Length LSB: delay */
+
+	if (dns1 && dns1->len == 4) {
+		msgb_put_u8(msg, 0x81);		/* DNS1 Tag */
+		msgb_put_u8(msg, 2 + dns1->len);/* DNS1 Length, incl. TL */
+		msgb_put_u32(msg, dns1->v4.s_addr);
+	}
+
+	if (dns2 && dns2->len == 4) {
+		msgb_put_u8(msg, 0x83);		/* DNS2 Tag */
+		msgb_put_u8(msg, 2 + dns2->len);/* DNS2 Length, incl. TL */
+		msgb_put_u32(msg, dns2->v4.s_addr);
+	}
+
+	/* patch in length values */
+	len_appended = msg->tail - start;
+	*len1 = len_appended - 3;
+	*len2 = len_appended - 3;
+
+	return 0;
+}
+
 /* process one PCO request from a MS/UE, putting together the proper responses */
-static void process_pco(struct pdp_t *pdp)
+static void process_pco(struct apn_ctx *apn, struct pdp_t *pdp)
 {
 	struct msgb *msg = msgb_alloc(256, "PCO");
+	unsigned int i;
+
+	OSMO_ASSERT(msg);
 	msgb_put_u8(msg, 0x80); /* ext-bit + configuration protocol byte */
 
 	/* FIXME: also check if primary / secondary DNS was requested */
 	if (pdp_has_v4(pdp) && pco_contains_proto(&pdp->pco_req, PCO_P_IPCP)) {
 		/* FIXME: properly implement this for IPCP */
-		uint8_t *cur = msgb_put(msg, pco.l-1);
-		memcpy(cur, pco.v+1, pco.l-1);
+		build_ipcp_pco(msg, 0, &apn->v4.cfg.dns[0], &apn->v4.cfg.dns[1]);
 	}
 
 	if (pco_contains_proto(&pdp->pco_req, PCO_P_DNS_IPv6_ADDR)) {
-		if (dns1.len == 16)
-			msgb_t16lv_put(msg, PCO_P_DNS_IPv6_ADDR, dns1.len, dns1.v6.s6_addr);
-		if (dns2.len == 16)
-			msgb_t16lv_put(msg, PCO_P_DNS_IPv6_ADDR, dns2.len, dns2.v6.s6_addr);
+		for (i = 0; i < ARRAY_SIZE(apn->v6.cfg.dns); i++) {
+			struct in46_addr *i46a = &apn->v6.cfg.dns[i];
+			if (i46a->len != 16)
+				continue;
+			msgb_t16lv_put(msg, PCO_P_DNS_IPv6_ADDR, i46a->len, i46a->v6.s6_addr);
+		}
 	}
 
 	if (pco_contains_proto(&pdp->pco_req, PCO_P_DNS_IPv4_ADDR)) {
-		if (dns1.len == 4)
-			msgb_t16lv_put(msg, PCO_P_DNS_IPv4_ADDR, dns1.len, (uint8_t *)&dns1.v4);
-		if (dns2.len == 4)
-			msgb_t16lv_put(msg, PCO_P_DNS_IPv4_ADDR, dns2.len, (uint8_t *)&dns2.v4);
+		for (i = 0; i < ARRAY_SIZE(apn->v4.cfg.dns); i++) {
+			struct in46_addr *i46a = &apn->v4.cfg.dns[i];
+			if (i46a->len != 4)
+				continue;
+			msgb_t16lv_put(msg, PCO_P_DNS_IPv4_ADDR, i46a->len, (uint8_t *)&i46a->v4);
+		}
 	}
 
 	if (msgb_length(msg) > 1) {
@@ -274,11 +427,29 @@ static void process_pco(struct pdp_t *pdp)
 
 int create_context_ind(struct pdp_t *pdp)
 {
+	static char name_buf[256];
+	struct gsn_t *gsn = pdp->gsn;
+	struct ggsn_ctx *ggsn = gsn->priv;
 	struct in46_addr addr;
 	struct ippoolm_t *member;
+	struct apn_ctx *apn;
 	int rc;
 
-	DEBUGP(DGGSN, "Received create PDP context request\n");
+	osmo_apn_to_str(name_buf, pdp->apn_req.v, pdp->apn_req.l);
+
+	LOGPPDP(LOGL_DEBUG, pdp, "Processing create PDP context request for APN '%s'\n", name_buf);
+
+	/* First find an exact APN name match */
+	apn = ggsn_find_apn(ggsn, name_buf);
+	/* then try default (if any) */
+	if (!apn)
+		apn = ggsn->cfg.default_apn;
+	if (!apn) {
+		/* no APN found for what user requested */
+		LOGPPDP(LOGL_NOTICE, pdp, "Unknown APN '%s', rejecting\n", name_buf);
+		gtp_create_context_resp(gsn, pdp, GTPCAUSE_MISSING_APN);
+		return 0;
+	}
 
 	/* FIXME: we manually force all context requests to dynamic here! */
 	if (pdp->eua.l > 2)
@@ -290,21 +461,30 @@ int create_context_ind(struct pdp_t *pdp)
 	pdp->qos_neg.l = pdp->qos_req.l;
 
 	if (in46a_from_eua(&pdp->eua, &addr)) {
-		SYS_ERR(DGGSN, LOGL_ERROR, 0, "Cannot decode EUA from MS/SGSN: %s",
+		LOGPPDP(LOGL_ERROR, pdp, "Cannot decode EUA from MS/SGSN: %s\n",
 			osmo_hexdump(pdp->eua.v, pdp->eua.l));
 		gtp_create_context_resp(gsn, pdp, GTPCAUSE_UNKNOWN_PDP);
 		return 0;
 	}
 
-	rc = ippool_newip(ippool, &member, &addr, 0);
-	if (rc < 0) {
-		SYS_ERR(DGGSN, LOGL_ERROR, 0, "Cannot allocate IP address in pool\n");
-		gtp_create_context_resp(gsn, pdp, -rc);
-		return 0;	/* Allready in use, or no more available */
-	}
+	if (addr.len == sizeof(struct in_addr)) {
+		rc = ippool_newip(apn->v4.pool, &member, &addr, 0);
+		if (rc < 0)
+			goto err_pool_full;
+		in46a_to_eua(&member->addr, &pdp->eua);
 
-	if (addr.len == sizeof(struct in6_addr)) {
+		/* TODO: In IPv6, EUA doesn't contain the actual IP addr/prefix! */
+		if (gtp_kernel_tunnel_add(pdp) < 0) {
+			LOGPPDP(LOGL_ERROR, pdp, "Cannot add tunnel to kernel: %s\n", strerror(errno));
+			gtp_create_context_resp(gsn, pdp, GTPCAUSE_SYS_FAIL);
+			return 0;
+		}
+	} else if (addr.len == sizeof(struct in6_addr)) {
 		struct in46_addr tmp;
+		rc = ippool_newip(apn->v6.pool, &member, &addr, 0);
+		if (rc < 0)
+			goto err_pool_full;
+
 		/* IPv6 doesn't really send the real/allocated address at this point, but just
 		 * the link-identifier which the MS shall use for router solicitation */
 		tmp.len = addr.len;
@@ -314,43 +494,46 @@ int create_context_ind(struct pdp_t *pdp)
 		memcpy(tmp.v6.s6_addr+8, &member->addr.v6, 8);
 		in46a_to_eua(&tmp, &pdp->eua);
 	} else
-		in46a_to_eua(&member->addr, &pdp->eua);
-	pdp->peer = member;
-	pdp->ipif = tun;	/* TODO */
-	member->peer = pdp;
+		OSMO_ASSERT(0);
 
-	/* TODO: In IPv6, EUA doesn't contain the actual IP addr/prefix! */
-	if (gtp_kernel_tunnel_add(pdp) < 0) {
-		SYS_ERR(DGGSN, LOGL_ERROR, 0,
-			"Cannot add tunnel to kernel: %s\n", strerror(errno));
-		gtp_create_context_resp(gsn, pdp, GTPCAUSE_SYS_FAIL);
-		return 0;
-	}
+	pdp->peer = member;
+	pdp->ipif = apn->tun.tun;	/* TODO */
+	member->peer = pdp;
 
 	if (!send_trap(gsn, pdp, member, "imsi-ass-ip")) { /* TRAP with IP assignment */
 		gtp_create_context_resp(gsn, pdp, GTPCAUSE_NO_RESOURCES);
 		return 0;
 	}
 
-	process_pco(pdp);
+	process_pco(apn, pdp);
 
+	LOGPPDP(LOGL_INFO, pdp, "Successful PDP Context Creation: APN=%s(%s), TEIC=%u, IP=%s\n",
+		name_buf, apn->cfg.name, pdp->teic_own, in46a_ntoa(&member->addr));
 	gtp_create_context_resp(gsn, pdp, GTPCAUSE_ACC_REQ);
 	return 0;		/* Success */
+
+err_pool_full:
+	LOGPPDP(LOGL_ERROR, pdp, "Cannot allocate IP address from pool (full!)\n");
+	gtp_create_context_resp(gsn, pdp, -rc);
+	return 0;	/* Already in use, or no more available */
 }
 
-/* Callback for receiving messages from tun */
-int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
+/* Internet-originated IP packet, needs to be sent via GTP towards MS */
+static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 {
+	struct apn_ctx *apn = tun->priv;
 	struct ippoolm_t *ipm;
 	struct in46_addr dst;
 	struct iphdr *iph = (struct iphdr *)pack;
 	struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
+	struct ippool_t *pool;
 
 	if (iph->version == 4) {
 		if (len < sizeof(*iph) || len < 4*iph->ihl)
 			return -1;
 		dst.len = 4;
 		dst.v4.s_addr = iph->daddr;
+		pool = apn->v4.pool;
 	} else if (iph->version == 6) {
 		/* Due to the fact that 3GPP requires an allocation of a
 		 * /64 prefix to each MS, we must instruct
@@ -358,20 +541,25 @@ int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 		 * prefix, i.e. the first 8 bytes of the address */
 		dst.len = 8;
 		dst.v6 = ip6h->ip6_dst;
+		pool = apn->v6.pool;
 	} else {
-		LOGP(DGGSN, LOGL_NOTICE, "non-IPv packet received from tun\n");
+		LOGP(DTUN, LOGL_NOTICE, "non-IPv packet received from tun\n");
 		return -1;
 	}
 
-	DEBUGP(DGGSN, "Received packet from tun!\n");
+	/* IPv6 packet but no IPv6 pool, or IPv4 packet with no IPv4 pool */
+	if (!pool)
+		return 0;
 
-	if (ippool_getip(ippool, &ipm, &dst)) {
-		DEBUGP(DGGSN, "Received packet with no destination!!!\n");
+	DEBUGP(DTUN, "Received packet from tun!\n");
+
+	if (ippool_getip(pool, &ipm, &dst)) {
+		DEBUGP(DTUN, "Received packet with no PDP contex!!\n");
 		return 0;
 	}
 
 	if (ipm->peer)		/* Check if a peer protocol is defined */
-		gtp_data_req(gsn, (struct pdp_t *)ipm->peer, pack, len);
+		gtp_data_req(apn->ggsn->gsn, (struct pdp_t *)ipm->peer, pack, len);
 	return 0;
 }
 
@@ -380,435 +568,303 @@ static const struct in6_addr all_router_mcast_addr = {
 	.s6_addr = { 0xff,0x02,0,0,  0,0,0,0, 0,0,0,0,  0,0,0,2 }
 };
 
-int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
+/* MS-originated GTP1-U packet, needs to be sent via TUN device */
+static int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
 {
 	struct iphdr *iph = (struct iphdr *)pack;
 	struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
 
-	DEBUGP(DGGSN, "encaps_tun. Packet received: forwarding to tun\n");
+	LOGPPDP(LOGL_DEBUG, pdp, "Packet received: forwarding to tun\n");
 
 	switch (iph->version) {
 	case 6:
 		/* daddr: all-routers multicast addr */
 		if (IN6_ARE_ADDR_EQUAL(&ip6h->ip6_dst, &all_router_mcast_addr))
-			return handle_router_mcast(gsn, pdp, pack, len);
+			return handle_router_mcast(pdp->gsn, pdp, pack, len);
 		break;
 	case 4:
 		break;
 	default:
-		LOGP(DGGSN, LOGL_ERROR, "Packet from MS is neither IPv4 nor IPv6\n");
+		LOGPPDP(LOGL_ERROR, pdp, "Packet from MS is neither IPv4 nor IPv6: %s\n",
+			osmo_hexdump(pack, len));
 		return -1;
 	}
 	return tun_encaps((struct tun_t *)pdp->ipif, pack, len);
 }
 
+static char *config_file = "openggsn.cfg";
+
+/* callback for tun device osmocom select loop integration */
+static int ggsn_tun_fd_cb(struct osmo_fd *fd, unsigned int what)
+{
+	struct apn_ctx *apn = fd->data;
+
+	OSMO_ASSERT(what & BSC_FD_READ);
+
+	return tun_decaps(apn->tun.tun);
+}
+
+/* callback for libgtp osmocom select loop integration */
+static int ggsn_gtp_fd_cb(struct osmo_fd *fd, unsigned int what)
+{
+	struct ggsn_ctx *ggsn = fd->data;
+	int rc;
+
+	OSMO_ASSERT(what & BSC_FD_READ);
+
+	switch (fd->priv_nr) {
+	case 0:
+		rc = gtp_decaps0(ggsn->gsn);
+		break;
+	case 1:
+		rc = gtp_decaps1c(ggsn->gsn);
+		break;
+	case 2:
+		rc = gtp_decaps1u(ggsn->gsn);
+		break;
+	default:
+		OSMO_ASSERT(0);
+		break;
+	}
+	return rc;
+}
+
+static void ggsn_gtp_tmr_start(struct ggsn_ctx *ggsn)
+{
+	struct timeval next;
+
+	/* Retrieve next retransmission as timeval */
+	gtp_retranstimeout(ggsn->gsn, &next);
+
+	/* re-schedule the timer */
+	osmo_timer_schedule(&ggsn->gtp_timer, next.tv_sec, next.tv_usec/1000);
+}
+
+/* timer callback for libgtp retransmission and ping */
+static void ggsn_gtp_tmr_cb(void *data)
+{
+	struct ggsn_ctx *ggsn = data;
+
+	/* do all the retransmissions as needed */
+	gtp_retrans(ggsn->gsn);
+
+	ggsn_gtp_tmr_start(ggsn);
+}
+
+/* To exit gracefully. Used with GCC compilation flag -pg and gprof */
+static void signal_handler(int s)
+{
+	LOGP(DGGSN, LOGL_NOTICE, "signal %d received\n", s);
+	switch (s) {
+	case SIGINT:
+		LOGP(DGGSN, LOGL_NOTICE, "SIGINT received, shutting down\n");
+		end = 1;
+		break;
+	case SIGABRT:
+	case SIGUSR1:
+		talloc_report(tall_vty_ctx, stderr);
+		talloc_report_full(tall_ggsn_ctx, stderr);
+		break;
+	case SIGUSR2:
+		talloc_report_full(tall_vty_ctx, stderr);
+		break;
+	default:
+		break;
+	}
+}
+
+
+/* Start a given GGSN */
+int ggsn_start(struct ggsn_ctx *ggsn)
+{
+	struct apn_ctx *apn;
+	int rc;
+
+	if (ggsn->started)
+		return 0;
+
+	LOGPGGSN(LOGL_INFO, ggsn, "Starting GGSN\n");
+
+	/* Start libgtp listener */
+	if (gtp_new(&ggsn->gsn, ggsn->cfg.state_dir, &ggsn->cfg.listen_addr.v4, GTP_MODE_GGSN)) {
+		LOGPGGSN(LOGL_ERROR, ggsn, "Failed to create GTP: %s\n", strerror(errno));
+		return -1;
+	}
+	ggsn->gsn->priv = ggsn;
+
+	/* Register File Descriptors */
+	osmo_fd_setup(&ggsn->gtp_fd0, ggsn->gsn->fd0, BSC_FD_READ, ggsn_gtp_fd_cb, ggsn, 0);
+	rc = osmo_fd_register(&ggsn->gtp_fd0);
+	OSMO_ASSERT(rc == 0);
+
+	osmo_fd_setup(&ggsn->gtp_fd1c, ggsn->gsn->fd1c, BSC_FD_READ, ggsn_gtp_fd_cb, ggsn, 1);
+	rc = osmo_fd_register(&ggsn->gtp_fd1c);
+	OSMO_ASSERT(rc == 0);
+
+	osmo_fd_setup(&ggsn->gtp_fd1u, ggsn->gsn->fd1u, BSC_FD_READ, ggsn_gtp_fd_cb, ggsn, 2);
+	rc = osmo_fd_register(&ggsn->gtp_fd1u);
+	OSMO_ASSERT(rc == 0);
+
+	/* Start GTP re-transmission timer */
+	osmo_timer_setup(&ggsn->gtp_timer, ggsn_gtp_tmr_cb, ggsn);
+
+	gtp_set_cb_data_ind(ggsn->gsn, encaps_tun);
+	gtp_set_cb_delete_context(ggsn->gsn, delete_context);
+	gtp_set_cb_create_context_ind(ggsn->gsn, create_context_ind);
+
+	LOGPGGSN(LOGL_NOTICE, ggsn, "Successfully started\n");
+	ggsn->started = true;
+
+	llist_for_each_entry(apn, &ggsn->apn_list, list)
+		apn_start(apn);
+
+	return 0;
+}
+
+/* Stop a given GGSN */
+int ggsn_stop(struct ggsn_ctx *ggsn)
+{
+	struct apn_ctx *apn;
+
+	if (!ggsn->started)
+		return 0;
+
+	/* iterate over all APNs and stop them */
+	llist_for_each_entry(apn, &ggsn->apn_list, list)
+		apn_stop(apn, true);
+
+	osmo_timer_del(&ggsn->gtp_timer);
+
+	osmo_fd_unregister(&ggsn->gtp_fd1u);
+	osmo_fd_unregister(&ggsn->gtp_fd1c);
+	osmo_fd_unregister(&ggsn->gtp_fd0);
+
+	if (ggsn->gsn) {
+		gtp_free(ggsn->gsn);
+		ggsn->gsn = NULL;
+	}
+
+	ggsn->started = false;
+	return 0;
+}
+
+static void print_usage()
+{
+	printf("Usage: osmo-ggsn [-h] [-D] [-c configfile] [-V]\n");
+}
+
+static void print_help()
+{
+	printf(	"  Some useful help...\n"
+		"  -h --help		This help text\n"
+		"  -D --daemonize	Fork the process into a background daemon\n"
+		"  -c --config-file	filename The config file to use\n"
+		"  -V --version		Print the version of OsmoGGSN\n"
+		);
+}
+
+static void handle_options(int argc, char **argv)
+{
+	while (1) {
+		int option_index = 0, c;
+		static struct option long_options[] = {
+			{ "help", 0, 0, 'h' },
+			{ "daemonize", 0, 0, 'D' },
+			{ "config-file", 1, 0, 'c' },
+			{ "version", 0, 0, 'V' },
+			{ 0, 0, 0, 0 }
+		};
+
+		c = getopt_long(argc, argv, "hdc:V", long_options, &option_index);
+		if (c == -1)
+			break;
+
+		switch (c) {
+		case 'h':
+			print_usage();
+			print_help();
+			exit(0);
+		case 'D':
+			daemonize = 1;
+			break;
+		case 'c':
+			config_file = optarg;
+			break;
+		case 'V':
+			print_version(1);
+			exit(0);
+			break;
+		}
+	}
+}
+
 int main(int argc, char **argv)
 {
-	/* gengeopt declarations */
-	struct gengetopt_args_info args_info;
-
-	struct hostent *host;
+	struct ggsn_ctx *ggsn;
+	int rc;
 
 	/* Handle keyboard interrupt SIGINT */
-	struct sigaction s;
-	s.sa_handler = (void *)signal_handler;
-	if ((0 != sigemptyset(&s.sa_mask)) && debug)
-		printf("sigemptyset failed.\n");
-	s.sa_flags = SA_RESETHAND;
-	if ((sigaction(SIGINT, &s, NULL) != 0) && debug)
-		printf("Could not register SIGINT signal handler.\n");
+	tall_ggsn_ctx = talloc_named_const(NULL, 0, "openggsn");
+	msgb_talloc_ctx_init(tall_ggsn_ctx, 0);
 
-	fd_set fds;		/* For select() */
-	struct timeval idleTime;	/* How long to select() */
+	signal(SIGINT, &signal_handler);
+	signal(SIGABRT, &signal_handler);
+	signal(SIGUSR1, &signal_handler);
+	signal(SIGUSR2, &signal_handler);
 
-	int timelimit;		/* Number of seconds to be connected */
-	int starttime;		/* Time program was started */
-
+	osmo_init_ignore_signals();
 	osmo_init_logging(&log_info);
+	osmo_stats_init(tall_ggsn_ctx);
 
-	if (cmdline_parser(argc, argv, &args_info) != 0)
-		exit(1);
-	if (args_info.debug_flag) {
-		printf("listen: %s\n", args_info.listen_arg);
-		if (args_info.conf_arg)
-			printf("conf: %s\n", args_info.conf_arg);
-		printf("fg: %d\n", args_info.fg_flag);
-		printf("debug: %d\n", args_info.debug_flag);
-		printf("qos: %#08x\n", args_info.qos_arg);
-		if (args_info.apn_arg)
-			printf("apn: %s\n", args_info.apn_arg);
-		if (args_info.net_arg)
-			printf("net: %s\n", args_info.net_arg);
-		if (args_info.dynip_arg)
-			printf("dynip: %s\n", args_info.dynip_arg);
-		if (args_info.statip_arg)
-			printf("statip: %s\n", args_info.statip_arg);
-		if (args_info.ipup_arg)
-			printf("ipup: %s\n", args_info.ipup_arg);
-		if (args_info.ipdown_arg)
-			printf("ipdown: %s\n", args_info.ipdown_arg);
-		if (args_info.pidfile_arg)
-			printf("pidfile: %s\n", args_info.pidfile_arg);
-		if (args_info.statedir_arg)
-			printf("statedir: %s\n", args_info.statedir_arg);
-		if (args_info.gtp_linux_flag)
-			printf("gtp_linux: %d\n", args_info.gtp_linux_flag);
-		printf("timelimit: %d\n", args_info.timelimit_arg);
+	vty_init(&g_vty_info);
+	logging_vty_add_cmds(NULL);
+	osmo_stats_vty_add_cmds(&log_info);
+	ggsn_vty_init();
+	ctrl_vty_init(tall_ggsn_ctx);
+
+	handle_options(argc, argv);
+
+	rate_ctr_init(tall_ggsn_ctx);
+
+	rc = vty_read_config_file(config_file, NULL);
+	if (rc < 0) {
+		fprintf(stderr, "Failed to open config file: '%s'\n", config_file);
+		exit(2);
 	}
 
-	/* Try out our new parser */
-
-	if (cmdline_parser_configfile(args_info.conf_arg, &args_info, 0, 0, 0)
-	    != 0)
+	rc = telnet_init_dynif(tall_ggsn_ctx, NULL, vty_get_bind_addr(), OSMO_VTY_PORT_GGSN);
+	if (rc < 0)
 		exit(1);
 
-	/* Open a log file */
-	if (args_info.logfile_arg) {
-		struct log_target *tgt;
-		int lvl;
-
-		tgt = log_target_find(LOG_TGT_TYPE_FILE, args_info.logfile_arg);
-		if (!tgt) {
-			tgt = log_target_create_file(args_info.logfile_arg);
-			if (!tgt) {
-				LOGP(DGGSN, LOGL_ERROR,
-					"Failed to create logfile: %s\n",
-					args_info.logfile_arg);
-				exit(1);
-			}
-			log_add_target(tgt);
-		}
-		log_set_all_filter(tgt, 1);
-		log_set_use_color(tgt, 0);
-
-		if (args_info.loglevel_arg) {
-			lvl = log_parse_level(args_info.loglevel_arg);
-			log_set_log_level(tgt, lvl);
-			LOGP(DGGSN, LOGL_NOTICE,
-				"Set file log level to %s\n",
-				log_level_str(lvl));
-		}
-	}
-
-	if (args_info.debug_flag) {
-		printf("cmdline_parser_configfile\n");
-		printf("listen: %s\n", args_info.listen_arg);
-		printf("conf: %s\n", args_info.conf_arg);
-		printf("fg: %d\n", args_info.fg_flag);
-		printf("debug: %d\n", args_info.debug_flag);
-		printf("qos: %#08x\n", args_info.qos_arg);
-		if (args_info.apn_arg)
-			printf("apn: %s\n", args_info.apn_arg);
-		if (args_info.net_arg)
-			printf("net: %s\n", args_info.net_arg);
-		if (args_info.dynip_arg)
-			printf("dynip: %s\n", args_info.dynip_arg);
-		if (args_info.statip_arg)
-			printf("statip: %s\n", args_info.statip_arg);
-		if (args_info.ipup_arg)
-			printf("ipup: %s\n", args_info.ipup_arg);
-		if (args_info.ipdown_arg)
-			printf("ipdown: %s\n", args_info.ipdown_arg);
-		if (args_info.pidfile_arg)
-			printf("pidfile: %s\n", args_info.pidfile_arg);
-		if (args_info.statedir_arg)
-			printf("statedir: %s\n", args_info.statedir_arg);
-		if (args_info.gtp_linux_flag)
-			printf("gtp-linux: %d\n", args_info.gtp_linux_flag);
-		printf("timelimit: %d\n", args_info.timelimit_arg);
-	}
-
-	/* Handle each option */
-
-	/* debug                                                        */
-	debug = args_info.debug_flag;
-
-	/* listen                                                       */
-	/* Do hostname lookup to translate hostname to IP address       */
-	/* Any port listening is not possible as a valid address is     */
-	/* required for create_pdp_context_response messages            */
-	if (args_info.listen_arg) {
-		if (!(host = gethostbyname(args_info.listen_arg))) {
-			SYS_ERR(DGGSN, LOGL_ERROR, 0,
-				"Invalid listening address: %s!",
-				args_info.listen_arg);
-			exit(1);
-		} else {
-			memcpy(&listen_.s_addr, host->h_addr, host->h_length);
-		}
-	} else {
-		SYS_ERR(DGGSN, LOGL_ERROR, 0,
-			"Listening address must be specified! "
-			"Please use command line option --listen or "
-			"edit %s configuration file\n", args_info.conf_arg);
+	g_ctrlh = ctrl_interface_setup(NULL, OSMO_CTRL_PORT_GGSN, NULL);
+	if (!g_ctrlh) {
+		LOGP(DGGSN, LOGL_ERROR, "Failed to create CTRL interface.\n");
 		exit(1);
 	}
 
-	/* net                                                          */
-	/* Store net as in_addr net and mask                            */
-	if (args_info.net_arg) {
-		if (ippool_aton(&net, &prefixlen, args_info.net_arg, 0)) {
-			SYS_ERR(DGGSN, LOGL_ERROR, 0,
-				"Invalid network address: %s!",
-				args_info.net_arg);
-			exit(1);
-		}
-		/* default for network + destination address = net + 1 */
-		netaddr = net;
-		in46a_inc(&netaddr);
-		destaddr = netaddr;
-	} else {
-		SYS_ERR(DGGSN, LOGL_ERROR, 0,
-			"Network address must be specified: %s!",
-			args_info.net_arg);
-		exit(1);
-	}
-
-	/* dynip                                                        */
-	struct in46_prefix i46p;
-	size_t prefixlen;
-	if (!args_info.dynip_arg) {
-		if (ippool_aton(&i46p.addr, &prefixlen, args_info.net_arg, 0)) {
-			SYS_ERR(DIP, LOGL_ERROR, 0, "Failed to parse dynamic pool");
-			exit(1);
-		}
-	} else {
-		if (ippool_aton(&i46p.addr, &prefixlen, args_info.dynip_arg, 0)) {
-			SYS_ERR(DIP, LOGL_ERROR, 0, "Failed to parse dynamic pool");
-			exit(1);
-		}
-	}
-	i46p.prefixlen = prefixlen;
-	if (ippool_new(&ippool, &i46p, NULL, IPPOOL_NONETWORK | IPPOOL_NOGATEWAY | IPPOOL_NOBROADCAST)) {
-		SYS_ERR(DGGSN, LOGL_ERROR, 0, "Failed to allocate IP pool!");
-		exit(1);
-	}
-
-	/* DNS1 and DNS2 */
-	memset(&dns1, 0, sizeof(dns1));
-	if (args_info.pcodns1_arg) {
-		size_t tmp;
-		if (ippool_aton(&dns1, &tmp, args_info.pcodns1_arg, 0) != 0) {
-			SYS_ERR(DGGSN, LOGL_ERROR, 0,
-				"Failed to convert pcodns1!");
-			exit(1);
-		}
-	}
-	memset(&dns2, 0, sizeof(dns2));
-	if (args_info.pcodns2_arg) {
-		size_t tmp;
-		if (ippool_aton(&dns2, &tmp, args_info.pcodns2_arg, 0) != 0) {
-			SYS_ERR(DGGSN, LOGL_ERROR, 0,
-				"Failed to convert pcodns2!");
+	if (daemonize) {
+		rc = osmo_daemonize();
+		if (rc < 0) {
+			perror("Error during daemonize");
 			exit(1);
 		}
 	}
 
-	unsigned int cur = 0;
-	pco.v[cur++] = 0x80;	/* x0000yyy x=1, yyy=000: PPP */
-	pco.v[cur++] = 0x80;	/* IPCP */
-	pco.v[cur++] = 0x21;
-	pco.v[cur++] = 0xFF;	/* Length of contents */
-	pco.v[cur++] = 0x02;	/* ACK */
-	pco.v[cur++] = 0x00;	/* ID: Need to match request */
-	pco.v[cur++] = 0x00;	/* Length */
-	pco.v[cur++] = 0xFF;	/* overwritten  */
-	if (dns1.len == 4) {
-		pco.v[cur++] = 0x81;	/* DNS 1 */
-		pco.v[cur++] = 2 + dns1.len;
-		if (dns1.len == 4)
-			memcpy(&pco.v[cur], &dns1.v4, dns1.len);
-		else
-			memcpy(&pco.v[cur], &dns1.v6, dns1.len);
-		cur += dns1.len;
-	}
-	if (dns2.len == 4) {
-		pco.v[cur++] = 0x83;
-		pco.v[cur++] = 2 + dns2.len;	/* DNS 2 */
-		if (dns2.len == 4)
-			memcpy(&pco.v[cur], &dns2.v4, dns2.len);
-		else
-			memcpy(&pco.v[cur], &dns2.v6, dns2.len);
-		cur += dns2.len;
-	}
-	pco.l = cur;
-	/* patch in length values */
-	pco.v[3] = pco.l - 4;
-	pco.v[7] = pco.l - 4;
-
-	/* ipup */
-	ipup = args_info.ipup_arg;
-
-	/* ipdown */
-	ipdown = args_info.ipdown_arg;
-
-	/* Timelimit                                                       */
-	timelimit = args_info.timelimit_arg;
-	starttime = time(NULL);
-
+#if 0
 	/* qos                                                             */
 	qos.l = 3;
 	qos.v[2] = (args_info.qos_arg) & 0xff;
 	qos.v[1] = ((args_info.qos_arg) >> 8) & 0xff;
 	qos.v[0] = ((args_info.qos_arg) >> 16) & 0xff;
+#endif
 
-	/* apn                                                             */
-	if (strlen(args_info.apn_arg) > (sizeof(apn.v) - 1)) {
-		LOGP(DGGSN, LOGL_ERROR, "Invalid APN\n");
-		return -1;
-	}
-	apn.l = strlen(args_info.apn_arg) + 1;
-	apn.v[0] = (char)strlen(args_info.apn_arg);
-	strncpy((char *)&apn.v[1], args_info.apn_arg, sizeof(apn.v) - 1);
-
-	/* foreground                                                   */
-	/* If flag not given run as a daemon                            */
-	if (!args_info.fg_flag) {
-		FILE *f;
-		int rc;
-		/* Close the standard file descriptors. */
-		/* Is this really needed ? */
-		f = freopen("/dev/null", "w", stdout);
-		if (f == NULL) {
-			SYS_ERR(DGGSN, LOGL_NOTICE, 0,
-				"Could not redirect stdout to /dev/null");
-		}
-		f = freopen("/dev/null", "w", stderr);
-		if (f == NULL) {
-			SYS_ERR(DGGSN, LOGL_NOTICE, 0,
-				"Could not redirect stderr to /dev/null");
-		}
-		f = freopen("/dev/null", "r", stdin);
-		if (f == NULL) {
-			SYS_ERR(DGGSN, LOGL_NOTICE, 0,
-				"Could not redirect stdin to /dev/null");
-		}
-		rc = daemon(0, 0);
-		if (rc != 0) {
-			SYS_ERR(DGGSN, LOGL_ERROR, rc,
-				"Could not daemonize");
-			exit(1);
-		}
+	/* Main select loop */
+	while (!end) {
+		osmo_select_main(0);
 	}
 
-	/* pidfile */
-	/* This has to be done after we have our final pid */
-	if (args_info.pidfile_arg) {
-		log_pid(args_info.pidfile_arg);
-	}
-
-	DEBUGP(DGGSN, "gtpclient: Initialising GTP tunnel\n");
-
-	if (gtp_new(&gsn, args_info.statedir_arg, &listen_, GTP_MODE_GGSN)) {
-		SYS_ERR(DGGSN, LOGL_ERROR, 0, "Failed to create gtp");
-		exit(1);
-	}
-	if (gsn->fd0 > maxfd)
-		maxfd = gsn->fd0;
-	if (gsn->fd1c > maxfd)
-		maxfd = gsn->fd1c;
-	if (gsn->fd1u > maxfd)
-		maxfd = gsn->fd1u;
-
-	/* use GTP kernel module for data packet encapsulation */
-	if (args_info.gtp_linux_given) {
-		if (gtp_kernel_init(gsn, &net.v4, prefixlen, args_info.net_arg) < 0) {
-			SYS_ERR(DGGSN, LOGL_ERROR, 0, "Failed to initialize kernel GTP\n");
-			goto err;
-		}
-	}
-
-	gtp_set_cb_data_ind(gsn, encaps_tun);
-	gtp_set_cb_delete_context(gsn, delete_context);
-	gtp_set_cb_create_context_ind(gsn, create_context_ind);
-
-	gsn->priv = ctrl_interface_setup(NULL, OSMO_CTRL_PORT_GGSN, NULL);
-	if (!gsn->priv) {
-		LOGP(DGGSN, LOGL_ERROR, "Failed to create CTRL interface.\n");
-		exit(1);
-	}
-
-	/* skip the configuration of the tun0 if we're using the gtp0 device */
-	if (gtp_kernel_enabled())
-		goto skip_tun;
-
-	/* Create a tunnel interface */
-	DEBUGP(DGGSN, "Creating tun interface\n");
-	if (tun_new((struct tun_t **)&tun)) {
-		SYS_ERR(DGGSN, LOGL_ERROR, 0, "Failed to create tun");
-		exit(1);
-	}
-
-	DEBUGP(DGGSN, "Setting tun IP address\n");
-	if (tun_setaddr(tun, &netaddr, &destaddr, prefixlen)) {
-		SYS_ERR(DGGSN, LOGL_ERROR, 0, "Failed to set tun IP address");
-		exit(1);
-	}
-
-	tun_set_cb_ind(tun, cb_tun_ind);
-	if (tun->fd > maxfd)
-		maxfd = tun->fd;
-
-	if (ipup)
-		tun_runscript(tun, ipup);
-
-skip_tun:
-
-  /******************************************************************/
-	/* Main select loop                                               */
-  /******************************************************************/
-
-	while ((((starttime + timelimit) > time(NULL)) || (0 == timelimit))
-	       && (!end)) {
-
-		FD_ZERO(&fds);
-		if (tun)
-			FD_SET(tun->fd, &fds);
-		FD_SET(gsn->fd0, &fds);
-		FD_SET(gsn->fd1c, &fds);
-		FD_SET(gsn->fd1u, &fds);
-
-		gtp_retranstimeout(gsn, &idleTime);
-		switch (select(maxfd + 1, &fds, NULL, NULL, &idleTime)) {
-		case -1:	/* errno == EINTR : unblocked signal */
-			SYS_ERR(DGGSN, LOGL_ERROR, 0,
-				"select() returned -1");
-			/* On error, select returns without modifying fds */
-			FD_ZERO(&fds);
-			break;
-		case 0:
-			/* printf("Select returned 0\n"); */
-			gtp_retrans(gsn);	/* Only retransmit if nothing else */
-			break;
-		default:
-			break;
-		}
-
-		if (tun && tun->fd != -1 && FD_ISSET(tun->fd, &fds) &&
-		    tun_decaps(tun) < 0) {
-			SYS_ERR(DGGSN, LOGL_ERROR, 0,
-				"TUN read failed (fd)=(%d)", tun->fd);
-		}
-
-		if (FD_ISSET(gsn->fd0, &fds))
-			gtp_decaps0(gsn);
-
-		if (FD_ISSET(gsn->fd1c, &fds))
-			gtp_decaps1c(gsn);
-
-		if (FD_ISSET(gsn->fd1u, &fds))
-			gtp_decaps1u(gsn);
-
-		osmo_select_main(1);
-	}
-err:
-	gtp_kernel_stop();
-	cmdline_parser_free(&args_info);
-	ippool_free(ippool);
-	gtp_free(gsn);
-	if (tun)
-		tun_free(tun);
+	llist_for_each_entry(ggsn, &g_ggsn_list, list)
+		ggsn_stop(ggsn);
 
 	return 1;
-
 }
