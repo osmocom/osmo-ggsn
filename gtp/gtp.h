@@ -402,5 +402,6 @@ extern int ipv42eua(struct ul66_t *eua, struct in_addr *src);
 extern int eua2ipv4(struct in_addr *dst, struct ul66_t *eua);
 extern int gsna2in_addr(struct in_addr *dst, struct ul16_t *gsna);
 extern int in_addr2gsna(struct ul16_t *gsna, struct in_addr *src);
+extern const char *imsi_gtp2str(const uint64_t *imsi);
 
 #endif /* !_GTP_H */

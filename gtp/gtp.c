@@ -3244,3 +3244,31 @@ int in_addr2gsna(struct ul16_t *gsna, struct in_addr *src)
 	memcpy(gsna->v, src, gsna->l);
 	return 0;
 }
+
+/* TS 29.060 has yet again a different encoding for IMSIs than
+ * what we have in other places, so we cannot use the gsm48
+ * decoding functions.  Also, libgtp uses an uint64_t in
+ * _network byte order_ to contain BCD digits ?!? */
+const char *imsi_gtp2str(const uint64_t *imsi)
+{
+	static char buf[sizeof(*imsi)+1];
+	const uint8_t *imsi8 = (const uint8_t *) imsi;
+	unsigned int i, j = 0;
+
+	for (i = 0; i < sizeof(*imsi); i++) {
+		uint8_t nibble;
+
+		nibble = imsi8[i] & 0xf;
+		if (nibble == 0xf)
+			break;
+		buf[j++] = osmo_bcd2char(nibble);
+
+		nibble = imsi8[i] >> 4;
+		if (nibble == 0xf)
+			break;
+		buf[j++] = osmo_bcd2char(nibble);
+	}
+
+	buf[j++] = '\0';
+	return buf;
+}

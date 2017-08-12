@@ -146,7 +146,7 @@ static bool send_trap(const struct gsn_t *gsn, const struct pdp_t *pdp, const st
 
 	const char *addrstr = in46a_ntop(&member->addr, addrbuf, sizeof(addrbuf));
 
-	snprintf(val, sizeof(val), "%" PRIu64 ",%s", pdp->imsi, addrstr);
+	snprintf(val, sizeof(val), "%s,%s", imsi_gtp2str(&pdp->imsi), addrstr);
 
 	if (ctrl_cmd_send_trap(gsn->ctrl, var, val) < 0) {
 		LOGP(DGGSN, LOGL_ERROR, "Failed to create and send TRAP for IMSI %" PRIu64 " [%s].\n", pdp->imsi, var);
