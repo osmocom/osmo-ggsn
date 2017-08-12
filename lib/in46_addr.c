@@ -69,6 +69,16 @@ const char *in46a_ntop(const struct in46_addr *in, char *dst, socklen_t dst_size
 	return inet_ntop(af, (const void *) &in->v4, dst, dst_size);
 }
 
+/* like inet_ntoa() */
+const char *in46a_ntoa(const struct in46_addr *in46)
+{
+	static char addrstr_buf[256];
+	if (in46a_ntop(in46, addrstr_buf, sizeof(addrstr_buf)) < 0)
+		return "INVALID";
+	else
+		return addrstr_buf;
+}
+
 /*! Determine if two in46_addr are equal or not
  *  \returns 1 in case they are equal; 0 otherwise */
 int in46a_equal(const struct in46_addr *a, const struct in46_addr *b)
