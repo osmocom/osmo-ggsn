@@ -28,6 +28,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include "pdp.h"
+#include "gtp.h"
 #include "lookupa.h"
 
 /* ***********************************************************
@@ -200,6 +201,24 @@ int pdp_getgtp1(struct pdp_t **pdp, uint32_t tei)
 			return EOF;
 		/* Context exists. We do no further validity checking. */
 	}
+}
+
+/* get a PDP based on the *peer* address + TEI-Data.  Used for matching inbound Error Ind */
+int pdp_getgtp1_peer_d(struct pdp_t **pdp, const struct sockaddr_in *peer, uint32_t teid_gn)
+{
+	unsigned int i;
+
+	/* this is O(n) but we don't have (nor want) another hash... */
+	for (i = 0; i < PDP_MAX; i++) {
+		struct pdp_t *candidate = &pdpa[i];
+		if (candidate->inuse && candidate->teid_gn == teid_gn &&
+		    candidate->gsnru.l == sizeof(peer->sin_addr) &&
+		    !memcmp(&peer->sin_addr, candidate->gsnru.v, sizeof(peer->sin_addr))) {
+			*pdp = &pdpa[i];
+			return 0;
+		}
+	}
+	return EOF;
 }
 
 int pdp_tidhash(uint64_t tid)

@@ -232,6 +232,7 @@ int pdp_getpdp(struct pdp_t **pdp);
 
 int pdp_getgtp0(struct pdp_t **pdp, uint16_t fl);
 int pdp_getgtp1(struct pdp_t **pdp, uint32_t tei);
+int pdp_getgtp1_peer_d(struct pdp_t **pdp, const struct sockaddr_in *peer, uint32_t teid_gn);
 
 int pdp_getimsi(struct pdp_t **pdp, uint64_t imsi, uint8_t nsapi);
 

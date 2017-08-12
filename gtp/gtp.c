@@ -2581,17 +2581,44 @@ int gtp_error_ind_resp(struct gsn_t *gsn, int version,
 int gtp_error_ind_conf(struct gsn_t *gsn, int version,
 		       struct sockaddr_in *peer, void *pack, unsigned len)
 {
+	union gtpie_member *ie[GTPIE_SIZE];
 	struct pdp_t *pdp;
 
 	/* Find the context in question */
-	if (pdp_tidget(&pdp, be64toh(((union gtp_packet *)pack)->gtp0.h.tid))) {
-		gsn->err_unknownpdp++;
-		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
-			    "Unknown PDP context\n");
-		return EOF;
+	if (version == 0) {
+		if (pdp_tidget(&pdp, be64toh(((union gtp_packet *)pack)->gtp0.h.tid))) {
+			gsn->err_unknownpdp++;
+			GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
+				    "Unknown PDP context\n");
+			return EOF;
+		}
+	} else if (version == 1) {
+		/* we have to look-up based on the *peer* TEID */
+		int hlen = get_hlen(pack);
+		uint32_t teid_gn;
+
+		/* Decode information elements */
+		if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
+			gsn->invalid++;
+			GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
+				    "Invalid message format\n");
+			return EOF;
+		}
+
+		if (gtpie_gettv4(ie, GTPIE_TEI_DI, 0, &teid_gn)) {
+			gsn->missing++;
+			GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
+				    "Missing mandatory information field\n");
+			return EOF;
+		}
+
+		if (pdp_getgtp1_peer_d(&pdp, peer, teid_gn)) {
+			gsn->err_unknownpdp++;
+			GTP_LOGPKG(LOGL_ERROR, peer, pack, len, "Unknown PDP context\n");
+			return EOF;
+		}
 	}
 
-	gsn->err_unknownpdp++;	/* TODO: Change counter */
 	GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 		    "Received Error Indication\n");
 
