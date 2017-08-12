@@ -748,7 +748,7 @@ int tun_new(struct tun_t **tun)
 	/* Open the actual tun device */
 	if (((*tun)->fd = open("/dev/net/tun", O_RDWR)) < 0) {
 		SYS_ERR(DTUN, LOGL_ERROR, errno, "open() failed");
-		return -1;
+		goto err_free;
 	}
 
 	/* Set device flags. For some weird reason this is also the method
@@ -757,8 +757,7 @@ int tun_new(struct tun_t **tun)
 	ifr.ifr_flags = IFF_TUN | IFF_NO_PI;	/* Tun device, no packet info */
 	if (ioctl((*tun)->fd, TUNSETIFF, (void *)&ifr) < 0) {
 		SYS_ERR(DTUN, LOGL_ERROR, errno, "ioctl() failed");
-		close((*tun)->fd);
-		return -1;
+		goto err_close;
 	}
 
 	strncpy((*tun)->devname, ifr.ifr_name, IFNAMSIZ);
@@ -780,7 +779,7 @@ int tun_new(struct tun_t **tun)
 	if ((*tun)->fd < 0) {
 		SYS_ERR(DTUN, LOGL_ERROR, errno,
 			"Can't find tunnel device");
-		return -1;
+		goto err_free;
 	}
 
 	snprintf((*tun)->devname, sizeof((*tun)->devname), "tun%d", devnum);
@@ -798,7 +797,7 @@ int tun_new(struct tun_t **tun)
 	/* Create a channel to the NET kernel. */
 	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
 		SYS_ERR(DTUN, LOGL_ERROR, errno, "socket() failed");
-		return -1;
+		goto err_close;
 	}
 
 	/* Delete any IP addresses until SIOCDIFADDR fails */
@@ -812,45 +811,53 @@ int tun_new(struct tun_t **tun)
 	if ((ip_fd = open("/dev/udp", O_RDWR, 0)) < 0) {
 		SYS_ERR(DTUN, LOGL_ERROR, errno,
 			"Can't open /dev/udp");
-		return -1;
+		goto err_free;
 	}
 
 	if (((*tun)->fd = open("/dev/tun", O_RDWR, 0)) < 0) {
 		SYS_ERR(DTUN, LOGL_ERROR, errno,
 			"Can't open /dev/tun");
-		return -1;
+		close(ip_fd);
+		goto err_free;
 	}
 
 	/* Assign a new PPA and get its unit number. */
 	if ((ppa = ioctl((*tun)->fd, TUNNEWPPA, -1)) < 0) {
 		SYS_ERR(DTUN, LOGL_ERROR, errno,
 			"Can't assign new interface");
-		return -1;
+		goto sun_close_ip;
 	}
 
 	if ((if_fd = open("/dev/tun", O_RDWR, 0)) < 0) {
 		SYS_ERR(DTUN, LOGL_ERROR, errno,
 			"Can't open /dev/tun (2)");
-		return -1;
+		goto sun_close_ip;
 	}
 	if (ioctl(if_fd, I_PUSH, "ip") < 0) {
 		SYS_ERR(DTUN, LOGL_ERROR, errno,
 			"Can't push IP module");
-		return -1;
+		goto sun_close_if;
 	}
 
 	/* Assign ppa according to the unit number returned by tun device */
 	if (ioctl(if_fd, IF_UNITSEL, (char *)&ppa) < 0) {
 		SYS_ERR(DTUN, LOGL_ERROR, errno, "Can't set PPA %d",
 			ppa);
-		return -1;
+		goto sun_close_if;
 	}
 
 	/* Link the two streams */
 	if ((muxid = ioctl(ip_fd, I_LINK, if_fd)) < 0) {
 		SYS_ERR(DTUN, LOGL_ERROR, errno,
 			"Can't link TUN device to IP");
-		return -1;
+		goto sun_close_if;
+	}
+
+	/* Link the two streams */
+	if ((muxid = ioctl(ip_fd, I_LINK, if_fd)) < 0) {
+		SYS_ERR(DTUN, LOGL_ERROR, errno,
+			"Can't link TUN device to IP");
+		goto sun_close_if;
 	}
 
 	close(if_fd);
@@ -866,7 +873,7 @@ int tun_new(struct tun_t **tun)
 		ioctl(ip_fd, I_PUNLINK, muxid);
 		SYS_ERR(DTUN, LOGL_ERROR, errno,
 			"Can't set multiplexor id");
-		return -1;
+		goto sun_close_ip;
 	}
 
 	/*  if (fcntl (fd, F_SETFL, O_NONBLOCK) < 0)
@@ -874,10 +881,22 @@ int tun_new(struct tun_t **tun)
 
 	return 0;
 
+sun_close_if:
+	close(if_fd);
+sun_close_ip:
+	close(ip_fd);
+	goto err_close;
+
 #else
 #error  "Unknown platform!"
 #endif
 
+err_close:
+	close((*tun)->fd);
+err_free:
+	free(*tun);
+	*tun = NULL;
+	return -1;
 }
 
 int tun_free(struct tun_t *tun)
