@@ -27,7 +27,6 @@
 #include "../lib/syserr.h"
 #include "../gtp/pdp.h"
 #include "../gtp/gtp.h"
-#include "cmdline.h"
 
 #include <libgtpnl/gtp.h>
 #include <libgtpnl/gtpnl.h>
@@ -80,12 +79,8 @@ static struct {
 #define GTP_DEVNAME	"gtp0"
 
 int gtp_kernel_init(struct gsn_t *gsn, struct in_addr *net,
-		    size_t prefixlen,
-		    struct gengetopt_args_info *args_info)
+		    size_t prefixlen, const char *net_arg)
 {
-	if (!args_info->gtp_linux_given)
-		return 0;
-
 	if (gtp_dev_create(-1, GTP_DEVNAME, gsn->fd0, gsn->fd1u) < 0) {
 		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"cannot create GTP tunnel device: %s\n",
@@ -113,12 +108,12 @@ int gtp_kernel_init(struct gsn_t *gsn, struct in_addr *net,
 	}
 
 	DEBUGP(DGGSN, "Setting route to reach %s via %s\n",
-	       args_info->net_arg, GTP_DEVNAME);
+	       net_arg, GTP_DEVNAME);
 
 	if (gtp_dev_config(GTP_DEVNAME, net, prefixlen) < 0) {
 		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"Cannot add route to reach network %s\n",
-			args_info->net_arg);
+			net_arg);
 	}
 
 	/* launch script if it is set to bring up the route to reach
@@ -132,7 +127,7 @@ int gtp_kernel_init(struct gsn_t *gsn, struct in_addr *net,
 
 		/* eg. /home/ggsn/ipup gtp0 10.0.0.0/8 */
 		snprintf(cmd, sizeof(cmd), "%s %s %s",
-			 ipup, GTP_DEVNAME, args_info->net_arg);
+			 ipup, GTP_DEVNAME, net_arg);
 		cmd[sizeof(cmd)-1] = '\0';
 
 		err = system(cmd);

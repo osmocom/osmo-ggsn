@@ -710,8 +710,12 @@ int main(int argc, char **argv)
 		maxfd = gsn->fd1u;
 
 	/* use GTP kernel module for data packet encapsulation */
-	if (gtp_kernel_init(gsn, &net.v4, prefixlen, &args_info) < 0)
-		goto err;
+	if (args_info.gtp_linux_given) {
+		if (gtp_kernel_init(gsn, &net.v4, prefixlen, args_info.net_arg) < 0) {
+			SYS_ERR(DGGSN, LOGL_ERROR, 0, "Failed to initialize kernel GTP\n");
+			goto err;
+		}
+	}
 
 	gtp_set_cb_data_ind(gsn, encaps_tun);
 	gtp_set_cb_delete_context(gsn, delete_context);
