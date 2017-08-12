@@ -12,6 +12,8 @@
 #ifndef _PDP_H
 #define _PDP_H
 
+struct gsn_t;
+
 #define PDP_MAX 1024		/* Max number of PDP contexts */
 #define PDP_MAXNSAPI 16		/* Max number of NSAPI */
 
@@ -221,6 +223,8 @@ struct pdp_t {
 
 	/* to be used by libgtp callers/users (to attach their own private state) */
 	void *priv;
+
+	struct gsn_t *gsn;
 };
 
 /* functions related to pdp_t management */

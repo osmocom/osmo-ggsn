@@ -90,7 +90,11 @@ const char *gtp_version()
 int gtp_newpdp(struct gsn_t *gsn, struct pdp_t **pdp,
 	       uint64_t imsi, uint8_t nsapi)
 {
-	return pdp_newpdp(pdp, imsi, nsapi, NULL);
+	int rc;
+	rc = pdp_newpdp(pdp, imsi, nsapi, NULL);
+	if (!rc && *pdp)
+		(*pdp)->gsn = gsn;
+	return rc;
 }
 
 int gtp_freepdp(struct gsn_t *gsn, struct pdp_t *pdp)
@@ -1570,6 +1574,8 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 	}
 
 	pdp_newpdp(&pdp, pdp->imsi, pdp->nsapi, pdp);
+	if (pdp)
+		pdp->gsn = gsn;
 
 	/* Callback function to validata login */
 	if (gsn->cb_create_context_ind != 0)
