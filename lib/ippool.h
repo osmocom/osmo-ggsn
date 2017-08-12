@@ -71,8 +71,8 @@ struct ippoolm_t {
 extern unsigned long int ippool_hash(struct in46_addr *addr);
 
 /* Create new address pool */
-extern int ippool_new(struct ippool_t **this, const char *dyn, const char *stat,
-		      int allowdyn, int allowstat, int flags);
+extern int ippool_new(struct ippool_t **this, const struct in46_prefix *dyn,
+		      const struct in46_prefix *stat, int flags);
 
 /* Delete existing address pool */
 extern int ippool_free(struct ippool_t *this);

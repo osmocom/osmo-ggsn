@@ -565,22 +565,23 @@ int main(int argc, char **argv)
 	}
 
 	/* dynip                                                        */
+	struct in46_prefix i46p;
+	size_t prefixlen;
 	if (!args_info.dynip_arg) {
-		if (ippool_new(&ippool, args_info.net_arg, NULL, 1, 0,
-			       IPPOOL_NONETWORK | IPPOOL_NOGATEWAY |
-			       IPPOOL_NOBROADCAST)) {
-			SYS_ERR(DGGSN, LOGL_ERROR, 0,
-				"Failed to allocate IP pool!");
+		if (ippool_aton(&i46p.addr, &prefixlen, args_info.net_arg, 0)) {
+			SYS_ERR(DIP, LOGL_ERROR, 0, "Failed to parse dynamic pool");
 			exit(1);
 		}
 	} else {
-		if (ippool_new(&ippool, args_info.dynip_arg, NULL, 1, 0,
-			       IPPOOL_NONETWORK | IPPOOL_NOGATEWAY |
-			       IPPOOL_NOBROADCAST)) {
-			SYS_ERR(DGGSN, LOGL_ERROR, 0,
-				"Failed to allocate IP pool!");
+		if (ippool_aton(&i46p.addr, &prefixlen, args_info.dynip_arg, 0)) {
+			SYS_ERR(DIP, LOGL_ERROR, 0, "Failed to parse dynamic pool");
 			exit(1);
 		}
+	}
+	i46p.prefixlen = prefixlen;
+	if (ippool_new(&ippool, &i46p, NULL, IPPOOL_NONETWORK | IPPOOL_NOGATEWAY | IPPOOL_NOBROADCAST)) {
+		SYS_ERR(DGGSN, LOGL_ERROR, 0, "Failed to allocate IP pool!");
+		exit(1);
 	}
 
 	/* DNS1 and DNS2 */

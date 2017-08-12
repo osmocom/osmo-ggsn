@@ -185,8 +185,8 @@ void in46a_inc(struct in46_addr *addr)
 }
 
 /* Create new address pool */
-int ippool_new(struct ippool_t **this, const char *dyn, const char *stat,
-	       int allowdyn, int allowstat, int flags)
+int ippool_new(struct ippool_t **this, const struct in46_prefix *dyn, const struct in46_prefix *stat,
+	       int flags)
 {
 
 	/* Parse only first instance of pool for now */
@@ -200,14 +200,11 @@ int ippool_new(struct ippool_t **this, const char *dyn, const char *stat,
 	int dynsize;
 	unsigned int statsize;
 
-	if (!allowdyn) {
+	if (!dyn || dyn->addr.len == 0) {
 		dynsize = 0;
 	} else {
-		if (ippool_aton(&addr, &addrprefixlen, dyn, 0)) {
-			SYS_ERR(DIP, LOGL_ERROR, 0,
-				"Failed to parse dynamic pool");
-			return -1;
-		}
+		addr = dyn->addr;
+		addrprefixlen = dyn->prefixlen;
 		/* we want to work with /64 prefixes, i.e. allocate /64 prefixes rather
 		 * than /128 (single IPv6 addresses) */
 		if (addr.len == sizeof(struct in6_addr))
@@ -227,18 +224,15 @@ int ippool_new(struct ippool_t **this, const char *dyn, const char *stat,
 			dynsize--;
 	}
 
-	if (!allowstat) {
+	if (!stat || stat->addr.len == 0) {
 		statsize = 0;
 		stataddr.len = 0;
 		stataddrprefixlen = 0;
 	} else {
-		if (ippool_aton(&stataddr, &stataddrprefixlen, stat, 0)) {
-			SYS_ERR(DIP, LOGL_ERROR, 0,
-				"Failed to parse static range");
-			return -1;
-		}
+		stataddr = stat->addr;
+		stataddrprefixlen = stat->prefixlen;
 
-		statsize = (1 << (addr.len - addrprefixlen + 1)) -1;
+		statsize = (1 << (addr.len - stataddrprefixlen + 1)) -1;
 		if (statsize > IPPOOL_STATSIZE)
 			statsize = IPPOOL_STATSIZE;
 	}
@@ -251,8 +245,8 @@ int ippool_new(struct ippool_t **this, const char *dyn, const char *stat,
 		return -1;
 	}
 
-	(*this)->allowdyn = allowdyn;
-	(*this)->allowstat = allowstat;
+	(*this)->allowdyn = dyn ? 1 : 0;
+	(*this)->allowstat = stat ? 1 : 0;
 	if (stataddr.len > 0)
 		(*this)->stataddr = stataddr;
 	(*this)->stataddrprefixlen = stataddrprefixlen;
