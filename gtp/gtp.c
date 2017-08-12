@@ -2555,13 +2555,23 @@ int gtp_delete_pdp_conf(struct gsn_t *gsn, int version,
 	return 0;
 }
 
-/* Send Error Indication (response to a GPDU message */
+/* Send Error Indication (response to a GPDU message) - 3GPP TS 29.060 7.3.7 */
 int gtp_error_ind_resp(struct gsn_t *gsn, int version,
 		       struct sockaddr_in *peer, int fd,
 		       void *pack, unsigned len)
 {
 	union gtp_packet packet;
 	unsigned int length = get_default_gtp(version, GTP_ERROR, &packet);
+
+	if (version == 1) {
+		/* Mandatory 7.7.13 TEI Data I */
+		gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_TEI_DI,
+			  ntoh32(((union gtp_packet *)pack)->gtp1l.h.tei));
+
+		/* Mandatory 7.7.32 GSN Address */
+		gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_GSN_ADDR,
+			  sizeof(gsn->gsnu), &gsn->gsnu);
+	}
 
 	return gtp_resp(version, gsn, NULL, &packet, length, peer, fd,
 			get_seq(pack), get_tid(pack));
