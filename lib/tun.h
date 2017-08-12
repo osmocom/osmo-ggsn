@@ -61,6 +61,8 @@ struct tun_t {
 	int routes;		/* One if we allocated an automatic route */
 	char devname[IFNAMSIZ];	/* Name of the tun device */
 	int (*cb_ind) (struct tun_t * tun, void *pack, unsigned len);
+	/* to be used by libgtp callers/users (to attach their own private state) */
+	void *priv;
 };
 
 extern int tun_new(struct tun_t **tun);
