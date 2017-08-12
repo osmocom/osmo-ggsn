@@ -56,6 +56,7 @@ struct ippool_t {
 
 struct ippoolm_t {
 	struct in46_addr addr;	/* IP address of this member */
+	struct ippool_t *pool;	/* Pool to which we belong */
 	int inuse;		/* 0=available; 1= dynamic; 2 = static */
 	struct ippoolm_t *nexthash;	/* Linked list part of hash table */
 	struct ippoolm_t *prev, *next;	/* Linked list of free dynamic or static */

@@ -295,6 +295,7 @@ int ippool_new(struct ippool_t **this, const char *dyn, const char *stat,
 		in46a_inc(&addr);
 
 		(*this)->member[i].inuse = 0;
+		(*this)->member[i].pool = *this;
 
 		/* Insert into list of unused */
 		(*this)->member[i].prev = (*this)->lastdyn;
@@ -315,6 +316,7 @@ int ippool_new(struct ippool_t **this, const char *dyn, const char *stat,
 		struct in46_addr *i6al = &(*this)->member[i].addr;
 		memset(i6al, 0, sizeof(*i6al));
 		(*this)->member[i].inuse = 0;
+		(*this)->member[i].pool = *this;
 
 		/* Insert into list of unused */
 		(*this)->member[i].prev = (*this)->laststat;
