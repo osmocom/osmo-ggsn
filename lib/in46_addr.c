@@ -62,7 +62,14 @@ int in46a_to_sas(struct sockaddr_storage *out, const struct in46_addr *in)
 /*! Convenience wrapper around inet_ntop() for \ref in46_addr */
 const char *in46a_ntop(const struct in46_addr *in, char *dst, socklen_t dst_size)
 {
-	int af = in46a_to_af(in);
+	int af;
+
+	if (!in || in->len == 0) {
+		strncpy(dst, "UNDEFINED", dst_size);
+		return dst;
+	}
+
+	af = in46a_to_af(in);
 	if (af < 0)
 		return NULL;
 
