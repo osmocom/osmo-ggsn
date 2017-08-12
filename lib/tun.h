@@ -13,6 +13,8 @@
 #ifndef _TUN_H
 #define _TUN_H
 
+#include <net/if.h>
+
 #include "../lib/in46_addr.h"
 
 #define PACKET_MAX      8196	/* Maximum packet size we receive */
