@@ -148,7 +148,7 @@ static bool send_trap(const struct gsn_t *gsn, const struct pdp_t *pdp, const st
 
 	snprintf(val, sizeof(val), "%s,%s", imsi_gtp2str(&pdp->imsi), addrstr);
 
-	if (ctrl_cmd_send_trap(gsn->ctrl, var, val) < 0) {
+	if (ctrl_cmd_send_trap(gsn->priv, var, val) < 0) {
 		LOGP(DGGSN, LOGL_ERROR, "Failed to create and send TRAP for IMSI %" PRIu64 " [%s].\n", pdp->imsi, var);
 		return false;
 	}
@@ -722,8 +722,8 @@ int main(int argc, char **argv)
 	gtp_set_cb_delete_context(gsn, delete_context);
 	gtp_set_cb_create_context_ind(gsn, create_context_ind);
 
-	gsn->ctrl = ctrl_interface_setup(NULL, OSMO_CTRL_PORT_GGSN, NULL);
-	if (!gsn->ctrl) {
+	gsn->priv = ctrl_interface_setup(NULL, OSMO_CTRL_PORT_GGSN, NULL);
+	if (!gsn->priv) {
 		LOGP(DGGSN, LOGL_ERROR, "Failed to create CTRL interface.\n");
 		exit(1);
 	}

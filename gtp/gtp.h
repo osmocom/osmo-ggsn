@@ -12,8 +12,6 @@
 #ifndef _GTP_H
 #define _GTP_H
 
-#include <osmocom/ctrl/control_if.h>
-
 #define GTP_MODE_GGSN 1
 #define GTP_MODE_SGSN 2
 
@@ -247,7 +245,7 @@ struct gsn_t {
 
 	unsigned char restart_counter;	/* Increment on restart. Stored on disk */
 	char *statedir;		/* Disk location for permanent storage */
-	struct ctrl_handle *ctrl;	/* Control Interface */
+	void *priv;		/* used by libgtp users to attach their own state) */
 	struct queue_t *queue_req;	/* Request queue */
 	struct queue_t *queue_resp;	/* Response queue */
 
