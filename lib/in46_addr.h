@@ -14,10 +14,16 @@ struct in46_addr {
 	};
 };
 
+struct in46_prefix {
+	struct in46_addr addr;
+	uint8_t prefixlen;
+};
+
 extern int in46a_to_af(const struct in46_addr *in);
 extern int in46a_to_sas(struct sockaddr_storage *out, const struct in46_addr *in);
 extern const char *in46a_ntop(const struct in46_addr *in, char *dst, socklen_t dst_size);
 extern const char *in46a_ntoa(const struct in46_addr *in46);
+extern const char *in46p_ntoa(const struct in46_prefix *in46p);
 extern int in46a_equal(const struct in46_addr *a, const struct in46_addr *b);
 extern int in46a_prefix_equal(const struct in46_addr *a, const struct in46_addr *b);
 extern int in46a_within_mask(const struct in46_addr *addr, const struct in46_addr *net, size_t prefixlen);

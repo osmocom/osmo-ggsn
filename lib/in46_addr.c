@@ -79,6 +79,13 @@ const char *in46a_ntoa(const struct in46_addr *in46)
 		return addrstr_buf;
 }
 
+const char *in46p_ntoa(const struct in46_prefix *in46p)
+{
+	static char addrstr_buf[256];
+	snprintf(addrstr_buf, sizeof(addrstr_buf), "%s/%u", in46a_ntoa(&in46p->addr), in46p->prefixlen);
+	return addrstr_buf;
+}
+
 /*! Determine if two in46_addr are equal or not
  *  \returns 1 in case they are equal; 0 otherwise */
 int in46a_equal(const struct in46_addr *a, const struct in46_addr *b)
