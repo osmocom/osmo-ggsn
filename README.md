@@ -174,26 +174,6 @@ exchange. sgsnemu will first attempt to use GTPv1. If unsuccessful it
 will fallback to GTPv0.
 
 
-Performance
-===========
-
-Two experiments were performed in order to test the performance of
-sgsnemu and ggsn. The ggsn used a 550 MHz Athlon with 384 MB of
-RAM. sgsnemu used a 1 GHz Athlon with 256 MB of RAM. Both machines had
-100 Mb/s NICs (RTL-8139) and were connected through a crossed patch
-cable. Both tests were performed by sending ICMP echo packets from
-sgsnemu to the ggsn.
-
-89.5 Mb/s IP throughput when sending 10000 ICMP ping packets with a
-payload of 1400 bytes. Transfer time 1.27 sec, no packets lost.
-
-71.4 Mb/s IP throughput when sending 10000 ICMP ping packets with a
-payload of 1000 bytes. Transfer time 1.15 sec, no packets lost.
-
-12,1 Mb/s IP throughput when sending 10000 ICMP ping packets with a
-payload of 100 bytes. Transfer time 0.84 sec, no packets lost.
-
-
 Required software
 =================
 
@@ -209,19 +189,12 @@ version 1.1. With Linux tun is normally included from kernel version
 
 Alternatively you can execute "modprobe tun" on the commandline.
 
-For Solaris the tun driver needs to be installed manually. For general
-information about tun see http://vtun.sourceforge.net/tun/
-
 Gengetopt
 ---------
 
 Gengetopt is required if you want to change the options defined in the
 cmdline.ggo source file. You need at least gengetopt version 2.8. If
 you are just going to compile the programs you don't need gengetopt.
-
-To use gengetopt for the ggsn do the following:
-cd ggsn
-gengetopt < cmdline.ggo --conf-parser
 
 To use gengetopt for the sgsnemu do the following:
 cd sgsnemu
@@ -234,98 +207,7 @@ http://www.gnu.org/software/gengetopt/gengetopt.html
 Compilation and Installation
 ============================
 
-
-Setting up autotools
---------------------
-
-You do not need to perform this step if you are only going to compile
-the package:
-
-1. Get version from somewhere: Script to extract version from configure.in
-2. Copy the latest config.guess and config.sub from ftp://ftp.gnu.org/gnu/config
-3. Run autoscan and copy configure.scan to configure.in
-4. Add/edit the following lines in configure.in:
-   - AC_INIT(openggsn, 0.70, jj@openggsn.org)
-   - AC_CONFIG_SRCDIR([gtp/gtp.c])
-   - AM_CONFIG_HEADER([config.h])
-   - AC_PROG_LIBTOOL
-   - AM_PROG_LIBTOOL
-   - AM_INIT_AUTOMAKE()
-5. libtoolize --automake --copy
-  (ads copy of ltmain.sh)
-6. aclocal
-7. autoheader
-8. automake --add-missing --copy
-  (Ads copy of mkinstalldirs missing, install-sh, depcomp)
-9. automake
-10. autoconf
-
-The above will initialise the project to the current version of
-autotools (As installed in RedHat 8.0). See
-http://sources.redhat.com/autobook/autobook/autobook_25.html#SEC25 
-for details on autotools.
-
-
-Checking out from CVS
----------------------
-
-To download the latest source code from anonymous CVS:
-
-cvs -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/ggsn login
-cvs -z3 -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/ggsn co openggsn
-
-Or to download from developer CVS:
-
-export CVS_RSH=ssh
-cvs -z3 -d:ext:developername@cvs.sourceforge.net:/cvsroot/ggsn co openggsn
-
-Both the above sets of commands creates a new directory called openggsn.
-
-
-Compilation and installation
-----------------------------
-
-If compiling under Solaris you need to edit the following line in
-ggsn/Makefile.in and sgsnemu/Makefile.in:
-
-LDFLAGS = -Wl,--rpath -Wl,/usr/local/lib @EXEC_LDFLAGS@
-
-should be changed to:
-
-LDFLAGS =  -lresolv -lsocket -lnsl @EXEC_LDFLAGS@ 
-
-Note that the above is not necessary on other platforms. Compilation
-and installation is performed by the following steps:
-
- 1. ./configure
- 2. make clean
- 3. cd gtp
- 4. make
- 5. make install (as root)
- 6. cd ..
-   (Step 3 to 6 you only need to run the first time to install libgtp)
- 7. make
- 8. make install (as root)
- 9. Add /usr/local/lib to /etc/ld.so.conf
-10. run ldconfig
-
-(Steps 9 and 10 are not required as path to libgtp is included in Makefile)
-
-Documentation can be converted to html by issuing:
-
- 1. txt2html -pm -tf README > README.html
- 2. txt2html -pm -tf NEWS > NEWS.html
- 3. man2htm ggsn.8 > ggsn.html
- 4. man2htm sgsnemu.8 > sgsnemu.html
-
-
-Installation from binary
-------------------------
-
-1. rpm -i openggsn-<version>.rpm
-
-This will install binaries, man pages, configuration files as well as
-a Sys V init script for the ggsn.
+Please refer to the project homepage
 
 
 Running ggsn
@@ -337,7 +219,7 @@ examples/ggsn.conf for the format of this file.
 
 Start the ggsn as root using the command:
 
-ggsn -c examples/ggsn.conf --fg -l 10.0.0.40 --net 192.168.0.0/24 --dynip 192.168.0.0/24
+ggsn -c examples/ggsn.conf
 
 First a tun network interface will be created. In the above example
 the network interface address is 192.168.0.0 and the mask is
