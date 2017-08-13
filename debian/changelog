@@ -1,9 +1,16 @@
-openggsn (0.93) UNRELEASED; urgency=medium
+openggsn (0.94) UNRELEASED; urgency=medium
 
+  [ Holger Hans Peter Freyther ]
   * Bump version to ease upgrading from Debian SID.
   * Bump libgtp SO version after ABI change.
 
- -- Holger Hans Peter Freyther <holger@moiji-mobile.com>  Tue, 24 Jan 2017 17:26:26 +0100
+  [ Harald Welte ]
+  * various documentation / README updates
+  * improve error logging and propagation
+  * endian-safe definition of IP header
+  * IPv6 user plane support
+
+ -- Harald Welte <laforge@gnumonks.org>  Sun, 13 Aug 2017 09:34:20 +0200
 
 openggsn (0.92) precise; urgency=medium
 
