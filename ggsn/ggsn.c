@@ -657,6 +657,7 @@ static void signal_handler(int s)
 	LOGP(DGGSN, LOGL_NOTICE, "signal %d received\n", s);
 	switch (s) {
 	case SIGINT:
+	case SIGTERM:
 		LOGP(DGGSN, LOGL_NOTICE, "SIGINT received, shutting down\n");
 		end = 1;
 		break;
@@ -803,11 +804,12 @@ int main(int argc, char **argv)
 	struct ggsn_ctx *ggsn;
 	int rc;
 
-	/* Handle keyboard interrupt SIGINT */
 	tall_ggsn_ctx = talloc_named_const(NULL, 0, "openggsn");
 	msgb_talloc_ctx_init(tall_ggsn_ctx, 0);
 
+	/* Handle keyboard interrupt SIGINT */
 	signal(SIGINT, &signal_handler);
+	signal(SIGTERM, &signal_handler);
 	signal(SIGABRT, &signal_handler);
 	signal(SIGUSR1, &signal_handler);
 	signal(SIGUSR2, &signal_handler);
