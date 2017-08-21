@@ -394,9 +394,8 @@ int gtp_req(struct gsn_t *gsn, int version, struct pdp_t *pdp,
 	if (sendto(fd, packet, len, 0,
 		   (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 		gsn->err_sendto++;
-		LOGP(DLGTP, LOGL_ERROR,
-			"Sendto(fd=%d, msg=%lx, len=%d) failed: Error = %s\n", fd,
-			(unsigned long)&packet, len, strerror(errno));
+		LOGP(DLGTP, LOGL_ERROR, "Sendto(fd=%d, msg=%lx, len=%d, dst=%s) failed: Error = %s\n", fd,
+		     (unsigned long)&packet, len, inet_ntoa(addr.sin_addr), strerror(errno));
 		return -1;
 	}
 
@@ -697,7 +696,7 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 {
 	struct sockaddr_in addr;
 
-	LOGP(DLGTP, LOGL_NOTICE, "GTP: gtp_newgsn() started\n");
+	LOGP(DLGTP, LOGL_NOTICE, "GTP: gtp_newgsn() started at %s\n", inet_ntoa(*listen));
 
 	*gsn = calloc(sizeof(struct gsn_t), 1);	/* TODO */
 
@@ -2293,8 +2292,7 @@ int gtp_delete_context_req(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 
 	if (gsna2in_addr(&addr, &pdp->gsnrc)) {
 		gsn->err_address++;
-		LOGP(DLGTP, LOGL_ERROR,
-			"GSN address conversion failed\n");
+		LOGP(DLGTP, LOGL_ERROR, "GSN address (len=%u) conversion failed\n", pdp->gsnrc.l);
 		return EOF;
 	}
 
@@ -2642,7 +2640,7 @@ int gtp_gpdu_ind(struct gsn_t *gsn, int version,
 		    (&pdp, ntoh16(((union gtp_packet *)pack)->gtp0.h.flow))) {
 			gsn->err_unknownpdp++;
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
-				    len, "Unknown PDP context\n");
+				    len, "Unknown PDP context, GTPv0\n");
 			return gtp_error_ind_resp(gsn, version, peer, fd, pack,
 						  len);
 		}
@@ -2652,7 +2650,7 @@ int gtp_gpdu_ind(struct gsn_t *gsn, int version,
 		    (&pdp, ntoh32(((union gtp_packet *)pack)->gtp1l.h.tei))) {
 			gsn->err_unknownpdp++;
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
-				    len, "Unknown PDP context\n");
+				    len, "Unknown PDP context, GTPv1\n");
 			return gtp_error_ind_resp(gsn, version, peer, fd, pack,
 						  len);
 		}
@@ -2670,8 +2668,7 @@ int gtp_gpdu_ind(struct gsn_t *gsn, int version,
 	/* If the GPDU was not from the peer GSN tell him to delete context */
 	if (memcmp(&peer->sin_addr, pdp->gsnru.v, pdp->gsnru.l)) {	/* TODO Range? */
 		gsn->err_unknownpdp++;
-		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
-			    "Unknown PDP context\n");
+		GTP_LOGPKG(LOGL_ERROR, peer, pack, len, "Unknown GSN peer %s\n", inet_ntoa(peer->sin_addr));
 		return gtp_error_ind_resp(gsn, version, peer, fd, pack, len);
 	}
 
