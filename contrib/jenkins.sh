@@ -1,6 +1,8 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 set -ex
+
+verify_value_string_arrays_are_terminated.py $(find . -name "*.[hc]")
 
 mkdir deps || true
 cd deps
@@ -12,8 +14,6 @@ autoreconf --install --force
 $MAKE $PARALLEL_MAKE install
 
 cd ../../
-
-deps/libosmocore/contrib/verify_value_string_arrays_are_terminated.py $(find . -name "*.[hc]")
 
 autoreconf --install --force
 PKG_CONFIG_PATH=$PWD/deps/install/lib/pkgconfig:$PKG_CONFIG_PATH ./configure
