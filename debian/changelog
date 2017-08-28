@@ -1,4 +1,4 @@
-openggsn (0.94) UNRELEASED; urgency=medium
+openggsn (0.94.0) UNRELEASED; urgency=medium
 
   [ Holger Hans Peter Freyther ]
   * Bump version to ease upgrading from Debian SID.

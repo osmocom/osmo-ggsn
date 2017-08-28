@@ -11,3 +11,5 @@ dist-hook:
 	echo $(VERSION) > $(distdir)/.tarball-version
 
 EXTRA_DIST = git-version-gen .version README.md README.FreeBSD README.MacOSX README.Solaris
+
+@RELMAKE@

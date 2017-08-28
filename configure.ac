@@ -55,6 +55,10 @@ AC_SUBST(EXEC_LDADD)
 # FIXME: Replace `main' with a function in `-links':
 #AC_CHECK_LIB([inks], [main])
 
+dnl include release helper
+RELMAKE='-include osmo-release.mk'
+AC_SUBST([RELMAKE])
+
 dnl GTP Linux kernel dependencies
 AC_ARG_ENABLE([gtp-linux],
 	AS_HELP_STRING([--enable-gtp-linux], [Build GTP tunneling Linux kernel]),
