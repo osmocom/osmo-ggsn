@@ -215,14 +215,14 @@ static bool pco_contains_proto(struct ul255_t *pco, uint16_t prot)
 	uint8_t *cur = pco->v + 1;
 
 	/* iterate over PCO and check if protocol contained */
-	while (cur + 2 < pco->v + pco->l) {
+	while (cur + 3 <= pco->v + pco->l) {
 		uint16_t cur_prot = osmo_load16be(cur);
 		uint8_t cur_len = cur[2];
 		if (cur_prot == prot)
 			return true;
 		if (cur_len == 0)
 			break;
-		cur += cur_len;
+		cur += cur_len + 3;
 	}
 	return false;
 }
