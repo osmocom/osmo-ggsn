@@ -1,6 +1,6 @@
 #!/bin/sh
 ### BEGIN INIT INFO
-# Provides:          openggsn
+# Provides:          osmo-ggsn
 # Required-Start:    $network $local_fs $remote_fs
 # Required-Stop:     $network $remote_fs
 # Default-Start:     2 3 4 5
@@ -13,18 +13,18 @@
 
 # PATH should only include /usr/* if it runs after the mountnfs.sh script
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
-DESC="OpenGGSN Gateway GPRS Support Node"
+DESC="OsmoGGSN Gateway GPRS Support Node"
 NAME=ggsn
-DAEMON=/usr/bin/ggsn
+DAEMON=/usr/bin/osmo-ggsn
 DAEMON_ARGS=""             # Arguments to run the daemon with
 PIDFILE=/var/run/$NAME.pid
-SCRIPTNAME=/etc/init.d/openggsn
+SCRIPTNAME=/etc/init.d/osmo-ggsn
 
 # Exit if the package is not installed
 [ -x $DAEMON ] || exit 0
 
 # Read configuration variable file if it is present
-[ -r /etc/default/openggsn ] && . /etc/default/openggsn
+[ -r /etc/default/osmo-ggsn ] && . /etc/default/osmo-ggsn
 
 # Load the VERBOSE setting and other rcS variables
 . /lib/init/vars.sh
@@ -46,13 +46,13 @@ do_start()
 		|| return 1
 
 	# Check for runtime directory of nonvolatile data
-	if [ ! -d /var/lib/ggsn ]; then
-		mkdir /var/lib/ggsn
+	if [ ! -d /var/lib/osmo-ggsn ]; then
+		mkdir /var/lib/osmo-ggsn
 	fi
 
 	# Check for GTP restart counter
-	if [ ! -f /var/lib/ggsn/gsn_restart ]; then
-		echo 0 > /var/lib/ggsn/gsn_restart
+	if [ ! -f /var/lib/osmo-ggsn/gsn_restart ]; then
+		echo 0 > /var/lib/osmo-ggsn/gsn_restart
 	fi
 
 	start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON -- \

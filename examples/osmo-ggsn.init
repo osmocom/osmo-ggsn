@@ -1,10 +1,10 @@
 #!/bin/sh
 #
-# ggsn          This shell script takes care of starting and stopping
-#               ggsn.
+# osmo-ggsn     This shell script takes care of starting and stopping
+#               osmo-ggsn.
 #
 # chkconfig: - 65 35
-# description: ggsn is a Gateway GPRS Support Node.
+# description: osmo-ggsn is a Gateway GPRS Support Node.
 
 # Source function library.
 . /etc/rc.d/init.d/functions
@@ -12,18 +12,18 @@
 # Source networking configuration.
 . /etc/sysconfig/network
 
-if [ -f /etc/sysconfig/ggsn ]; then
-        . /etc/sysconfig/ggsn
+if [ -f /etc/sysconfig/osmo-ggsn ]; then
+        . /etc/sysconfig/osmo-ggsn
 fi
 
 # Check that networking is up.
 [ ${NETWORKING} = "no" ] && exit 0
 
-[ -f /usr/bin/ggsn ] || exit 0
-[ -f /etc/ggsn.conf ] || exit 0
+[ -f /usr/bin/osmo-ggsn ] || exit 0
+[ -f /etc/osmo-ggsn.cfg ] || exit 0
 
 RETVAL=0
-prog="ggsn"
+prog="osmo-ggsn"
 
 start() {
 	# Start daemons.
@@ -37,30 +37,30 @@ start() {
 	# echo 1 > /proc/sys/net/ipv4/ip_forward
 
 	# Check for runtime directory of nonvolatile data
-	if [ ! -d  /var/lib/ggsn ]; then
-	  mkdir /var/lib/ggsn
+	if [ ! -d  /var/lib/osmo-ggsn ]; then
+	  mkdir /var/lib/osmo-ggsn
 	fi
 
 	# Check for GTP restart counter
-	if [ ! -d  /var/lib/ggsn/gsn_restart ]; then
-	  echo 0 > /var/lib/ggsn/gsn_restart
+	if [ ! -d  /var/lib/osmo-ggsn/gsn_restart ]; then
+	  echo 0 > /var/lib/osmo-ggsn/gsn_restart
 	fi
 
 
-	daemon /usr/bin/ggsn 
+	daemon /usr/bin/osmo-ggsn 
 	RETVAL=$?
 	echo
-	[ $RETVAL -eq 0 ] && touch /var/lock/subsys/ggsn
+	[ $RETVAL -eq 0 ] && touch /var/lock/subsys/osmo-ggsn
 	return $RETVAL
 }
 
 stop() {
 	# Stop daemons.
 	echo -n $"Shutting down $prog: "
-	killproc ggsn
+	killproc osmo-ggsn
 	RETVAL=$?
 	echo
-	[ $RETVAL = 0 ] && rm -f /var/lock/subsys/ggsn /var/run/ggsn.pid
+	[ $RETVAL = 0 ] && rm -f /var/lock/subsys/osmo-ggsn /var/run/osmo-ggsn.pid
 	return $RETVAL
 }
 
@@ -78,14 +78,14 @@ case "$1" in
 	RETVAL=$?
 	;;
   condrestart)
-	if [ -f /var/lock/subsys/ggsn ] ; then
+	if [ -f /var/lock/subsys/osmo-ggsn ] ; then
 	    stop
 	    start
 	    RETVAL=$?
 	fi
 	;;
   status)
-	status ggsn
+	status osmo-ggsn
 	RETVAL=$?
 	;;
   *)

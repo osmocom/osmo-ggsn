@@ -15,13 +15,13 @@ install-sh
 libtool
 ltmain.sh
 missing
-openggsn.spec
+osmo-ggsn.spec
 stamp-h1
 doc/Makefile.in
 ggsn/Makefile.in
 gtp/Makefile.in
 sgsnemu/Makefile.in
-debian/openggsn/
+debian/osmo-ggsn/
 debian/*.debhelper
 debian/libgtp/
 debian/*.log
@@ -33,7 +33,7 @@ sgsnemu/sgsnemu
 debian/files
 debian/libgtp-dev/
 libgtp.pc
-ggsn/ggsn
+ggsn/osmo-ggsn
 m4/
 *.swp
 *.o

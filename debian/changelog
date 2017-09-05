@@ -1,3 +1,9 @@
+osmo-ggsn (0.94.0) UNRELEASED; urgency=medium
+
+  * Transition to OsmoGGSN
+
+ -- Harald Welte <laforge@gnumonks.org>  Tue, 05 Sep 2017 09:34:20 +0200
+
 openggsn (0.94.0) UNRELEASED; urgency=medium
 
   [ Holger Hans Peter Freyther ]

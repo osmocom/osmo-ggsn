@@ -882,7 +882,7 @@ static const char ggsn_copyright[] =
 	"There is NO WARRANTY, to the extent permitted by law.\r\n";
 
 struct vty_app_info g_vty_info = {
-	.name		= "OpenGGSN",
+	.name		= "OsmoGGSN",
 	.version	= PACKAGE_VERSION,
 	.copyright	= ggsn_copyright,
 	.go_parent_cb	= ggsn_vty_go_parent,

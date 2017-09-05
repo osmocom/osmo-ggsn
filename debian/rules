@@ -15,7 +15,7 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 	dh $@ --with autoreconf
 
 override_dh_strip:
-	dh_strip --dbg-package=openggsn-dbg
+	dh_strip --dbg-package=osmo-ggsn-dbg
 
 override_dh_autoreconf:
 	echo $(VERSION) > .tarball-version

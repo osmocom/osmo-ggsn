@@ -1,11 +1,11 @@
-OpenGGSN - Open Source GGSN
+OsmoGGSN - Open Source GGSN
 ===========================
 
 This repository contains a C-language implementation of a GGSN (Gateway
 GPRS Support Node), a core network element of ETSI/3GPP cellular
 networks such as GPRS, EDGE, UMTS or HSPA.
 
-OpenGGSN is part of the [Osmocom](https://osmocom.org/) Open Source
+OsmoGGSN is part of the [Osmocom](https://osmocom.org/) Open Source
 Mobile Communications projects, even thogh it was previously developed
 by Mondru AB.
 
@@ -18,11 +18,11 @@ https://osmocom.org/projects/openggsn/wiki
 GIT Repository
 --------------
 
-You can clone from the official libosmocore.git repository using
+You can clone from the official osmo-ggsn.git repository using
 
-	git clone git://git.osmocom.org/openggsn.git
+	git clone git://git.osmocom.org/osmo-ggsn.git
 
-There is a cgit interface at http://git.osmocom.org/openggsn/
+There is a cgit interface at http://git.osmocom.org/osmo-ggsn/
 
 Documentation
 -------------
@@ -34,7 +34,7 @@ manual that can become part of the osmo-gsm-manuals project.
 Mailing List
 ------------
 
-Discussions related to openggsn are happening on the
+Discussions related to OsmoGGSN are happening on the
 osmocom-net-gprs@lists.osmocom.org mailing list, please see
 https://lists.osmocom.org/mailman/listinfo/osmocom-net-gprs for
 subscription options and the list archive.
@@ -54,10 +54,8 @@ contributions.  Please see
 https://osmocom.org/projects/cellular-infrastructure/wiki/Gerrit for
 more details
 
-The current patch queue for OpenGGSN can be seen at
-https://gerrit.osmocom.org/#/q/project:openggsn+status:open
-OPENGGSN README
-===============
+The current patch queue for OsmoGGSN can be seen at
+https://gerrit.osmocom.org/#/q/project:osmo-ggsn+status:open
 
 
 QuickStart
@@ -67,7 +65,7 @@ Requirements
 ------------
 
 *Linux* 
-OpenGGSN was originally developed and tested using Redhat 8.0 and 9.0
+OsmoGGSN was originally developed and tested using Redhat 8.0 and 9.0
 and is these days mostly developed on Debian GNU/Linux.  It should run
 also on other Linux distributions as well as FreeBSD, but this is
 untested. Compilation on Solaris 2.8 has also been verified.
@@ -84,7 +82,7 @@ need to be configured for automatic loading:
 Installation from binary
 ------------------------
 
-OpenGGSN is built for common versions of Debian and Ubuntu as part of
+OsmoGGSN is built for common versions of Debian and Ubuntu as part of
 the [Osmocom Nightly Builds](https://osmocom.org/projects/cellular-infrastructure/wiki/Nightly_Builds)
 project.  If you don't want to do development, it is suggested to simply
 use those binary packages, rather than building yourself from source.
@@ -141,13 +139,13 @@ Please contact the Mailing List above for community-based support.
 Features
 ========
 
-OpenGGSN is an open source implementation of GPRS Support Nodes
+OsmoGGSN is an open source implementation of GPRS Support Nodes
 (GSNs). It implements the GPRS tunneling protocol (GTP) version 0 and
 version 1.
 
-OpenGGSN provides 3 components:
+OsmoGGSN provides 3 components:
  * gtplib
- * ggsn
+ * osmo-ggsn
  * sgsnemu
 
 *gtplib*
@@ -157,8 +155,8 @@ GSN. gtplib supports both GTPv0 (GSM 09.60) and GTPv1 (3GPP
 29.060). At the moment no interface documentation is available for
 download.
 
-*ggsn*
-The ggsn implements a Gateway GPRS Support Node. The GGSN is a small
+*osmo-ggsn*
+The osmo-ggsn implements a Gateway GPRS Support Node. The GGSN is a small
 application which is provided in order to test and demonstrate the use
 of gtplib. It is fully compliant to the 3GPP standards, but lacks
 important functionality such as charging and management. Use this
@@ -180,7 +178,7 @@ Required software
 Tun
 ---
 
-Both ggsn and sgsnemu uses the tun package. You need at least tun
+Both osmo-ggsn and sgsnemu uses the tun package. You need at least tun
 version 1.1. With Linux tun is normally included from kernel version
 2.4.7. To configure automatic loading:
 
@@ -210,16 +208,16 @@ Compilation and Installation
 Please refer to the project homepage
 
 
-Running ggsn
-============
+Running osmo-ggsn
+=================
 
-Use ggsn -h for a list of available options. All options available on
+Use osmo-ggsn -h for a list of available options. All options available on
 the command line can also be given in a configuration file. See
-examples/ggsn.conf for the format of this file.
+examples/osmo-ggsn.cfg for the format of this file.
 
-Start the ggsn as root using the command:
+Start osmo-ggsn as root using the command:
 
-ggsn -c examples/ggsn.conf
+osmo-ggsn -c examples/osmo-ggsn.cfg
 
 First a tun network interface will be created. In the above example
 the network interface address is 192.168.0.0 and the mask is
@@ -248,9 +246,9 @@ Remember to enable routing:
 echo 1 > /proc/sys/net/ipv4/ip_forward
 
 If you installed using a binary RPM package it is possible to start
-ggsn by using the Sys 5 script:
+osmo-ggsn by using the Sys 5 script:
 
-/etc/init.d/ggsn start
+/etc/init.d/osmo-ggsn start
 
 
 Running sgsnemu
@@ -285,7 +283,7 @@ sgsnemu will print something like the following on the screen:
   Using MSISDN:          46702123456
 
   Initialising GTP library
-  OpenGGSN[1823]: GTP: gtp_newgsn() started
+  OsmoGGSN[1823]: GTP: gtp_newgsn() started
   Done initialising GTP library
 
   Sending off echo request
@@ -321,7 +319,7 @@ sgsnemu will print something like the following on the screen:
   Using MSISDN:          46702123456
 
   Initialising GTP library
-  OpenGGSN[1838]: GTP: gtp_newgsn() started
+  OsmoGGSN[1838]: GTP: gtp_newgsn() started
   Done initialising GTP library
 
   Sending off echo request

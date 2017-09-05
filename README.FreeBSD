@@ -1,4 +1,4 @@
-OpenGGSN/FreeBSD notes
+OsmoGGSN/FreeBSD notes
 
 FreeBSD support is experimental, please test and report bugs. The FreeBSD port is
 tested on FreeBSD 4.x, but may also work on 5.x series.

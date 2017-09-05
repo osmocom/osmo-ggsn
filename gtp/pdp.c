@@ -1,6 +1,7 @@
 /* 
- *  OpenGGSN - Gateway GPRS Support Node
+ *  OsmoGGSN - Gateway GPRS Support Node
  *  Copyright (C) 2002, 2003, 2004 Mondru AB.
+ *  Copyright (C) 2017 Harald Welte <laforge@gnumonks.org>
  * 
  *  The contents of this file may be used under the terms of the GNU
  *  General Public License Version 2, provided that the above copyright

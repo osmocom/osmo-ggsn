@@ -1,5 +1,5 @@
 /* 
- * OpenGGSN - Gateway GPRS Support Node
+ * OsmoGGSN - Gateway GPRS Support Node
  * Copyright (C) 2002, 2003, 2004 Mondru AB.
  * Copyright (C) 2017 by Harald Welte <laforge@gnumonks.org>
  * 
@@ -592,7 +592,7 @@ static int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
 	return tun_encaps((struct tun_t *)pdp->ipif, pack, len);
 }
 
-static char *config_file = "openggsn.cfg";
+static char *config_file = "osmo-ggsn.cfg";
 
 /* callback for tun device osmocom select loop integration */
 static int ggsn_tun_fd_cb(struct osmo_fd *fd, unsigned int what)
@@ -804,7 +804,7 @@ int main(int argc, char **argv)
 	struct ggsn_ctx *ggsn;
 	int rc;
 
-	tall_ggsn_ctx = talloc_named_const(NULL, 0, "openggsn");
+	tall_ggsn_ctx = talloc_named_const(NULL, 0, "OsmoGGSN");
 	msgb_talloc_ctx_init(tall_ggsn_ctx, 0);
 
 	/* Handle keyboard interrupt SIGINT */

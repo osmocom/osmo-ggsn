@@ -1,5 +1,5 @@
 
-.\" * OpenGGSN - Gateway GPRS Support Node
+.\" * OsmoGGSN - Gateway GPRS Support Node
 .\" * Copyright (C) 2002, 2003 Mondru AB.
 .\" * 
 .\" * The contents of this file may be used under the terms of the GNU
@@ -12,24 +12,24 @@
 .\" * 
 .\" * Contributor(s):
 .\" * 
-.\" Manual page for ggsn
+.\" Manual page for osmo-ggsn
 .\" SH section heading
 .\" SS subsection heading
 .\" LP paragraph
 .\" IP indented paragraph
 .\" TP hanging label
 
-.TH ggsn 8 "July 2003"
+.TH osmo-ggsn 8 "August 2017"
 .SH NAME
-ggsn \- Gateway GPRS Support Node.
+osmo-ggsn \- Gateway GPRS Support Node.
 .SH SYNOPSIS
-.B ggsn
+.B osmo-ggsn
 \-\-help
 
-.B ggsn
+.B osmo-ggsn
 \-\-version
 
-.B ggsn
+.B osmo-ggsn
 [
 .BI \-\-help
 ] [
@@ -40,9 +40,9 @@ ggsn \- Gateway GPRS Support Node.
 .BI \-\-version
 ]
 .SH DESCRIPTION
-.B ggsn
+.B osmo-ggsn
 is part of the 
-.B OpenGGSN
+.B OsmoGGSN
 project, and implements a Gateway GPRS Support Node. It is used by
 mobile operators as the interface between the Internet and the rest of
 the mobile network infrastructure.
@@ -62,14 +62,14 @@ over IP.
 The other interface can be thought of as the uplink interface, and
 interfaces the GGSN to an external data network. Gi is most often an
 interface to the Internet.
-.B ggsn
+.B osmo-ggsn
 uses the 
 .B TUN/TAP driver
 for the Gi interface. A tun network interface is established when the
-.B ggsn
+.B osmo-ggsn
 is started.
 
-.B ggsn 
+.B osmo-ggsn 
 will accept incoming connections from mobile stations through the
 radio access network and the SGSN. When a connection request is
 received the ggsn will allocate a dynamic IP address for the mobile
@@ -79,7 +79,7 @@ the SGSN. Runtime errors are reported using the Osmocom logging
 framework.
 
 Typically 
-.B ggsn
+.B osmo-ggsn
 will be deployed with two Ethernet interfaces. One for the Gn/Gp
 interface, and one for the Gi interface. Policy routing and firewall
 rules should be used in order to separate Gi traffic from Gn/Gp
@@ -105,25 +105,25 @@ Read configuration
 (default = ./openggsn.cfg)
 
 .SH FILES
-.I ./openggsn.cfg
+.I ./osmo-ggsn.cfg
 .RS
 The configuration file for
-.B ggsn.
+.B osmo-ggsn.
 .RE
-.I /var/run/ggsn.pid
+.I /var/run/osmo-ggsn.pid
 .RS
 Process ID file.
 .RE
-.I /var/lib/ggsn
+.I /var/lib/osmo-ggsn
 .RS
 Directory holding nonvolatile data.
 .RE
 
 .SH BUGS
-Report all bugs to the OpenGGSN bug tracking list at 
+Report all bugs to the OsmoGGSN bug tracking list at 
 .I https://osmocom.org/projects/openggsn
 
-.B ggsn
+.B osmo-ggsn
 has very limited management support. Currently both SNMP as well as
 billing mechanisms are missing.
 
@@ -135,13 +135,13 @@ billing mechanisms are missing.
 .LP
 
 Besides the long options documented in this man page
-.B ggsn
+.B osmo-ggsn
 also accepts a number of short options with the same functionality. Use
-.B ggsn --help
+.B osmo-ggsn --help
 for a full list of all the available options.
 
 The TUN/TAP driver is required for proper operation of
-.B ggsn. 
+.B osmo-ggsn. 
 For linux kernels later than 2.4.7 the TUN/TAP driver is included in the kernel, but typically needs to be loaded manually with
 .B modprobe tun.
 For automatic loading the line
@@ -152,7 +152,7 @@ For other platforms see
 .I http://vtun.sourceforge.net/tun/
 for information on how to install and configure the tun driver.
 
-.B ggsn 
+.B osmo-ggsn 
 uses the GPRS Tunneling Protocol (GTP) as specified by the Third
 Generation Partnership Project (3GPP). 3GPP protocols specifications
 can be found at

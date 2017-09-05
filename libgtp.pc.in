@@ -3,7 +3,7 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: OpenGGSN STP Library
+Name: OsmoGGSN GTP Library
 Description: C Utility Library
 Version: @VERSION@
 Libs: -L${libdir} -lgtp

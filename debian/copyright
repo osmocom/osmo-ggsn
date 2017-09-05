@@ -1,11 +1,13 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: openggsn
-Source: http://sourceforge.net/projects/ggsn/
+Upstream-Name: osmo-ggsn
+Source: https://osmocom.org/projects/openggsn
 
 Files: *
-Copyright: 2002      Jens Jakobsen <jj@openggsn.org>
-           2002-2004 Mondru AB
-           2010-2011 Harald Welte <laforge@gnumonks.org>
+Copyright (C) 2002-2004 Mondru AB, Author: Jens Jakobsen <jj@openggsn.org>
+Copyright (C) 2010-2017 Harald Welte <laforge@gnumonks.org>
+Copyright (C) 2012-2016 Holger Hans Peter Freyther <zecke@selfish.org>
+Copyright (C) 2014-2016 Pablo Neira Ayuso <pablo@gnumonks.org>
+Copyright (C) 2014-2016 sysmocom - s.f.m.c. GmbH
 License: GPL-2
 
 Files: lib/getopt.c
@@ -15,7 +17,7 @@ Copyright: 1987-2001 Free Software Foundation, Inc.
 License: LGPL-2.1+
 
 Files: debian/*
-Copyright: 2010-2015  Harald Welte <laforge@gnumonks.org>
+Copyright: 2010-2017  Harald Welte <laforge@gnumonks.org>
            2016       Ruben Undheim <ruben.undheim@gmail.com>
 License: GPL-2
 

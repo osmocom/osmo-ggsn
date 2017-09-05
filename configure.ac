@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(openggsn, m4_esyscmd([./git-version-gen .tarball-version]), osmocom-net-gprs@lists.osmocom.org)
+AC_INIT(osmo-ggsn, m4_esyscmd([./git-version-gen .tarball-version]), osmocom-net-gprs@lists.osmocom.org)
 AC_CONFIG_SRCDIR([gtp/gtp.c])
 AM_CONFIG_HEADER([config.h])
 #AC_CONFIG_HEADER([config.h])
@@ -149,9 +149,9 @@ AC_CONFIG_FILES([Makefile
                  sgsnemu/Makefile
                  tests/Makefile
                  libgtp.pc
-                 openggsn.spec])
+                 osmo-ggsn.spec])
 AC_OUTPUT
 
 echo "
-openggsn Configuration:
+osmo-ggsn Configuration:
   GTP Linux kernel support:			${enable_gtp_linux}"
