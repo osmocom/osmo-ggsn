@@ -99,6 +99,10 @@ struct ggsn_ctx {
 		struct apn_ctx *default_apn;
 		/* ADdress to which we listen for GTP */
 		struct in46_addr listen_addr;
+		/* Local GTP-C address advertised in GTP */
+		struct in46_addr gtpc_addr;
+		/* Local GTP-U address advertised in GTP */
+		struct in46_addr gtpu_addr;
 		/* directory for state file */
 		char *state_dir;
 		/* administratively shut-down (true) or not (false) */

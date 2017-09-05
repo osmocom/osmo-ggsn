@@ -693,6 +693,14 @@ int ggsn_start(struct ggsn_ctx *ggsn)
 	}
 	ggsn->gsn->priv = ggsn;
 
+	/* patch in different addresses to use (in case we're behind NAT, the listen
+	 * address is different from what we advertise externally) */
+	if (ggsn->cfg.gtpc_addr.v4.s_addr)
+		ggsn->gsn->gsnc = ggsn->cfg.gtpc_addr.v4;
+
+	if (ggsn->cfg.gtpu_addr.v4.s_addr)
+		ggsn->gsn->gsnu = ggsn->cfg.gtpu_addr.v4;
+
 	/* Register File Descriptors */
 	osmo_fd_setup(&ggsn->gtp_fd0, ggsn->gsn->fd0, BSC_FD_READ, ggsn_gtp_fd_cb, ggsn, 0);
 	rc = osmo_fd_register(&ggsn->gtp_fd0);

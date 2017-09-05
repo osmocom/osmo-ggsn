@@ -165,8 +165,8 @@ DEFUN(cfg_no_ggsn, cfg_no_ggsn_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_ggsn_local_ip, cfg_ggsn_local_ip_cmd,
-	"gtp local-ip A.B.C.D",
+DEFUN(cfg_ggsn_bind_ip, cfg_ggsn_bind_ip_cmd,
+	"gtp bind-ip A.B.C.D",
 	"GTP Parameters\n"
 	"Set the IP address for the local GTP bind\n"
 	"IPv4 Address\n")
@@ -175,6 +175,34 @@ DEFUN(cfg_ggsn_local_ip, cfg_ggsn_local_ip_cmd,
 	size_t t;
 
 	ippool_aton(&ggsn->cfg.listen_addr, &t, argv[0], 0);
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_ggsn_gtpc_ip, cfg_ggsn_gtpc_ip_cmd,
+	"gtp control-ip A.B.C.D",
+	"GTP Parameters\n"
+	"Set the IP address states as local IP in GTP-C messages\n"
+	"IPv4 Address\n")
+{
+	struct ggsn_ctx *ggsn = (struct ggsn_ctx *) vty->index;
+	size_t t;
+
+	ippool_aton(&ggsn->cfg.gtpc_addr, &t, argv[0], 0);
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_ggsn_gtpu_ip, cfg_ggsn_gtpu_ip_cmd,
+	"gtp user-ip A.B.C.D",
+	"GTP Parameters\n"
+	"Set the IP address states as local IP in GTP-U messages\n"
+	"IPv4 Address\n")
+{
+	struct ggsn_ctx *ggsn = (struct ggsn_ctx *) vty->index;
+	size_t t;
+
+	ippool_aton(&ggsn->cfg.gtpu_addr, &t, argv[0], 0);
 
 	return CMD_SUCCESS;
 }
@@ -633,7 +661,11 @@ static int config_write_ggsn(struct vty *vty)
 		if (ggsn->cfg.description)
 			vty_out(vty, " description %s%s", ggsn->cfg.description, VTY_NEWLINE);
 		vty_out(vty, " gtp state-dir %s%s", ggsn->cfg.state_dir, VTY_NEWLINE);
-		vty_out(vty, " gtp local-ip %s%s", in46a_ntoa(&ggsn->cfg.listen_addr), VTY_NEWLINE);
+		vty_out(vty, " gtp bind-ip %s%s", in46a_ntoa(&ggsn->cfg.listen_addr), VTY_NEWLINE);
+		if (ggsn->cfg.gtpc_addr.v4.s_addr)
+			vty_out(vty, " gtp control-ip %s%s", in46a_ntoa(&ggsn->cfg.gtpc_addr), VTY_NEWLINE);
+		if (ggsn->cfg.gtpu_addr.v4.s_addr)
+			vty_out(vty, " gtp user-ip %s%s", in46a_ntoa(&ggsn->cfg.gtpu_addr), VTY_NEWLINE);
 		llist_for_each_entry(apn, &ggsn->apn_list, list)
 			config_write_apn(vty, apn);
 		if (ggsn->cfg.default_apn)
@@ -806,7 +838,9 @@ int ggsn_vty_init(void)
 	install_element(GGSN_NODE, &cfg_no_description_cmd);
 	install_element(GGSN_NODE, &cfg_ggsn_shutdown_cmd);
 	install_element(GGSN_NODE, &cfg_ggsn_no_shutdown_cmd);
-	install_element(GGSN_NODE, &cfg_ggsn_local_ip_cmd);
+	install_element(GGSN_NODE, &cfg_ggsn_bind_ip_cmd);
+	install_element(GGSN_NODE, &cfg_ggsn_gtpc_ip_cmd);
+	install_element(GGSN_NODE, &cfg_ggsn_gtpu_ip_cmd);
 	install_element(GGSN_NODE, &cfg_ggsn_state_dir_cmd);
 	install_element(GGSN_NODE, &cfg_ggsn_apn_cmd);
 	install_element(GGSN_NODE, &cfg_ggsn_no_apn_cmd);
