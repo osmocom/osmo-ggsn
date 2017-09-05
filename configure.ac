@@ -141,6 +141,7 @@ PKG_CHECK_MODULES(LIBOSMOCTRL, libosmoctrl)
 
 AC_CONFIG_FILES([Makefile
                  doc/Makefile
+                 doc/examples/Makefile
                  ggsn/Makefile
                  gtp/Makefile
                  lib/Makefile
