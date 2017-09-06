@@ -1,0 +1,41 @@
+== Running OsmoNITB
+
+The OsmoGGSN executable (`osmo-ggsn`) offers the following command-line
+arguments:
+
+=== SYNOPSIS
+
+*osmo-ggsn* [-h|-V] [-D] [-c 'CONFIGFILE']
+
+=== OPTIONS
+
+*-h, --help*::
+	Print a short help message about the supported options
+*-V, --version*::
+	Print the compile-time version number of the OsmoBTS program
+*-D, --daemonize*::
+	Fork the process as a daemon into background.
+*-c, --config-file 'CONFIGFILE'*::
+	Specify the file and path name of the configuration file to be
+	used. If none is specified, use `osmo-ggsn.cfg` in the current
+	working directory.
+
+=== Multiple instances
+
+Running multiple instances of `osmo-ggsn` is possible if all GGSN instances
+are binding to different local IP addresse and all other interfaces (VTY,
+OML) are separated using the appropriate configuration options. The IP based
+interfaces are binding to local host by default. In order to separate the
+processes, the user has to bind those services to specific but different
+IP addresses.
+
+The VTY and the control interface can be bound to IP addresses from the loopback
+address range.
+
+.Example: Binding VTY and control interface to a specific ip-address
+----
+line vty
+ bind 127.0.0.2
+ctrl
+ bind 127.0.0.2
+----

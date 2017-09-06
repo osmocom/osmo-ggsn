@@ -1,0 +1,145 @@
+[[chapter_introduction]]
+== Overview
+
+[[intro_overview]]
+=== About OsmoGGSN
+
+OsmoGGSN is a Free / Open Source Software implementation of the GPRS
+GGSN (Gateway GPRS support node) element in side the packet switched
+core network of 2G and 3G cellular networks.
+
+The GGSN function is the tunnel endpoint on the core network side,
+from where the external (IP) packet data network 
+
+=== Software Components
+
+==== GTP Implementation (libgtp)
+
+The OsmoGGSN source code includes a shared library implementation of
+the GTP protocol used on the GGSN-SGSN interface.  This library
+and associated header files are installed system-wide and are
+available to other programs/applications.
+
+In fact, libgtp is what the OsmoSGSN also uses for its use of GTP.
+
+==== sgsnemu
+
+In order to test OsmoGGSN without running a SGSN and other elements
+of a cellular network, there is a small command-line utility called
+*sgsnemu* which is able to simulate the customary operations of a SGSN
+towards the GGSN, such as a PDP Context Activation.
+
+*sgsnemu* can even be used for testing against other GGSNs, as the GTP
+protocol is standardized across implementations.
+
+==== osmo-ggsn
+
+*osmo-ggsn* is the actual name of the OsmoGGSN executable program.  It
+implements the GGSN functionality.  All parameters are set using the
+configuration file, by default located in *./osmo-ggsn.cfg*
+
+==== systemd service file
+
+In *contrib/osmo-ggsn.service* you can find a sample service file for
+OsmoGGSN which can be used with systemd.
+
+==== init script
+
+In *contrib/osmo-ggsn.init* you can find a sample init script to be used
+on systems with classic init process.
+
+=== Limitations
+
+OsmoGGSN supports both GTP0 (GSM 09.60) and GTP1 (3GPP 29.060). In the
+following tables the support of each individual message type is
+detailed. The numbers before each feature indicates the relevant
+section in the standard.
+
+==== GSM 09.60 (GTPv0)
+
+[options="header",cols="50%,15%,15%,15%,5%"]
+|===
+| Feature                | gtplib      | osmo-ggsn   | sgsnemu     | notes
+5+<|*7.4 Path Management Messages*
+|7.4.1 Echo Request      |Supported   |Supported   |Supported   |
+|7.4.2 Echo Response     |Supported   |Supported   |Supported   |
+|7.4.3 Version Not Supported      |Supported   |Supported   |Supported   |
+5+<| *7.5 Tunnel Management Messages*
+|7.5.1 Create PDP Context Request|Supported   |Supported   |Supported   |
+|7.5.2 Create PDP Context Response|Supported   |Supported   |Supported   |
+|7.5.3 Update PDP Context Request|Supported   |Supported   |Not         |
+|7.5.4 Update PDP Context Response|Supported   |Supported   |Not         |
+|7.5.5 Delete PDP Context Request|Supported   |Supported   |Supported   |
+|7.5.6 Delete PDP Context Response|Supported   |Supported   |Supported   |
+|7.5.7 Create AA PDP Context Request|Unsupported |Unsupported |Unsupported |
+|7.5.8 Create AA PDP Response|Unsupported |Unsupported |Unsupported |
+|7.5.9 Delete AA PDP Context Request|Unsupported |Unsupported |Unsupported |
+|7.5.10 Delete AA PDP Context Response|Unsupported |Unsupported |Unsupported |
+|7.5.11 Error Indication |Supported   |Supported   |Supported   |
+|7.5.12 PDU Notification Request|Unsupported |Unsupported |Unsupported |
+|7.5.13 PDU Notification Response|Unsupported |Unsupported |Unsupported |
+|7.5.14 PDU Notification Reject Request|Unsupported |Unsupported |Unsupported |
+|7.5.15 PDU Notification Reject Response|Unsupported |Unsupported |Unsupported |
+5+<| *7.6 Location Management Messages*
+|7.6.1 Send Routeing Information for GPRS Request|Unsupported |Unsupported |Not applicable  |
+|7.6.2 Send Routeing Information for GPRS Response|Unsupported |Unsupported |Not applicable  |
+|7.6.3 Failure Report Request|Unsupported |Unsupported |Not applicable |
+|7.6.3 Failure Report Response|Unsupported |Unsupported |Not applicable |
+|7.6.5 Note MS GPRS Present Request|Unsupported |Unsupported |Not applicable|
+|7.6.6 Note MS GPRS Present Response|Unsupported |Unsupported |Not applicable|
+5+<| *7.5 Mobility Management Messages*
+|7.5.1 Identification Request|Unsupported |Not applicable|Not applicable|
+|7.5.2 Identification Response|Unsupported |Not applicable|Not applicable |
+|7.5.3 SGSN Context Request|Unsupported |Not applicable|Not applicable|
+|7.5.4 SGSN Context Response|Unsupported |Not applicable|Not applicable|
+|7.5.5 SGSN Context Acknowledge|Unsupported |Not applicable|Not applicable|
+|===
+
+==== 3GPP 29.060 (GTPv1)
+
+[options="header",cols="50%,15%,15%,15%,5%"]
+|===
+|Feature                 |gtplib      |osmo-ggsn   |sgsnemu     |notes
+5+<|*7.2 Path Management Messages*
+|7.2.1 Echo Request      |Supported   |Supported   |Supported   |
+|7.2.2 Echo Response     |Supported   |Supported   |Supported   |
+|7.2.3 Version Not Supported|Supported   |Supported   |Supported   |
+|7.2.4 Extension Headers Notification|Supported   |Supported   |Supported   |
+5+<|*7.3 Tunnel Management Messages*
+|7.3.1 Create PDP Context Request|Supported   |Supported   |Supported   |1
+|7.3.2 Create PDP Context Response|Supported   |Supported   |Supported   |
+|7.3.3 Update PDP Context Request|Supported   |Supported   |Not applicable|1
+|7.3.4 Update PDP Context Response|Supported   |Supported   |Not applicable|
+|7.3.5 Delete PDP Context Request|Supported   |Supported   |Supported   |
+|7.3.6 Delete PDP Context Response|Supported   |Supported   |Supported   |
+|7.3.7 Error Indication  |Supported   |Supported   |Supported   |
+|7.3.8 PDU Notification Request|Unsupported |Unsupported |Unsupported |
+|7.3.9 PDU Notification Response|Unsupported |Unsupported |Unsupported |
+|7.3.10 PDU Notification Reject Request|Unsupported |Unsupported |Unsupported |
+|7.3.10 PDU Notification Reject Response|Unsupported |Unsupported |Unsupported |
+5+<|*7.4 Location Management Messages*
+|7.4.1 Send Routeing Information for GPRS Request|Unsupported |Unsupported |Not applicable  |
+|7.4.2 Send Routeing Information for GPRS Response|Unsupported |Unsupported |Not applicable  |
+|7.4.3 Failure Report Request|Unsupported |Unsupported |Not applicable|
+|7.4.3 Failure Report Response|Unsupported |Unsupported |Not applicable|
+|7.4.5 Note MS GPRS Present Request|Unsupported |Unsupported |Not applicable|
+|7.4.6 Note MS GPRS Present Response|Unsupported |Unsupported |Not applicable|
+5+<|*7.5 Mobility Management Messages*
+|7.5.1 Identification Request|Unsupported |Not applicable|Not applicable|
+|7.5.2 Identification Response|Unsupported |Not applicable |Not applicable|
+|7.5.3 SGSN Context Request|Unsupported |Not applicable|Not applicable|
+|7.5.4 SGSN Context Response|Unsupported |Not applicable |Not applicable|
+|7.5.5 SGSN Context Acknowledge|Unsupported |Not applicable|Not applicable|
+|7.5.6 Forward Relocation Request|Unsupported |Not applicable|Not applicable|
+|7.5.7 Forward Relocation Response|Unsupported |Not applicable|Not applicable|
+|7.5.8 Forward Relocation Complete|Unsupported |Not applicable|Not applicable|
+|7.5.9 Relocation Cancel Request|Unsupported |Not applicable|Not applicable|
+|7.5.10 Relocation Cancel Response|Unsupported |Not applicable|Not applicable|
+|7.5.11 Forward Relocation Complete     |Unsupported |Not applicable |Not applicable  |
+|7.5.12 Forward SRNS Context Acknowledge|Unsupported |Not applicable|Not applicable|
+|7.5.13 Forward SRNS Context|Unsupported |Not applicable|Not applicable|
+|===
+
+Notes
+
+1) The "Secondary PDP Context Activation Procedure" is not supported.

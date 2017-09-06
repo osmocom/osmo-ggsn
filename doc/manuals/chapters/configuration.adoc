@@ -1,0 +1,243 @@
+== Configuring OsmoGGSN
+
+All configuration of OsmoGGSN is performed using the VTY. For more
+general information on the VTY interface, see FIXME.
+
+=== Configuring a virtual GGSN instance
+
+OsmoGGSN can run multiple GGSN instances inside one program/process.
+Each GGSN instance binds to its own transport-layer GTP IP address and
+has its own set of APNs and associated IP address pools + tun/gtp
+devices.
+
+In most usage cases, yo will only have a single GGSN instance inside
+your configuration file, like in below example:
+
+.Example: Single GGSN configuration section
+----
+ggsn ggsn0
+ gtp state-dir /tmp
+ gtp bind-ip 127.0.0.6
+ apn internet
+  gtpu-mode tun
+  tun-device tun4
+  type-support v4
+  ip prefix dynamic 176.16.222.0/24
+  ip dns 0 192.168.100.1
+  ip dns 1 8.8.8.8
+  ip ifconfig 176.16.222.0/24
+  no shutdown
+----
+
+
+==== Creating/Editing a GGSN instance
+
+Creating/Editing a GGSN instance can be done by the following sequence
+of VTY commands:
+
+----
+OsmoGGSN> enable <1>
+OsmoGGSN# configure terminal <2>
+OsmoGGSN(config)# ggsn ggsn0 <3>
+OsmoGGSN(config-ggsn)# <4>
+----
+<1> Change into privileged mode
+<2> Enter the interactive configuration mode
+<3> Create or edit the GGSN instance `ggsn0`. The name can be any ASCII
+    string, its significance is only to the local user.
+<4> Your prompt is now in the `ggsn` config node, where you can
+    configure the properties of this GGSN instance.
+
+NOTE:: After creating a new GGSN instance, it is in `shutdown` mode. See
+FIXME to take it out of shutdown, but make sure to configure it fully
+before taking it out of shutdown.
+
+==== Configuring a GGSN instance
+
+The following two mandatory configuration statements have to be given
+for every GGSN instance:
+
+----
+OsmoGGSN(config-ggsn)# gtp state-dir /var/lib/ggsn/ggsn0 <1>
+OsmoGGSN(config-ggsn)# gtp bind-ip 127.0.0.6 <2>
+----
+<1> Store the GSN restart state in the specified directory
+<2> Bind the GGSN instance to the specified local IPv4 address
+
+There are some further configuration statements that can be used at the
+GGSN node, some examples are given below.  For a full list, see the
+OpenGGSN VTY reference manual (FIXME).
+
+----
+OsmoGGSN(config-ggsn)# default-apn foobar <1>
+----
+<1> Configure a default APN to be used if the user-requested APN is not
+    found.  The named APN must previously be configured
+
+
+==== Deleting a GGSN instance
+
+A GGSN instance can be removed like this
+
+.Example: Deleting a GGSN instance
+----
+OsmoGGSN> enable <1>
+OsmoGGSN# configure terminal <2>
+OsmoGGSN(config)# no ggsn ggsn0 <3>
+----
+<1> Change into privileged mode
+<2> Enter the interactive configuration mode
+<3> Delete the GGSN instance
+
+
+==== Taking a GGSN instance out of shutdown
+
+.Example: Taking a GGSN instance out of shutdown
+----
+OsmoGGSN> enable <1>
+OsmoGGSN# configure terminal <2>
+OsmoGGSN(config)# ggsn ggsn0 <3>
+OsmoGGSN(config-ggsn)# no shutdown ggsn <4>
+----
+<1> Change into privileged mode
+<2> Enter the interactive configuration mode
+<3> Enter the config ndoe of the GGSN instance `ggsn0`
+<4> Take the GGSN instance out of shutdown
+
+
+==== Shutting a GGSN instance down
+
+If you would like to take a GGSN instance out of service, you can
+put it into shutdown mode.  This will make the entire GGSN unavailable
+to user traffic and permit you to e.g. reconfigure it before taking it
+out of shutdown again.
+
+.Example: Shutting down a GGSN instance
+----
+OsmoGGSN> enable <1>
+OsmoGGSN# configure terminal <2>
+OsmoGGSN(config)# ggsn ggsn0 <3>
+OsmoGGSN(config-ggsn)# shutdown ggsn <4>
+----
+<1> Change into privileged mode
+<2> Enter the interactive configuration mode
+<3> Enter the config ndoe of the GGSN instance `ggsn0`
+<4> Shut down the GGSN instance
+
+
+=== Configuring an Access Point Name
+
+An Access Point Name (APN) represents a connection to an external packet
+data network, such as the public Internet or private corporate networsk.
+
+APNs are selected by terminals (MS/UE) when establishing PDP contexts.
+
+Each OsmoGGSN GGSN instance can have any number of APNs configured.
+Each APN is identified by a string name.
+
+==== Creating/Editing an APN
+
+.Example: Creating a new APN
+----
+OsmoGGSN> enable <1>
+OsmoGGSN# configure terminal <2>
+OsmoGGSN(config)# ggsn ggsn0 <3>
+OsmoGGSN(config-ggsn)# apn internet <4>
+OsmoGGSN(config-ggsn-apn)# <5>
+----
+<1> Change into privileged mode
+<2> Enter the interactive configuration mode
+<3> Enter the config node of the GGSN instance `ggsn0`
+<4> Create or Edit an APN called `internet`
+<5> Your prompt is now in the `ggsn` config node, where you can
+    configure the properties of this GGSN instance.
+
+NOTE:: The newly-create APN is created in `shutdown` mode. See FIXME to take it
+out of shutdown.
+
+
+==== Configuring an APN
+
+.Example: Configuring an APN
+----
+OsmoGGSN(config-ggsn-apn)# gtpu-mode tun <1>
+OsmoGGSN(config-ggsn-apn)# type-support v4 <2>
+OsmoGGSN(config-ggsn-apn)# ip prefix dynamic 176.16.222.0/24 <3>
+OsmoGGSN(config-ggsn-apn)# ip dns 0 192.168.100.1 <4>
+OsmoGGSN(config-ggsn-apn)# ip dns 1 8.8.8.8 <5>
+OsmoGGSN(config-ggsn-apn)# ip ifconfig 176.16.222.0/24 <6>
+----
+<1> Use the userspace GTP-U handling using a TUN device
+<2> Support (only) IPv4 Addresses
+<3> Specify the pool of dynamic IPv4 addresses to be allocated to PDP
+    contexts
+<4> Specify the primary DNS server to be provided using IPCP/PCO
+<5> Specify the secondary DNS server to be provided using IPCP/PCO
+<6> Request OsmoGGSN to configure the `tun4` device network/netmask
+
+NOTE:: If you use the optional `ip ifconfig` command to set the network
+device address/mask, OsmoGGSN must run with root or `CAP_NET_ADMIN`
+support.  It might be better to configure related tun devices at system
+startup and run OsmoGGSN as non-privileged user.  See FIXME for more
+details.
+
+
+==== Deleting an APN
+
+An APN configuration can be removed like this
+
+.Example: Deleting an APN
+----
+OsmoGGSN> enable <1>
+OsmoGGSN# configure terminal <2>
+OsmoGGSN(config)# ggsn ggsn0 <3>
+OsmoGGSN(config-ggsn)# no apn internet <4>
+----
+<1> Change into privileged mode
+<2> Enter the interactive configuration mode
+<3> Enter the config node of the GGSN instance `ggsn0`
+<4> Delete the APN `internet`
+
+
+==== Taking an APN out of shutdown
+
+In order to bring a deactived APN in `shutdown` state into active
+operation, use the `no shutdown` command at the APN node as explained in
+the following example:
+
+.Example: Taking an APN out of shutdown
+----
+OsmoGGSN> enable <1>
+OsmoGGSN# configure terminal <2>
+OsmoGGSN(config)# ggsn ggsn0 <3>
+OsmoGGSN(config-ggsn)# apn internet <4>
+OsmoGGSN(config-ggsn-apn)# no shutdown <5>
+----
+<1> Change into privileged mode
+<2> Enter the interactive configuration mode
+<3> Enter the config ndoe of the GGSN instance `ggsn0`
+<4> Enter the config ndoe of the APN `internet`
+<5> Take the APN out of shutdown
+
+
+==== Shutting an APN down
+
+If you would like to take an APN instance out of service, you can
+put it into shutdown mode.  This will make the APN unavailable
+to user traffic and permit you to e.g. reconfigure it before taking it
+out of shutdown again.
+
+.Example: Shutting down an APN
+----
+OsmoGGSN> enable <1>
+OsmoGGSN# configure terminal <2>
+OsmoGGSN(config)# ggsn ggsn0 <3>
+OsmoGGSN(config-ggsn)# apn internet <4>
+OsmoGGSN(config-ggsn-apn)# shutdown <5>
+----
+<1> Change into privileged mode
+<2> Enter the interactive configuration mode
+<3> Enter the config ndoe of the GGSN instance `ggsn0`
+<4> Enter the config ndoe of the APN `internet`
+<5> Shut down the APN
+
