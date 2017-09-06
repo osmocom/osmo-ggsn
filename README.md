@@ -6,8 +6,8 @@ GPRS Support Node), a core network element of ETSI/3GPP cellular
 networks such as GPRS, EDGE, UMTS or HSPA.
 
 OsmoGGSN is part of the [Osmocom](https://osmocom.org/) Open Source
-Mobile Communications projects, even thogh it was previously developed
-by Mondru AB.
+Mobile Communications projects and the successor to OpenGGSN.
+OpenGGSN was developed until 2004 by Mondru AB.
 
 Homepage
 --------
