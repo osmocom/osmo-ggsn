@@ -1,0 +1,30 @@
+<vtydoc xmlns='urn:osmocom:xml:libosmocore:vty:doc:1.0'>
+	<node id="9">
+		<child_of nodeid='4' />
+		<name>Telnet/VTY Configuration Node</name>
+		<description>
+			Configure parameters of the Telnet/VTY Interface, such as to which IP address it should bind/listen to.
+		</description>
+	</node>
+	<node id="14">
+		<child_of nodeid='4' />
+		<name>CTRL Configuration Node</name>
+		<description>
+			Configure parameters of the CTRL Interface, such as to which IP address it should bind/listen to.
+		</description>
+	</node>
+	<node id="26">
+		<child_of nodeid='4' />
+		<name>GGSN Instance Configuration Node</name>
+		<description>
+			Configure an Instance of a (virtual) GGSN
+		</description>
+	</node>
+	<node id="27">
+		<child_of nodeid='26' />
+		<name>APN Configuration Node</name>
+		<description>
+			Configure an Access Point Name (APN) inside a GGSN Instance
+		</description>
+	</node>
+</vtydoc>
