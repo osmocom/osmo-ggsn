@@ -1,11 +1,11 @@
 [Unit]
-Description=OpenGGSN
+Description=OsmoGGSN
 After=networking.service
 
 [Service]
 Type=simple
 Restart=always
-ExecStart=/usr/bin/ggsn -c /etc/ggsn.conf -f
+ExecStart=/usr/bin/osmo-ggsn -c /etc/osmocom/osmo-ggsn.conf -f
 RestartSec=2
 RestartPreventExitStatus=1
 
