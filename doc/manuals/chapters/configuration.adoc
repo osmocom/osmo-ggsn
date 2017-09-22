@@ -1,7 +1,7 @@
 == Configuring OsmoGGSN
 
 All configuration of OsmoGGSN is performed using the VTY. For more
-general information on the VTY interface, see FIXME.
+general information on the VTY interface, see <<vty>>.
 
 === Configuring a virtual GGSN instance
 
@@ -49,7 +49,7 @@ OsmoGGSN(config-ggsn)# <4>
     configure the properties of this GGSN instance.
 
 NOTE:: After creating a new GGSN instance, it is in `shutdown` mode. See
-FIXME to take it out of shutdown, but make sure to configure it fully
+<<unshutdown_apn>> to take it out of shutdown, but make sure to configure it fully
 before taking it out of shutdown.
 
 ==== Configuring a GGSN instance
@@ -66,7 +66,7 @@ OsmoGGSN(config-ggsn)# gtp bind-ip 127.0.0.6 <2>
 
 There are some further configuration statements that can be used at the
 GGSN node, some examples are given below.  For a full list, see the
-OpenGGSN VTY reference manual (FIXME).
+_OsmoGGSN VTY reference manual_ <<vty-ref-osmoggsn>>.
 
 ----
 OsmoGGSN(config-ggsn)# default-apn foobar <1>
@@ -152,7 +152,7 @@ OsmoGGSN(config-ggsn-apn)# <5>
 <5> Your prompt is now in the `ggsn` config node, where you can
     configure the properties of this GGSN instance.
 
-NOTE:: The newly-create APN is created in `shutdown` mode. See FIXME to take it
+NOTE:: The newly-create APN is created in `shutdown` mode. See <<unshutdown_apn>> to take it
 out of shutdown.
 
 
@@ -178,7 +178,7 @@ OsmoGGSN(config-ggsn-apn)# ip ifconfig 176.16.222.0/24 <6>
 NOTE:: If you use the optional `ip ifconfig` command to set the network
 device address/mask, OsmoGGSN must run with root or `CAP_NET_ADMIN`
 support.  It might be better to configure related tun devices at system
-startup and run OsmoGGSN as non-privileged user.  See FIXME for more
+startup and run OsmoGGSN as non-privileged user.  See <<ggsn_no_root>> for more
 details.
 
 
@@ -198,7 +198,7 @@ OsmoGGSN(config-ggsn)# no apn internet <4>
 <3> Enter the config node of the GGSN instance `ggsn0`
 <4> Delete the APN `internet`
 
-
+[[unshutdown_apn]]
 ==== Taking an APN out of shutdown
 
 In order to bring a deactived APN in `shutdown` state into active
@@ -241,3 +241,48 @@ OsmoGGSN(config-ggsn-apn)# shutdown <5>
 <4> Enter the config ndoe of the APN `internet`
 <5> Shut down the APN
 
+[[ggsn_no_root]]
+=== Configuring for running without root priveleges
+
+It's possible to run OsmoGGSN without root privileges if the tun devices are already configured.
+
+.Example: device config via systemd-networkd using ggsn.netdev
+----
+[NetDev]
+Name=ggsn
+Kind=tun
+
+[Tun]
+User=username
+Group=username
+----
+
+.Example: network settings via systemd-networkd using ggsn.network
+----
+[Match]
+Name=ggsn
+
+[Network]
+Address=192.168.7.1
+IPMasquerade=yes
+----
+
+The pair of the configuration files above allows you to create and configure tun device which can be
+used by OsmoGGSN as follows.
+
+.Example: using externally configured tun device as non-root
+----
+ggsn ggsn0
+ gtp state-dir /tmp
+ gtp bind-ip 127.0.0.6
+ apn internet
+  gtpu-mode tun
+  tun-device ggsn
+  type-support v4
+  ip prefix dynamic 192.168.7.0/24
+  ip dns 0 192.168.100.1
+  ip dns 1 8.8.8.8
+  no shutdown
+ default-apn internet
+ no shutdown ggsn
+----
