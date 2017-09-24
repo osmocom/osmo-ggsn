@@ -27,8 +27,7 @@
 
 const char *gengetopt_args_info_purpose = "";
 
-const char *gengetopt_args_info_usage =
-    "Usage: " CMDLINE_PARSER_PACKAGE " [OPTIONS]...";
+const char *gengetopt_args_info_usage = "Usage: sgsnemu [OPTIONS]...";
 
 const char *gengetopt_args_info_versiontext = "";
 

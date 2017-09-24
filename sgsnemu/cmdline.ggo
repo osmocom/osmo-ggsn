@@ -13,6 +13,8 @@
 # 	sed -i -e 's/int qose1_arg;/unsigned long long int qose1_arg;/' cmdline.h
 # to generate cmdline.c and cmdline.h
 
+package "sgsnemu"
+
 option  "debug"        d "Run in debug mode"              flag   off
 
 option  "conf"         c "Read configuration file"        string no
