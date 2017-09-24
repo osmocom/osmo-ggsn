@@ -27,6 +27,7 @@ option  "apn"          a "Access point name"              string default="intern
 option  "selmode"      - "Selection mode"                 int    default="0x01" no
 option  "rattype"      - "Radio Access Technology Type"   int    default="1" no typestr="1..5"
 option  "userloc"      - "User Location Information"      string    default="02509946241207" no typestr="type.MCC.MNC.LAC.CIorSACorRAC"
+option  "rai"          - "Routing Area Information"       string    default="02509946241207" no typestr="MCC.MNC.LAC.RAC"
 option  "mstz"         - "MS Time Zone"                   string    default="0" no typestr="sign.NbQuartersOfAnHour.DSTAdjustment"
 option  "imeisv"       - "IMEI(SV) International Mobile Equipment Identity (and Software Version)" string default="2143658709214365" no
 option  "imsi"         i "IMSI"                           string default="240010123456789" no
