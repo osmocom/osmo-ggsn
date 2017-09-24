@@ -3146,20 +3146,34 @@ int gtp_data_req(struct gsn_t *gsn, struct pdp_t *pdp, void *pack, unsigned len)
 {
 	union gtp_packet packet;
 	struct sockaddr_in addr;
+	struct msghdr msgh;
+	struct iovec iov[2];
 	int fd;
-	int length;
 
+	/* prepare destination address */
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
 #if defined(__FreeBSD__) || defined(__APPLE__)
 	addr.sin_len = sizeof(addr);
 #endif
-
 	memcpy(&addr.sin_addr, pdp->gsnru.v, pdp->gsnru.l);	/* TODO range check */
+
+	/* prepare msghdr */
+	memset(&msgh, 0, sizeof(msgh));
+	msgh.msg_name = &addr;
+	msgh.msg_namelen = sizeof(addr);
+	msgh.msg_iov = iov;
+	msgh.msg_iovlen = ARRAY_SIZE(iov);
+
+	/* prepare iovectors */
+	iov[0].iov_base = &packet;
+	/* iov[0].iov_len is not known here yet */
+	iov[1].iov_base = pack;
+	iov[1].iov_len = len;
 
 	if (pdp->version == 0) {
 
-		length = GTP0_HEADER_SIZE + len;
+		iov[0].iov_len = GTP0_HEADER_SIZE;
 		addr.sin_port = htons(GTP0_PORT);
 		fd = gsn->fd0;
 
@@ -3168,19 +3182,9 @@ int gtp_data_req(struct gsn_t *gsn, struct pdp_t *pdp, void *pack, unsigned len)
 		packet.gtp0.h.seq = hton16(pdp->gtpsntx++);
 		packet.gtp0.h.flow = hton16(pdp->flru);
 		packet.gtp0.h.tid = htobe64(pdp_gettid(pdp->imsi, pdp->nsapi));
-
-		if (len > sizeof(union gtp_packet) - sizeof(struct gtp0_header)) {
-			gsn->err_memcpy++;
-			LOGP(DLGTP, LOGL_ERROR,
-				"Memcpy failed: %u > %zu\n", len,
-				sizeof(union gtp_packet) -
-				sizeof(struct gtp0_header));
-			return EOF;
-		}
-		memcpy(packet.gtp0.p, pack, len);	/* TODO Should be avoided! */
 	} else if (pdp->version == 1) {
 
-		length = GTP1_HEADER_SIZE_LONG + len;
+		iov[0].iov_len = GTP1_HEADER_SIZE_LONG;
 		addr.sin_port = htons(GTP1U_PORT);
 		fd = gsn->fd1u;
 
@@ -3189,18 +3193,6 @@ int gtp_data_req(struct gsn_t *gsn, struct pdp_t *pdp, void *pack, unsigned len)
 					       GTP1_HEADER_SIZE_LONG);
 		packet.gtp1l.h.seq = hton16(pdp->gtpsntx++);
 		packet.gtp1l.h.tei = hton32(pdp->teid_gn);
-
-		if (len >
-		    sizeof(union gtp_packet) -
-		    sizeof(struct gtp1_header_long)) {
-			gsn->err_memcpy++;
-			LOGP(DLGTP, LOGL_ERROR,
-				"Memcpy failed: %u > %zu\n", len,
-				sizeof(union gtp_packet) -
-				sizeof(struct gtp0_header));
-			return EOF;
-		}
-		memcpy(packet.gtp1l.p, pack, len);	/* TODO Should be avoided! */
 	} else {
 		LOGP(DLGTP, LOGL_ERROR, "Unknown version: %d\n", pdp->version);
 		return EOF;
@@ -3211,11 +3203,10 @@ int gtp_data_req(struct gsn_t *gsn, struct pdp_t *pdp, void *pack, unsigned len)
 		return -1;
 	}
 
-	if (sendto(fd, &packet, length, 0,
-		   (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+	if (sendmsg(fd, &msgh, 0) < 0) {
 		gsn->err_sendto++;
 		LOGP(DLGTP, LOGL_ERROR,
-			"Sendto(fd=%d, msg=%lx, len=%d) failed: Error = %s\n", fd,
+			"sendmsg(fd=%d, msg=%lx, len=%d) failed: Error = %s\n", fd,
 			(unsigned long)&packet, GTP0_HEADER_SIZE + len,
 			strerror(errno));
 		return EOF;
