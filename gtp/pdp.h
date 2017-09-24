@@ -13,6 +13,8 @@
 #ifndef _PDP_H
 #define _PDP_H
 
+#include <stdbool.h>
+
 struct gsn_t;
 
 #define PDP_MAX 1024		/* Max number of PDP contexts */
@@ -226,6 +228,8 @@ struct pdp_t {
 	void *priv;
 
 	struct gsn_t *gsn;
+
+	bool tx_gpdu_seq;		/* Transmit (true) or suppress G-PDU sequence numbers */
 };
 
 /* functions related to pdp_t management */

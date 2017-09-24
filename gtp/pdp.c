@@ -149,6 +149,8 @@ int pdp_newpdp(struct pdp_t **pdp, uint64_t imsi, uint8_t nsapi,
 				     1].secondary_tei[(*pdp)->nsapi & 0x0f] =
 				    (*pdp)->teid_own;
 			}
+			/* Default: Generate G-PDU sequence numbers on Tx */
+			(*pdp)->tx_gpdu_seq = true;
 
 			return 0;
 		}

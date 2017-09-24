@@ -3186,20 +3186,30 @@ int gtp_data_req(struct gsn_t *gsn, struct pdp_t *pdp, void *pack, unsigned len)
 
 		get_default_gtp(0, GTP_GPDU, &packet);
 		packet.gtp0.h.length = hton16(len);
-		packet.gtp0.h.seq = hton16(pdp->gtpsntx++);
+		if (pdp->tx_gpdu_seq)
+			packet.gtp0.h.seq = hton16(pdp->gtpsntx++);
+		else
+			packet.gtp0.h.seq = 0;
 		packet.gtp0.h.flow = hton16(pdp->flru);
 		packet.gtp0.h.tid = htobe64(pdp_gettid(pdp->imsi, pdp->nsapi));
 	} else if (pdp->version == 1) {
 
-		iov[0].iov_len = GTP1_HEADER_SIZE_LONG;
 		addr.sin_port = htons(GTP1U_PORT);
 		fd = gsn->fd1u;
 
 		get_default_gtp(1, GTP_GPDU, &packet);
-		packet.gtp1l.h.length = hton16(len - GTP1_HEADER_SIZE_SHORT +
-					       GTP1_HEADER_SIZE_LONG);
-		packet.gtp1l.h.seq = hton16(pdp->gtpsntx++);
-		packet.gtp1l.h.tei = hton32(pdp->teid_gn);
+		if (pdp->tx_gpdu_seq) {
+			packet.gtp1l.h.seq = hton16(pdp->gtpsntx++);
+			packet.gtp1l.h.length = hton16(len - GTP1_HEADER_SIZE_SHORT +
+						       GTP1_HEADER_SIZE_LONG);
+			packet.gtp1l.h.tei = hton32(pdp->teid_gn);
+			iov[0].iov_len = GTP1_HEADER_SIZE_LONG;
+		} else {
+			packet.gtp1s.h.flags &= ~GTP1HDR_F_SEQ;
+			packet.gtp1s.h.length = hton16(len);
+			packet.gtp1s.h.tei = hton32(pdp->teid_gn);
+			iov[0].iov_len = GTP1_HEADER_SIZE_SHORT;
+		}
 	} else {
 		LOGP(DLGTP, LOGL_ERROR, "Unknown version: %d\n", pdp->version);
 		return EOF;
