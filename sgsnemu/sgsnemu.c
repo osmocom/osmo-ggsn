@@ -565,9 +565,9 @@ int process_options(int argc, char **argv)
 	/* rattype */
 	if (args_info.rattype_given == 1) {
 		options.rattype_given = 1;
-		options.rattype.l = strlen(args_info.rattype_arg);
-		options.rattype.v[0] = atoi(args_info.rattype_arg);
-		printf("Using RAT Type:  %s\n", args_info.rattype_arg);
+		options.rattype.l = 1;
+		options.rattype.v[0] = args_info.rattype_arg;
+		printf("Using RAT Type:  %d\n", args_info.rattype_arg);
 	}
 
 	/* userloc */

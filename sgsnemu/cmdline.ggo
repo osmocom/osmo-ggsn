@@ -6,7 +6,11 @@
 # notice and this permission notice is included in all copies or
 # substantial portions of the software.
 #  
-# Use "gengetopt --conf-parser < cmdline.ggo" 
+# Use
+# 	gengetopt --conf-parser < cmdline.ggo
+# 	linux-2.6/scripts/Lindent cmdline.c
+# 	linux-2.6/scripts/Lindent cmdline.h
+# 	sed -i -e 's/int qose1_arg;/unsigned long long int qose1_arg;/' cmdline.h
 # to generate cmdline.c and cmdline.h
 
 option  "debug"        d "Run in debug mode"              flag   off
