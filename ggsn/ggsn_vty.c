@@ -642,7 +642,7 @@ static void config_write_apn(struct vty *vty, struct apn_ctx *apn)
 	for (i = 0; i < ARRAY_SIZE(apn->v6.cfg.dns); i++) {
 		if (!apn->v6.cfg.dns[i].len)
 			continue;
-		vty_out(vty, "  ip dns %u %s%s", i, in46a_ntoa(&apn->v6.cfg.dns[i]), VTY_NEWLINE);
+		vty_out(vty, "  ipv6 dns %u %s%s", i, in46a_ntoa(&apn->v6.cfg.dns[i]), VTY_NEWLINE);
 	}
 	if (apn->v6.cfg.ifconfig_prefix.addr.len)
 		vty_dump_prefix(vty, "  ipv6 ifconfig ", &apn->v6.cfg.ifconfig_prefix);
