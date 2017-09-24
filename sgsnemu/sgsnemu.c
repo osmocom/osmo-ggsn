@@ -117,6 +117,7 @@ struct {
 	int imeisv_given;
 	struct ul16_t msisdn;
 	int norecovery_given;
+	int tx_gpdu_seq;
 } options;
 
 /* Definitions to use for PING. Most of the ping code was derived from */
@@ -297,6 +298,7 @@ int process_options(int argc, char **argv)
 		printf("pingcount: %d\n", args_info.pingcount_arg);
 		printf("pingquiet: %d\n", args_info.pingquiet_flag);
 		printf("norecovery: %d\n", args_info.norecovery_flag);
+		printf("no-tx-gpdu-seq: %d\n", args_info.no_tx_gpdu_seq_flag);
 	}
 
 	/* Try out our new parser */
@@ -354,6 +356,7 @@ int process_options(int argc, char **argv)
 			printf("pingcount: %d\n", args_info.pingcount_arg);
 			printf("pingquiet: %d\n", args_info.pingquiet_flag);
 			printf("norecovery: %d\n", args_info.norecovery_flag);
+			printf("no-tx-gpdu-seq: %d\n", args_info.no_tx_gpdu_seq_flag);
 		}
 	}
 
@@ -917,6 +920,11 @@ int process_options(int argc, char **argv)
 
 	/* norecovery */
 	options.norecovery_given = args_info.norecovery_flag;
+
+	if (args_info.no_tx_gpdu_seq_flag)
+		options.tx_gpdu_seq = 0;
+	else
+		options.tx_gpdu_seq = 1;
 
 	return 0;
 
@@ -1590,6 +1598,8 @@ int main(int argc, char **argv)
 
 		pdp->cch_pdp = options.cch;	/* 2048 = Normal, 1024 = Prepaid, 
 						   512 = Flat rate, 256 = Hot billing */
+
+		pdp->tx_gpdu_seq = options.tx_gpdu_seq;
 
 		/* Create context */
 		/* We send this of once. Retransmissions are handled by gtplib */

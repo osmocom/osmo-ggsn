@@ -75,6 +75,7 @@ const char *gengetopt_args_info_help[] = {
 	"      --pingsize=INT            Number of ping data bytes  (default=`56')",
 	"      --pingcount=INT           Number of ping req to send  (default=`0')",
 	"      --pingquiet               Do not print ping packet info  (default=off)",
+	"      --no-tx-gpdu-seq          Don't transmit G-PDU sequence nums\n                                  (default=off)",
 	0
 };
 
@@ -159,6 +160,7 @@ void clear_given(struct gengetopt_args_info *args_info)
 	args_info->pingsize_given = 0;
 	args_info->pingcount_given = 0;
 	args_info->pingquiet_given = 0;
+	args_info->no_tx_gpdu_seq_given = 0;
 }
 
 static
@@ -238,6 +240,7 @@ void clear_args(struct gengetopt_args_info *args_info)
 	args_info->pingcount_arg = 0;
 	args_info->pingcount_orig = NULL;
 	args_info->pingquiet_flag = 0;
+	args_info->no_tx_gpdu_seq_flag = 0;
 
 }
 
@@ -286,6 +289,7 @@ void init_args_info(struct gengetopt_args_info *args_info)
 	args_info->pingsize_help = gengetopt_args_info_help[38];
 	args_info->pingcount_help = gengetopt_args_info_help[39];
 	args_info->pingquiet_help = gengetopt_args_info_help[40];
+	args_info->no_tx_gpdu_seq_help = gengetopt_args_info_help[41];
 
 }
 
@@ -532,6 +536,8 @@ int cmdline_parser_dump(FILE * outfile, struct gengetopt_args_info *args_info)
 				0);
 	if (args_info->pingquiet_given)
 		write_into_file(outfile, "pingquiet", 0, 0);
+	if (args_info->no_tx_gpdu_seq_given)
+		write_into_file(outfile, "no-tx-gpdu-seq", 0, 0);
 
 	i = EXIT_SUCCESS;
 	return i;
@@ -826,6 +832,7 @@ cmdline_parser_internal(int argc, char **argv,
 			{"pingsize", 1, NULL, 0},
 			{"pingcount", 1, NULL, 0},
 			{"pingquiet", 0, NULL, 0},
+			{"no-tx-gpdu-seq", 0, NULL, 0},
 			{0, 0, 0, 0}
 		};
 
@@ -1398,6 +1405,21 @@ cmdline_parser_internal(int argc, char **argv,
 				     &(local_args_info.pingquiet_given), optarg,
 				     0, 0, ARG_FLAG, check_ambiguity, override,
 				     1, 0, "pingquiet", '-', additional_error))
+					goto failure;
+
+			}
+			/* Don't transmit G-PDU sequence nums.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "no-tx-gpdu-seq") == 0) {
+
+				if (update_arg
+				    ((void *)&(args_info->no_tx_gpdu_seq_flag),
+				     0, &(args_info->no_tx_gpdu_seq_given),
+				     &(local_args_info.no_tx_gpdu_seq_given),
+				     optarg, 0, 0, ARG_FLAG, check_ambiguity,
+				     override, 1, 0, "no-tx-gpdu-seq", '-',
+				     additional_error))
 					goto failure;
 
 			}
