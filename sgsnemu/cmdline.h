@@ -264,6 +264,10 @@ extern "C" {
 			/**< @brief Do not print ping packet info (default=off).  */
 		const char *pingquiet_help;
 			      /**< @brief Do not print ping packet info help description.  */
+		int no_tx_gpdu_seq_flag;
+				/**< @brief Don't transmit G-PDU sequence nums (default=off).  */
+		const char *no_tx_gpdu_seq_help;
+				   /**< @brief Don't transmit G-PDU sequence nums help description.  */
 
 		unsigned int help_given;
 				/**< @brief Whether help was given.  */
@@ -347,6 +351,8 @@ extern "C" {
 					/**< @brief Whether pingcount was given.  */
 		unsigned int pingquiet_given;
 					/**< @brief Whether pingquiet was given.  */
+		unsigned int no_tx_gpdu_seq_given;
+					/**< @brief Whether no-tx-gpdu-seq was given.  */
 
 	};
 
