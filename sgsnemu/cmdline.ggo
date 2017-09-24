@@ -25,6 +25,10 @@ option  "timelimit"    - "Exit after timelimit seconds"   int default="0" no
 option  "gtpversion"   - "GTP version to use"             int    default="1" no
 option  "apn"          a "Access point name"              string default="internet" no
 option  "selmode"      - "Selection mode"                 int    default="0x01" no
+option  "rattype"      - "Radio Access Technology Type"   int    default="1" no typestr="1..5"
+option  "userloc"      - "User Location Information"      string    default="02509946241207" no typestr="type.MCC.MNC.LAC.CIorSACorRAC"
+option  "mstz"         - "MS Time Zone"                   string    default="0" no typestr="sign.NbQuartersOfAnHour.DSTAdjustment"
+option  "imeisv"       - "IMEI(SV) International Mobile Equipment Identity (and Software Version)" string default="2143658709214365" no
 option  "imsi"         i "IMSI"                           string default="240010123456789" no
 option  "nsapi"        - "NSAPI"                          int default="0" no
 option  "msisdn"       m "Mobile Station ISDN number"     string default="46702123456" no
