@@ -61,3 +61,4 @@ option  "pingsize"     - "Number of ping data bytes"      int default="56" no
 option  "pingcount"    - "Number of ping req to send"     int default="0" no
 option  "pingquiet"    - "Do not print ping packet info"  flag off
 option  "no-tx-gpdu-seq" - "Don't transmit G-PDU sequence nums"   flag    off
+option  "pdp-type"     t "PDP Type"                       string default="v4" no typestr="(v4|v6)"

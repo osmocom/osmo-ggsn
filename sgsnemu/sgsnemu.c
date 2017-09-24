@@ -118,6 +118,7 @@ struct {
 	struct ul16_t msisdn;
 	int norecovery_given;
 	int tx_gpdu_seq;
+	uint8_t pdp_type;
 } options;
 
 /* Definitions to use for PING. Most of the ping code was derived from */
@@ -926,6 +927,12 @@ int process_options(int argc, char **argv)
 	else
 		options.tx_gpdu_seq = 1;
 
+	/* PDP Type */
+	if (!strcmp(args_info.pdp_type_arg, "v6"))
+		options.pdp_type = PDP_EUA_TYPE_v6;
+	else
+		options.pdp_type = PDP_EUA_TYPE_v4;
+
 	return 0;
 
 }
@@ -1580,7 +1587,10 @@ int main(int argc, char **argv)
 			msisdn_add(&options.msisdn, &pdp->msisdn, n);
 		}
 
-		ipv42eua(&pdp->eua, NULL);	/* Request dynamic IP address */
+		/* Request dynamic IP address */
+		pdp->eua.v[0] = PDP_EUA_ORG_IETF;
+		pdp->eua.v[1] = options.pdp_type;
+		pdp->eua.l = 2;
 
 		if (options.pco.l > sizeof(pdp->pco_req.v)) {
 			SYS_ERR(DSGSN, LOGL_ERROR, 0,

@@ -268,6 +268,12 @@ extern "C" {
 				/**< @brief Don't transmit G-PDU sequence nums (default=off).  */
 		const char *no_tx_gpdu_seq_help;
 				   /**< @brief Don't transmit G-PDU sequence nums help description.  */
+		char *pdp_type_arg;
+			/**< @brief PDP Type (default='v4').  */
+		char *pdp_type_orig;
+			/**< @brief PDP Type original value given at command line.  */
+		const char *pdp_type_help;
+			     /**< @brief PDP Type help description.  */
 
 		unsigned int help_given;
 				/**< @brief Whether help was given.  */
@@ -353,6 +359,8 @@ extern "C" {
 					/**< @brief Whether pingquiet was given.  */
 		unsigned int no_tx_gpdu_seq_given;
 					/**< @brief Whether no-tx-gpdu-seq was given.  */
+		unsigned int pdp_type_given;
+				/**< @brief Whether pdp-type was given.  */
 
 	};
 

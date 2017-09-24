@@ -76,6 +76,7 @@ const char *gengetopt_args_info_help[] = {
 	"      --pingcount=INT           Number of ping req to send  (default=`0')",
 	"      --pingquiet               Do not print ping packet info  (default=off)",
 	"      --no-tx-gpdu-seq          Don't transmit G-PDU sequence nums\n                                  (default=off)",
+	"  -t, --pdp-type=(v4|v6)        PDP Type  (default=`v4')",
 	0
 };
 
@@ -161,6 +162,7 @@ void clear_given(struct gengetopt_args_info *args_info)
 	args_info->pingcount_given = 0;
 	args_info->pingquiet_given = 0;
 	args_info->no_tx_gpdu_seq_given = 0;
+	args_info->pdp_type_given = 0;
 }
 
 static
@@ -241,6 +243,8 @@ void clear_args(struct gengetopt_args_info *args_info)
 	args_info->pingcount_orig = NULL;
 	args_info->pingquiet_flag = 0;
 	args_info->no_tx_gpdu_seq_flag = 0;
+	args_info->pdp_type_arg = gengetopt_strdup("v4");
+	args_info->pdp_type_orig = NULL;
 
 }
 
@@ -290,6 +294,7 @@ void init_args_info(struct gengetopt_args_info *args_info)
 	args_info->pingcount_help = gengetopt_args_info_help[39];
 	args_info->pingquiet_help = gengetopt_args_info_help[40];
 	args_info->no_tx_gpdu_seq_help = gengetopt_args_info_help[41];
+	args_info->pdp_type_help = gengetopt_args_info_help[42];
 
 }
 
@@ -419,6 +424,8 @@ static void cmdline_parser_release(struct gengetopt_args_info *args_info)
 	free_string_field(&(args_info->pingrate_orig));
 	free_string_field(&(args_info->pingsize_orig));
 	free_string_field(&(args_info->pingcount_orig));
+	free_string_field(&(args_info->pdp_type_arg));
+	free_string_field(&(args_info->pdp_type_orig));
 
 	clear_given(args_info);
 }
@@ -538,6 +545,9 @@ int cmdline_parser_dump(FILE * outfile, struct gengetopt_args_info *args_info)
 		write_into_file(outfile, "pingquiet", 0, 0);
 	if (args_info->no_tx_gpdu_seq_given)
 		write_into_file(outfile, "no-tx-gpdu-seq", 0, 0);
+	if (args_info->pdp_type_given)
+		write_into_file(outfile, "pdp-type", args_info->pdp_type_orig,
+				0);
 
 	i = EXIT_SUCCESS;
 	return i;
@@ -833,10 +843,11 @@ cmdline_parser_internal(int argc, char **argv,
 			{"pingcount", 1, NULL, 0},
 			{"pingquiet", 0, NULL, 0},
 			{"no-tx-gpdu-seq", 0, NULL, 0},
+			{"pdp-type", 1, NULL, 't'},
 			{0, 0, 0, 0}
 		};
 
-		c = getopt_long(argc, argv, "hVdc:l:r:a:i:m:q:u:p:n:",
+		c = getopt_long(argc, argv, "hVdc:l:r:a:i:m:q:u:p:n:t:",
 				long_options, &option_index);
 
 		if (c == -1)
@@ -979,6 +990,18 @@ cmdline_parser_internal(int argc, char **argv,
 				       &(local_args_info.net_given), optarg, 0,
 				       0, ARG_STRING, check_ambiguity, override,
 				       0, 0, "net", 'n', additional_error))
+				goto failure;
+
+			break;
+		case 't':	/* PDP Type.  */
+
+			if (update_arg((void *)&(args_info->pdp_type_arg),
+				       &(args_info->pdp_type_orig),
+				       &(args_info->pdp_type_given),
+				       &(local_args_info.pdp_type_given),
+				       optarg, 0, "v4", ARG_STRING,
+				       check_ambiguity, override, 0, 0,
+				       "pdp-type", 't', additional_error))
 				goto failure;
 
 			break;
