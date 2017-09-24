@@ -632,7 +632,7 @@ static void config_write_apn(struct vty *vty, struct apn_ctx *apn)
 		vty_out(vty, "  ip dns %u %s%s", i, in46a_ntoa(&apn->v4.cfg.dns[i]), VTY_NEWLINE);
 	}
 	if (apn->v4.cfg.ifconfig_prefix.addr.len)
-		vty_dump_prefix(vty, "  ip ifconfig ", &apn->v4.cfg.ifconfig_prefix);
+		vty_dump_prefix(vty, "  ip ifconfig", &apn->v4.cfg.ifconfig_prefix);
 
 	/* IPv6 prefixes + DNS */
 	if (apn->v6.cfg.static_prefix.addr.len)
@@ -645,7 +645,7 @@ static void config_write_apn(struct vty *vty, struct apn_ctx *apn)
 		vty_out(vty, "  ipv6 dns %u %s%s", i, in46a_ntoa(&apn->v6.cfg.dns[i]), VTY_NEWLINE);
 	}
 	if (apn->v6.cfg.ifconfig_prefix.addr.len)
-		vty_dump_prefix(vty, "  ipv6 ifconfig ", &apn->v6.cfg.ifconfig_prefix);
+		vty_dump_prefix(vty, "  ipv6 ifconfig", &apn->v6.cfg.ifconfig_prefix);
 
 	/* must be last */
 	vty_out(vty, "  %sshutdown%s", apn->cfg.shutdown ? "" : "no ", VTY_NEWLINE);
