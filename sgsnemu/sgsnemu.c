@@ -1,6 +1,7 @@
 /* 
  *  OsmoGGSN - Gateway GPRS Support Node
  *  Copyright (C) 2002, 2003, 2004 Mondru AB.
+ *  Copyright (C) 2017 Harald Welte <laforge@gnumonks.org>
  * 
  *  The contents of this file may be used under the terms of the GNU
  *  General Public License Version 2, provided that the above copyright
@@ -30,6 +31,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
+#include <netinet/ip6.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
@@ -930,8 +932,18 @@ int process_options(int argc, char **argv)
 	/* PDP Type */
 	if (!strcmp(args_info.pdp_type_arg, "v6"))
 		options.pdp_type = PDP_EUA_TYPE_v6;
-	else
+	else if (!strcmp(args_info.pdp_type_arg, "v4"))
 		options.pdp_type = PDP_EUA_TYPE_v4;
+	else {
+		SYS_ERR(DSGSN, LOGL_ERROR, 0, "Unsupported/unknown PDP Type '%s'\n",
+			args_info.pdp_type_arg);
+		return -1;
+	}
+
+	if (options.pingcount && options.pdp_type != PDP_EUA_TYPE_v4) {
+		SYS_ERR(DSGSN, LOGL_ERROR, 0, "built-in ping only works with IPv4, use tun-device");
+		return -1;
+	}
 
 	return 0;
 
@@ -1287,19 +1299,46 @@ int delete_context(struct pdp_t *pdp)
 	return 0;
 }
 
+/* Link-Local address  prefix fe80::/64 */
+static const uint8_t ll_prefix[] = { 0xfe,0x80, 0,0, 0,0, 0,0 };
+
 /* Callback for receiving messages from tun */
 int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 {
 	struct iphash_t *ipm;
 	struct in46_addr src;
 	struct iphdr *iph = (struct iphdr *)pack;
+	struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
 
-	src.len = 4;
-	src.v4.s_addr = iph->saddr;
+	if (iph->version == 4) {
+		if (len < sizeof(*iph) || len < 4*iph->ihl) {
+			printf("Dropping packet with too short IP header\n");
+			return 0;
+		}
+		src.len = 4;
+		src.v4.s_addr = iph->saddr;
+	} else if (iph->version == 6) {
+		/* We only have a single entry in the hash table, and it consists of the link-local
+		 * address "fe80::prefix".  So we need to make sure to convert non-link-local source
+		 * addresses to that format before looking up the hash table via ippool_getip() */
+		src.len = 16;
+		if (!memcmp(ip6h->ip6_src.s6_addr, ll_prefix, sizeof(ll_prefix))) {
+			/* is a link-local address, we can do the hash lookup 1:1 */
+			src.v6 = ip6h->ip6_src;
+		} else {
+			/* it is not a link-local address, so we must convert from the /64 prefix
+			 * to the link-local format that's used in the hash table */
+			memcpy(&src.v6.s6_addr[0], ll_prefix, sizeof(ll_prefix));
+			memcpy(&src.v6.s6_addr[sizeof(ll_prefix)], ip6h->ip6_src.s6_addr, 16-sizeof(ll_prefix));
+		}
+	} else {
+		printf("Dropping packet with invalid IP version %u\n", iph->version);
+		return 0;
+	}
 
 	if (ipget(&ipm, &src)) {
 		printf("Dropping packet from invalid source address: %s\n",
-		       inet_ntoa(src.v4));
+		       in46a_ntoa(&src));
 		return 0;
 	}
 
@@ -1350,17 +1389,27 @@ int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 	}
 
 	printf("Received create PDP context response. IP address: %s\n",
-	       inet_ntoa(addr.v4));
+	       in46a_ntoa(&addr));
+
+	switch (addr.len) {
+	case 16: /* IPv6 */
+		/* we have to enable the kernel to perform stateless autoconfiguration,
+		 * i.e. send a router solicitation using the lover 64bits of the allocated
+		 * EUA as interface identifier, as per 3GPP TS 29.061 Section 11.2.1.3.2 */
+		memcpy(addr.v6.s6_addr, ll_prefix, sizeof(ll_prefix));
+		printf("Derived IPv6 link-local address: %s\n", in46a_ntoa(&addr));
+		break;
+	case 4: /* IPv4 */
+		break;
+	}
 
 	if ((options.createif) && (!options.net.s_addr)) {
-		struct in_addr m;
-#ifdef HAVE_INET_ATON
-		inet_aton("255.255.255.255", &m);
-#else
-		m.s_addr = -1;
-#endif
+		size_t prefixlen = 32;
+		if (addr.len == 16)
+			prefixlen = 64;
 		/* printf("Setting up interface and routing\n"); */
-		tun_addaddr(tun, &addr.v4, &addr.v4, &m);
+		/* FIXME: use tun_addattr() not tun_setaddr() */
+		tun_setaddr(tun, &addr, &addr, prefixlen);
 		if (options.defaultroute) {
 			struct in_addr rm;
 			rm.s_addr = 0;
