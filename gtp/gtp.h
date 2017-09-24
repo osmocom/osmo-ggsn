@@ -162,6 +162,13 @@ struct gtp0_header {		/*    Descriptions from 3GPP 09.60 */
 	uint64_t tid;		/* 13 Tunnel ID */
 } __attribute__((packed));	/* 20 */
 
+#define GTP1HDR_F_NPDU	0x01
+#define GTP1HDR_F_SEQ	0x02
+#define GTP1HDR_F_EXT	0x04
+#define GTP1HDR_F_GTP1	0x10
+#define GTPHDR_F_VER(n)	((n) << 5)
+#define GTPHDR_F_GET_VER(flags) ((flags)>>5)
+
 struct gtp1_header_short {	/*    Descriptions from 3GPP 29060 */
 	uint8_t flags;		/* 01 bitfield, with typical values */
 	/*    001..... Version: 1 */

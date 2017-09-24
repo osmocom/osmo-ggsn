@@ -192,7 +192,8 @@ static unsigned int get_default_gtp(int version, uint8_t type, void *packet)
 		/* set to 1 */
 		/* Currently extension headers are not supported */
 		memset(gtp1_default, 0, sizeof(struct gtp1_header_long));
-		gtp1_default->flags = 0x32;	/* No extension, enable sequence, no N-PDU */
+		/* No extension, enable sequence, no N-PDU */
+		gtp1_default->flags = GTPHDR_F_VER(1) | GTP1HDR_F_GTP1 | GTP1HDR_F_SEQ;
 		gtp1_default->type = hton8(type);
 		return GTP1_HEADER_SIZE_LONG;
 	default:
@@ -210,10 +211,11 @@ static unsigned int get_default_gtp(int version, uint8_t type, void *packet)
 static uint16_t get_seq(void *pack)
 {
 	union gtp_packet *packet = (union gtp_packet *)pack;
+	uint8_t ver = GTPHDR_F_GET_VER(packet->flags);
 
-	if ((packet->flags & 0xe0) == 0x00) {	/* Version 0 */
+	if (ver == 0) {
 		return ntoh16(packet->gtp0.h.seq);
-	} else if ((packet->flags & 0xe2) == 0x22) {	/* Version 1 with seq */
+	} else if (ver == 1 && (packet->flags & GTP1HDR_F_SEQ)) {	/* Version 1 with seq */
 		return ntoh16(packet->gtp1l.h.seq);
 	} else {
 		return 0;
@@ -229,7 +231,7 @@ static uint64_t get_tid(void *pack)
 {
 	union gtp_packet *packet = (union gtp_packet *)pack;
 
-	if ((packet->flags & 0xe0) == 0x00) {	/* Version 0 */
+	if (GTPHDR_F_GET_VER(packet->flags) == 0) {	/* Version 0 */
 		return be64toh(packet->gtp0.h.tid);
 	}
 	return 0;
@@ -243,13 +245,14 @@ static uint64_t get_tid(void *pack)
 static uint16_t get_hlen(void *pack)
 {
 	union gtp_packet *packet = (union gtp_packet *)pack;
+	uint8_t ver = GTPHDR_F_GET_VER(packet->flags);
 
-	if ((packet->flags & 0xe0) == 0x00) {	/* Version 0 */
+	if (ver == 0) {	/* Version 0 */
 		return GTP0_HEADER_SIZE;
-	} else if ((packet->flags & 0xe2) == 0x22) {	/* Version 1 with seq */
-		return GTP1_HEADER_SIZE_LONG;
-	} else if ((packet->flags & 0xe7) == 0x20) {	/* Short version 1 */
+	} else if (ver == 1 && (packet->flags & 0x07) == 0) {	/* Short version 1 */
 		return GTP1_HEADER_SIZE_SHORT;
+	} else if (ver == 1) {	/* Version 1 with seq/n-pdu/ext */
+		return GTP1_HEADER_SIZE_LONG;
 	} else {
 		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flags: 0x%02x\n", packet->flags);
 		return 0;
@@ -264,10 +267,11 @@ static uint16_t get_hlen(void *pack)
 static uint32_t get_tei(void *pack)
 {
 	union gtp_packet *packet = (union gtp_packet *)pack;
+	uint8_t ver = GTPHDR_F_GET_VER(packet->flags);
 
-	if ((packet->flags & 0xe0) == 0x00) {	/* Version 0 */
+	if (ver == 0) {	/* Version 0 */
 		return ntoh16(packet->gtp0.h.flow);
-	} else if ((packet->flags & 0xe0) == 0x20) {	/* Version 1 */
+	} else if (ver == 1) {	/* Version 1 */
 		return ntoh32(packet->gtp1l.h.tei);
 	} else {
 		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flags: 0x%02x\n", packet->flags);
@@ -357,6 +361,7 @@ int gtp_req(struct gsn_t *gsn, int version, struct pdp_t *pdp,
 	    union gtp_packet *packet, int len,
 	    struct in_addr *inetaddr, void *cbp)
 {
+	uint8_t ver = GTPHDR_F_GET_VER(packet->flags);
 	struct sockaddr_in addr;
 	struct qmsg_t *qmsg;
 	int fd;
@@ -368,7 +373,7 @@ int gtp_req(struct gsn_t *gsn, int version, struct pdp_t *pdp,
 	addr.sin_len = sizeof(addr);
 #endif
 
-	if ((packet->flags & 0xe0) == 0x00) {	/* Version 0 */
+	if (ver == 0) {	/* Version 0 */
 		addr.sin_port = htons(GTP0_PORT);
 		packet->gtp0.h.length = hton16(len - GTP0_HEADER_SIZE);
 		packet->gtp0.h.seq = hton16(gsn->seq_next);
@@ -382,7 +387,7 @@ int gtp_req(struct gsn_t *gsn, int version, struct pdp_t *pdp,
 		else if (pdp)
 			packet->gtp0.h.flow = hton16(pdp->flrc);
 		fd = gsn->fd0;
-	} else if ((packet->flags & 0xe2) == 0x22) {	/* Version 1 with seq */
+	} else if (ver == 1 && (packet->flags & GTP1HDR_F_SEQ)) {	/* Version 1 with seq */
 		addr.sin_port = htons(GTP1C_PORT);
 		packet->gtp1l.h.length = hton16(len - GTP1_HEADER_SIZE_SHORT);
 		packet->gtp1l.h.seq = hton16(gsn->seq_next);
@@ -430,12 +435,12 @@ int gtp_req(struct gsn_t *gsn, int version, struct pdp_t *pdp,
 int gtp_conf(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
 	     union gtp_packet *packet, int len, uint8_t * type, void **cbp)
 {
-
+	uint8_t ver = GTPHDR_F_GET_VER(packet->flags);
 	uint16_t seq;
 
-	if ((packet->gtp0.h.flags & 0xe0) == 0x00)
+	if (ver == 0)
 		seq = ntoh16(packet->gtp0.h.seq);
-	else if ((packet->gtp1l.h.flags & 0xe2) == 0x22)
+	else if (ver == 1 && (packet->gtp1l.h.flags & GTP1HDR_F_SEQ))
 		seq = ntoh16(packet->gtp1l.h.seq);
 	else {
 		GTP_LOGPKG(LOGL_ERROR, peer, packet, len,
@@ -522,9 +527,10 @@ int gtp_resp(int version, struct gsn_t *gsn, struct pdp_t *pdp,
 	     union gtp_packet *packet, int len,
 	     struct sockaddr_in *peer, int fd, uint16_t seq, uint64_t tid)
 {
+	uint8_t ver = GTPHDR_F_GET_VER(packet->flags);
 	struct qmsg_t *qmsg;
 
-	if ((packet->flags & 0xe0) == 0x00) {	/* Version 0 */
+	if (ver == 0) {	/* Version 0 */
 		packet->gtp0.h.length = hton16(len - GTP0_HEADER_SIZE);
 		packet->gtp0.h.seq = hton16(seq);
 		packet->gtp0.h.tid = htobe64(tid);
@@ -533,7 +539,7 @@ int gtp_resp(int version, struct gsn_t *gsn, struct pdp_t *pdp,
 			packet->gtp0.h.flow = hton16(pdp->flru);
 		else if (pdp)
 			packet->gtp0.h.flow = hton16(pdp->flrc);
-	} else if ((packet->flags & 0xe2) == 0x22) {	/* Version 1 with seq */
+	} else if (ver == 1 && (packet->flags & GTP1HDR_F_SEQ)) {	/* Version 1 with seq */
 		packet->gtp1l.h.length = hton16(len - GTP1_HEADER_SIZE_SHORT);
 		packet->gtp1l.h.seq = hton16(seq);
 		if (pdp && (fd == gsn->fd1u))
@@ -580,6 +586,7 @@ int gtp_notification(struct gsn_t *gsn, int version,
 		     struct sockaddr_in *peer, int fd, uint16_t seq)
 {
 
+	uint8_t ver = GTPHDR_F_GET_VER(packet->flags);
 	struct sockaddr_in addr;
 
 	memcpy(&addr, peer, sizeof(addr));
@@ -592,10 +599,10 @@ int gtp_notification(struct gsn_t *gsn, int version,
 	else if (fd == gsn->fd1u)
 		addr.sin_port = htons(GTP1C_PORT);
 
-	if ((packet->flags & 0xe0) == 0x00) {	/* Version 0 */
+	if (ver == 0) {	/* Version 0 */
 		packet->gtp0.h.length = hton16(len - GTP0_HEADER_SIZE);
 		packet->gtp0.h.seq = hton16(seq);
-	} else if ((packet->flags & 0xe2) == 0x22) {	/* Version 1 with seq */
+	} else if (ver == 1 && (packet->flags & GTP1HDR_F_SEQ)) {	/* Version 1 with seq */
 		packet->gtp1l.h.length = hton16(len - GTP1_HEADER_SIZE_SHORT);
 		packet->gtp1l.h.seq = hton16(seq);
 	} else {
@@ -2740,7 +2747,7 @@ int gtp_decaps0(struct gsn_t *gsn)
 		/* GTP 0 messages. If other version message is received we reply that we */
 		/* only support version 0, implying that this is the only version */
 		/* supported on this port */
-		if (((pheader->flags & 0xe0) > 0x00)) {
+		if (GTPHDR_F_GET_VER(pheader->flags) > 0) {
 			gsn->unsup++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status, "Unsupported GTP version\n");
@@ -2881,7 +2888,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 		pheader = (struct gtp1_header_short *)(buffer);
 
 		/* Version must be no larger than GTP 1 */
-		if (((pheader->flags & 0xe0) > 0x20)) {
+		if (GTPHDR_F_GET_VER(pheader->flags) > 1) {
 			gsn->unsup++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status, "Unsupported GTP version\n");
@@ -2894,7 +2901,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 		/* 29.060 is somewhat unclear on this issue. On gsn->fd1c we expect only */
 		/* GTP 1 messages. If GTP 0 message is received we silently discard */
 		/* the message */
-		if (((pheader->flags & 0xe0) < 0x20)) {
+		if (GTPHDR_F_GET_VER(pheader->flags) < 1) {
 			gsn->unsup++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status, "Unsupported GTP version\n");
@@ -2930,7 +2937,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 		/* Check for extension headers */
 		/* TODO: We really should cycle through the headers and determine */
 		/* if any have the comprehension required flag set */
-		if (((pheader->flags & 0x04) != 0x00)) {
+		if (((pheader->flags & GTP1HDR_F_EXT) != 0x00)) {
 			gsn->unsup++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status, "Unsupported extension header\n");
@@ -3057,7 +3064,7 @@ int gtp_decaps1u(struct gsn_t *gsn)
 		pheader = (struct gtp1_header_short *)(buffer);
 
 		/* Version must be no larger than GTP 1 */
-		if (((pheader->flags & 0xe0) > 0x20)) {
+		if (GTPHDR_F_GET_VER(pheader->flags) > 1) {
 			gsn->unsup++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status, "Unsupported GTP version\n");
@@ -3069,7 +3076,7 @@ int gtp_decaps1u(struct gsn_t *gsn)
 		/* 29.060 is somewhat unclear on this issue. On gsn->fd1c we expect only */
 		/* GTP 1 messages. If GTP 0 message is received we silently discard */
 		/* the message */
-		if (((pheader->flags & 0xe0) < 0x20)) {
+		if (GTPHDR_F_GET_VER(pheader->flags) < 1) {
 			gsn->unsup++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status, "Unsupported GTP version\n");
@@ -3105,7 +3112,7 @@ int gtp_decaps1u(struct gsn_t *gsn)
 		/* Check for extension headers */
 		/* TODO: We really should cycle through the headers and determine */
 		/* if any have the comprehension required flag set */
-		if (((pheader->flags & 0x04) != 0x00)) {
+		if (((pheader->flags & GTP1HDR_F_EXT) != 0x00)) {
 			gsn->unsup++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status, "Unsupported extension header\n");
