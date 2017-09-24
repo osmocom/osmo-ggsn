@@ -85,4 +85,6 @@ extern int tun_set_cb_ind(struct tun_t *this,
 
 extern int tun_runscript(struct tun_t *tun, char *script);
 
+int tun_ipv6_linklocal_get(const struct tun_t *tun, struct in6_addr *ia);
+
 #endif /* !_TUN_H */

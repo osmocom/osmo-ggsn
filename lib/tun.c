@@ -748,3 +748,35 @@ int tun_runscript(struct tun_t *tun, char *script)
 	}
 	return 0;
 }
+
+#include <ifaddrs.h>
+
+/* obtain the link-local address of the tun device */
+int tun_ipv6_linklocal_get(const struct tun_t *tun, struct in6_addr *ia)
+{
+	struct ifaddrs *ifaddr, *ifa;
+	static const uint8_t ll_prefix[] = { 0xfe,0x80, 0,0, 0,0, 0,0 };
+
+	if (getifaddrs(&ifaddr) == -1) {
+		return -1;
+	}
+
+	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+		struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) ifa->ifa_addr;
+		if (ifa->ifa_addr == NULL)
+			continue;
+
+		if (ifa->ifa_addr->sa_family != AF_INET6)
+			continue;
+
+		if (strcmp(ifa->ifa_name, tun->devname))
+			continue;
+
+		if (memcmp(sin6->sin6_addr.s6_addr, ll_prefix, sizeof(ll_prefix)))
+			continue;
+
+		*ia = sin6->sin6_addr;
+		return 0;
+	}
+	return -1;
+}

@@ -78,6 +78,9 @@ struct apn_ctx {
 		struct osmo_fd fd;
 	} tun;
 
+	/* ipv6 link-local address */
+	struct in6_addr v6_lladdr;
+
 	struct apn_ctx_ip v4;
 	struct apn_ctx_ip v6;
 };

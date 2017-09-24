@@ -202,6 +202,16 @@ int apn_start(struct apn_ctx *apn)
 				apn->tun.cfg.ipup_script);
 			tun_runscript(apn->tun.tun, apn->tun.cfg.ipup_script);
 		}
+
+		if (apn->cfg.apn_type_mask & (APN_TYPE_IPv6|APN_TYPE_IPv4v6)) {
+			if (tun_ipv6_linklocal_get(apn->tun.tun, &apn->v6_lladdr) < 0) {
+				LOGPAPN(LOGL_ERROR, apn, "Cannot obtain IPv6 link-local address of "
+					"interface: %s\n", strerror(errno));
+				apn_stop(apn, false);
+				return -1;
+			}
+		}
+
 		/* set back-pointer from TUN device to APN */
 		apn->tun.tun->priv = apn;
 		break;
@@ -573,6 +583,11 @@ static int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
 {
 	struct iphdr *iph = (struct iphdr *)pack;
 	struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
+	struct tun_t *tun = (struct tun_t *)pdp->ipif;
+	struct apn_ctx *apn = tun->priv;
+
+	OSMO_ASSERT(tun);
+	OSMO_ASSERT(apn);
 
 	LOGPPDP(LOGL_DEBUG, pdp, "Packet received: forwarding to tun\n");
 
@@ -580,7 +595,7 @@ static int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
 	case 6:
 		/* daddr: all-routers multicast addr */
 		if (IN6_ARE_ADDR_EQUAL(&ip6h->ip6_dst, &all_router_mcast_addr))
-			return handle_router_mcast(pdp->gsn, pdp, pack, len);
+			return handle_router_mcast(pdp->gsn, pdp, &apn->v6_lladdr, pack, len);
 		break;
 	case 4:
 		break;
