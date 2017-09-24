@@ -23,6 +23,10 @@ struct gsn_t;
 #define PDP_MAX 1024		/* Max number of PDP contexts */
 #define PDP_MAXNSAPI 16		/* Max number of NSAPI */
 
+#define PDP_EUA_ORG_IETF	0xF1
+#define PDP_EUA_TYPE_v4		0x21
+#define PDP_EUA_TYPE_v6		0x57
+
 /* GTP Information elements from 29.060 v3.9.0 7.7 Information Elements */
 /* Also covers version 0. Note that version 0 6: QOS Profile was superceded *
  * by 135: QOS Profile in version 1 */

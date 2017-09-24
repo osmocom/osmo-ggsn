@@ -3259,8 +3259,8 @@ int char2ul_t(char *src, struct ul_t dst)
 
 int ipv42eua(struct ul66_t *eua, struct in_addr *src)
 {
-	eua->v[0] = 0xf1;	/* IETF */
-	eua->v[1] = 0x21;	/* IPv4 */
+	eua->v[0] = PDP_EUA_ORG_IETF;
+	eua->v[1] = PDP_EUA_TYPE_v4;
 	if (src) {
 		eua->l = 6;
 		memcpy(&eua->v[2], src, 4);
@@ -3272,7 +3272,7 @@ int ipv42eua(struct ul66_t *eua, struct in_addr *src)
 
 int eua2ipv4(struct in_addr *dst, struct ul66_t *eua)
 {
-	if ((eua->l != 6) || (eua->v[0] != 0xf1) || (eua->v[1] = 0x21))
+	if ((eua->l != 6) || (eua->v[0] != PDP_EUA_ORG_IETF) || (eua->v[1] != PDP_EUA_TYPE_v4))
 		return -1;	/* Not IPv4 address */
 	memcpy(dst, &eua->v[2], 4);
 	return 0;

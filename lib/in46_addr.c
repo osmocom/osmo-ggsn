@@ -10,6 +10,7 @@
  */
 
 #include "../lib/in46_addr.h"
+#include "../gtp/pdp.h"
 
 #include <osmocom/core/utils.h>
 
@@ -201,15 +202,15 @@ int in46a_to_eua(const struct in46_addr *src, struct ul66_t *eua)
 	switch (src->len) {
 	case 4:
 		eua->l = 6;
-		eua->v[0] = 0xf1;	/* IETF */
-		eua->v[1] = 0x21;	/* IPv4 */
+		eua->v[0] = PDP_EUA_ORG_IETF;
+		eua->v[1] = PDP_EUA_TYPE_v4;
 		memcpy(&eua->v[2], &src->v4, 4);	/* Copy a 4 byte address */
 		break;
 	case 8:
 	case 16:
 		eua->l = 18;
-		eua->v[0] = 0xf1;	/* IETF */
-		eua->v[1] = 0x57;	/* IPv6 */
+		eua->v[0] = PDP_EUA_ORG_IETF;
+		eua->v[1] = PDP_EUA_TYPE_v6;
 		memcpy(&eua->v[2], &src->v6, 16);	/* Copy a 16 byte address */
 		break;
 	default:
@@ -230,14 +231,14 @@ int in46a_from_eua(const struct ul66_t *eua, struct in46_addr *dst)
 		return -1;
 
 	switch (eua->v[1]) {
-	case 0x21:
+	case PDP_EUA_TYPE_v4:
 		dst->len = 4;
 		if (eua->l >= 6)
 			memcpy(&dst->v4, &eua->v[2], 4);	/* Copy a 4 byte address */
 		else
 			dst->v4.s_addr = 0;
 		break;
-	case 0x57:
+	case PDP_EUA_TYPE_v6:
 		dst->len = 16;
 		if (eua->l >= 18)
 			memcpy(&dst->v6, &eua->v[2], 16);	/* Copy a 16 byte address */

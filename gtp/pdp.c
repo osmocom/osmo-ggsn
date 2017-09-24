@@ -367,15 +367,15 @@ int pdp_ipget(struct pdp_t **pdp, void* ipif, struct ul66_t *eua) {
 int pdp_ntoeua(struct in_addr *src, struct ul66_t *eua)
 {
 	eua->l = 6;
-	eua->v[0] = 0xf1;	/* IETF */
-	eua->v[1] = 0x21;	/* IPv4 */
+	eua->v[0] = PDP_EUA_ORG_IETF;
+	eua->v[1] = PDP_EUA_TYPE_v4;
 	memcpy(&eua->v[2], src, 4);	/* Copy a 4 byte address */
 	return 0;
 }
 
 int pdp_euaton(struct ul66_t *eua, struct in_addr *dst)
 {
-	if ((eua->l != 6) || (eua->v[0] != 0xf1) || (eua->v[1] != 0x21)) {
+	if ((eua->l != 6) || (eua->v[0] != PDP_EUA_ORG_IETF) || (eua->v[1] != PDP_EUA_TYPE_v4)) {
 		return EOF;
 	}
 	memcpy(dst, &eua->v[2], 4);	/* Copy a 4 byte address */
