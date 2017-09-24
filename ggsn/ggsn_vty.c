@@ -103,6 +103,7 @@ struct apn_ctx *ggsn_find_or_create_apn(struct ggsn_ctx *ggsn, const char *name)
 	apn->ggsn = ggsn;
 	apn->cfg.name = talloc_strdup(apn, name);
 	apn->cfg.shutdown = true;
+	apn->cfg.tx_gpdu_seq = true;
 	INIT_LLIST_HEAD(&apn->cfg.name_list);
 
 	llist_add_tail(&apn->list, &ggsn->apn_list);
@@ -558,6 +559,24 @@ DEFUN(cfg_apn_no_dns, cfg_apn_no_dns_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN(cfg_apn_gpdu_seq, cfg_apn_gpdu_seq_cmd,
+	"g-pdu tx-sequence-numbers",
+	"G-PDU Configuration\n" "Enable transmission of G-PDU sequence numbers\n")
+{
+	struct apn_ctx *apn = (struct apn_ctx *) vty->index;
+	apn->cfg.tx_gpdu_seq = true;
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_apn_no_gpdu_seq, cfg_apn_no_gpdu_seq_cmd,
+	"no g-pdu tx-sequence-numbers",
+	NO_STR "G-PDU Configuration\n" "Disable transmission of G-PDU sequence numbers\n")
+{
+	struct apn_ctx *apn = (struct apn_ctx *) vty->index;
+	apn->cfg.tx_gpdu_seq = false;
+	return CMD_SUCCESS;
+}
+
 DEFUN(cfg_apn_shutdown, cfg_apn_shutdown_cmd,
 	"shutdown",
 	"Put the APN in administrative shut-down\n")
@@ -620,6 +639,9 @@ static void config_write_apn(struct vty *vty, struct apn_ctx *apn)
 		vty_out(vty, "  type-support %s%s", get_value_string(pdp_type_names, (1 << i)),
 			VTY_NEWLINE);
 	}
+
+	if (!apn->cfg.tx_gpdu_seq)
+		vty_out(vty, "  no g-pdu tx-sequence-numbers%s", VTY_NEWLINE);
 
 	/* IPv4 prefixes + DNS */
 	if (apn->v4.cfg.static_prefix.addr.len)
@@ -703,6 +725,8 @@ static void show_one_pdp(struct vty *vty, struct pdp_t *pdp)
 
 	in46a_from_eua(&pdp->eua, &eua46);
 	vty_out(vty, " End-User Address: %s%s", in46a_ntoa(&eua46), VTY_NEWLINE);
+	vty_out(vty, " Transmit GTP Sequence Number for G-PDU: %s%s",
+		pdp->tx_gpdu_seq ? "Yes" : "No", VTY_NEWLINE);
 }
 
 DEFUN(show_pdpctx_imsi, show_pdpctx_imsi_cmd,
@@ -870,6 +894,8 @@ int ggsn_vty_init(void)
 	install_element(APN_NODE, &cfg_apn_no_ip_ifconfig_cmd);
 	install_element(APN_NODE, &cfg_apn_ipv6_ifconfig_cmd);
 	install_element(APN_NODE, &cfg_apn_no_ipv6_ifconfig_cmd);
+	install_element(APN_NODE, &cfg_apn_gpdu_seq_cmd);
+	install_element(APN_NODE, &cfg_apn_no_gpdu_seq_cmd);
 
 	return 0;
 }

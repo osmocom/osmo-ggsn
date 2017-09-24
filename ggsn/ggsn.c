@@ -517,6 +517,9 @@ int create_context_ind(struct pdp_t *pdp)
 
 	process_pco(apn, pdp);
 
+	/* Transmit G-PDU sequence numbers (only) if configured in APN */
+	pdp->tx_gpdu_seq = apn->cfg.tx_gpdu_seq;
+
 	LOGPPDP(LOGL_INFO, pdp, "Successful PDP Context Creation: APN=%s(%s), TEIC=%u, IP=%s\n",
 		name_buf, apn->cfg.name, pdp->teic_own, in46a_ntoa(&member->addr));
 	gtp_create_context_resp(gsn, pdp, GTPCAUSE_ACC_REQ);
