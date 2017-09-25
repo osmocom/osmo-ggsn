@@ -17,6 +17,9 @@
 
 struct gsn_t;
 
+#define LOGPDPX(ss, level, pdp, fmt, args...)				\
+	LOGP(ss, level, "PDP(%s:%u): " fmt, imsi_gtp2str(&(pdp)->imsi), (pdp)->nsapi, ## args)
+
 #define PDP_MAX 1024		/* Max number of PDP contexts */
 #define PDP_MAXNSAPI 16		/* Max number of NSAPI */
 

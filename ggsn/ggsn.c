@@ -83,8 +83,7 @@ struct ul255_t apn;
 #define LOGPGGSN(level, ggsn, fmt, args...)			\
 	LOGP(DGGSN, level, "GGSN(%s): " fmt, (ggsn)->cfg.name, ## args)
 
-#define LOGPPDP(level, pdp, fmt, args...)			\
-	LOGP(DGGSN, level, "PDP(%s:%u): " fmt, imsi_gtp2str(&(pdp)->imsi), (pdp)->nsapi, ## args)
+#define LOGPPDP(level, pdp, fmt, args...) LOGPDPX(DGGSN, level, pdp, fmt, ## args)
 
 static int ggsn_tun_fd_cb(struct osmo_fd *fd, unsigned int what);
 static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len);
