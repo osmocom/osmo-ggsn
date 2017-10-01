@@ -112,9 +112,6 @@ static void pool_close_all_pdp(struct ippool_t *pool)
 
 int apn_stop(struct apn_ctx *apn, bool force)
 {
-	if (!apn->started)
-		return 0;
-
 	LOGPAPN(LOGL_NOTICE, apn, "%sStopping\n", force ? "FORCED " : "");
 	/* check if pools have any active PDP contexts and bail out */
 	pool_close_all_pdp(apn->v4.pool);
