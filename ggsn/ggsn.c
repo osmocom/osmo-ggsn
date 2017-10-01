@@ -125,7 +125,7 @@ int apn_stop(struct apn_ctx *apn, bool force)
 			tun_runscript(apn->tun.tun, apn->tun.cfg.ipdown_script);
 		}
 		/* release tun device */
-		LOGPAPN(LOGL_INFO, apn, "Closing TUN device\n");
+		LOGPAPN(LOGL_INFO, apn, "Closing TUN device %s\n", apn->tun.tun->devname);
 		osmo_fd_unregister(&apn->tun.fd);
 		tun_free(apn->tun.tun);
 		apn->tun.tun = NULL;
