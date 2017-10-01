@@ -451,9 +451,14 @@ int create_context_ind(struct pdp_t *pdp)
 	/* ignore if the APN has not been started */
 	if (!apn->started)
 		apn = NULL;
+
 	/* then try default (if any) */
 	if (!apn)
 		apn = ggsn->cfg.default_apn;
+	/* ignore if the APN has not been started */
+	if (!apn->started)
+		apn = NULL;
+
 	if (!apn) {
 		/* no APN found for what user requested */
 		LOGPPDP(LOGL_NOTICE, pdp, "Unknown APN '%s', rejecting\n", name_buf);
