@@ -186,7 +186,8 @@ int apn_start(struct apn_ctx *apn)
 				in46p_ntoa(&apn->v6.cfg.ifconfig_prefix));
 			if (tun_setaddr(apn->tun.tun, &apn->v6.cfg.ifconfig_prefix.addr, NULL,
 					apn->v6.cfg.ifconfig_prefix.prefixlen)) {
-				LOGPAPN(LOGL_ERROR, apn, "Failed to set tun IPv6 address %s: %s\n",
+				LOGPAPN(LOGL_ERROR, apn, "Failed to set tun IPv6 address %s: %s. "
+					"Ensure you have ipv6 support and not used the disable_ipv6 sysctl?\n",
 					in46p_ntoa(&apn->v6.cfg.ifconfig_prefix), strerror(errno));
 				apn_stop(apn, false);
 				return -1;
