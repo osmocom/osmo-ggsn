@@ -491,6 +491,7 @@ int gtpie_decaps(union gtpie_member *ie[], int version, const void *pack,
 		case GTPIE_TRIGGER_ID:
 		case GTPIE_OMC_ID:
 		case GTPIE_CHARGING_ADDR:
+		case GTPIE_COMMON_FLAGS:
 		case GTPIE_RAT_TYPE:
 		case GTPIE_USER_LOC:
 		case GTPIE_MS_TZ:
@@ -616,6 +617,7 @@ int gtpie_encaps(union gtpie_member *ie[], void *pack, unsigned *len)
 			case GTPIE_TRIGGER_ID:
 			case GTPIE_OMC_ID:
 			case GTPIE_CHARGING_ADDR:
+			case GTPIE_COMMON_FLAGS:
 			case GTPIE_PRIVATE:
 				iesize = 3 + hton16(ie[i]->tlv.l);
 				break;
@@ -722,6 +724,7 @@ int gtpie_encaps2(union gtpie_member ie[], unsigned int size,
 				case GTPIE_TRIGGER_ID:
 				case GTPIE_OMC_ID:
 				case GTPIE_CHARGING_ADDR:
+				case GTPIE_COMMON_FLAGS:
 				case GTPIE_PRIVATE:
 					iesize = 3 + hton16(ie[i].tlv.l);
 					break;
