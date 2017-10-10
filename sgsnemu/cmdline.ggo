@@ -54,6 +54,7 @@ option  "net"          n "Network address for local interface" string no
 option  "defaultroute" - "Create default route"           flag   off
 option  "ipup"         - "Script to run after link-up"    string no
 option  "ipdown"       - "Script to run after link-down"  string no
+option  "tun-device"   - "Name of the local network interface" string dependon="createif" no
 
 option  "pinghost"     - "Ping remote host"               string no
 option  "pingrate"     - "Number of ping req per second"  int default="1" no

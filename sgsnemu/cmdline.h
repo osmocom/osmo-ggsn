@@ -236,6 +236,12 @@ extern "C" {
 			/**< @brief Script to run after link-down original value given at command line.  */
 		const char *ipdown_help;
 			   /**< @brief Script to run after link-down help description.  */
+		char *tun_device_arg;
+				/**< @brief Name of the local network interface.  */
+		char *tun_device_orig;
+				/**< @brief Name of the local network interface original value given at command line.  */
+		const char *tun_device_help;
+			       /**< @brief Name of the local network interface help description.  */
 		char *pinghost_arg;
 			/**< @brief Ping remote host.  */
 		char *pinghost_orig;
@@ -347,6 +353,8 @@ extern "C" {
 				/**< @brief Whether ipup was given.  */
 		unsigned int ipdown_given;
 				/**< @brief Whether ipdown was given.  */
+		unsigned int tun_device_given;
+					/**< @brief Whether tun-device was given.  */
 		unsigned int pinghost_given;
 				/**< @brief Whether pinghost was given.  */
 		unsigned int pingrate_given;

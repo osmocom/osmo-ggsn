@@ -84,6 +84,7 @@ int echoversion = 1;		/* First try this version */
 struct {
 	int debug;		/* Print debug messages */
 	int createif;		/* Create local network interface */
+	char *tun_dev_name;
 	struct in_addr netaddr, destaddr, net;	/* Network interface  */
 	size_t prefixlen;
 	char *ipup, *ipdown;	/* Filename of scripts */
@@ -289,6 +290,8 @@ int process_options(int argc, char **argv)
 		printf("contexts: %d\n", args_info.contexts_arg);
 		printf("timelimit: %d\n", args_info.timelimit_arg);
 		printf("createif: %d\n", args_info.createif_flag);
+		if (args_info.tun_device_arg)
+			printf("tun-device: %d\n", args_info.tun_device_arg);
 		if (args_info.ipup_arg)
 			printf("ipup: %s\n", args_info.ipup_arg);
 		if (args_info.ipdown_arg)
@@ -345,6 +348,8 @@ int process_options(int argc, char **argv)
 			printf("contexts: %d\n", args_info.contexts_arg);
 			printf("timelimit: %d\n", args_info.timelimit_arg);
 			printf("createif: %d\n", args_info.createif_flag);
+			if (args_info.tun_device_arg)
+				printf("tun-device: %d\n", args_info.tun_device_arg);
 			if (args_info.ipup_arg)
 				printf("ipup: %s\n", args_info.ipup_arg);
 			if (args_info.ipdown_arg)
@@ -863,6 +868,7 @@ int process_options(int argc, char **argv)
 
 	/* createif */
 	options.createif = args_info.createif_flag;
+	options.tun_dev_name = args_info.tun_device_arg;
 
 	/* net                                                          */
 	/* Store net as in_addr net and mask                            */
@@ -1525,7 +1531,7 @@ int main(int argc, char **argv)
 	if (options.createif) {
 		printf("Setting up interface\n");
 		/* Create a tunnel interface */
-		if (tun_new((struct tun_t **)&tun, NULL)) {
+		if (tun_new((struct tun_t **)&tun, options.tun_dev_name)) {
 			SYS_ERR(DSGSN, LOGL_ERROR, 0,
 				"Failed to create tun");
 			exit(1);
