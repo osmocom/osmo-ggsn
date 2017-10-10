@@ -993,16 +993,12 @@ static char *proc_ipv6_conf_read(const char *dev, const char *file)
 
 static char *print_ipprot(int t)
 {
-	switch (t) {
-	case 1:
-		return "ICMP";
-	case 6:
-		return "TCP";
-	case 17:
-		return "UDP";
-	default:
+	struct protoent *pe = getprotobynumber(t);
+
+	if (!pe)
 		return "Unknown";
-	};
+	else
+		return pe->p_name;
 }
 
 static char *print_icmptype(int t)
