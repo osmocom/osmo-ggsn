@@ -968,6 +968,42 @@ int encaps_printf(struct pdp_t *pdp, void *pack, unsigned len)
 	return 0;
 }
 
+/* read a single value from a /procc file, up to 255 bytes, callee-allocated */
+static char *proc_read(const char *path)
+{
+	char *ret = NULL;
+	FILE *f;
+
+	f = fopen(path, "r");
+	if (!f)
+		return NULL;
+
+	ret = malloc(256);
+	if (!ret)
+		goto out;
+
+	if (!fgets(ret, 256, f)) {
+		free(ret);
+		ret = NULL;
+		goto out;
+	}
+	return ret;
+
+out:
+	fclose(f);
+	return ret;
+}
+
+/* Read value of a /proc/sys/net/ipv6/conf file for given device.
+ * Memory is dynamically allocated, caller must free it later. */
+static char *proc_ipv6_conf_read(const char *dev, const char *file)
+{
+	const char *fmt = "/proc/sys/net/ipv6/conf/%s/%s";
+	char path[strlen(fmt) + strlen(dev) + strlen(file)];
+	snprintf(path, sizeof(path), fmt, dev, file);
+	return proc_read(path);
+}
+
 char *print_ipprot(int t)
 {
 	switch (t) {
@@ -1423,6 +1459,27 @@ int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 		}
 		if (options.ipup)
 			tun_runscript(tun, options.ipup);
+	}
+
+	/* now that ip-up has been executed, check if we are configured to
+	 * accept router advertisements */
+	if (options.createif && options.pdp_type == PDP_EUA_TYPE_v6) {
+		char *accept_ra, *forwarding;
+
+		accept_ra = proc_ipv6_conf_read(tun->devname, "accept_ra");
+		forwarding = proc_ipv6_conf_read(tun->devname, "forwarding");
+		if (!accept_ra || !forwarding)
+			printf("Could not open proc file for %s ?!?\n", tun->devname);
+		else {
+			if (!strcmp(accept_ra, "0") ||
+			    (!strcmp(forwarding, "1") && !strcmp(accept_ra, "1"))) {
+				printf("%s is %s, i.e. your tun device is not configured to accept "
+					"router advertisements; SLAAC will not suceed, please "
+					"fix your setup!\n");
+			}
+			free(accept_ra);
+			free(forwarding);
+		}
 	}
 
 	ipset((struct iphash_t *)pdp->peer, &addr);
