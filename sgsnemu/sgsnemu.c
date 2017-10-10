@@ -161,13 +161,13 @@ int tsum = 0;
 int pingseq = 0;		/* Ping sequence counter */
 struct timeval firstping;
 
-void signal_handler(int signo)
+static void signal_handler(int signo)
 {
 	if (state == 2)
 		state = 3;  /* Tell main loop to finish. */
 }
 
-int ipset(struct iphash_t *ipaddr, struct in46_addr *addr)
+static int ipset(struct iphash_t *ipaddr, struct in46_addr *addr)
 {
 	int hash = ippool_hash(addr) % MAXCONTEXTS;
 	struct iphash_t *h;
@@ -183,7 +183,7 @@ int ipset(struct iphash_t *ipaddr, struct in46_addr *addr)
 	return 0;
 }
 
-int ipdel(struct iphash_t *ipaddr)
+static int ipdel(struct iphash_t *ipaddr)
 {
 	int hash = ippool_hash(&ipaddr->addr) % MAXCONTEXTS;
 	struct iphash_t *h;
@@ -201,7 +201,7 @@ int ipdel(struct iphash_t *ipaddr)
 	return EOF;		/* End of linked list and not found */
 }
 
-int ipget(struct iphash_t **ipaddr, struct in46_addr *addr)
+static int ipget(struct iphash_t **ipaddr, struct in46_addr *addr)
 {
 	int hash = ippool_hash(addr) % MAXCONTEXTS;
 	struct iphash_t *h;
@@ -215,7 +215,7 @@ int ipget(struct iphash_t **ipaddr, struct in46_addr *addr)
 }
 
 /* Used to write process ID to file. Assume someone else will delete */
-void log_pid(char *pidfile)
+static void log_pid(char *pidfile)
 {
 	FILE *file;
 	mode_t oldmask;
@@ -229,7 +229,7 @@ void log_pid(char *pidfile)
 	fclose(file);
 }
 
-int process_options(int argc, char **argv)
+static int process_options(int argc, char **argv)
 {
 	/* gengeopt declarations */
 	struct gengetopt_args_info args_info;
@@ -955,7 +955,7 @@ int process_options(int argc, char **argv)
 
 }
 
-int encaps_printf(struct pdp_t *pdp, void *pack, unsigned len)
+static int encaps_printf(struct pdp_t *pdp, void *pack, unsigned len)
 {
 	unsigned int i;
 	printf("The packet looks like this:\n");
@@ -1004,7 +1004,7 @@ static char *proc_ipv6_conf_read(const char *dev, const char *file)
 	return proc_read(path);
 }
 
-char *print_ipprot(int t)
+static char *print_ipprot(int t)
 {
 	switch (t) {
 	case 1:
@@ -1018,7 +1018,7 @@ char *print_ipprot(int t)
 	};
 }
 
-char *print_icmptype(int t)
+static char *print_icmptype(int t)
 {
 	static char *ttab[] = {
 		"Echo Reply",
@@ -1044,7 +1044,7 @@ char *print_icmptype(int t)
 	return (ttab[t]);
 }
 
-int msisdn_add(struct ul16_t *src, struct ul16_t *dst, int add)
+static int msisdn_add(struct ul16_t *src, struct ul16_t *dst, int add)
 {
 	unsigned int n;
 	uint64_t i64 = 0;
@@ -1088,7 +1088,7 @@ int msisdn_add(struct ul16_t *src, struct ul16_t *dst, int add)
 
 }
 
-int imsi_add(uint64_t src, uint64_t * dst, int add)
+static int imsi_add(uint64_t src, uint64_t * dst, int add)
 {
 	/* TODO: big endian / small endian ??? */
 	uint64_t i64 = 0;
@@ -1123,7 +1123,7 @@ int imsi_add(uint64_t src, uint64_t * dst, int add)
 }
 
 /* Calculate time left until we have to send off next ping packet */
-int ping_timeout(struct timeval *tp)
+static int ping_timeout(struct timeval *tp)
 {
 	struct timezone tz;
 	struct timeval tv;
@@ -1145,7 +1145,7 @@ int ping_timeout(struct timeval *tp)
 }
 
 /* Print out statistics when at the end of ping sequence */
-int ping_finish()
+static int ping_finish()
 {
 	struct timezone tz;
 	struct timeval tv;
@@ -1178,7 +1178,7 @@ int ping_finish()
 }
 
 /* Handle a received ping packet. Print out line and update statistics. */
-int encaps_ping(struct pdp_t *pdp, void *pack, unsigned len)
+static int encaps_ping(struct pdp_t *pdp, void *pack, unsigned len)
 {
 	struct timezone tz;
 	struct timeval tv;
@@ -1247,8 +1247,8 @@ int encaps_ping(struct pdp_t *pdp, void *pack, unsigned len)
 }
 
 /* Create a new ping packet and send it off to peer. */
-int create_ping(void *gsn, struct pdp_t *pdp,
-		struct in_addr *dst, int seq, unsigned int datasize)
+static int create_ping(void *gsn, struct pdp_t *pdp,
+			struct in_addr *dst, int seq, unsigned int datasize)
 {
 
 	struct ip_ping pack;
@@ -1326,7 +1326,7 @@ int create_ping(void *gsn, struct pdp_t *pdp,
 	return gtp_data_req(gsn, pdp, &pack, 28 + datasize);
 }
 
-int delete_context(struct pdp_t *pdp)
+static int delete_context(struct pdp_t *pdp)
 {
 
 	if (tun && options.ipdown)
@@ -1345,7 +1345,7 @@ int delete_context(struct pdp_t *pdp)
 static const uint8_t ll_prefix[] = { 0xfe,0x80, 0,0, 0,0, 0,0 };
 
 /* Callback for receiving messages from tun */
-int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
+static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 {
 	struct iphash_t *ipm;
 	struct in46_addr src;
@@ -1389,7 +1389,7 @@ int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 	return 0;
 }
 
-int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
+static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 {
 	struct in46_addr addr;
 
@@ -1489,14 +1489,14 @@ int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 	return 0;
 }
 
-int delete_pdp_conf(struct pdp_t *pdp, int cause)
+static int delete_pdp_conf(struct pdp_t *pdp, int cause)
 {
 	printf("Received delete PDP context response. Cause value: %d\n",
 	       cause);
 	return 0;
 }
 
-int echo_conf(int recovery)
+static int echo_conf(int recovery)
 {
 
 	if (recovery < 0) {
@@ -1518,7 +1518,7 @@ int echo_conf(int recovery)
 	return 0;
 }
 
-int conf(int type, int cause, struct pdp_t *pdp, void *cbp)
+static int conf(int type, int cause, struct pdp_t *pdp, void *cbp)
 {
 	/* if (cause < 0) return 0; Some error occurred. We don't care */
 	switch (type) {
@@ -1535,7 +1535,7 @@ int conf(int type, int cause, struct pdp_t *pdp, void *cbp)
 	}
 }
 
-int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
+static int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
 {
 	/*  printf("encaps_tun. Packet received: forwarding to tun\n"); */
 	return tun_encaps((struct tun_t *)pdp->ipif, pack, len);
