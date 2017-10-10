@@ -955,19 +955,6 @@ static int process_options(int argc, char **argv)
 
 }
 
-static int encaps_printf(struct pdp_t *pdp, void *pack, unsigned len)
-{
-	unsigned int i;
-	printf("The packet looks like this:\n");
-	for (i = 0; i < len; i++) {
-		printf("%02x ", (unsigned char)*(char *)(pack + i));
-		if (!((i + 1) % 16))
-			printf("\n");
-	};
-	printf("\n");
-	return 0;
-}
-
 /* read a single value from a /procc file, up to 255 bytes, callee-allocated */
 static char *proc_read(const char *path)
 {
