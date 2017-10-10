@@ -676,9 +676,57 @@ cmdline_parser_required2(struct gengetopt_args_info *args_info,
 	/* checks for required options */
 
 	/* checks for dependences among options */
+	if (args_info->net_given && !args_info->createif_given) {
+		fprintf(stderr,
+			"%s: '--net' ('-n') option depends on option 'createif'%s\n",
+			prog_name, (additional_error ? additional_error : ""));
+		error_occurred = 1;
+	}
+	if (args_info->defaultroute_given && !args_info->createif_given) {
+		fprintf(stderr,
+			"%s: '--defaultroute' option depends on option 'createif'%s\n",
+			prog_name, (additional_error ? additional_error : ""));
+		error_occurred = 1;
+	}
+	if (args_info->ipup_given && !args_info->createif_given) {
+		fprintf(stderr,
+			"%s: '--ipup' option depends on option 'createif'%s\n",
+			prog_name, (additional_error ? additional_error : ""));
+		error_occurred = 1;
+	}
+	if (args_info->ipdown_given && !args_info->createif_given) {
+		fprintf(stderr,
+			"%s: '--ipdown' option depends on option 'createif'%s\n",
+			prog_name, (additional_error ? additional_error : ""));
+		error_occurred = 1;
+	}
 	if (args_info->tun_device_given && !args_info->createif_given) {
 		fprintf(stderr,
 			"%s: '--tun-device' option depends on option 'createif'%s\n",
+			prog_name, (additional_error ? additional_error : ""));
+		error_occurred = 1;
+	}
+	if (args_info->pingrate_given && !args_info->pinghost_given) {
+		fprintf(stderr,
+			"%s: '--pingrate' option depends on option 'pinghost'%s\n",
+			prog_name, (additional_error ? additional_error : ""));
+		error_occurred = 1;
+	}
+	if (args_info->pingsize_given && !args_info->pinghost_given) {
+		fprintf(stderr,
+			"%s: '--pingsize' option depends on option 'pinghost'%s\n",
+			prog_name, (additional_error ? additional_error : ""));
+		error_occurred = 1;
+	}
+	if (args_info->pingcount_given && !args_info->pinghost_given) {
+		fprintf(stderr,
+			"%s: '--pingcount' option depends on option 'pinghost'%s\n",
+			prog_name, (additional_error ? additional_error : ""));
+		error_occurred = 1;
+	}
+	if (args_info->pingquiet_given && !args_info->pinghost_given) {
+		fprintf(stderr,
+			"%s: '--pingquiet' option depends on option 'pinghost'%s\n",
 			prog_name, (additional_error ? additional_error : ""));
 		error_occurred = 1;
 	}
