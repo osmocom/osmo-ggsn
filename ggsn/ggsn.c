@@ -449,14 +449,14 @@ int create_context_ind(struct pdp_t *pdp)
 	/* First find an exact APN name match */
 	apn = ggsn_find_apn(ggsn, name_buf);
 	/* ignore if the APN has not been started */
-	if (!apn->started)
+	if (apn && !apn->started)
 		apn = NULL;
 
 	/* then try default (if any) */
 	if (!apn)
 		apn = ggsn->cfg.default_apn;
 	/* ignore if the APN has not been started */
-	if (!apn->started)
+	if (apn && !apn->started)
 		apn = NULL;
 
 	if (!apn) {
