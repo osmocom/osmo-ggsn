@@ -1,3 +1,4 @@
+# autotools
 Makefile
 Makefile.in
 aclocal.m4
@@ -17,34 +18,51 @@ ltmain.sh
 missing
 osmo-ggsn.spec
 stamp-h1
-doc/Makefile.in
-ggsn/Makefile.in
-gtp/Makefile.in
-sgsnemu/Makefile.in
+INSTALL
+m4/
+Makefile
+osmo-ggsn-*.tar*
+.version
+.tarball-version
+
+# debian
 debian/osmo-ggsn/
 debian/*.debhelper
-debian/libgtp/
+debian/libgtp1
+debian/osmo-ggsn-dbg
 debian/*.log
-INSTALL
 debian/autoreconf.*
 debian/*.substvars
 debian/tmp/
-sgsnemu/sgsnemu
 debian/files
 debian/libgtp-dev/
+
+# programs / libraries
+sgsnemu/sgsnemu
 libgtp.pc
 ggsn/osmo-ggsn
-m4/
-*.swp
+
+# compiler results
 *.o
 *.a
 *.la
 *.lo
+*.pyc
+.deps
+.libs
+
+# misc
+*.swp
+.dirstamp
+.deps
 *.orig
+*.new
 *.rej
-*/.deps
-*/.libs
-*/Makefile
+*~
+osmo-ggsn.cfg
+sgsnemu.pid
+gsn_restart
+
 # testsuite
 tests/atconfig
 tests/*/*_test
