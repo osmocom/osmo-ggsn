@@ -246,26 +246,62 @@ OsmoGGSN(config-ggsn-apn)# shutdown <5>
 
 It's possible to run OsmoGGSN without root privileges if the tun devices are already configured.
 
-.Example: device config via systemd-networkd using ggsn.netdev
+The interface creation + configuration must then happen before osmo-ggsn starting up.  This can be
+achieved by means such as
+
+* a custom shell script run as root before starting osmo-ggsn (e.g. as init script)
+* systemd .netdev and .network files
+
+==== Manual TUN device creation / configuration
+
+If you chose to go for custom shell/init scripts, you may use the `ip` program which is the standard
+tool for network interface configuration on Linux, part of the `iproute2` package.  In order to
+create a tun device, you must call it like this:
+
+.Example: iproute2 command to create a tun device
+----
+# ip tuntap add dev apn0 mode tun user username group groupname
+----
+
+Where _username_ and _groupname_ correspond to the User and Group that will have ownership over the
+device, i.e. the privileges which you intend to run osmo-ggsn under, and _apn0_ will be the
+name of the network device created.  After creating the interface, you can configure its addresses
+using standard means like `ip addr add` or your distribution-specific utilities/tools.
+
+
+==== systemd based TUN device creation+configuration
+
+If you want to have systemd take care of creating and configuring a tun device for you,
+you can use the below example config files.
+
+.Example: device config via systemd-networkd using apn0.netdev
 ----
 [NetDev]
-Name=ggsn
+Name=apn0 <1>
 Kind=tun
 
 [Tun]
-User=username
-Group=username
+User=username <2>
+Group=username <3>
 ----
+<1> The network interface name of the newly-created device
+<2> The username under which you will run OsmoGGSN
+<3> The group name under which you will run OsmoGGSN
 
 .Example: network settings via systemd-networkd using ggsn.network
 ----
 [Match]
-Name=ggsn
+Name=apn0 <1>
 
 [Network]
-Address=192.168.7.1
-IPMasquerade=yes
+Address=192.168.7.1 <2>
+IPMasquerade=yes <3>
 ----
+<1> The netowrk device name, which must match the one in the apn0.netdev unit file above
+<2> The local IP address configured on the device
+<3> Requesting systemd to configure IP masquerading for this interface.  Depending on your needs,
+    You may not want this if you have proper end-to-end routing set up, and want to have transparent
+    inbound IP access to your GPRS-attached devices.
 
 The pair of the configuration files above allows you to create and configure tun device which can be
 used by OsmoGGSN as follows.
@@ -277,7 +313,7 @@ ggsn ggsn0
  gtp bind-ip 127.0.0.6
  apn internet
   gtpu-mode tun
-  tun-device ggsn
+  tun-device apn0
   type-support v4
   ip prefix dynamic 192.168.7.0/24
   ip dns 0 192.168.100.1
