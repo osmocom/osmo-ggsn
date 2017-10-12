@@ -1,0 +1,17 @@
+Testing in46a_to_af()
+Testing in46a_to_sas()
+Testing in46a_ntop()
+res = UNDEFINED
+res = UNDEFINED
+res = 1.2.3.4
+res = 102:304:506:708:90a:b0c:d0e:f10
+in46p_ntoa() returns 16.32.48.0/24
+Testing in46a_equal()
+Testing in46a_within_mask()
+in46a_within_mask(10.11.12.13, 10.11.12.13, 32) = 1
+in46a_within_mask(10.11.12.13, 10.11.12.12, 30) = 1
+in46a_within_mask(10.11.12.13, 10.8.0.0, 13) = 1
+in46a_within_mask(10.11.12.14, 10.11.12.13, 32) = 0
+in46a_within_mask(10.11.12.14, 10.11.12.12, 30) = 1
+testing in46a_to_eua()
+Testing in46a_from_eua()

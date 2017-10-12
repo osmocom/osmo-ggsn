@@ -7,3 +7,9 @@ cat $abs_srcdir/lib/ippool_test.ok > expout
 cat $abs_srcdir/lib/ippool_test.err > experr
 AT_CHECK([$abs_top_builddir/tests/lib/ippool_test], [], [expout], [experr])
 AT_CLEANUP
+
+AT_SETUP([in46a])
+AT_KEYWORDS([in46a])
+cat $abs_srcdir/lib/in46a_test.ok > expout
+AT_CHECK([$abs_top_builddir/tests/lib/in46a_test], [], [expout], [])
+AT_CLEANUP
