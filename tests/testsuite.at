@@ -1,0 +1,9 @@
+AT_INIT
+AT_BANNER([Regression tests.])
+
+AT_SETUP([ippool])
+AT_KEYWORDS([ippool])
+cat $abs_srcdir/lib/ippool_test.ok > expout
+cat $abs_srcdir/lib/ippool_test.err > experr
+AT_CHECK([$abs_top_builddir/tests/lib/ippool_test], [], [expout], [experr])
+AT_CLEANUP

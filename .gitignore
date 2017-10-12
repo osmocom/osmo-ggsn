@@ -45,3 +45,9 @@ m4/
 */.deps
 */.libs
 */Makefile
+# testsuite
+tests/atconfig
+tests/*/*_test
+tests/testsuite
+tests/testsuite.log
+tests/package.m4
