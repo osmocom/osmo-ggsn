@@ -7,6 +7,7 @@ AM_CONFIG_HEADER([config.h])
 dnl *This* is the root dir, even if an install-sh exists in ../ or ../../
 AC_CONFIG_AUX_DIR([.])
 
+AC_CONFIG_TESTDIR(tests)
 AC_CANONICAL_SYSTEM
 
 dnl kernel style compile messages
@@ -149,6 +150,7 @@ AC_CONFIG_FILES([Makefile
                  po/Makefile
                  sgsnemu/Makefile
                  tests/Makefile
+                 tests/lib/Makefile
                  libgtp.pc
                  osmo-ggsn.spec])
 AC_OUTPUT
