@@ -776,7 +776,9 @@ int tun_ipv6_linklocal_get(const struct tun_t *tun, struct in6_addr *ia)
 			continue;
 
 		*ia = sin6->sin6_addr;
+		freeifaddrs(ifaddr);
 		return 0;
 	}
+	freeifaddrs(ifaddr);
 	return -1;
 }
