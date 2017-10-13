@@ -7,7 +7,7 @@
  * General Public License Version 2, provided that the above copyright
  * notice and this permission notice is included in all copies or
  * substantial portions of the software.
- * 
+ *
  */
 
 #include <sys/types.h>
@@ -374,7 +374,7 @@ int ippool_newip(struct ippool_t *this, struct ippoolm_t **member,
 	uint32_t hash;
 
 	/* If static:
-	 *   Look in dynaddr. 
+	 *   Look in dynaddr.
 	 *     If found remove from firstdyn/lastdyn linked list.
 	 *   Else allocate from stataddr.
 	 *    Remove from firststat/laststat linked list.

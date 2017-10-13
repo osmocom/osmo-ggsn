@@ -1,12 +1,12 @@
-/* 
+/*
  * IP address pool functions.
  * Copyright (C) 2003, 2004 Mondru AB.
- * 
+ *
  * The contents of this file may be used under the terms of the GNU
  * General Public License Version 2, provided that the above copyright
  * notice and this permission notice is included in all copies or
  * substantial portions of the software.
- * 
+ *
  */
 
 #ifndef _IPPOOL_H
@@ -23,7 +23,7 @@
    When initialising a new address pool it should be possible to pass
    a string of CIDR format networks: "10.0.0.0/24 10.15.0.0/20" would
    translate to 256 addresses starting at 10.0.0.0 and 1024 addresses
-   starting at 10.15.0.0. 
+   starting at 10.15.0.0.
 
    The above also applies to IPv6 which can be specified as described
    in RFC2373.
