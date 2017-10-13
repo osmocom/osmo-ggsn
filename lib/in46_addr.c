@@ -6,7 +6,7 @@
  * General Public License Version 2, provided that the above copyright
  * notice and this permission notice is included in all copies or
  * substantial portions of the software.
- * 
+ *
  */
 
 #include "../lib/in46_addr.h"
