@@ -221,9 +221,9 @@ struct tlv2 {
 } __attribute__ ((packed));
 
 extern int gtpie_tlv(void *p, unsigned int *length, unsigned int size,
-		     uint8_t t, int l, void *v);
+		     uint8_t t, int l, const void *v);
 extern int gtpie_tv0(void *p, unsigned int *length, unsigned int size,
-		     uint8_t t, int l, uint8_t * v);
+		     uint8_t t, int l, const uint8_t * v);
 extern int gtpie_tv1(void *p, unsigned int *length, unsigned int size,
 		     uint8_t t, uint8_t v);
 extern int gtpie_tv2(void *p, unsigned int *length, unsigned int size,

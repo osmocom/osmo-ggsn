@@ -40,7 +40,7 @@
 #include "gtpie.h"
 
 int gtpie_tlv(void *p, unsigned int *length, unsigned int size, uint8_t t,
-	      int l, void *v)
+	      int l, const void *v)
 {
 	if ((*length + 3 + l) >= size)
 		return 1;
@@ -52,7 +52,7 @@ int gtpie_tlv(void *p, unsigned int *length, unsigned int size, uint8_t t,
 }
 
 int gtpie_tv0(void *p, unsigned int *length, unsigned int size, uint8_t t,
-	      int l, uint8_t * v)
+	      int l, const uint8_t * v)
 {
 	if ((*length + 1 + l) >= size)
 		return 1;
