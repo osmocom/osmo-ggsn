@@ -1,0 +1,6 @@
+Testing in46a_to_af()
+Testing in46a_ntop()
+res = UNDEFINED
+res = UNDEFINED
+res = 1.2.3.4
+in46p_ntoa() returns 16.32.48.0/24
