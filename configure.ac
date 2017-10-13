@@ -151,6 +151,7 @@ AC_CONFIG_FILES([Makefile
                  sgsnemu/Makefile
                  tests/Makefile
                  tests/lib/Makefile
+                 tests/gtp/Makefile
                  libgtp.pc
                  osmo-ggsn.spec])
 AC_OUTPUT
