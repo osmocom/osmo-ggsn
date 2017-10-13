@@ -304,13 +304,13 @@ int gtpie_gettv8(union gtpie_member *ie[], int type, int instance,
  *  \param[in] pack Pointer to raw GTP packet (payload part)
  *  \param[in] len Length of \a pack in bytes
  *  \returns 0 on sucess; EOF in case IE not found */
-int gtpie_decaps(union gtpie_member *ie[], int version, void *pack,
+int gtpie_decaps(union gtpie_member *ie[], int version, const void *pack,
 		 unsigned len)
 {
 	int i;
 	int j = 0;
-	unsigned char *p;
-	unsigned char *end;
+	const unsigned char *p;
+	const unsigned char *end;
 
 	end = (unsigned char *)pack + len;
 	p = pack;

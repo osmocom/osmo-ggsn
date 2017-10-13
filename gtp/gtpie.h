@@ -248,7 +248,7 @@ extern int gtpie_gettv8(union gtpie_member *ie[], int type, int instance,
 			uint64_t * dst);
 
 extern int gtpie_decaps(union gtpie_member *ie[], int version,
-			void *pack, unsigned len);
+			const void *pack, unsigned len);
 extern int gtpie_encaps(union gtpie_member *ie[], void *pack, unsigned *len);
 extern int gtpie_encaps2(union gtpie_member ie[], unsigned int size,
 			 void *pack, unsigned *len);
