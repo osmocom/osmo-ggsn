@@ -39,6 +39,14 @@
 
 #include "gtpie.h"
 
+/*! Encode a TLV type Information Element.
+ *  \param[inout] p Pointer to output packet to which IE is appended
+ *  \param[inout] length Up to which byte length is \a p used/filled
+ *  \param[in] size Total size of \a p in bytes
+ *  \param[in] t Tag / Information Element Identifier
+ *  \param[in] l Length of value \a v in bytes
+ *  \param[in] v Pointer to input value
+ *  \returns 0 on success, 1 on error */
 int gtpie_tlv(void *p, unsigned int *length, unsigned int size, uint8_t t,
 	      int l, const void *v)
 {
@@ -51,6 +59,14 @@ int gtpie_tlv(void *p, unsigned int *length, unsigned int size, uint8_t t,
 	return 0;
 }
 
+/*! Encode a TV0 (Tag + value) type Information Element.
+ *  \param[inout] p Pointer to output packet to which IE is appended
+ *  \param[inout] length Up to which byte length is \a p used/filled
+ *  \param[in] size Total size of \a p in bytes
+ *  \param[in] t Tag / Information Element Identifier
+ *  \param[in] l Length of value \a v in bytes
+ *  \param[in] v Pointer to input value
+ *  \returns 0 on success, 1 on error */
 int gtpie_tv0(void *p, unsigned int *length, unsigned int size, uint8_t t,
 	      int l, const uint8_t * v)
 {
@@ -62,6 +78,13 @@ int gtpie_tv0(void *p, unsigned int *length, unsigned int size, uint8_t t,
 	return 0;
 }
 
+/*! Encode a TV1 (Tag + 8bit value) type Information Element.
+ *  \param[inout] p Pointer to output packet to which IE is appended
+ *  \param[inout] length Up to which byte length is \a p used/filled
+ *  \param[in] size Total size of \a p in bytes
+ *  \param[in] t Tag / Information Element Identifier
+ *  \param[in] v Input value
+ *  \returns 0 on success, 1 on error */
 int gtpie_tv1(void *p, unsigned int *length, unsigned int size, uint8_t t,
 	      uint8_t v)
 {
@@ -73,6 +96,13 @@ int gtpie_tv1(void *p, unsigned int *length, unsigned int size, uint8_t t,
 	return 0;
 }
 
+/*! Encode a TV2 (Tag + 16bit value) type Information Element.
+ *  \param[inout] p Pointer to output packet to which IE is appended
+ *  \param[inout] length Up to which byte length is \a p used/filled
+ *  \param[in] size Total size of \a p in bytes
+ *  \param[in] t Tag / Information Element Identifier
+ *  \param[in] v Input value
+ *  \returns 0 on success, 1 on error */
 int gtpie_tv2(void *p, unsigned int *length, unsigned int size, uint8_t t,
 	      uint16_t v)
 {
@@ -84,6 +114,13 @@ int gtpie_tv2(void *p, unsigned int *length, unsigned int size, uint8_t t,
 	return 0;
 }
 
+/*! Encode a TV4 (Tag + 32bit value) type Information Element.
+ *  \param[inout] p Pointer to output packet to which IE is appended
+ *  \param[inout] length Up to which byte length is \a p used/filled
+ *  \param[in] size Total size of \a p in bytes
+ *  \param[in] t Tag / Information Element Identifier
+ *  \param[in] v Input value
+ *  \returns 0 on success, 1 on error */
 int gtpie_tv4(void *p, unsigned int *length, unsigned int size, uint8_t t,
 	      uint32_t v)
 {
@@ -95,6 +132,13 @@ int gtpie_tv4(void *p, unsigned int *length, unsigned int size, uint8_t t,
 	return 0;
 }
 
+/*! Encode a TV8 (Tag + 64bit value) type Information Element.
+ *  \param[inout] p Pointer to output packet to which IE is appended
+ *  \param[inout] length Up to which byte length is \a p used/filled
+ *  \param[in] size Total size of \a p in bytes
+ *  \param[in] t Tag / Information Element Identifier
+ *  \param[in] v Input value
+ *  \returns 0 on success, 1 on error */
 int gtpie_tv8(void *p, unsigned int *length, unsigned int size, uint8_t t,
 	      uint64_t v)
 {
@@ -106,6 +150,11 @@ int gtpie_tv8(void *p, unsigned int *length, unsigned int size, uint8_t t,
 	return 0;
 }
 
+/*! Obtain a GTP IE for a given tag/IEI from a list/array.
+ *  \param[in] ie Array of GTPIE
+ *  \param[in] type Tag/IEI for which we're looking
+ *  \param[in] instance Instance (number of occurence) of this IEI
+ *  \returns index into \a ie on success; -1 if not found */
 int gtpie_getie(union gtpie_member *ie[], int type, int instance)
 {
 	int j;
@@ -118,6 +167,11 @@ int gtpie_getie(union gtpie_member *ie[], int type, int instance)
 	return -1;
 }
 
+/*! Determine if IE for a given tag/IEI exists in a list/array.
+ *  \param[in] ie Array of GTPIE
+ *  \param[in] type Tag/IEI for which we're looking
+ *  \param[in] instance Instance (number of occurence) of this IEI
+ *  \returns 1 if IEI instance present in \a ie; 0 if not */
 int gtpie_exist(union gtpie_member *ie[], int type, int instance)
 {
 	int j;
@@ -130,6 +184,14 @@ int gtpie_exist(union gtpie_member *ie[], int type, int instance)
 	return 0;
 }
 
+/*! Obtain Value of TLV-type IE for a given tag/IEI from a list/array.
+ *  \param[in] ie Array of GTPIE
+ *  \param[in] type Tag/IEI for which we're looking
+ *  \param[in] instance Instance (number of occurence) of this IEI
+ *  \param[out] length Length of IE
+ *  \param[inout] dst Caller-allocated buffer where to store value
+ *  \param[in] size Size of \a dst in bytes
+ *  \returns 0 on sucess; EOF in case value is larger than \a size */
 int gtpie_gettlv(union gtpie_member *ie[], int type, int instance,
 		 unsigned int *length, void *dst, unsigned int size)
 {
@@ -145,6 +207,13 @@ int gtpie_gettlv(union gtpie_member *ie[], int type, int instance,
 	return 0;
 }
 
+/*! Obtain Value of TV0-type IE for a given tag/IEI from a list/array.
+ *  \param[in] ie Array of GTPIE
+ *  \param[in] type Tag/IEI for which we're looking
+ *  \param[in] instance Instance (number of occurence) of this IEI
+ *  \param[inout] dst Caller-allocated buffer where to store value
+ *  \param[in] size Size of value in bytes
+ *  \returns 0 on sucess; EOF in case IE not found */
 int gtpie_gettv0(union gtpie_member *ie[], int type, int instance,
 		 void *dst, unsigned int size)
 {
@@ -157,6 +226,12 @@ int gtpie_gettv0(union gtpie_member *ie[], int type, int instance,
 	return 0;
 }
 
+/*! Obtain Value of TV1-type IE for a given tag/IEI from a list/array.
+ *  \param[in] ie Array of GTPIE
+ *  \param[in] type Tag/IEI for which we're looking
+ *  \param[in] instance Instance (number of occurence) of this IEI
+ *  \param[inout] dst Caller-allocated buffer where to store value
+ *  \returns 0 on sucess; EOF in case IE not found */
 int gtpie_gettv1(union gtpie_member *ie[], int type, int instance,
 		 uint8_t * dst)
 {
@@ -169,6 +244,12 @@ int gtpie_gettv1(union gtpie_member *ie[], int type, int instance,
 	return 0;
 }
 
+/*! Obtain Value of TV2-type IE for a given tag/IEI from a list/array.
+ *  \param[in] ie Array of GTPIE
+ *  \param[in] type Tag/IEI for which we're looking
+ *  \param[in] instance Instance (number of occurence) of this IEI
+ *  \param[inout] dst Caller-allocated buffer where to store value
+ *  \returns 0 on sucess; EOF in case IE not found */
 int gtpie_gettv2(union gtpie_member *ie[], int type, int instance,
 		 uint16_t * dst)
 {
@@ -181,6 +262,12 @@ int gtpie_gettv2(union gtpie_member *ie[], int type, int instance,
 	return 0;
 }
 
+/*! Obtain Value of TV4-type IE for a given tag/IEI from a list/array.
+ *  \param[in] ie Array of GTPIE
+ *  \param[in] type Tag/IEI for which we're looking
+ *  \param[in] instance Instance (number of occurence) of this IEI
+ *  \param[inout] dst Caller-allocated buffer where to store value
+ *  \returns 0 on sucess; EOF in case IE not found */
 int gtpie_gettv4(union gtpie_member *ie[], int type, int instance,
 		 uint32_t * dst)
 {
@@ -193,6 +280,12 @@ int gtpie_gettv4(union gtpie_member *ie[], int type, int instance,
 	return 0;
 }
 
+/*! Obtain Value of TV8-type IE for a given tag/IEI from a list/array.
+ *  \param[in] ie Array of GTPIE
+ *  \param[in] type Tag/IEI for which we're looking
+ *  \param[in] instance Instance (number of occurence) of this IEI
+ *  \param[inout] dst Caller-allocated buffer where to store value
+ *  \returns 0 on sucess; EOF in case IE not found */
 int gtpie_gettv8(union gtpie_member *ie[], int type, int instance,
 		 uint64_t * dst)
 {
@@ -205,6 +298,12 @@ int gtpie_gettv8(union gtpie_member *ie[], int type, int instance,
 	return 0;
 }
 
+/*! Parse an incoming GTP packet into its Information Elements.
+ *  \param[out] ie Caller-allocated Array of GTPIE
+ *  \param[in] version GTP protocol version
+ *  \param[in] pack Pointer to raw GTP packet (payload part)
+ *  \param[in] len Length of \a pack in bytes
+ *  \returns 0 on sucess; EOF in case IE not found */
 int gtpie_decaps(union gtpie_member *ie[], int version, void *pack,
 		 unsigned len)
 {
@@ -430,6 +529,11 @@ int gtpie_decaps(union gtpie_member *ie[], int version, void *pack,
 	}
 }
 
+/*! Encode GTP packet payload from Array of Information Elements.
+ *  \param[out] ie Input Array of GTPIE
+ *  \param[out] pack Pointer to caller-allocated buffer for raw GTP packet (GTPIE_MAX length)
+ *  \param[out] len Encoded length of \a pack in bytes
+ *  \returns 0 on sucess; 2 for out-of-space */
 int gtpie_encaps(union gtpie_member *ie[], void *pack, unsigned *len)
 {
 	int i;
@@ -528,6 +632,12 @@ int gtpie_encaps(union gtpie_member *ie[], void *pack, unsigned *len)
 	return 0;
 }
 
+/*! Encode GTP packet payload from Array of Information Elements.
+ *  \param[out] ie Input Array of GTPIE
+ *  \param[in] size Size of ?
+ *  \param[out] pack Pointer to caller-allocated buffer for raw GTP packet (GTPIE_MAX length)
+ *  \param[out] len Encoded length of \a pack in bytes
+ *  \returns 0 on sucess; 2 for out-of-space */
 int gtpie_encaps2(union gtpie_member ie[], unsigned int size,
 		  void *pack, unsigned *len)
 {
