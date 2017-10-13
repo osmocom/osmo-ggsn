@@ -49,7 +49,7 @@ int in46a_to_sas(struct sockaddr_storage *out, const struct in46_addr *in)
 		sin->sin_addr = in->v4;
 		break;
 	case 16:
-		sin6->sin6_family = AF_INET;
+		sin6->sin6_family = AF_INET6;
 		sin6->sin6_addr = in->v6;
 		break;
 	default:
