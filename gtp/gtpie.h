@@ -12,6 +12,8 @@
 #ifndef _GTPIE_H
 #define _GTPIE_H
 
+#include <arpa/inet.h>
+
 /* Macroes for conversion between host and network byte order */
 #define hton8(x)  (x)
 #define ntoh8(x)  (x)
