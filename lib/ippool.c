@@ -215,7 +215,7 @@ int ippool_new(struct ippool_t **this, const struct in46_prefix *dyn, const stru
 			flags |= IPPOOL_NONETWORK;
 		}
 
-		dynsize = (1 << (addr.len*8 - addrprefixlen)) -1;
+		dynsize = (1 << (addr.len*8 - addrprefixlen));
 		if (flags & IPPOOL_NONETWORK)	/* Exclude network address from pool */
 			dynsize--;
 		if (flags & IPPOOL_NOGATEWAY)	/* Exclude gateway address from pool */
