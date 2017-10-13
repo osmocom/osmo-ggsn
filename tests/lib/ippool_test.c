@@ -90,20 +90,20 @@ static void test_pool_size(const char *pfx, unsigned int flags, unsigned int exp
 
 static void test_pool_sizes(void)
 {
-	/* 255 addresses [0..254] */
-	test_pool_size("192.168.23.0/24", 0, 255);
+	/* 256 addresses [0..255] */
+	test_pool_size("192.168.23.0/24", 0, 256);
+
+	/* 255 addresses [1..255] */
+	test_pool_size("192.168.23.0/24", IPPOOL_NONETWORK, 255);
 
 	/* 254 addresses [1..254] */
-	test_pool_size("192.168.23.0/24", IPPOOL_NONETWORK, 254);
+	test_pool_size("192.168.23.0/24", IPPOOL_NONETWORK | IPPOOL_NOBROADCAST, 254);
 
-	/* 253 addresses [2..254] */
-	test_pool_size("192.168.23.0/24", IPPOOL_NOGATEWAY, 253);
+	/* 65534 addresses [0.1..255.254] */
+	test_pool_size("192.168.0.0/16", IPPOOL_NONETWORK | IPPOOL_NOBROADCAST, 65534);
 
-	/* 65533 addresses [3..255.254] */
-	test_pool_size("192.168.0.0/16", IPPOOL_NOGATEWAY, 65533);
-
-	/* 255 prefixes of /64 each */
-	test_pool_size("2001:DB8::/56", 0, 255);
+	/* 256 prefixes of /64 each */
+	test_pool_size("2001:DB8::/56", 0, 256);
 }
 
 int main(int argc, char **argv)

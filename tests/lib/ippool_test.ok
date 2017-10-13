@@ -1,4 +1,4 @@
-testing pool for prefix 192.168.23.0/24, flags=0x0, expected_size=255
+testing pool for prefix 192.168.23.0/24, flags=0x0, expected_size=256
 allocated address 192.168.23.0
 allocated address 192.168.23.1
 allocated address 192.168.23.2
@@ -254,7 +254,8 @@ allocated address 192.168.23.251
 allocated address 192.168.23.252
 allocated address 192.168.23.253
 allocated address 192.168.23.254
-testing pool for prefix 192.168.23.0/24, flags=0x1, expected_size=254
+allocated address 192.168.23.255
+testing pool for prefix 192.168.23.0/24, flags=0x1, expected_size=255
 allocated address 192.168.23.1
 allocated address 192.168.23.2
 allocated address 192.168.23.3
@@ -509,7 +510,9 @@ allocated address 192.168.23.251
 allocated address 192.168.23.252
 allocated address 192.168.23.253
 allocated address 192.168.23.254
-testing pool for prefix 192.168.23.0/24, flags=0x4, expected_size=253
+allocated address 192.168.23.255
+testing pool for prefix 192.168.23.0/24, flags=0x3, expected_size=254
+allocated address 192.168.23.1
 allocated address 192.168.23.2
 allocated address 192.168.23.3
 allocated address 192.168.23.4
@@ -763,7 +766,8 @@ allocated address 192.168.23.251
 allocated address 192.168.23.252
 allocated address 192.168.23.253
 allocated address 192.168.23.254
-testing pool for prefix 192.168.0.0/16, flags=0x4, expected_size=65533
+testing pool for prefix 192.168.0.0/16, flags=0x3, expected_size=65534
+allocated address 192.168.0.1
 allocated address 192.168.0.2
 allocated address 192.168.0.3
 allocated address 192.168.0.4
@@ -66297,7 +66301,7 @@ allocated address 192.168.255.251
 allocated address 192.168.255.252
 allocated address 192.168.255.253
 allocated address 192.168.255.254
-testing pool for prefix 2001:DB8::/56, flags=0x0, expected_size=255
+testing pool for prefix 2001:DB8::/56, flags=0x0, expected_size=256
 allocated address 2001:db8::
 allocated address 2001:db8:0:1::
 allocated address 2001:db8:0:2::
@@ -66553,3 +66557,4 @@ allocated address 2001:db8:0:fb::
 allocated address 2001:db8:0:fc::
 allocated address 2001:db8:0:fd::
 allocated address 2001:db8:0:fe::
+allocated address 2001:db8:0:ff::
