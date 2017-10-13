@@ -31,7 +31,6 @@
 
 #define IPPOOL_NONETWORK   0x01
 #define IPPOOL_NOBROADCAST 0x02
-#define IPPOOL_NOGATEWAY   0x04
 
 #define IPPOOL_STATSIZE 0x10000
 
@@ -72,7 +71,8 @@ extern unsigned long int ippool_hash(struct in46_addr *addr);
 
 /* Create new address pool */
 extern int ippool_new(struct ippool_t **this, const struct in46_prefix *dyn,
-		      const struct in46_prefix *stat, int flags);
+			const struct in46_prefix *stat, int flags,
+			struct in46_prefix *blacklist, size_t blacklist_size);
 
 /* Delete existing address pool */
 extern int ippool_free(struct ippool_t *this);

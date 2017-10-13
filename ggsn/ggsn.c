@@ -149,6 +149,10 @@ int apn_stop(struct apn_ctx *apn, bool force)
 /* actually start the APN with its current config */
 int apn_start(struct apn_ctx *apn)
 {
+	int ipv4_blacklist_size = 0, ipv6_blacklist_size = 0;
+	struct in46_prefix ipv4_tun_ip, ipv6_tun_ip, ipv6_tun_linklocal_ip;
+	int ippool_flags = IPPOOL_NONETWORK | IPPOOL_NOBROADCAST;
+
 	if (apn->started)
 		return 0;
 
@@ -201,12 +205,13 @@ int apn_start(struct apn_ctx *apn)
 		}
 
 		if (apn->cfg.apn_type_mask & (APN_TYPE_IPv6|APN_TYPE_IPv4v6)) {
-			if (tun_ipv6_linklocal_get(apn->tun.tun, &apn->v6_lladdr) < 0) {
+			if (tun_ipv6_local_get(apn->tun.tun, &ipv6_tun_linklocal_ip, IPV6_TYPE_LINK) < 0) {
 				LOGPAPN(LOGL_ERROR, apn, "Cannot obtain IPv6 link-local address of "
 					"interface: %s\n", strerror(errno));
 				apn_stop(apn, false);
 				return -1;
 			}
+			apn->v6_lladdr = ipv6_tun_linklocal_ip.addr.v6;
 		}
 
 		/* set back-pointer from TUN device to APN */
@@ -229,8 +234,14 @@ int apn_start(struct apn_ctx *apn)
 	if (apn->v4.cfg.dynamic_prefix.addr.len) {
 		LOGPAPN(LOGL_INFO, apn, "Creating IPv4 pool %s\n",
 			in46p_ntoa(&apn->v4.cfg.dynamic_prefix));
+		if(tun_ipv4_local_get(apn->tun.tun, &ipv4_tun_ip) == 0) {
+			ipv4_blacklist_size = 1;
+			LOGPAPN(LOGL_INFO, apn, "Blacklist IPv4 tun IP %s\n",
+				in46p_ntoa(&ipv4_tun_ip));
+		}
 		if (ippool_new(&apn->v4.pool, &apn->v4.cfg.dynamic_prefix,
-				&apn->v4.cfg.static_prefix, 0)) {
+				&apn->v4.cfg.static_prefix, ippool_flags,
+				&ipv4_tun_ip, ipv4_blacklist_size)) {
 			LOGPAPN(LOGL_ERROR, apn, "Failed to create IPv4 pool\n");
 			apn_stop(apn, false);
 			return -1;
@@ -241,8 +252,14 @@ int apn_start(struct apn_ctx *apn)
 	if (apn->v6.cfg.dynamic_prefix.addr.len) {
 		LOGPAPN(LOGL_INFO, apn, "Creating IPv6 pool %s\n",
 			in46p_ntoa(&apn->v6.cfg.dynamic_prefix));
+		if(tun_ipv6_local_get(apn->tun.tun, &ipv6_tun_ip, IPV6_TYPE_GLOBAL) == 0) {
+			ipv6_blacklist_size = 1;
+			LOGPAPN(LOGL_INFO, apn, "Blacklist IPv6 tun IP %s\n",
+				in46p_ntoa(&ipv6_tun_ip));
+		}
 		if (ippool_new(&apn->v6.pool, &apn->v6.cfg.dynamic_prefix,
-				&apn->v6.cfg.static_prefix, 0)) {
+				&apn->v6.cfg.static_prefix, ippool_flags,
+				&ipv6_tun_ip, ipv6_blacklist_size)) {
 			LOGPAPN(LOGL_ERROR, apn, "Failed to create IPv6 pool\n");
 			apn_stop(apn, false);
 			return -1;

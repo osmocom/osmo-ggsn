@@ -184,9 +184,18 @@ void in46a_inc(struct in46_addr *addr)
 	}
 }
 
+static bool addr_in_prefix_list(struct in46_addr *addr, struct in46_prefix *list, size_t list_size)
+{
+	for (int i = 0; i < list_size; i++) {
+		if(in46a_prefix_equal(addr, &list[i].addr))
+			return true;
+	}
+	return false;
+}
+
 /* Create new address pool */
 int ippool_new(struct ippool_t **this, const struct in46_prefix *dyn, const struct in46_prefix *stat,
-	       int flags)
+	       int flags, struct in46_prefix *blacklist, size_t blacklist_size)
 {
 
 	/* Parse only first instance of pool for now */
@@ -210,18 +219,16 @@ int ippool_new(struct ippool_t **this, const struct in46_prefix *dyn, const stru
 		if (addr.len == sizeof(struct in6_addr))
 			addr.len = 64/8;
 
-		/* Set IPPOOL_NONETWORK if IPPOOL_NOGATEWAY is set */
-		if (flags & IPPOOL_NOGATEWAY) {
-			flags |= IPPOOL_NONETWORK;
-		}
-
 		dynsize = (1 << (addr.len*8 - addrprefixlen));
 		if (flags & IPPOOL_NONETWORK)	/* Exclude network address from pool */
 			dynsize--;
-		if (flags & IPPOOL_NOGATEWAY)	/* Exclude gateway address from pool */
-			dynsize--;
 		if (flags & IPPOOL_NOBROADCAST)	/* Exclude broadcast address from pool */
 			dynsize--;
+		/* Exclude included blacklist addresses from pool */
+		for (int i = 0; i < blacklist_size; i++) {
+			if (in46a_within_mask(&blacklist[i].addr, &addr, addrprefixlen))
+				dynsize--;
+		}
 	}
 
 	if (!stat || stat->addr.len == 0) {
@@ -278,13 +285,17 @@ int ippool_new(struct ippool_t **this, const struct in46_prefix *dyn, const stru
 
 	(*this)->firstdyn = NULL;
 	(*this)->lastdyn = NULL;
-	if (flags & IPPOOL_NOGATEWAY) {
-		in46a_inc(&addr);
-		in46a_inc(&addr);
-	} else if (flags & IPPOOL_NONETWORK) {
+	if (flags & IPPOOL_NONETWORK) {
 		in46a_inc(&addr);
 	}
 	for (i = 0; i < dynsize; i++) {
+		if (addr_in_prefix_list(&addr, blacklist, blacklist_size)) {
+			SYS_ERR(DIP, LOGL_DEBUG, 0,
+				"addr blacklisted from pool: %s", in46a_ntoa(&addr));
+			in46a_inc(&addr);
+			i--;
+			continue;
+		}
 		(*this)->member[i].addr = addr;
 		in46a_inc(&addr);
 

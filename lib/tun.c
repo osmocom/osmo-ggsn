@@ -751,8 +751,40 @@ int tun_runscript(struct tun_t *tun, char *script)
 
 #include <ifaddrs.h>
 
-/* obtain the link-local address of the tun device */
-int tun_ipv6_linklocal_get(const struct tun_t *tun, struct in6_addr *ia)
+/* Obtain the local address of the tun device */
+int tun_ipv4_local_get(const struct tun_t *tun, struct in46_prefix *prefix)
+{
+	struct ifaddrs *ifaddr, *ifa;
+
+	if (getifaddrs(&ifaddr) == -1) {
+		return -1;
+	}
+
+	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+		struct sockaddr_in *sin4 = (struct sockaddr_in *) ifa->ifa_addr;
+		struct sockaddr_in *netmask4 = (struct sockaddr_in *) ifa->ifa_netmask;
+		if (ifa->ifa_addr == NULL)
+			continue;
+
+		if (ifa->ifa_addr->sa_family != AF_INET)
+			continue;
+
+		if (strcmp(ifa->ifa_name, tun->devname))
+			continue;
+
+		prefix->addr.len = sizeof(sin4->sin_addr);
+		prefix->addr.v4 = sin4->sin_addr;
+		prefix->prefixlen = netmask_ipv4_prefixlen(&netmask4->sin_addr);
+		freeifaddrs(ifaddr);
+		return 0;
+	}
+	freeifaddrs(ifaddr);
+	return -1;
+}
+
+/* Obtain the local address of the tun device.
+   Type of IPv6 address can be specified with "flags = IPV6_TYPE_LINK | IPV6_TYPE_GLOBAL" */
+int tun_ipv6_local_get(const struct tun_t *tun, struct in46_prefix *prefix, int flags)
 {
 	struct ifaddrs *ifaddr, *ifa;
 	static const uint8_t ll_prefix[] = { 0xfe,0x80, 0,0, 0,0, 0,0 };
@@ -763,6 +795,7 @@ int tun_ipv6_linklocal_get(const struct tun_t *tun, struct in6_addr *ia)
 
 	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
 		struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) ifa->ifa_addr;
+		struct sockaddr_in6 *netmask6 = (struct sockaddr_in6 *) ifa->ifa_netmask;
 		if (ifa->ifa_addr == NULL)
 			continue;
 
@@ -772,10 +805,17 @@ int tun_ipv6_linklocal_get(const struct tun_t *tun, struct in6_addr *ia)
 		if (strcmp(ifa->ifa_name, tun->devname))
 			continue;
 
-		if (memcmp(sin6->sin6_addr.s6_addr, ll_prefix, sizeof(ll_prefix)))
+		if (!(flags & IPV6_TYPE_LINK) &&
+		    !memcmp(sin6->sin6_addr.s6_addr, ll_prefix, sizeof(ll_prefix)))
 			continue;
 
-		*ia = sin6->sin6_addr;
+		if (!(flags & IPV6_TYPE_GLOBAL) &&
+		    memcmp(sin6->sin6_addr.s6_addr, ll_prefix, sizeof(ll_prefix)))
+			continue;
+
+		prefix->addr.len = sizeof(sin6->sin6_addr);
+		prefix->addr.v6 = sin6->sin6_addr;
+		prefix->prefixlen = netmask_ipv6_prefixlen(&netmask6->sin6_addr);
 		freeifaddrs(ifaddr);
 		return 0;
 	}

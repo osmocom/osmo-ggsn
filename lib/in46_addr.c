@@ -195,6 +195,54 @@ int in46a_within_mask(const struct in46_addr *addr, const struct in46_addr *net,
 	}
 }
 
+unsigned int netmask_ipv4_prefixlen(const struct in_addr *netmask)
+{
+	struct in_addr tmp = *netmask;
+	int prefix = 0;
+
+	while (tmp.s_addr & 0x01) {
+		prefix++;
+		tmp.s_addr = tmp.s_addr >> 1;
+	}
+	return prefix;
+}
+
+unsigned int netmask_ipv6_prefixlen(const struct in6_addr *netmask)
+{
+	struct in6_addr tmp = *netmask;
+	int prefix = 0;
+
+	#if defined(__linux__)
+		#define ADDRFIELD(i) s6_addr32[i]
+	#else
+		#define ADDRFIELD(i) __u6_addr.__u6_addr32[i]
+	#endif
+
+	for (int i = 0; i < 4; i++) {
+		while (tmp.ADDRFIELD(i) & 0x01) {
+			prefix++;
+			tmp.ADDRFIELD(i) = tmp.ADDRFIELD(i) >> 1;
+		}
+	}
+
+	#undef ADDRFIELD
+
+	return prefix;
+}
+
+unsigned int in46a_prefixlen(const struct in46_addr *netmask)
+{
+	switch (netmask->len) {
+	case 4:
+		return netmask_ipv4_prefixlen(&netmask->v4);
+	case 16:
+		return netmask_ipv6_prefixlen(&netmask->v6);
+	default:
+		OSMO_ASSERT(0);
+		return 0;
+	}
+}
+
 /*! Convert given PDP End User Address to in46_addr
  *  \returns 0 on success; negative on error */
 int in46a_to_eua(const struct in46_addr *src, struct ul66_t *eua)
