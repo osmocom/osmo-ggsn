@@ -432,6 +432,20 @@ static void process_pco(struct apn_ctx *apn, struct pdp_t *pdp)
 	msgb_free(msg);
 }
 
+static bool apn_supports_ipv4(const struct apn_ctx *apn)
+{
+	if (apn->v4.cfg.static_prefix.addr.len  || apn->v4.cfg.dynamic_prefix.addr.len)
+		return true;
+	return false;
+}
+
+static bool apn_supports_ipv6(const struct apn_ctx *apn)
+{
+	if (apn->v6.cfg.static_prefix.addr.len  || apn->v6.cfg.dynamic_prefix.addr.len)
+		return true;
+	return false;
+}
+
 int create_context_ind(struct pdp_t *pdp)
 {
 	static char name_buf[256];
@@ -483,6 +497,10 @@ int create_context_ind(struct pdp_t *pdp)
 	}
 
 	if (addr.len == sizeof(struct in_addr)) {
+		/* does this APN actually have an IPv4 pool? */
+		if (!apn_supports_ipv4(apn))
+			goto err_wrong_af;
+
 		rc = ippool_newip(apn->v4.pool, &member, &addr, 0);
 		if (rc < 0)
 			goto err_pool_full;
@@ -496,6 +514,11 @@ int create_context_ind(struct pdp_t *pdp)
 		}
 	} else if (addr.len == sizeof(struct in6_addr)) {
 		struct in46_addr tmp;
+
+		/* does this APN actually have an IPv6 pool? */
+		if (!apn_supports_ipv6(apn))
+			goto err_wrong_af;
+
 		rc = ippool_newip(apn->v6.pool, &member, &addr, 0);
 		if (rc < 0)
 			goto err_pool_full;
@@ -534,6 +557,11 @@ err_pool_full:
 	LOGPPDP(LOGL_ERROR, pdp, "Cannot allocate IP address from pool (full!)\n");
 	gtp_create_context_resp(gsn, pdp, -rc);
 	return 0;	/* Already in use, or no more available */
+
+err_wrong_af:
+	LOGPPDP(LOGL_ERROR, pdp, "APN doesn't support requested EUA / AF type\n");
+	gtp_create_context_resp(gsn, pdp, GTPCAUSE_UNKNOWN_PDP);
+	return 0;
 }
 
 /* Internet-originated IP packet, needs to be sent via GTP towards MS */
