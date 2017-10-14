@@ -652,11 +652,13 @@ int gtpie_encaps(union gtpie_member *ie[], void *pack, unsigned *len)
 			case GTPIE_TEI_DII:	/* TV GTPIE types with value length 5 */
 				iesize = 6;
 				break;
+			case GTPIE_RAI:		/* TV GTPIE types with value length 6 */
+				iesize = 7;
+				break;
 			case GTPIE_RAB_CONTEXT:	/* TV GTPIE types with value length 7 */
 				iesize = 8;
 				break;
 			case GTPIE_IMSI:	/* TV GTPIE types with value length 8 */
-			case GTPIE_RAI:
 				iesize = 9;
 				break;
 			case GTPIE_AUTH_TRIPLET:	/* TV GTPIE types with value length 28 */
@@ -827,11 +829,13 @@ int gtpie_encaps2(union gtpie_member ie[], unsigned int size,
 				case GTPIE_TEI_DII:	/* TV GTPIE types with value length 5 */
 					iesize = 6;
 					break;
+				case GTPIE_RAI:		/* TV GTPIE types with value length 6 */
+					iesize = 7;
+					break;
 				case GTPIE_RAB_CONTEXT:	/* TV GTPIE types with value length 7 */
 					iesize = 8;
 					break;
 				case GTPIE_IMSI:	/* TV GTPIE types with value length 8 */
-				case GTPIE_RAI:
 					iesize = 9;
 					break;
 				case GTPIE_AUTH_TRIPLET:	/* TV GTPIE types with value length 28 */
