@@ -50,7 +50,7 @@ static __inline uint64_t hton64(uint64_t q)
 
 #define GTPIE_DEBUG 0		/* Print debug information */
 
-/* GTP Information elements from 29.060 v3.9.0 7.7 Information Elements */
+/* GTP Information elements from 29.060 v11.8.0 7.7 Information Elements */
 /* Also covers version 0. Note that version 0 6: QOS Profile was superceded *
  * by 135: QOS Profile in version 1 */
 
@@ -86,7 +86,7 @@ static __inline uint64_t hton64(uint64_t q)
 #define GTPIE_TRACE_TYPE     28	/* Trace Type 2 */
 #define GTPIE_MS_NOT_REACH   29	/* MS Not Reachable Reason 1 */
 				/* 30-116 UNUSED */
-/* 117-126 Reserved for the GPRS charging protocol (see GTP' in GSM 12.15) */
+/* 117-126 Reserved for the GPRS charging protocol (see GTP' in GSM 12.15 / 32.295) */
 #define GTPIE_CHARGING_ID   127	/* Charging ID 4 */
 #define GTPIE_EUA           128	/* End User Address */
 #define GTPIE_MM_CONTEXT    129	/* MM Context */
@@ -104,15 +104,81 @@ static __inline uint64_t hton64(uint64_t q)
 #define GTPIE_EXT_HEADER_T  141	/* Extension Header Type List */
 #define GTPIE_TRIGGER_ID    142	/* Trigger Id */
 #define GTPIE_OMC_ID        143	/* OMC Identity */
+#define GTPIE_RAN_T_CONTAIN 144	/* RAN Transparent Container */
+#define GTPIE_PDP_CTX_PRIO  145	/* PDP Context Prioritization */
+#define GTPIE_ADDL_RAB_S_I  146	/* Additional RAB Setup Information */
+#define GTPIE_SGSN_NUMBER   147	/* SGSN Number */
 #define GTPIE_COMMON_FLAGS  148	/* Common Flags */
+#define GTPIE_APN_RESTR     149	/* APN Restriction */
+#define GTPIE_R_PRIO_LCS    150	/* Radio Priority LCS */
 #define GTPIE_RAT_TYPE      151	/* Radio Access Technology Type */
 #define GTPIE_USER_LOC      152	/* User Location Information  */
 #define GTPIE_MS_TZ         153	/* MS Time Zone */
 #define GTPIE_IMEI_SV       154	/* IMEI Software Version */
+#define GTPIE_CML_CHG_I_CT  155	/* CAMEL Charging Information Container */
+#define GTPIE_MBMS_UE_CTX   156	/* MSMS UE Context */
+#define GTPIE_TMGI          157	/* Temporary Mobile Group Identity (TMGI) */
+#define GTPIE_RIM_ROUT_ADDR 158	/* RIM Routing Address */
+#define GTPIE_MBMS_PCO      159	/* MBMS Protocol Configuratin Options */
+#define GTPIE_MBMS_SA       160	/* MBMS Service Area */
+#define GTPIE_SRNC_PDCP_CTX 161	/* Source RNC PDCP Context Info */
+#define GTPIE_ADDL_TRACE    162	/* Additional Trace Info */
+#define GTPIE_HOP_CTR       163	/* Hop Counter */
+#define GTPIE_SEL_PLMN_ID   164	/* Selected PLMN ID */
+#define GTPIE_MBMS_SESS_ID  165	/* MBMS Session Identifier */
+#define GTPIE_MBMS_2_3G_IND 166	/* MBMS 2G/3G Indicator */
+#define GTPIE_ENH_NSAPI     167	/* Enhanced NSAPI */
+#define GTPIE_MBMS_SESS_DUR 168	/* MBMS Session Duration */
+#define GTPIE_A_MBMS_TRAC_I 169	/* Additional MBMS Trace Info */
+#define GTPIE_MBMS_S_REP_N  170	/* MBMS Session Repetition Number */
+#define GTPIE_MBMS_TTDT     171	/* MBMS Time To Data Transfer */
+#define GTPIE_PS_HO_REQ_CTX 172	/* PS Handover Request Context */
+#define GTPIE_BSS_CONTAINER 173	/* BSS Container */
+#define GTPIE_CELL_ID       174	/* Cell Identification */
+#define GTPIE_PDU_NUMBERS   175	/* PDU Numbers */
+#define GTPIE_BSSGP_CAUSE   176	/* BSSGP Cause */
+#define GTPIE_RQD_MBMS_BCAP 177	/* Required MBMS Bearer Capabilities */
+#define GTPIE_RIM_RA_DISCR  178	/* RIM Routing Address Discriminator */
+#define GTPIE_L_SETUP_PFCS  179	/* List of set-up PFCs */
+#define GTPIE_PS_HO_XID_PAR 180	/* PS Handover XID Parameters */
+#define GTPIE_MS_CHG_REP_A  181	/* MS Info Change Reporting Action */
+#define GTPIE_DIR_TUN_FLAGS 182	/* Direct Tunnel Flags */
+#define GTPIE_CORREL_ID     183	/* Correlation-ID */
 #define GTPIE_BCM           184	/* Bearer control mode */
-/* 239-250 Reserved for the GPRS charging protocol (see GTP' in GSM 12.15) */
+#define GTPIE_MBMS_FLOWI    185	/* MBMS Flow Identifier */
+#define GTPIE_MBMS_MC_DIST  186	/* MBMS IP Multicast Distribution */
+#define GTPIE_MBMS_DIST_ACK 187	/* MBMS Distribution Acknowledgement */
+#define GTPIE_R_IRAT_HO_INF 188	/* Reliable INTER RAT HANDOVER INFO */
+#define GTPIE_RFSP_IDX      189	/* RFSP Index */
+#define GTPIE_FQDN          190	/* FQDN */
+#define GTPIE_E_ALL_PRIO_1  191	/* Evolvd Allocation/Retention Priority I */
+#define GTPIE_E_ALL_PRIO_2  192	/* Evolvd Allocation/Retention Priority II */
+#define GTPIE_E_CMN_FLAGS   193	/* Extended Common Flags */
+#define GTPIE_U_CSG_INFO    194	/* User CSG Information (UCI) */
+#define GTPIE_CSG_I_REP_ACT 195	/* CSG Information Reporting Action */
+#define GTPIE_CSG_ID        196	/* CSG ID */
+#define GTPIE_CSG_MEMB_IND  197	/* CSG Membership Indication (CMI) */
+#define GTPIE_AMBR          198	/* Aggregate Maximum Bit Rate (AMBR) */
+#define GTPIE_UE_NET_CAPA   199	/* UE Network Capability */
+#define GTPIE_UE_AMBR       200	/* UE-AMBR */
+#define GTPIE_APN_AMBR_NS   201	/* APN-AMBR with NSAPI */
+#define GTPIE_GGSN_BACKOFF  202	/* GGSN Back-Off Time */
+#define GTPIE_S_PRIO_IND    203	/* Signalling Priority Indication */
+#define GTPIE_S_PRIO_IND_NS 204	/* Signalling Priority Indication with NSAPI */
+#define GTPIE_H_BR_16MBPS_F 205	/* Higher Bitrates than 16 Mbps flag */
+/* 206: Reserved */
+#define GTPIE_A_MMCTX_SRVCC 207	/* Additional MM context for SRVCC */
+#define GTPIE_A_FLAGS_SRVCC 208	/* Additional flags fro SRVC */
+#define GTPIE_STN_SR        209	/* STN-SR */
+#define GTPIE_C_MSISDN      210	/* C-MSISDN */
+#define GTPIE_E_RANAP_CAUSE 211	/* Extended RANAP Cause */
+#define GTPIE_ENODEB_ID     212	/* eNodeB ID */
+#define GTPIE_SEL_MODE_NS   213	/* Selection Mode with NSAPI */
+#define GTPIE_ULI_TIMESTAMP 214	/* ULI Timestamp */
+/* 215-238 Spare. For future use */
+/* 239-250 Reserved for the GPRS charging protocol (see GTP' in GSM 12.15 / 32.295) */
 #define GTPIE_CHARGING_ADDR 251	/* Charging Gateway Address */
-/* 252-254 Reserved for the GPRS charging protocol (see GTP' in GSM 12.15) */
+/* 252-254 Reserved for the GPRS charging protocol (see GTP' in GSM 12.15 / 32.295) */
 #define GTPIE_PRIVATE       255	/* Private Extension */
 
 /* GTP information element structs in network order */

@@ -490,12 +490,76 @@ int gtpie_decaps(union gtpie_member *ie[], int version, const void *pack,
 		case GTPIE_RAB_SETUP:
 		case GTPIE_TRIGGER_ID:
 		case GTPIE_OMC_ID:
-		case GTPIE_CHARGING_ADDR:
+		case GTPIE_RAN_T_CONTAIN:
+		case GTPIE_PDP_CTX_PRIO:
+		case GTPIE_ADDL_RAB_S_I:
+		case GTPIE_SGSN_NUMBER:
 		case GTPIE_COMMON_FLAGS:
+		case GTPIE_APN_RESTR:
+		case GTPIE_R_PRIO_LCS:
 		case GTPIE_RAT_TYPE:
 		case GTPIE_USER_LOC:
 		case GTPIE_MS_TZ:
 		case GTPIE_IMEI_SV:
+		case GTPIE_CML_CHG_I_CT:
+		case GTPIE_MBMS_UE_CTX:
+		case GTPIE_TMGI:
+		case GTPIE_RIM_ROUT_ADDR:
+		case GTPIE_MBMS_PCO:
+		case GTPIE_MBMS_SA:
+		case GTPIE_SRNC_PDCP_CTX:
+		case GTPIE_ADDL_TRACE:
+		case GTPIE_HOP_CTR:
+		case GTPIE_SEL_PLMN_ID:
+		case GTPIE_MBMS_SESS_ID:
+		case GTPIE_MBMS_2_3G_IND:
+		case GTPIE_ENH_NSAPI:
+		case GTPIE_MBMS_SESS_DUR:
+		case GTPIE_A_MBMS_TRAC_I:
+		case GTPIE_MBMS_S_REP_N:
+		case GTPIE_MBMS_TTDT:
+		case GTPIE_PS_HO_REQ_CTX:
+		case GTPIE_BSS_CONTAINER:
+		case GTPIE_CELL_ID:
+		case GTPIE_PDU_NUMBERS:
+		case GTPIE_BSSGP_CAUSE:
+		case GTPIE_RQD_MBMS_BCAP:
+		case GTPIE_RIM_RA_DISCR:
+		case GTPIE_L_SETUP_PFCS:
+		case GTPIE_PS_HO_XID_PAR:
+		case GTPIE_MS_CHG_REP_A:
+		case GTPIE_DIR_TUN_FLAGS:
+		case GTPIE_CORREL_ID:
+		case GTPIE_MBMS_FLOWI:
+		case GTPIE_MBMS_MC_DIST:
+		case GTPIE_MBMS_DIST_ACK:
+		case GTPIE_R_IRAT_HO_INF:
+		case GTPIE_RFSP_IDX:
+		case GTPIE_FQDN:
+		case GTPIE_E_ALL_PRIO_1:
+		case GTPIE_E_ALL_PRIO_2:
+		case GTPIE_E_CMN_FLAGS:
+		case GTPIE_U_CSG_INFO:
+		case GTPIE_CSG_I_REP_ACT:
+		case GTPIE_CSG_ID:
+		case GTPIE_CSG_MEMB_IND:
+		case GTPIE_AMBR:
+		case GTPIE_UE_NET_CAPA:
+		case GTPIE_UE_AMBR:
+		case GTPIE_APN_AMBR_NS:
+		case GTPIE_GGSN_BACKOFF:
+		case GTPIE_S_PRIO_IND:
+		case GTPIE_S_PRIO_IND_NS:
+		case GTPIE_H_BR_16MBPS_F:
+		case GTPIE_A_MMCTX_SRVCC:
+		case GTPIE_A_FLAGS_SRVCC:
+		case GTPIE_STN_SR:
+		case GTPIE_C_MSISDN:
+		case GTPIE_E_RANAP_CAUSE:
+		case GTPIE_ENODEB_ID:
+		case GTPIE_SEL_MODE_NS:
+		case GTPIE_ULI_TIMESTAMP:
+		case GTPIE_CHARGING_ADDR:
 		case GTPIE_PRIVATE:
 			if (j < GTPIE_SIZE) {
 				ie[j] = (union gtpie_member *)p;
@@ -616,8 +680,76 @@ int gtpie_encaps(union gtpie_member *ie[], void *pack, unsigned *len)
 			case GTPIE_RAB_SETUP:
 			case GTPIE_TRIGGER_ID:
 			case GTPIE_OMC_ID:
-			case GTPIE_CHARGING_ADDR:
+			case GTPIE_RAN_T_CONTAIN:
+			case GTPIE_PDP_CTX_PRIO:
+			case GTPIE_ADDL_RAB_S_I:
+			case GTPIE_SGSN_NUMBER:
 			case GTPIE_COMMON_FLAGS:
+			case GTPIE_APN_RESTR:
+			case GTPIE_R_PRIO_LCS:
+			case GTPIE_RAT_TYPE:
+			case GTPIE_USER_LOC:
+			case GTPIE_MS_TZ:
+			case GTPIE_IMEI_SV:
+			case GTPIE_CML_CHG_I_CT:
+			case GTPIE_MBMS_UE_CTX:
+			case GTPIE_TMGI:
+			case GTPIE_RIM_ROUT_ADDR:
+			case GTPIE_MBMS_PCO:
+			case GTPIE_MBMS_SA:
+			case GTPIE_SRNC_PDCP_CTX:
+			case GTPIE_ADDL_TRACE:
+			case GTPIE_HOP_CTR:
+			case GTPIE_SEL_PLMN_ID:
+			case GTPIE_MBMS_SESS_ID:
+			case GTPIE_MBMS_2_3G_IND:
+			case GTPIE_ENH_NSAPI:
+			case GTPIE_MBMS_SESS_DUR:
+			case GTPIE_A_MBMS_TRAC_I:
+			case GTPIE_MBMS_S_REP_N:
+			case GTPIE_MBMS_TTDT:
+			case GTPIE_PS_HO_REQ_CTX:
+			case GTPIE_BSS_CONTAINER:
+			case GTPIE_CELL_ID:
+			case GTPIE_PDU_NUMBERS:
+			case GTPIE_BSSGP_CAUSE:
+			case GTPIE_RQD_MBMS_BCAP:
+			case GTPIE_RIM_RA_DISCR:
+			case GTPIE_L_SETUP_PFCS:
+			case GTPIE_PS_HO_XID_PAR:
+			case GTPIE_MS_CHG_REP_A:
+			case GTPIE_DIR_TUN_FLAGS:
+			case GTPIE_CORREL_ID:
+			case GTPIE_MBMS_FLOWI:
+			case GTPIE_MBMS_MC_DIST:
+			case GTPIE_MBMS_DIST_ACK:
+			case GTPIE_R_IRAT_HO_INF:
+			case GTPIE_RFSP_IDX:
+			case GTPIE_FQDN:
+			case GTPIE_E_ALL_PRIO_1:
+			case GTPIE_E_ALL_PRIO_2:
+			case GTPIE_E_CMN_FLAGS:
+			case GTPIE_U_CSG_INFO:
+			case GTPIE_CSG_I_REP_ACT:
+			case GTPIE_CSG_ID:
+			case GTPIE_CSG_MEMB_IND:
+			case GTPIE_AMBR:
+			case GTPIE_UE_NET_CAPA:
+			case GTPIE_UE_AMBR:
+			case GTPIE_APN_AMBR_NS:
+			case GTPIE_GGSN_BACKOFF:
+			case GTPIE_S_PRIO_IND:
+			case GTPIE_S_PRIO_IND_NS:
+			case GTPIE_H_BR_16MBPS_F:
+			case GTPIE_A_MMCTX_SRVCC:
+			case GTPIE_A_FLAGS_SRVCC:
+			case GTPIE_STN_SR:
+			case GTPIE_C_MSISDN:
+			case GTPIE_E_RANAP_CAUSE:
+			case GTPIE_ENODEB_ID:
+			case GTPIE_SEL_MODE_NS:
+			case GTPIE_ULI_TIMESTAMP:
+			case GTPIE_CHARGING_ADDR:
 			case GTPIE_PRIVATE:
 				iesize = 3 + hton16(ie[i]->tlv.l);
 				break;
@@ -689,6 +821,7 @@ int gtpie_encaps2(union gtpie_member ie[], unsigned int size,
 				case GTPIE_P_TMSI:
 				case GTPIE_TEI_DI:
 				case GTPIE_TEI_C:
+				case GTPIE_CHARGING_ID:
 					iesize = 5;
 					break;
 				case GTPIE_TEI_DII:	/* TV GTPIE types with value length 5 */
@@ -707,8 +840,7 @@ int gtpie_encaps2(union gtpie_member ie[], unsigned int size,
 				case GTPIE_EXT_HEADER_T:	/* GTP extension header */
 					iesize = 2 + hton8(ie[i].ext.l);
 					break;
-				case GTPIE_CHARGING_ID:	/* TLV GTPIE types with length length 2 */
-				case GTPIE_EUA:
+				case GTPIE_EUA:	/* TLV GTPIE types with length length 2 */
 				case GTPIE_MM_CONTEXT:
 				case GTPIE_PDP_CONTEXT:
 				case GTPIE_APN:
@@ -723,8 +855,76 @@ int gtpie_encaps2(union gtpie_member ie[], unsigned int size,
 				case GTPIE_RAB_SETUP:
 				case GTPIE_TRIGGER_ID:
 				case GTPIE_OMC_ID:
-				case GTPIE_CHARGING_ADDR:
+				case GTPIE_RAN_T_CONTAIN:
+				case GTPIE_PDP_CTX_PRIO:
+				case GTPIE_ADDL_RAB_S_I:
+				case GTPIE_SGSN_NUMBER:
 				case GTPIE_COMMON_FLAGS:
+				case GTPIE_APN_RESTR:
+				case GTPIE_R_PRIO_LCS:
+				case GTPIE_RAT_TYPE:
+				case GTPIE_USER_LOC:
+				case GTPIE_MS_TZ:
+				case GTPIE_IMEI_SV:
+				case GTPIE_CML_CHG_I_CT:
+				case GTPIE_MBMS_UE_CTX:
+				case GTPIE_TMGI:
+				case GTPIE_RIM_ROUT_ADDR:
+				case GTPIE_MBMS_PCO:
+				case GTPIE_MBMS_SA:
+				case GTPIE_SRNC_PDCP_CTX:
+				case GTPIE_ADDL_TRACE:
+				case GTPIE_HOP_CTR:
+				case GTPIE_SEL_PLMN_ID:
+				case GTPIE_MBMS_SESS_ID:
+				case GTPIE_MBMS_2_3G_IND:
+				case GTPIE_ENH_NSAPI:
+				case GTPIE_MBMS_SESS_DUR:
+				case GTPIE_A_MBMS_TRAC_I:
+				case GTPIE_MBMS_S_REP_N:
+				case GTPIE_MBMS_TTDT:
+				case GTPIE_PS_HO_REQ_CTX:
+				case GTPIE_BSS_CONTAINER:
+				case GTPIE_CELL_ID:
+				case GTPIE_PDU_NUMBERS:
+				case GTPIE_BSSGP_CAUSE:
+				case GTPIE_RQD_MBMS_BCAP:
+				case GTPIE_RIM_RA_DISCR:
+				case GTPIE_L_SETUP_PFCS:
+				case GTPIE_PS_HO_XID_PAR:
+				case GTPIE_MS_CHG_REP_A:
+				case GTPIE_DIR_TUN_FLAGS:
+				case GTPIE_CORREL_ID:
+				case GTPIE_MBMS_FLOWI:
+				case GTPIE_MBMS_MC_DIST:
+				case GTPIE_MBMS_DIST_ACK:
+				case GTPIE_R_IRAT_HO_INF:
+				case GTPIE_RFSP_IDX:
+				case GTPIE_FQDN:
+				case GTPIE_E_ALL_PRIO_1:
+				case GTPIE_E_ALL_PRIO_2:
+				case GTPIE_E_CMN_FLAGS:
+				case GTPIE_U_CSG_INFO:
+				case GTPIE_CSG_I_REP_ACT:
+				case GTPIE_CSG_ID:
+				case GTPIE_CSG_MEMB_IND:
+				case GTPIE_AMBR:
+				case GTPIE_UE_NET_CAPA:
+				case GTPIE_UE_AMBR:
+				case GTPIE_APN_AMBR_NS:
+				case GTPIE_GGSN_BACKOFF:
+				case GTPIE_S_PRIO_IND:
+				case GTPIE_S_PRIO_IND_NS:
+				case GTPIE_H_BR_16MBPS_F:
+				case GTPIE_A_MMCTX_SRVCC:
+				case GTPIE_A_FLAGS_SRVCC:
+				case GTPIE_STN_SR:
+				case GTPIE_C_MSISDN:
+				case GTPIE_E_RANAP_CAUSE:
+				case GTPIE_ENODEB_ID:
+				case GTPIE_SEL_MODE_NS:
+				case GTPIE_ULI_TIMESTAMP:
+				case GTPIE_CHARGING_ADDR:
 				case GTPIE_PRIVATE:
 					iesize = 3 + hton16(ie[i].tlv.l);
 					break;
