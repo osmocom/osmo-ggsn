@@ -50,16 +50,17 @@ option  "uid"          u "Login user ID"                  string default="mig" n
 option  "pwd"          p "Login password"                 string default="hemmelig" no
 
 option  "createif"     - "Create local network interface" flag   off
-option  "net"          n "Network address for local interface" string no
-option  "defaultroute" - "Create default route"           flag   off
-option  "ipup"         - "Script to run after link-up"    string no
-option  "ipdown"       - "Script to run after link-down"  string no
+option  "net"          n "Network address for local interface" string dependon="createif" no
+option  "defaultroute" - "Create default route"           flag   dependon="createif" off
+option  "ipup"         - "Script to run after link-up"    string dependon="createif" no
+option  "ipdown"       - "Script to run after link-down"  string dependon="createif" no
 option  "tun-device"   - "Name of the local network interface" string dependon="createif" no
 
 option  "pinghost"     - "Ping remote host"               string no
-option  "pingrate"     - "Number of ping req per second"  int default="1" no
-option  "pingsize"     - "Number of ping data bytes"      int default="56" no
-option  "pingcount"    - "Number of ping req to send"     int default="0" no
-option  "pingquiet"    - "Do not print ping packet info"  flag off
+option  "pingrate"     - "Number of ping req per second"  int default="1" dependon="pinghost" no
+option  "pingsize"     - "Number of ping data bytes"      int default="56" dependon="pinghost" no
+option  "pingcount"    - "Number of ping req to send"     int default="0" dependon="pinghost" no
+option  "pingquiet"    - "Do not print ping packet info"  flag dependon="pinghost" off
+
 option  "no-tx-gpdu-seq" - "Don't transmit G-PDU sequence nums"   flag    off
 option  "pdp-type"     t "PDP Type"                       string default="v4" no typestr="(v4|v6)"
