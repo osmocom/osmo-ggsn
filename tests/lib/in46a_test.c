@@ -246,6 +246,64 @@ static void test_in46a_from_eua(void)
 	OSMO_ASSERT(!memcmp(&ia.v6, v6_spec+2, ia.len));
 }
 
+static void test_in46a_netmasklen(void)
+{
+	struct in46_addr netmask;
+	unsigned int len;
+
+	printf("Testing in46a_netmasklen() with IPv4 addresses\n");
+	netmask.len = 4;
+
+	netmask.v4.s_addr = 0xffffffff;
+	len = in46a_netmasklen(&netmask);
+	OSMO_ASSERT(len == 32);
+
+	netmask.v4.s_addr = 0x00ffffff;
+	len = in46a_netmasklen(&netmask);
+	OSMO_ASSERT(len == 24);
+
+	netmask.v4.s_addr = 0x00f0ffff;
+	len = in46a_netmasklen(&netmask);
+	OSMO_ASSERT(len == 20);
+
+	netmask.v4.s_addr = 0x000000fe;
+	len = in46a_netmasklen(&netmask);
+	OSMO_ASSERT(len == 7);
+
+	netmask.v4.s_addr = 0x00000000;
+	len = in46a_netmasklen(&netmask);
+	OSMO_ASSERT(len == 0);
+
+	printf("Testing in46a_netmasklen() with IPv6 addresses\n");
+	const struct in46_addr netmaskA = {
+		.len = 16,
+		.v6.s6_addr = {0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff},
+	};
+	len = in46a_netmasklen(&netmaskA);
+	OSMO_ASSERT(len == 128);
+
+	const struct in46_addr netmaskB = {
+		.len = 16,
+		.v6.s6_addr = {0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0x00,0x00,0x00},
+	};
+	len = in46a_netmasklen(&netmaskB);
+	OSMO_ASSERT(len == 104);
+
+	const struct in46_addr netmaskC = {
+		.len = 16,
+		.v6.s6_addr = {0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xfe,0x00,0x00,0x00},
+	};
+	len = in46a_netmasklen(&netmaskC);
+	OSMO_ASSERT(len == 103);
+
+	const struct in46_addr netmaskD = {
+		.len = 16,
+		.v6.s6_addr = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00},
+	};
+	len = in46a_netmasklen(&netmaskD);
+	OSMO_ASSERT(len == 0);
+}
+
 int main(int argc, char **argv)
 {
 	osmo_init_logging(&log_info);
@@ -262,4 +320,5 @@ int main(int argc, char **argv)
 	test_in46a_within_mask();
 	test_in46a_to_eua();
 	test_in46a_from_eua();
+	test_in46a_netmasklen();
 }

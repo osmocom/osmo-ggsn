@@ -195,6 +195,64 @@ int in46a_within_mask(const struct in46_addr *addr, const struct in46_addr *net,
 	}
 }
 
+static unsigned int ipv4_netmasklen(const struct in_addr *netmask)
+{
+	uint32_t bits = netmask->s_addr;
+	uint8_t *b = (uint8_t*) &bits;
+	unsigned int i, prefix = 0;
+
+	for (i = 0; i < 4; i++) {
+		while (b[i] & 0x80) {
+			prefix++;
+			b[i] = b[i] << 1;
+		}
+	}
+	return prefix;
+}
+
+static unsigned int ipv6_netmasklen(const struct in6_addr *netmask)
+{
+	#if defined(__linux__)
+		#define ADDRFIELD(i) s6_addr32[i]
+	#else
+		#define ADDRFIELD(i) __u6_addr.__u6_addr32[i]
+	#endif
+
+	unsigned int i, j, prefix = 0;
+
+	for (j = 0; j < 4; j++) {
+		uint32_t bits = netmask->ADDRFIELD(j);
+		uint8_t *b = (uint8_t*) &bits;
+		for (i = 0; i < 4; i++) {
+			while (b[i] & 0x80) {
+				prefix++;
+				b[i] = b[i] << 1;
+			}
+		}
+	}
+
+	#undef ADDRFIELD
+
+	return prefix;
+}
+
+/*! Convert netmask to prefix length representation
+ *  \param[in] netmask in46_addr containing a netmask (consecutive list of 1-bit followed by consecutive list of 0-bit)
+ *  \returns prefix length representation of the netmask (count of 1-bit from the start of the netmask)
+ */
+unsigned int in46a_netmasklen(const struct in46_addr *netmask)
+{
+	switch (netmask->len) {
+	case 4:
+		return ipv4_netmasklen(&netmask->v4);
+	case 16:
+		return ipv6_netmasklen(&netmask->v6);
+	default:
+		OSMO_ASSERT(0);
+		return 0;
+	}
+}
+
 /*! Convert given PDP End User Address to in46_addr
  *  \returns 0 on success; negative on error */
 int in46a_to_eua(const struct in46_addr *src, struct ul66_t *eua)

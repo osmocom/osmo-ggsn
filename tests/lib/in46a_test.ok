@@ -15,3 +15,5 @@ in46a_within_mask(10.11.12.14, 10.11.12.13, 32) = 0
 in46a_within_mask(10.11.12.14, 10.11.12.12, 30) = 1
 testing in46a_to_eua()
 Testing in46a_from_eua()
+Testing in46a_netmasklen() with IPv4 addresses
+Testing in46a_netmasklen() with IPv6 addresses
