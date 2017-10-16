@@ -751,34 +751,73 @@ int tun_runscript(struct tun_t *tun, char *script)
 
 #include <ifaddrs.h>
 
-/* obtain the link-local address of the tun device */
-int tun_ipv6_linklocal_get(const struct tun_t *tun, struct in6_addr *ia)
+/*! Obtain the local address of the tun device.
+ *  \param[in] tun Target device owning the IP
+ *  \param[out] prefix_list List of prefix structures to fill with each IPv4/6 and prefix length found.
+ *  \param[in] prefix_size Amount of elements allowed to be fill in the prefix_list array.
+ *  \param[in] flags Specify which kind of IP to look for: IP_TYPE_IPv4, IP_TYPE_IPv6_LINK, IP_TYPE_IPv6_NONLINK
+ *  \returns The number of ips found following the criteria specified by flags, -1 on error.
+ *
+ * This function will fill prefix_list with up to prefix_size IPs following the
+ * criteria specified by flags parameter. It returns the number of IPs matching
+ * the criteria. As a result, the number returned can be bigger than
+ * prefix_size. It can be used with prefix_size=0 to get an estimate of the size
+ * needed for prefix_list.
+ */
+int tun_ip_local_get(const struct tun_t *tun, struct in46_prefix *prefix_list, size_t prefix_size, int flags)
 {
-	struct ifaddrs *ifaddr, *ifa;
 	static const uint8_t ll_prefix[] = { 0xfe,0x80, 0,0, 0,0, 0,0 };
+	struct ifaddrs *ifaddr, *ifa;
+	struct in46_addr netmask;
+	size_t count = 0;
+	bool is_ipv6_ll;
 
 	if (getifaddrs(&ifaddr) == -1) {
 		return -1;
 	}
 
 	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
-		struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) ifa->ifa_addr;
 		if (ifa->ifa_addr == NULL)
-			continue;
-
-		if (ifa->ifa_addr->sa_family != AF_INET6)
 			continue;
 
 		if (strcmp(ifa->ifa_name, tun->devname))
 			continue;
 
-		if (memcmp(sin6->sin6_addr.s6_addr, ll_prefix, sizeof(ll_prefix)))
-			continue;
+		if (ifa->ifa_addr->sa_family == AF_INET && (flags & IP_TYPE_IPv4)) {
+			struct sockaddr_in *sin4 = (struct sockaddr_in *) ifa->ifa_addr;
+			struct sockaddr_in *netmask4 = (struct sockaddr_in *) ifa->ifa_netmask;
 
-		*ia = sin6->sin6_addr;
-		freeifaddrs(ifaddr);
-		return 0;
+			if (count < prefix_size) {
+				netmask.len = sizeof(netmask4->sin_addr);
+				netmask.v4 = netmask4->sin_addr;
+				prefix_list[count].addr.len = sizeof(sin4->sin_addr);
+				prefix_list[count].addr.v4 = sin4->sin_addr;
+				prefix_list[count].prefixlen = in46a_netmasklen(&netmask);
+			}
+			count++;
+		}
+
+		if (ifa->ifa_addr->sa_family == AF_INET6 && (flags & IP_TYPE_IPv6)) {
+			struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) ifa->ifa_addr;
+			struct sockaddr_in6 *netmask6 = (struct sockaddr_in6 *) ifa->ifa_netmask;
+
+			is_ipv6_ll = !memcmp(sin6->sin6_addr.s6_addr, ll_prefix, sizeof(ll_prefix));
+			if ((flags & IP_TYPE_IPv6_NONLINK) && is_ipv6_ll)
+				continue;
+			if ((flags & IP_TYPE_IPv6_LINK) && !is_ipv6_ll)
+				continue;
+
+			if (count < prefix_size) {
+				netmask.len = sizeof(netmask6->sin6_addr);
+				netmask.v6 = netmask6->sin6_addr;
+				prefix_list[count].addr.len = sizeof(sin6->sin6_addr);
+				prefix_list[count].addr.v6 = sin6->sin6_addr;
+				prefix_list[count].prefixlen = in46a_netmasklen(&netmask);
+			}
+			count++;
+		}
 	}
+
 	freeifaddrs(ifaddr);
-	return -1;
+	return count;
 }

@@ -149,6 +149,7 @@ int apn_stop(struct apn_ctx *apn, bool force)
 /* actually start the APN with its current config */
 int apn_start(struct apn_ctx *apn)
 {
+	struct in46_prefix ipv6_tun_linklocal_ip;
 	if (apn->started)
 		return 0;
 
@@ -201,12 +202,13 @@ int apn_start(struct apn_ctx *apn)
 		}
 
 		if (apn->cfg.apn_type_mask & (APN_TYPE_IPv6|APN_TYPE_IPv4v6)) {
-			if (tun_ipv6_linklocal_get(apn->tun.tun, &apn->v6_lladdr) < 0) {
+			if (tun_ip_local_get(apn->tun.tun, &ipv6_tun_linklocal_ip, 1, IP_TYPE_IPv6_LINK) < 1) {
 				LOGPAPN(LOGL_ERROR, apn, "Cannot obtain IPv6 link-local address of "
 					"interface: %s\n", strerror(errno));
 				apn_stop(apn, false);
 				return -1;
 			}
+			apn->v6_lladdr = ipv6_tun_linklocal_ip.addr.v6;
 		}
 
 		/* set back-pointer from TUN device to APN */

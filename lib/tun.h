@@ -23,6 +23,16 @@
 #define TUN_NLBUFSIZE   1024
 
 #include "config.h"
+
+/* ipv6 ip type flags for tun_ipv6_local_get() */
+enum {
+	IP_TYPE_IPv4 = 1,
+	IP_TYPE_IPv6_LINK = 2,
+	IP_TYPE_IPv6_NONLINK = 4,
+};
+#define IP_TYPE_IPv6 (IP_TYPE_IPv6_LINK | IP_TYPE_IPv6_NONLINK)
+
+
 #ifndef HAVE_IPHDR
 struct iphdr
   {
@@ -85,6 +95,7 @@ extern int tun_set_cb_ind(struct tun_t *this,
 
 extern int tun_runscript(struct tun_t *tun, char *script);
 
-int tun_ipv6_linklocal_get(const struct tun_t *tun, struct in6_addr *ia);
+int tun_ip_local_get(const struct tun_t *tun, struct in46_prefix *prefix_list,
+		     size_t prefix_size, int flags);
 
 #endif /* !_TUN_H */
