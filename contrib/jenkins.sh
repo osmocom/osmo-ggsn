@@ -14,8 +14,9 @@ deps="$base/deps"
 inst="$deps/install"
 export deps inst
 
+osmo-clean-workspace.sh
+
 mkdir "$deps" || true
-rm -rf "$inst"
 
 osmo-build-dep.sh libosmocore "" ac_cv_path_DOXYGEN=false
 
@@ -37,3 +38,5 @@ autoreconf --install --force
 ./configure
 $MAKE $PARALLEL_MAKE
 $MAKE distcheck
+
+osmo-clean-workspace.sh
