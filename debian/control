@@ -57,3 +57,20 @@ Priority: extra
 Depends: ${shlibs:Depends}, ${misc:Depends}, libgtp2 (= ${binary:Version}), osmo-ggsn (= ${binary:Version})
 Multi-Arch: same
 Description: Debug symbols for OsmoGGSN
+ OsmoGGSN is a Gateway GPRS Support Node (GGSN). It is used by mobile
+ operators as the interface between the Internet and the rest of the
+ mobile network infrastructure.
+
+Package: libgtp-dbg
+Section: debug
+Architecture: any
+Priority: extra
+Depends: ${shlibs:Depends}, ${misc:Depends}, libgtp2 (= ${binary:Version})
+Multi-Arch: same
+Description: Debug symbols for OsmoGGSN
+ OsmoGGSN is a Gateway GPRS Support Node (GGSN). It is used by mobile
+ operators as the interface between the Internet and the rest of the
+ mobile network infrastructure.
+ .
+ The library libgtp implements the GTP protocol between SGSN and GGSN
+ and this package contains the development files for this library.
