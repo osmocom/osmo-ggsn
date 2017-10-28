@@ -124,4 +124,5 @@ int main(int argc, char **argv)
 	/* TODO: gtpie_encaps() */
 	/* TODO: gtpie_encaps2() */
 	/* TODO: gtpie_getie(), gtpie_exist(), gtpie_get*() */
+	return 0;
 }

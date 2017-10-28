@@ -321,4 +321,5 @@ int main(int argc, char **argv)
 	test_in46a_to_eua();
 	test_in46a_from_eua();
 	test_in46a_netmasklen();
+	return 0;
 }

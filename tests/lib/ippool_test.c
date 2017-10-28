@@ -130,4 +130,5 @@ int main(int argc, char **argv)
 	srand(time(NULL));
 
 	test_pool_sizes();
+	return 0;
 }
