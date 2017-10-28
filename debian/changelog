@@ -1,3 +1,10 @@
+osmo-ggsn (1.1.0) unstable; urgency=medium
+
+  * libgtp: pdp.h: Addition of new tx_gpdu_seq struct member member
+  * libgtp: pdp.h: add LOGPDPX() helper to public API
+
+ -- Harald Welte <laforge@gnumonks.org>  Sat, 28 Oct 2017 19:00:23 +0200
+
 osmo-ggsn (1.0.0) unstable; urgency=medium
 
   * Transition to OsmoGGSN
