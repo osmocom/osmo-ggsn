@@ -240,7 +240,7 @@ int ippool_new(struct ippool_t **this, const struct in46_prefix *dyn, const stru
 		stataddr = stat->addr;
 		stataddrprefixlen = stat->prefixlen;
 
-		statsize = (1 << (addr.len - stataddrprefixlen + 1)) -1;
+		statsize = (1 << (stataddr.len*8 - stataddrprefixlen));
 		if (statsize > IPPOOL_STATSIZE)
 			statsize = IPPOOL_STATSIZE;
 	}
