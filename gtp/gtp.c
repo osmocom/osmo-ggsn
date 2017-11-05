@@ -2635,6 +2635,12 @@ int gtp_error_ind_conf(struct gsn_t *gsn, int version,
 	GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 		    "Received Error Indication\n");
 
+	/* This is obvious from above code, given the semantics of the
+	 * functions above, but Coverity doesn't figure this out, so
+	 * let's make it clear. It's good style anyway in case above
+	 * code should ever change. */
+	OSMO_ASSERT(pdp);
+
 	if (gsn->cb_delete_context)
 		gsn->cb_delete_context(pdp);
 	pdp_freepdp(pdp);
