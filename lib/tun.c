@@ -396,7 +396,6 @@ static int tun_setaddr6(struct tun_t *this, struct in6_addr *addr, struct in6_ad
 
 #if defined(__linux__)
 	if (addr) {
-		memcpy(&this->addr, addr, sizeof(*addr));
 		memcpy(&ifr.ifr6_addr, addr, sizeof(*addr));
 		if (ioctl(fd, SIOCSIFADDR, (void *) &ifr) < 0) {
 			if (errno != EEXIST) {
