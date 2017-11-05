@@ -3301,7 +3301,7 @@ int in_addr2gsna(struct ul16_t *gsna, struct in_addr *src)
  * _network byte order_ to contain BCD digits ?!? */
 const char *imsi_gtp2str(const uint64_t *imsi)
 {
-	static char buf[sizeof(*imsi)+1];
+	static char buf[sizeof(*imsi)*2+1];
 	const uint8_t *imsi8 = (const uint8_t *) imsi;
 	unsigned int i, j = 0;
 
