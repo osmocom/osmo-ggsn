@@ -985,7 +985,7 @@ out:
 static char *proc_ipv6_conf_read(const char *dev, const char *file)
 {
 	const char *fmt = "/proc/sys/net/ipv6/conf/%s/%s";
-	char path[strlen(fmt) + strlen(dev) + strlen(file)];
+	char path[strlen(fmt) + strlen(dev) + strlen(file)+1];
 	snprintf(path, sizeof(path), fmt, dev, file);
 	return proc_read(path);
 }
