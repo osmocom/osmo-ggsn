@@ -1459,9 +1459,9 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 					"router advertisements; SLAAC will not suceed, please "
 					"fix your setup!\n");
 			}
-			free(accept_ra);
-			free(forwarding);
 		}
+		free(accept_ra);
+		free(forwarding);
 	}
 
 	ipset((struct iphash_t *)pdp->peer, &addr);
