@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <net/if.h>
@@ -36,37 +37,15 @@
 
 static void pdp_debug(struct pdp_t *pdp)
 {
-	int i;
-	uint64_t teid;
+	struct in46_addr ia46;
+	struct in_addr ia;
 
-	if (!debug)
-		return;
+	in46a_from_eua(&pdp->eua, &ia46);
+	gsna2in_addr(&ia, &pdp->gsnrc);
 
-	printf("version %u\n", pdp->version);
-	if (pdp->version == 0) {
-		teid = pdp_gettid(pdp->imsi, pdp->nsapi);
-		printf("flowid %u\n", pdp->flru);
-	} else {
-		teid = pdp->teid_gn; /* GTPIE_TEI_DI */
-	}
-
-	printf("teid %llx\n", teid);
-	printf("address (%u)\n", pdp->eua.l);
-
-	/* Byte 0: 0xf1 == IETF */
-	/* Byte 1: 0x21 == IPv4 */
-	/* Byte 2-6: IPv4 address */
-
-	for (i = 0; i < 6; i++)
-		printf("%x ", pdp->eua.v[i] & 0xff); /* GTPIE_EUA */
-
-	printf("\n");
-	printf("sgsn-addr (%u)\n", pdp->gsnrc.l);
-
-	for (i = 0; i < 4; i++)
-		printf("%x ", pdp->gsnrc.v[i] & 0xff); /* GTPIE_GSN_ADDR */
-
-	printf("\n");
+	LOGPDPX(DGGSN, LOGL_DEBUG, pdp, "v%u TEID %"PRIu64"x EUA=%s SGSN=%s\n", pdp->version,
+		pdp->version == 0 ? pdp_gettid(pdp->imsi, pdp->nsapi) : pdp->teid_gn,
+		in46a_ntoa(&ia46), inet_ntoa(ia));
 }
 
 static struct {
@@ -101,11 +80,8 @@ int gtp_kernel_init(struct gsn_t *gsn, struct in_addr *net,
 			"cannot lookup GTP genetlink ID\n");
 		return -1;
 	}
-	if (debug) {
-		SYS_ERR(DGGSN, LOGL_NOTICE, 0,
-			"Using the GTP kernel mode (genl ID is %d)\n",
-			gtp_nl.genl_id);
-	}
+	SYS_ERR(DGGSN, LOGL_DEBUG, 0,
+		"Using the GTP kernel mode (genl ID is %d)\n", gtp_nl.genl_id);
 
 	DEBUGP(DGGSN, "Setting route to reach %s via %s\n",
 	       net_arg, GTP_DEVNAME);

@@ -974,7 +974,6 @@ static char *proc_read(const char *path)
 		ret = NULL;
 		goto out;
 	}
-	return ret;
 
 out:
 	fclose(f);
