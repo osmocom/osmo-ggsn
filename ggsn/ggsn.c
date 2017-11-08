@@ -152,26 +152,30 @@ static int alloc_ippool_blacklist(struct apn_ctx *apn, struct in46_prefix **blac
 
 	int flags, len, len2, i;
 
+	*blacklist = NULL;
+
 	if (ipv6)
 		flags = IP_TYPE_IPv6_NONLINK;
 	else
 		flags = IP_TYPE_IPv4;
 
 	while (1) {
-		len = tun_ip_local_get(apn->tun.tun, NULL, 0, flags);
+		len = netdev_ip_local_get(apn->tun.cfg.dev_name, NULL, 0, flags);
 		if (len < 1)
 			return len;
 
 		*blacklist = talloc_zero_size(apn, len * sizeof(struct in46_prefix));
-		len2 = tun_ip_local_get(apn->tun.tun, *blacklist, len, flags);
+		len2 = netdev_ip_local_get(apn->tun.cfg.dev_name, *blacklist, len, flags);
 		if (len2 < 1) {
 			talloc_free(*blacklist);
+			*blacklist = NULL;
 			return len2;
 		}
 
-		if (len2 > len) /* iface was added between 2 calls, repeat operation */
+		if (len2 > len) { /* iface was added between 2 calls, repeat operation */
 			talloc_free(*blacklist);
-		else
+			*blacklist = NULL;
+		} else
 			break;
 	}
 
