@@ -95,6 +95,9 @@ extern int tun_set_cb_ind(struct tun_t *this,
 
 extern int tun_runscript(struct tun_t *tun, char *script);
 
+int netdev_ip_local_get(const char *devname, struct in46_prefix *prefix_list,
+			size_t prefix_size, int flags);
+
 int tun_ip_local_get(const struct tun_t *tun, struct in46_prefix *prefix_list,
 		     size_t prefix_size, int flags);
 

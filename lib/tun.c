@@ -750,8 +750,8 @@ int tun_runscript(struct tun_t *tun, char *script)
 
 #include <ifaddrs.h>
 
-/*! Obtain the local address of the tun device.
- *  \param[in] tun Target device owning the IP
+/*! Obtain the local address of a network device
+ *  \param[in] devname Target device owning the IP
  *  \param[out] prefix_list List of prefix structures to fill with each IPv4/6 and prefix length found.
  *  \param[in] prefix_size Amount of elements allowed to be fill in the prefix_list array.
  *  \param[in] flags Specify which kind of IP to look for: IP_TYPE_IPv4, IP_TYPE_IPv6_LINK, IP_TYPE_IPv6_NONLINK
@@ -763,7 +763,7 @@ int tun_runscript(struct tun_t *tun, char *script)
  * prefix_size. It can be used with prefix_size=0 to get an estimate of the size
  * needed for prefix_list.
  */
-int tun_ip_local_get(const struct tun_t *tun, struct in46_prefix *prefix_list, size_t prefix_size, int flags)
+int netdev_ip_local_get(const char *devname, struct in46_prefix *prefix_list, size_t prefix_size, int flags)
 {
 	static const uint8_t ll_prefix[] = { 0xfe,0x80, 0,0, 0,0, 0,0 };
 	struct ifaddrs *ifaddr, *ifa;
@@ -779,7 +779,7 @@ int tun_ip_local_get(const struct tun_t *tun, struct in46_prefix *prefix_list, s
 		if (ifa->ifa_addr == NULL)
 			continue;
 
-		if (strcmp(ifa->ifa_name, tun->devname))
+		if (strcmp(ifa->ifa_name, devname))
 			continue;
 
 		if (ifa->ifa_addr->sa_family == AF_INET && (flags & IP_TYPE_IPv4)) {
@@ -819,4 +819,22 @@ int tun_ip_local_get(const struct tun_t *tun, struct in46_prefix *prefix_list, s
 
 	freeifaddrs(ifaddr);
 	return count;
+}
+
+/*! Obtain the local address of the tun device.
+ *  \param[in] tun Target device owning the IP
+ *  \param[out] prefix_list List of prefix structures to fill with each IPv4/6 and prefix length found.
+ *  \param[in] prefix_size Amount of elements allowed to be fill in the prefix_list array.
+ *  \param[in] flags Specify which kind of IP to look for: IP_TYPE_IPv4, IP_TYPE_IPv6_LINK, IP_TYPE_IPv6_NONLINK
+ *  \returns The number of ips found following the criteria specified by flags, -1 on error.
+ *
+ * This function will fill prefix_list with up to prefix_size IPs following the
+ * criteria specified by flags parameter. It returns the number of IPs matching
+ * the criteria. As a result, the number returned can be bigger than
+ * prefix_size. It can be used with prefix_size=0 to get an estimate of the size
+ * needed for prefix_list.
+ */
+int tun_ip_local_get(const struct tun_t *tun, struct in46_prefix *prefix_list, size_t prefix_size, int flags)
+{
+	return netdev_ip_local_get(tun->devname, prefix_list, prefix_size, flags);
 }
