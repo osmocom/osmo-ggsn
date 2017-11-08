@@ -68,6 +68,8 @@ static int gtp_kernel_init_once(void)
 	if (gtp_nl.genl_id < 0) {
 		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"cannot lookup GTP genetlink ID\n");
+		genl_socket_close(gtp_nl.nl);
+		gtp_nl.nl = NULL;
 		return -1;
 	}
 	SYS_ERR(DGGSN, LOGL_DEBUG, 0, "Initialized GTP kernel mode (genl ID is %d)\n", gtp_nl.genl_id);
