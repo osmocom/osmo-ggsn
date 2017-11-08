@@ -130,6 +130,7 @@ int apn_stop(struct apn_ctx *apn, bool force)
 		tun_free(apn->tun.tun);
 		apn->tun.tun = NULL;
 	}
+	gtp_kernel_stop(apn->tun.cfg.dev_name);
 
 	if (apn->v4.pool) {
 		LOGPAPN(LOGL_INFO, apn, "Releasing IPv4 pool\n");
