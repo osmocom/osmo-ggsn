@@ -54,10 +54,7 @@ static struct {
 	bool			enabled;
 } gtp_nl;
 
-/* Always forces the kernel to allocate gtp0. If it exists it hits EEXIST */
-#define GTP_DEVNAME	"gtp0"
-
-int gtp_kernel_init(struct gsn_t *gsn, struct in46_prefix *prefix, const char *ipup)
+int gtp_kernel_init(struct gsn_t *gsn, const char *devname, struct in46_prefix *prefix, const char *ipup)
 {
 	struct in_addr net;
 	const char *net_arg;
@@ -69,7 +66,7 @@ int gtp_kernel_init(struct gsn_t *gsn, struct in46_prefix *prefix, const char *i
 	}
 	net = prefix->addr.v4;
 
-	if (gtp_dev_create(-1, GTP_DEVNAME, gsn->fd0, gsn->fd1u) < 0) {
+	if (gtp_dev_create(-1, devname, gsn->fd0, gsn->fd1u) < 0) {
 		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"cannot create GTP tunnel device: %s\n",
 			strerror(errno));
@@ -94,10 +91,9 @@ int gtp_kernel_init(struct gsn_t *gsn, struct in46_prefix *prefix, const char *i
 
 	net_arg = in46p_ntoa(prefix);
 
-	DEBUGP(DGGSN, "Setting route to reach %s via %s\n",
-	       net_arg, GTP_DEVNAME);
+	DEBUGP(DGGSN, "Setting route to reach %s via %s\n", net_arg, devname);
 
-	if (gtp_dev_config(GTP_DEVNAME, &net, prefix->prefixlen) < 0) {
+	if (gtp_dev_config(devname, &net, prefix->prefixlen) < 0) {
 		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"Cannot add route to reach network %s\n",
 			net_arg);
@@ -113,8 +109,7 @@ int gtp_kernel_init(struct gsn_t *gsn, struct in46_prefix *prefix, const char *i
 		int err;
 
 		/* eg. /home/ggsn/ipup gtp0 10.0.0.0/8 */
-		snprintf(cmd, sizeof(cmd), "%s %s %s",
-			 ipup, GTP_DEVNAME, net_arg);
+		snprintf(cmd, sizeof(cmd), "%s %s %s", ipup, devname, net_arg);
 		cmd[sizeof(cmd)-1] = '\0';
 
 		err = system(cmd);
@@ -129,15 +124,15 @@ int gtp_kernel_init(struct gsn_t *gsn, struct in46_prefix *prefix, const char *i
 	return 0;
 }
 
-void gtp_kernel_stop(void)
+void gtp_kernel_stop(const char *devname)
 {
 	if (!gtp_nl.enabled)
 		return;
 
-	gtp_dev_destroy(GTP_DEVNAME);
+	gtp_dev_destroy(devname);
 }
 
-int gtp_kernel_tunnel_add(struct pdp_t *pdp)
+int gtp_kernel_tunnel_add(struct pdp_t *pdp, const char *devname)
 {
 	struct in_addr ms, sgsn;
 	struct gtp_tunnel *t;
@@ -155,7 +150,7 @@ int gtp_kernel_tunnel_add(struct pdp_t *pdp)
 	memcpy(&ms, &pdp->eua.v[2], sizeof(struct in_addr));
 	memcpy(&sgsn, &pdp->gsnrc.v[0], sizeof(struct in_addr));
 
-	gtp_tunnel_set_ifidx(t, if_nametoindex(GTP_DEVNAME));
+	gtp_tunnel_set_ifidx(t, if_nametoindex(devname));
 	gtp_tunnel_set_version(t, pdp->version);
 	gtp_tunnel_set_ms_ip4(t, &ms);
 	gtp_tunnel_set_sgsn_ip4(t, &sgsn);
@@ -175,7 +170,7 @@ int gtp_kernel_tunnel_add(struct pdp_t *pdp)
 	return ret;
 }
 
-int gtp_kernel_tunnel_del(struct pdp_t *pdp)
+int gtp_kernel_tunnel_del(struct pdp_t *pdp, const char *devname)
 {
 	struct gtp_tunnel *t;
 	int ret;
@@ -189,7 +184,7 @@ int gtp_kernel_tunnel_del(struct pdp_t *pdp)
 	if (t == NULL)
 		return -1;
 
-	gtp_tunnel_set_ifidx(t, if_nametoindex(GTP_DEVNAME));
+	gtp_tunnel_set_ifidx(t, if_nametoindex(devname));
 	gtp_tunnel_set_version(t, pdp->version);
 	if (pdp->version == 0) {
 		gtp_tunnel_set_tid(t, pdp_gettid(pdp->imsi, pdp->nsapi));

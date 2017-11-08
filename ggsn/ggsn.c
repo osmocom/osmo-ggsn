@@ -266,7 +266,8 @@ int apn_start(struct apn_ctx *apn)
 		}
 		LOGPAPN(LOGL_ERROR, apn, "Setting up Kernel GTP\n");
 		/* use GTP kernel module for data packet encapsulation */
-		if (gtp_kernel_init(apn->ggsn->gsn, &apn->v4.cfg.ifconfig_prefix, apn->tun.cfg.ipup_script) < 0) {
+		if (gtp_kernel_init(apn->ggsn->gsn, apn->tun.cfg.dev_name,
+				    &apn->v4.cfg.ifconfig_prefix, apn->tun.cfg.ipup_script) < 0) {
 			return -1;
 		}
 		break;
@@ -334,6 +335,7 @@ static int delete_context(struct pdp_t *pdp)
 {
 	struct gsn_t *gsn = pdp->gsn;
 	struct ippoolm_t *ipp = (struct ippoolm_t *)pdp->peer;
+	struct apn_ctx *apn = pdp->priv;
 
 	LOGPPDP(LOGL_INFO, pdp, "Deleting PDP context\n");
 	struct ippoolm_t *member = pdp->peer;
@@ -344,7 +346,7 @@ static int delete_context(struct pdp_t *pdp)
 	} else
 		LOGPPDP(LOGL_ERROR, pdp, "Cannot find/free IP Pool member\n");
 
-	if (gtp_kernel_tunnel_del(pdp)) {
+	if (gtp_kernel_tunnel_del(pdp, apn->tun.cfg.dev_name)) {
 		LOGPPDP(LOGL_ERROR, pdp, "Cannot delete tunnel from kernel:%s\n",
 			strerror(errno));
 	}
@@ -567,7 +569,7 @@ int create_context_ind(struct pdp_t *pdp)
 		in46a_to_eua(&member->addr, &pdp->eua);
 
 		/* TODO: In IPv6, EUA doesn't contain the actual IP addr/prefix! */
-		if (gtp_kernel_tunnel_add(pdp) < 0) {
+		if (gtp_kernel_tunnel_add(pdp, apn->tun.cfg.dev_name) < 0) {
 			LOGPPDP(LOGL_ERROR, pdp, "Cannot add tunnel to kernel: %s\n", strerror(errno));
 			gtp_create_context_resp(gsn, pdp, GTPCAUSE_SYS_FAIL);
 			return 0;
@@ -596,6 +598,7 @@ int create_context_ind(struct pdp_t *pdp)
 
 	pdp->peer = member;
 	pdp->ipif = apn->tun.tun;	/* TODO */
+	pdp->priv = apn;
 	member->peer = pdp;
 
 	if (!send_trap(gsn, pdp, member, "imsi-ass-ip")) { /* TRAP with IP assignment */
