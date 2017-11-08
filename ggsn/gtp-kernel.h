@@ -13,8 +13,6 @@ void gtp_kernel_stop(const char *devname);
 int gtp_kernel_tunnel_add(struct pdp_t *pdp, const char *devname);
 int gtp_kernel_tunnel_del(struct pdp_t *pdp, const char *devname);
 
-int gtp_kernel_enabled(void);
-
 #else
 static inline int gtp_kernel_init(struct gsn_t *gsn, const char *devname, struct in46_prefix *prefix, const char *ipup)
 {
@@ -30,11 +28,6 @@ static inline int gtp_kernel_tunnel_add(struct pdp_t *pdp, const char *devname)
 }
 
 static inline int gtp_kernel_tunnel_del(struct pdp_t *pdp, const char *devname)
-{
-	return 0;
-}
-
-static inline int gtp_kernel_enabled(void)
 {
 	return 0;
 }

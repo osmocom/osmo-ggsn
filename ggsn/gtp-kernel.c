@@ -51,7 +51,6 @@ static void pdp_debug(struct pdp_t *pdp)
 static struct {
 	int			genl_id;
 	struct mnl_socket	*nl;
-	bool			enabled;
 } gtp_nl;
 
 int gtp_kernel_init(struct gsn_t *gsn, const char *devname, struct in46_prefix *prefix, const char *ipup)
@@ -72,7 +71,6 @@ int gtp_kernel_init(struct gsn_t *gsn, const char *devname, struct in46_prefix *
 			strerror(errno));
 		return -1;
 	}
-	gtp_nl.enabled = true;
 
 	gtp_nl.nl = genl_socket_open();
 	if (gtp_nl.nl == NULL) {
@@ -126,9 +124,6 @@ int gtp_kernel_init(struct gsn_t *gsn, const char *devname, struct in46_prefix *
 
 void gtp_kernel_stop(const char *devname)
 {
-	if (!gtp_nl.enabled)
-		return;
-
 	gtp_dev_destroy(devname);
 }
 
@@ -137,9 +132,6 @@ int gtp_kernel_tunnel_add(struct pdp_t *pdp, const char *devname)
 	struct in_addr ms, sgsn;
 	struct gtp_tunnel *t;
 	int ret;
-
-	if (!gtp_nl.enabled)
-		return 0;
 
 	pdp_debug(pdp);
 
@@ -175,9 +167,6 @@ int gtp_kernel_tunnel_del(struct pdp_t *pdp, const char *devname)
 	struct gtp_tunnel *t;
 	int ret;
 
-	if (!gtp_nl.enabled)
-		return 0;
-
 	pdp_debug(pdp);
 
 	t = gtp_tunnel_alloc();
@@ -197,9 +186,4 @@ int gtp_kernel_tunnel_del(struct pdp_t *pdp, const char *devname)
 	gtp_tunnel_free(t);
 
 	return ret;
-}
-
-int gtp_kernel_enabled(void)
-{
-	return gtp_nl.enabled;
 }
