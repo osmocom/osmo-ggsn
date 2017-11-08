@@ -61,18 +61,17 @@ static int gtp_kernel_init_once(void)
 
 	gtp_nl.nl = genl_socket_open();
 	if (gtp_nl.nl == NULL) {
-		SYS_ERR(DGGSN, LOGL_ERROR, 0, "cannot create genetlink socket\n");
+		LOGP(DGGSN, LOGL_ERROR, "cannot create genetlink socket\n");
 		return -1;
 	}
 	gtp_nl.genl_id = genl_lookup_family(gtp_nl.nl, "gtp");
 	if (gtp_nl.genl_id < 0) {
-		SYS_ERR(DGGSN, LOGL_ERROR, 0,
-			"cannot lookup GTP genetlink ID\n");
+		LOGP(DGGSN, LOGL_ERROR, "cannot lookup GTP genetlink ID\n");
 		genl_socket_close(gtp_nl.nl);
 		gtp_nl.nl = NULL;
 		return -1;
 	}
-	SYS_ERR(DGGSN, LOGL_DEBUG, 0, "Initialized GTP kernel mode (genl ID is %d)\n", gtp_nl.genl_id);
+	LOGP(DGGSN, LOGL_NOTICE, "Initialized GTP kernel mode (genl ID is %d)\n", gtp_nl.genl_id);
 
 	return 0;
 }
@@ -86,15 +85,13 @@ int gtp_kernel_init(struct gsn_t *gsn, const char *devname, struct in46_prefix *
 		gtp_kernel_init_once();
 
 	if (prefix->addr.len != 4) {
-		SYS_ERR(DGGSN, LOGL_ERROR, 0,
-			"we only support IPv4 in this path :/");
+		LOGP(DGGSN, LOGL_ERROR, "we only support IPv4 in this path :/");
 		return -1;
 	}
 	net = prefix->addr.v4;
 
 	if (gtp_dev_create(-1, devname, gsn->fd0, gsn->fd1u) < 0) {
-		SYS_ERR(DGGSN, LOGL_ERROR, 0,
-			"cannot create GTP tunnel device: %s\n",
+		LOGP(DGGSN, LOGL_ERROR, "cannot create GTP tunnel device: %s\n",
 			strerror(errno));
 		return -1;
 	}
@@ -104,9 +101,7 @@ int gtp_kernel_init(struct gsn_t *gsn, const char *devname, struct in46_prefix *
 	DEBUGP(DGGSN, "Setting route to reach %s via %s\n", net_arg, devname);
 
 	if (gtp_dev_config(devname, &net, prefix->prefixlen) < 0) {
-		SYS_ERR(DGGSN, LOGL_ERROR, 0,
-			"Cannot add route to reach network %s\n",
-			net_arg);
+		LOGP(DGGSN, LOGL_ERROR, "Cannot add route to reach network %s\n", net_arg);
 	}
 
 	/* launch script if it is set to bring up the route to reach
@@ -124,12 +119,11 @@ int gtp_kernel_init(struct gsn_t *gsn, const char *devname, struct in46_prefix *
 
 		err = system(cmd);
 		if (err < 0) {
-			SYS_ERR(DGGSN, LOGL_ERROR, 0,
-				"Failed to launch script `%s'", ipup);
+			LOGP(DGGSN, LOGL_ERROR, "Failed to launch script `%s'\n", ipup);
 			return -1;
 		}
 	}
-	SYS_ERR(DGGSN, LOGL_NOTICE, 0, "GTP kernel configured\n");
+	LOGP(DGGSN, LOGL_NOTICE, "GTP kernel configured\n");
 
 	return 0;
 }
