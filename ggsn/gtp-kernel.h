@@ -7,8 +7,7 @@ extern int debug;
 extern char *ipup;
 
 #ifdef GTP_KERNEL
-int gtp_kernel_init(struct gsn_t *gsn, struct in_addr *net,
-		    size_t prefixlen, const char *net_arg);
+int gtp_kernel_init(struct gsn_t *gsn, struct in46_prefix *prefix, const char *ipup);
 void gtp_kernel_stop(void);
 
 int gtp_kernel_tunnel_add(struct pdp_t *pdp);
@@ -17,8 +16,7 @@ int gtp_kernel_tunnel_del(struct pdp_t *pdp);
 int gtp_kernel_enabled(void);
 
 #else
-static inline int gtp_kernel_init(struct gsn_t *gsn, struct in_addr *net,
-				  size_t prefixlen, const char *net_arg)
+static inline int gtp_kernel_init(struct gsn_t *gsn, struct in46_prefix *prefix, const char *ipup)
 {
 	SYS_ERR(DGGSN, LOGL_ERROR, 0, "ggsn compiled without GTP kernel support!\n");
 	return -1;

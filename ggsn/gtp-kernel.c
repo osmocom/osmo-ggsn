@@ -57,9 +57,18 @@ static struct {
 /* Always forces the kernel to allocate gtp0. If it exists it hits EEXIST */
 #define GTP_DEVNAME	"gtp0"
 
-int gtp_kernel_init(struct gsn_t *gsn, struct in_addr *net,
-		    size_t prefixlen, const char *net_arg)
+int gtp_kernel_init(struct gsn_t *gsn, struct in46_prefix *prefix, const char *ipup)
 {
+	struct in_addr net;
+	const char *net_arg;
+
+	if (prefix->addr.len != 4) {
+		SYS_ERR(DGGSN, LOGL_ERROR, 0,
+			"we only support IPv4 in this path :/");
+		return -1;
+	}
+	net = prefix->addr.v4;
+
 	if (gtp_dev_create(-1, GTP_DEVNAME, gsn->fd0, gsn->fd1u) < 0) {
 		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"cannot create GTP tunnel device: %s\n",
@@ -83,10 +92,12 @@ int gtp_kernel_init(struct gsn_t *gsn, struct in_addr *net,
 	SYS_ERR(DGGSN, LOGL_DEBUG, 0,
 		"Using the GTP kernel mode (genl ID is %d)\n", gtp_nl.genl_id);
 
+	net_arg = in46p_ntoa(prefix);
+
 	DEBUGP(DGGSN, "Setting route to reach %s via %s\n",
 	       net_arg, GTP_DEVNAME);
 
-	if (gtp_dev_config(GTP_DEVNAME, net, prefixlen) < 0) {
+	if (gtp_dev_config(GTP_DEVNAME, &net, prefix->prefixlen) < 0) {
 		SYS_ERR(DGGSN, LOGL_ERROR, 0,
 			"Cannot add route to reach network %s\n",
 			net_arg);
