@@ -53,10 +53,35 @@ static struct {
 	struct mnl_socket	*nl;
 } gtp_nl;
 
+static int gtp_kernel_init_once(void)
+{
+	/* only initialize once */
+	if (gtp_nl.nl)
+		return 0;
+
+	gtp_nl.nl = genl_socket_open();
+	if (gtp_nl.nl == NULL) {
+		SYS_ERR(DGGSN, LOGL_ERROR, 0, "cannot create genetlink socket\n");
+		return -1;
+	}
+	gtp_nl.genl_id = genl_lookup_family(gtp_nl.nl, "gtp");
+	if (gtp_nl.genl_id < 0) {
+		SYS_ERR(DGGSN, LOGL_ERROR, 0,
+			"cannot lookup GTP genetlink ID\n");
+		return -1;
+	}
+	SYS_ERR(DGGSN, LOGL_DEBUG, 0, "Initialized GTP kernel mode (genl ID is %d)\n", gtp_nl.genl_id);
+
+	return 0;
+}
+
 int gtp_kernel_init(struct gsn_t *gsn, const char *devname, struct in46_prefix *prefix, const char *ipup)
 {
 	struct in_addr net;
 	const char *net_arg;
+
+	if (!gtp_nl.nl)
+		gtp_kernel_init_once();
 
 	if (prefix->addr.len != 4) {
 		SYS_ERR(DGGSN, LOGL_ERROR, 0,
@@ -71,21 +96,6 @@ int gtp_kernel_init(struct gsn_t *gsn, const char *devname, struct in46_prefix *
 			strerror(errno));
 		return -1;
 	}
-
-	gtp_nl.nl = genl_socket_open();
-	if (gtp_nl.nl == NULL) {
-		SYS_ERR(DGGSN, LOGL_ERROR, 0,
-			"cannot create genetlink socket\n");
-		return -1;
-	}
-	gtp_nl.genl_id = genl_lookup_family(gtp_nl.nl, "gtp");
-	if (gtp_nl.genl_id < 0) {
-		SYS_ERR(DGGSN, LOGL_ERROR, 0,
-			"cannot lookup GTP genetlink ID\n");
-		return -1;
-	}
-	SYS_ERR(DGGSN, LOGL_DEBUG, 0,
-		"Using the GTP kernel mode (genl ID is %d)\n", gtp_nl.genl_id);
 
 	net_arg = in46p_ntoa(prefix);
 
