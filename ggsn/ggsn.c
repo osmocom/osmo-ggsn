@@ -260,12 +260,12 @@ int apn_start(struct apn_ctx *apn)
 		apn->tun.tun->priv = apn;
 		break;
 	case APN_GTPU_MODE_KERNEL_GTP:
+		LOGPAPN(LOGL_INFO, apn, "Opening Kernel GTP device %s\n", apn->tun.cfg.dev_name);
 		if (apn->cfg.apn_type_mask & (APN_TYPE_IPv6|APN_TYPE_IPv4v6)) {
 			LOGPAPN(LOGL_ERROR, apn, "Kernel GTP currently supports only IPv4\n");
 			apn_stop(apn, false);
 			return -1;
 		}
-		LOGPAPN(LOGL_ERROR, apn, "Setting up Kernel GTP\n");
 		/* use GTP kernel module for data packet encapsulation */
 		if (gtp_kernel_init(apn->ggsn->gsn, apn->tun.cfg.dev_name,
 				    &apn->v4.cfg.ifconfig_prefix, apn->tun.cfg.ipup_script) < 0) {
