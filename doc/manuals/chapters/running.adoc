@@ -1,4 +1,4 @@
-== Running OsmoNITB
+== Running OsmoGGSN
 
 The OsmoGGSN executable (`osmo-ggsn`) offers the following command-line
 arguments:
