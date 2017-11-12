@@ -39,3 +39,12 @@ line vty
 ctrl
  bind 127.0.0.2
 ----
+
+Also make sure to place each instance's GTP bind on a separate IP address (GTP
+uses a port number that is fixed in the GTP specifications, so it will not be
+possible to pick differing ports on the same IP address), like:
+
+----
+ggsn ggsn0
+ gtp bind-ip 127.0.0.2
+----
