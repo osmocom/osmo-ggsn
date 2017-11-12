@@ -35,7 +35,7 @@
 
 #include "gtp-kernel.h"
 
-static void pdp_debug(const char *prefix, struct pdp_t *pdp)
+static void pdp_debug(const char *prefix, const char *devname, struct pdp_t *pdp)
 {
 	struct in46_addr ia46;
 	struct in_addr ia;
@@ -43,7 +43,8 @@ static void pdp_debug(const char *prefix, struct pdp_t *pdp)
 	in46a_from_eua(&pdp->eua, &ia46);
 	gsna2in_addr(&ia, &pdp->gsnrc);
 
-	LOGPDPX(DGGSN, LOGL_DEBUG, pdp, "%s v%u TEID %"PRIu64"x EUA=%s SGSN=%s\n", prefix, pdp->version,
+	LOGPDPX(DGGSN, LOGL_DEBUG, pdp, "%s %s v%u TEID %"PRIx64" EUA=%s SGSN=%s\n", prefix,
+		devname, pdp->version,
 		pdp->version == 0 ? pdp_gettid(pdp->imsi, pdp->nsapi) : pdp->teid_gn,
 		in46a_ntoa(&ia46), inet_ntoa(ia));
 }
@@ -139,7 +140,7 @@ int gtp_kernel_tunnel_add(struct pdp_t *pdp, const char *devname)
 	struct gtp_tunnel *t;
 	int ret;
 
-	pdp_debug(__func__, pdp);
+	pdp_debug(__func__, devname, pdp);
 
 	t = gtp_tunnel_alloc();
 	if (t == NULL)
@@ -173,7 +174,7 @@ int gtp_kernel_tunnel_del(struct pdp_t *pdp, const char *devname)
 	struct gtp_tunnel *t;
 	int ret;
 
-	pdp_debug(__func__, pdp);
+	pdp_debug(__func__, devname, pdp);
 
 	t = gtp_tunnel_alloc();
 	if (t == NULL)
