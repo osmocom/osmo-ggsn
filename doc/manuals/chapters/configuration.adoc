@@ -250,7 +250,7 @@ The interface creation + configuration must then happen before osmo-ggsn startin
 achieved by means such as
 
 * a custom shell script run as root before starting osmo-ggsn (e.g. as init script)
-* systemd .netdev and .network files
+* systemd .netdev and .network files, if your system is using systemd-networkd (see `networkctl status`).
 
 ==== Manual TUN device creation / configuration
 
@@ -266,8 +266,13 @@ create a tun device, you must call it like this:
 Where _username_ and _groupname_ correspond to the User and Group that will have ownership over the
 device, i.e. the privileges which you intend to run osmo-ggsn under, and _apn0_ will be the
 name of the network device created.  After creating the interface, you can configure its addresses
-using standard means like `ip addr add` or your distribution-specific utilities/tools.
+using standard means like `ip addr add` or your distribution-specific utilities/tools
+to match the `ip prefix dynamic` config item, and activate the link, for example:
 
+----
+# ip addr add 192.168.7.0/24 dev apn0
+# ip link set apn0 up
+----
 
 ==== systemd based TUN device creation+configuration
 
@@ -303,10 +308,16 @@ IPMasquerade=yes <3>
     You may not want this if you have proper end-to-end routing set up, and want to have transparent
     inbound IP access to your GPRS-attached devices.
 
-The pair of the configuration files above allows you to create and configure tun device which can be
-used by OsmoGGSN as follows.
+==== Config Changes
 
-.Example: using externally configured tun device as non-root
+With the tun device pre-configured in one of the ways outlined above, the main
+changes in your osmo-ggsn.cfg file are:
+
+* remove `ip ifconfig` directive,
+* make sure that `no shutdown` is present in the `apn` section as well as
+  `no shutdown ggsn` in the `ggsn` section.
+
+.Example: using externally configured tun device `apn0` as non-root
 ----
 ggsn ggsn0
  gtp state-dir /tmp
