@@ -242,7 +242,7 @@ OsmoGGSN(config-ggsn-apn)# shutdown <5>
 <5> Shut down the APN
 
 [[ggsn_no_root]]
-=== Configuring for running without root priveleges
+=== Configuring for running without root privileges
 
 It's possible to run OsmoGGSN without root privileges if the tun devices are already configured.
 
