@@ -856,8 +856,8 @@ int ggsn_vty_init(void)
 
 	install_element(CONFIG_NODE, &cfg_ggsn_cmd);
 	install_element(CONFIG_NODE, &cfg_no_ggsn_cmd);
+
 	install_node(&ggsn_node, config_write_ggsn);
-	vty_install_default(GGSN_NODE);
 	install_element(GGSN_NODE, &cfg_description_cmd);
 	install_element(GGSN_NODE, &cfg_no_description_cmd);
 	install_element(GGSN_NODE, &cfg_ggsn_shutdown_cmd);
@@ -872,7 +872,6 @@ int ggsn_vty_init(void)
 	install_element(GGSN_NODE, &cfg_ggsn_no_default_apn_cmd);
 
 	install_node(&apn_node, NULL);
-	vty_install_default(APN_NODE);
 	install_element(APN_NODE, &cfg_description_cmd);
 	install_element(APN_NODE, &cfg_no_description_cmd);
 	install_element(APN_NODE, &cfg_apn_shutdown_cmd);
