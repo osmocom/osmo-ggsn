@@ -20,6 +20,38 @@ arguments:
 	used. If none is specified, use `osmo-ggsn.cfg` in the current
 	working directory.
 
+=== Routing
+
+Operating the OpenGGSN tun device naturally creates a network setup with
+multiple interfaces. Consider:
+
+* Typical Linux setups prevent forwarding of packets between separate
+  interfaces by default. To let subscribers reach the internet uplink from the
+  tun device, it may be required to enable IP forwarding.
+
+* Having a locally defined address range assigned to the tun device requires
+  either sensible routing for this address range, or that masquerading is
+  enabled to allow your single uplink IP address to "proxy" for the tun.
+
+These are decisions to be made on a network administration level.
+
+In a trivial case where you have a single box serving GPRS to few subscribers
+on an arbitrary IP address range not known in the larger network, the easiest
+way to enable GPRS uplink would be to enable IP forwarding and masquerading.
+
+To manually enable IPv4 forwarding and masquerading ad-hoc, you can do:
+
+----
+sh -c "echo 1 > /proc/sys/net/ipv4/ip_forward"
+iptables -t nat -A POSTROUTING -o '*' -j MASQUERADE
+----
+
+(You may want to replace `*` with the network device name, like `-o eth0`)
+
+There are various ways to enable these settings persistently, please refer to
+your distribution's documentation -- e.g. look for @net.ipv4.ip_forward=1@ in
+@/etc/sysctl.d/@, and https://wiki.debian.org/iptables for masquerading.
+
 === Multiple instances
 
 Running multiple instances of `osmo-ggsn` is possible if all GGSN instances
