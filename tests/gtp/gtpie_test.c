@@ -7,6 +7,7 @@
 #include <osmocom/core/utils.h>
 #include <osmocom/core/application.h>
 #include <osmocom/core/logging.h>
+#include <osmocom/core/bits.h>
 
 #include "../../lib/syserr.h"
 #include "../../gtp/gtpie.h"
@@ -27,7 +28,7 @@ static void test_gtpie_tlv()
 	OSMO_ASSERT(rc == 0);
 	OSMO_ASSERT(len == sizeof(in) + 3);
 	OSMO_ASSERT(buf[0] == 23);
-	OSMO_ASSERT(ntohs(*(uint16_t *) &buf[1]) == sizeof(in));
+	OSMO_ASSERT(osmo_load16be(&buf[1]) == sizeof(in));
 	OSMO_ASSERT(!memcmp(buf+3, in, sizeof(in)));
 
 	/* overflow */
@@ -73,7 +74,7 @@ static void test_gtpie_tv2()
 	OSMO_ASSERT(rc == 0);
 	OSMO_ASSERT(len == 3);
 	OSMO_ASSERT(buf[0] == 42);
-	OSMO_ASSERT(ntohs(*(uint16_t *) &buf[1]) == 0xABCD);
+	OSMO_ASSERT(osmo_load16be(&buf[1]) == 0xABCD);
 }
 
 static void test_gtpie_tv4()
@@ -87,7 +88,7 @@ static void test_gtpie_tv4()
 	OSMO_ASSERT(rc == 0);
 	OSMO_ASSERT(len == 5);
 	OSMO_ASSERT(buf[0] == 42);
-	OSMO_ASSERT(ntohl(*(uint32_t *) &buf[1]) == 0xABCD0123);
+	OSMO_ASSERT(osmo_load32be(&buf[1]) == 0xABCD0123);
 }
 
 static void test_gtpie_tv8()
@@ -101,8 +102,8 @@ static void test_gtpie_tv8()
 	OSMO_ASSERT(rc == 0);
 	OSMO_ASSERT(len == 9);
 	OSMO_ASSERT(buf[0] == 42);
-	OSMO_ASSERT(ntohl(*(uint32_t *) &buf[1]) == 0x00010203);
-	OSMO_ASSERT(ntohl(*(uint32_t *) &buf[5]) == 0x04050607);
+	OSMO_ASSERT(osmo_load32be(&buf[1]) == 0x00010203);
+	OSMO_ASSERT(osmo_load32be(&buf[5]) == 0x04050607);
 }
 
 int main(int argc, char **argv)

@@ -10,6 +10,7 @@
 #include <osmocom/core/utils.h>
 #include <osmocom/core/application.h>
 #include <osmocom/core/logging.h>
+#include <osmocom/core/bits.h>
 
 #include "../../lib/in46_addr.h"
 #include "../../lib/syserr.h"
@@ -171,7 +172,7 @@ static void test_in46a_to_eua(void)
 	OSMO_ASSERT(in46a_to_eua(&g_ia4, &eua) == 0);
 	OSMO_ASSERT(eua.v[0] == PDP_EUA_ORG_IETF);
 	OSMO_ASSERT(eua.v[1] == PDP_EUA_TYPE_v4);
-	OSMO_ASSERT(*(uint32_t *) &eua.v[2] == g_ia4.v4.s_addr);
+	OSMO_ASSERT(osmo_load32le(&eua.v[2]) == g_ia4.v4.s_addr);
 
 	/* IPv6 address */
 	OSMO_ASSERT(in46a_to_eua(&g_ia6, &eua) == 0);
