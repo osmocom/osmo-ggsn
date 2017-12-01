@@ -401,7 +401,7 @@ static int tun_setaddr6(struct tun_t *this, struct in6_addr *addr, struct in6_ad
 			if (errno != EEXIST) {
 				SYS_ERR(DTUN, LOGL_ERROR, 0, "ioctl(SIOCSIFADDR) failed");
 			} else {
-				SYS_ERR(DTUN, LOGL_NOTICE, 0, "ioctl(SIOCSIFADDR): Address alreadsy exists");
+				SYS_ERR(DTUN, LOGL_NOTICE, 0, "ioctl(SIOCSIFADDR): Address already exists");
 			}
 			close(fd);
 			return -1;
