@@ -28,9 +28,11 @@ int in46a_to_af(const struct in46_addr *in)
 	switch (in->len) {
 	case 4:
 		return AF_INET;
+#if defined(BUILD_IPv6)
 	case 8:
 	case 16:
 		return AF_INET6;
+#endif
 	default:
 		OSMO_ASSERT(0);
 		return -1;
@@ -41,17 +43,21 @@ int in46a_to_af(const struct in46_addr *in)
 int in46a_to_sas(struct sockaddr_storage *out, const struct in46_addr *in)
 {
 	struct sockaddr_in *sin = (struct sockaddr_in *)out;
+#if defined(BUILD_IPv6)
 	struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)out;
+#endif
 
 	switch (in->len) {
 	case 4:
 		sin->sin_family = AF_INET;
 		sin->sin_addr = in->v4;
 		break;
+#if defined(BUILD_IPv6)
 	case 16:
 		sin6->sin6_family = AF_INET6;
 		sin6->sin6_addr = in->v6;
 		break;
+#endif
 	default:
 		OSMO_ASSERT(0);
 		return -1;
@@ -98,7 +104,7 @@ const char *in46p_ntoa(const struct in46_prefix *in46p)
  *  \returns 1 in case they are equal; 0 otherwise */
 int in46a_equal(const struct in46_addr *a, const struct in46_addr *b)
 {
-	if (a->len == b->len && !memcmp(&a->v6, &b->v6, a->len))
+	if (a->len == b->len && !memcmp(&a->v4, &b->v4, a->len))
 		return 1;
 	else
 		return 0;
@@ -115,12 +121,13 @@ int in46a_prefix_equal(const struct in46_addr *a, const struct in46_addr *b)
 	else
 		len = a->len;
 
-	if (!memcmp(&a->v6, &b->v6, len))
+	if (!memcmp(&a->v4, &b->v4, len))
 		return 1;
 	else
 		return 0;
 }
 
+#if defined(BUILD_IPv6)
 /*! Match if IPv6 addr1 + addr2 are within same \a mask */
 static int ipv6_within_mask(const struct in6_addr *addr1, const struct in6_addr *addr2,
 			    const struct in6_addr *mask)
@@ -167,6 +174,7 @@ static void create_ipv6_netmask(struct in6_addr *netmask, int prefixlen)
 		*p_netmask = htonl(0xFFFFFFFF << (32 - prefixlen));
 	}
 }
+#endif
 
 /*! Determine if given \a addr is within given \a net + \a prefixlen
  *  Builds the netmask from \a net + \a prefixlen and matches it to \a addr
@@ -174,7 +182,9 @@ static void create_ipv6_netmask(struct in6_addr *netmask, int prefixlen)
 int in46a_within_mask(const struct in46_addr *addr, const struct in46_addr *net, size_t prefixlen)
 {
 	struct in_addr netmask;
+#if defined(BUILD_IPv6)
 	struct in6_addr netmask6;
+#endif
 
 	if (addr->len != net->len)
 		return 0;
@@ -186,9 +196,11 @@ int in46a_within_mask(const struct in46_addr *addr, const struct in46_addr *net,
 			return 1;
 		else
 			return 0;
+#if defined(BUILD_IPv6)
 	case 16:
 		create_ipv6_netmask(&netmask6, prefixlen);
 		return ipv6_within_mask(&addr->v6, &net->v6, &netmask6);
+#endif
 	default:
 		OSMO_ASSERT(0);
 		return 0;
@@ -210,6 +222,7 @@ static unsigned int ipv4_netmasklen(const struct in_addr *netmask)
 	return prefix;
 }
 
+#if defined(BUILD_IPv6)
 static unsigned int ipv6_netmasklen(const struct in6_addr *netmask)
 {
 	#if defined(__linux__)
@@ -235,6 +248,7 @@ static unsigned int ipv6_netmasklen(const struct in6_addr *netmask)
 
 	return prefix;
 }
+#endif
 
 /*! Convert netmask to prefix length representation
  *  \param[in] netmask in46_addr containing a netmask (consecutive list of 1-bit followed by consecutive list of 0-bit)
@@ -245,8 +259,10 @@ unsigned int in46a_netmasklen(const struct in46_addr *netmask)
 	switch (netmask->len) {
 	case 4:
 		return ipv4_netmasklen(&netmask->v4);
+#if defined(BUILD_IPv6)
 	case 16:
 		return ipv6_netmasklen(&netmask->v6);
+#endif
 	default:
 		OSMO_ASSERT(0);
 		return 0;
@@ -264,6 +280,7 @@ int in46a_to_eua(const struct in46_addr *src, struct ul66_t *eua)
 		eua->v[1] = PDP_EUA_TYPE_v4;
 		memcpy(&eua->v[2], &src->v4, 4);	/* Copy a 4 byte address */
 		break;
+#if defined(BUILD_IPv6)
 	case 8:
 	case 16:
 		eua->l = 18;
@@ -271,6 +288,7 @@ int in46a_to_eua(const struct in46_addr *src, struct ul66_t *eua)
 		eua->v[1] = PDP_EUA_TYPE_v6;
 		memcpy(&eua->v[2], &src->v6, 16);	/* Copy a 16 byte address */
 		break;
+#endif
 	default:
 		OSMO_ASSERT(0);
 		return -1;
@@ -296,6 +314,7 @@ int in46a_from_eua(const struct ul66_t *eua, struct in46_addr *dst)
 		else
 			dst->v4.s_addr = 0;
 		break;
+#if defined(BUILD_IPv6)
 	case PDP_EUA_TYPE_v6:
 		dst->len = 16;
 		if (eua->l >= 18)
@@ -303,6 +322,7 @@ int in46a_from_eua(const struct ul66_t *eua, struct in46_addr *dst)
 		else
 			memset(&dst->v6, 0, 16);
 		break;
+#endif
 	default:
 		return -1;
 	}

@@ -1,13 +1,13 @@
-/* 
+/*
  *  OsmoGGSN - Gateway GPRS Support Node
  *  Copyright (C) 2002, 2003, 2004 Mondru AB.
  *  Copyright (C) 2017 Harald Welte <laforge@gnumonks.org>
- * 
+ *
  *  The contents of this file may be used under the terms of the GNU
  *  General Public License Version 2, provided that the above copyright
  *  notice and this permission notice is included in all copies or
  *  substantial portions of the software.
- * 
+ *
  */
 
 /*
@@ -372,10 +372,10 @@ static int process_options(int argc, char **argv)
 
 	/* foreground                                                   */
 	/* If fg flag not given run as a daemon                         */
-	/* Do not allow sgsnemu to run as deamon                        
+	/* Do not allow sgsnemu to run as deamon
 	   if (!args_info.fg_flag)
 	   {
-	   closelog(); 
+	   closelog();
 	   freopen("/dev/null", "w", stdout);
 	   freopen("/dev/null", "w", stderr);
 	   freopen("/dev/null", "r", stdin);
@@ -936,10 +936,12 @@ static int process_options(int argc, char **argv)
 		options.tx_gpdu_seq = 1;
 
 	/* PDP Type */
-	if (!strcmp(args_info.pdp_type_arg, "v6"))
-		options.pdp_type = PDP_EUA_TYPE_v6;
-	else if (!strcmp(args_info.pdp_type_arg, "v4"))
+	if (!strcmp(args_info.pdp_type_arg, "v4"))
 		options.pdp_type = PDP_EUA_TYPE_v4;
+#if defined(BUILD_IPv6)
+	else if if (!strcmp(args_info.pdp_type_arg, "v6"))
+		options.pdp_type = PDP_EUA_TYPE_v6;
+#endif
 	else {
 		SYS_ERR(DSGSN, LOGL_ERROR, 0, "Unsupported/unknown PDP Type '%s'\n",
 			args_info.pdp_type_arg);
@@ -955,6 +957,7 @@ static int process_options(int argc, char **argv)
 
 }
 
+#if defined(BUILD_IPv6)
 /* read a single value from a /procc file, up to 255 bytes, callee-allocated */
 static char *proc_read(const char *path)
 {
@@ -989,6 +992,7 @@ static char *proc_ipv6_conf_read(const char *dev, const char *file)
 	snprintf(path, sizeof(path), fmt, dev, file);
 	return proc_read(path);
 }
+#endif
 
 static char *print_ipprot(int t)
 {
@@ -1323,8 +1327,10 @@ static int delete_context(struct pdp_t *pdp)
 	return 0;
 }
 
+#if defined(BUILD_IPv6)
 /* Link-Local address  prefix fe80::/64 */
 static const uint8_t ll_prefix[] = { 0xfe,0x80, 0,0, 0,0, 0,0 };
+#endif
 
 /* Callback for receiving messages from tun */
 static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
@@ -1332,7 +1338,9 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 	struct iphash_t *ipm;
 	struct in46_addr src;
 	struct iphdr *iph = (struct iphdr *)pack;
+#if defined(BUILD_IPv6)
 	struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
+#endif
 
 	if (iph->version == 4) {
 		if (len < sizeof(*iph) || len < 4*iph->ihl) {
@@ -1341,6 +1349,7 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 		}
 		src.len = 4;
 		src.v4.s_addr = iph->saddr;
+#if defined(BUILD_IPv6)
 	} else if (iph->version == 6) {
 		/* We only have a single entry in the hash table, and it consists of the link-local
 		 * address "fe80::prefix".  So we need to make sure to convert non-link-local source
@@ -1355,6 +1364,7 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 			memcpy(&src.v6.s6_addr[0], ll_prefix, sizeof(ll_prefix));
 			memcpy(&src.v6.s6_addr[sizeof(ll_prefix)], ip6h->ip6_src.s6_addr, 16-sizeof(ll_prefix));
 		}
+#endif
 	} else {
 		printf("Dropping packet with invalid IP version %u\n", iph->version);
 		return 0;
@@ -1416,6 +1426,7 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 	       in46a_ntoa(&addr));
 
 	switch (addr.len) {
+#if defined(BUILD_IPv6)
 	case 16: /* IPv6 */
 		/* we have to enable the kernel to perform stateless autoconfiguration,
 		 * i.e. send a router solicitation using the lover 64bits of the allocated
@@ -1423,6 +1434,7 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 		memcpy(addr.v6.s6_addr, ll_prefix, sizeof(ll_prefix));
 		printf("Derived IPv6 link-local address: %s\n", in46a_ntoa(&addr));
 		break;
+#endif
 	case 4: /* IPv4 */
 		break;
 	}
@@ -1443,6 +1455,7 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 			tun_runscript(tun, options.ipup);
 	}
 
+#if defined(BUILD_IPv6)
 	/* now that ip-up has been executed, check if we are configured to
 	 * accept router advertisements */
 	if (options.createif && options.pdp_type == PDP_EUA_TYPE_v6) {
@@ -1463,6 +1476,7 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 		free(accept_ra);
 		free(forwarding);
 	}
+#endif
 
 	ipset((struct iphash_t *)pdp->peer, &addr);
 
@@ -1700,7 +1714,7 @@ int main(int argc, char **argv)
 		pdp->hisaddr0 = options.remote;
 		pdp->hisaddr1 = options.remote;
 
-		pdp->cch_pdp = options.cch;	/* 2048 = Normal, 1024 = Prepaid, 
+		pdp->cch_pdp = options.cch;	/* 2048 = Normal, 1024 = Prepaid,
 						   512 = Flat rate, 256 = Hot billing */
 
 		pdp->tx_gpdu_seq = options.tx_gpdu_seq;

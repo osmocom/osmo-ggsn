@@ -65,7 +65,9 @@
 #include "../gtp/pdp.h"
 #include "../gtp/gtp.h"
 #include "gtp-kernel.h"
+#if defined(BUILD_IPv6)
 #include "icmpv6.h"
+#endif
 #include "ggsn.h"
 
 void *tall_ggsn_ctx;
@@ -115,7 +117,9 @@ int apn_stop(struct apn_ctx *apn, bool force)
 	LOGPAPN(LOGL_NOTICE, apn, "%sStopping\n", force ? "FORCED " : "");
 	/* check if pools have any active PDP contexts and bail out */
 	pool_close_all_pdp(apn->v4.pool);
+#if defined(BUILD_IPv6)
 	pool_close_all_pdp(apn->v6.pool);
+#endif
 
 	/* shutdown whatever old state might be left */
 	if (apn->tun.tun) {
@@ -137,12 +141,13 @@ int apn_stop(struct apn_ctx *apn, bool force)
 		ippool_free(apn->v4.pool);
 		apn->v4.pool = NULL;
 	}
+#if defined(BUILD_IPv6)
 	if (apn->v6.pool) {
 		LOGPAPN(LOGL_INFO, apn, "Releasing IPv6 pool\n");
 		ippool_free(apn->v6.pool);
 		apn->v6.pool = NULL;
 	}
-
+#endif
 	apn->started = false;
 	return 0;
 }
@@ -155,9 +160,11 @@ static int alloc_ippool_blacklist(struct apn_ctx *apn, struct in46_prefix **blac
 
 	*blacklist = NULL;
 
+#if defined(BUILD_IPv6)
 	if (ipv6)
 		flags = IP_TYPE_IPv6_NONLINK;
 	else
+#endif
 		flags = IP_TYPE_IPv4;
 
 	while (1) {
@@ -191,7 +198,9 @@ static int alloc_ippool_blacklist(struct apn_ctx *apn, struct in46_prefix **blac
 int apn_start(struct apn_ctx *apn)
 {
 	int ippool_flags = IPPOOL_NONETWORK | IPPOOL_NOBROADCAST;
+#if defined(BUILD_IPv6)
 	struct in46_prefix ipv6_tun_linklocal_ip;
+#endif
 	struct in46_prefix *blacklist;
 	int blacklist_size;
 
@@ -226,7 +235,7 @@ int apn_start(struct apn_ctx *apn)
 				return -1;
 			}
 		}
-
+#if defined(BUILD_IPv6)
 		if (apn->v6.cfg.ifconfig_prefix.addr.len) {
 			LOGPAPN(LOGL_INFO, apn, "Setting tun IPv6 address %s\n",
 				in46p_ntoa(&apn->v6.cfg.ifconfig_prefix));
@@ -239,13 +248,13 @@ int apn_start(struct apn_ctx *apn)
 				return -1;
 			}
 		}
-
+#endif
 		if (apn->tun.cfg.ipup_script) {
 			LOGPAPN(LOGL_INFO, apn, "Running ip-up script %s\n",
 				apn->tun.cfg.ipup_script);
 			tun_runscript(apn->tun.tun, apn->tun.cfg.ipup_script);
 		}
-
+#if defined(BUILD_IPv6)
 		if (apn->cfg.apn_type_mask & (APN_TYPE_IPv6|APN_TYPE_IPv4v6)) {
 			if (tun_ip_local_get(apn->tun.tun, &ipv6_tun_linklocal_ip, 1, IP_TYPE_IPv6_LINK) < 1) {
 				LOGPAPN(LOGL_ERROR, apn, "Cannot obtain IPv6 link-local address of "
@@ -255,17 +264,20 @@ int apn_start(struct apn_ctx *apn)
 			}
 			apn->v6_lladdr = ipv6_tun_linklocal_ip.addr.v6;
 		}
+#endif
 
 		/* set back-pointer from TUN device to APN */
 		apn->tun.tun->priv = apn;
 		break;
 	case APN_GTPU_MODE_KERNEL_GTP:
 		LOGPAPN(LOGL_INFO, apn, "Opening Kernel GTP device %s\n", apn->tun.cfg.dev_name);
+#if defined(BUILD_IPv6)
 		if (apn->cfg.apn_type_mask & (APN_TYPE_IPv6|APN_TYPE_IPv4v6)) {
 			LOGPAPN(LOGL_ERROR, apn, "Kernel GTP currently supports only IPv4\n");
 			apn_stop(apn, false);
 			return -1;
 		}
+#endif
 		/* use GTP kernel module for data packet encapsulation */
 		if (gtp_kernel_init(apn->ggsn->gsn, apn->tun.cfg.dev_name,
 				    &apn->v4.cfg.ifconfig_prefix, apn->tun.cfg.ipup_script) < 0) {
@@ -294,6 +306,7 @@ int apn_start(struct apn_ctx *apn)
 		talloc_free(blacklist);
 	}
 
+#if defined(BUILD_IPv6)
 	/* Create IPv6 pool */
 	if (apn->v6.cfg.dynamic_prefix.addr.len) {
 		LOGPAPN(LOGL_INFO, apn, "Creating IPv6 pool %s\n",
@@ -310,6 +323,7 @@ int apn_start(struct apn_ctx *apn)
 		}
 		talloc_free(blacklist);
 	}
+#endif
 
 	LOGPAPN(LOGL_NOTICE, apn, "Successfully started\n");
 	apn->started = true;
@@ -468,6 +482,7 @@ static void process_pco(struct apn_ctx *apn, struct pdp_t *pdp)
 		build_ipcp_pco(msg, 0, &apn->v4.cfg.dns[0], &apn->v4.cfg.dns[1]);
 	}
 
+#if defined(BUILD_IPv6)
 	if (pco_contains_proto(&pdp->pco_req, PCO_P_DNS_IPv6_ADDR)) {
 		for (i = 0; i < ARRAY_SIZE(apn->v6.cfg.dns); i++) {
 			struct in46_addr *i46a = &apn->v6.cfg.dns[i];
@@ -476,6 +491,7 @@ static void process_pco(struct apn_ctx *apn, struct pdp_t *pdp)
 			msgb_t16lv_put(msg, PCO_P_DNS_IPv6_ADDR, i46a->len, i46a->v6.s6_addr);
 		}
 	}
+#endif
 
 	if (pco_contains_proto(&pdp->pco_req, PCO_P_DNS_IPv4_ADDR)) {
 		for (i = 0; i < ARRAY_SIZE(apn->v4.cfg.dns); i++) {
@@ -502,12 +518,14 @@ static bool apn_supports_ipv4(const struct apn_ctx *apn)
 	return false;
 }
 
+#if defined(BUILD_IPv6)
 static bool apn_supports_ipv6(const struct apn_ctx *apn)
 {
 	if (apn->v6.cfg.static_prefix.addr.len  || apn->v6.cfg.dynamic_prefix.addr.len)
 		return true;
 	return false;
 }
+#endif
 
 int create_context_ind(struct pdp_t *pdp)
 {
@@ -575,6 +593,7 @@ int create_context_ind(struct pdp_t *pdp)
 			gtp_create_context_resp(gsn, pdp, GTPCAUSE_SYS_FAIL);
 			return 0;
 		}
+#if defined(BUILD_IPv6)
 	} else if (addr.len == sizeof(struct in6_addr)) {
 		struct in46_addr tmp;
 
@@ -594,6 +613,7 @@ int create_context_ind(struct pdp_t *pdp)
 		/* use allocated 64bit prefix as lower 64bit, used as link id by MS */
 		memcpy(tmp.v6.s6_addr+8, &member->addr.v6, 8);
 		in46a_to_eua(&tmp, &pdp->eua);
+#endif
 	} else
 		OSMO_ASSERT(0);
 
@@ -635,7 +655,9 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 	struct ippoolm_t *ipm;
 	struct in46_addr dst;
 	struct iphdr *iph = (struct iphdr *)pack;
+#if defined(BUILD_IPv6)
 	struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
+#endif
 	struct ippool_t *pool;
 
 	if (iph->version == 4) {
@@ -644,6 +666,7 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 		dst.len = 4;
 		dst.v4.s_addr = iph->daddr;
 		pool = apn->v4.pool;
+#if defined(BUILD_IPv6)
 	} else if (iph->version == 6) {
 		/* Due to the fact that 3GPP requires an allocation of a
 		 * /64 prefix to each MS, we must instruct
@@ -652,6 +675,7 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 		dst.len = 8;
 		dst.v6 = ip6h->ip6_dst;
 		pool = apn->v6.pool;
+#endif
 	} else {
 		LOGP(DTUN, LOGL_NOTICE, "non-IPv packet received from tun\n");
 		return -1;
@@ -673,16 +697,20 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 	return 0;
 }
 
+#if defined(BUILD_IPv6)
 /* RFC3307 link-local scope multicast address */
 static const struct in6_addr all_router_mcast_addr = {
 	.s6_addr = { 0xff,0x02,0,0,  0,0,0,0, 0,0,0,0,  0,0,0,2 }
 };
+#endif
 
 /* MS-originated GTP1-U packet, needs to be sent via TUN device */
 static int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
 {
 	struct iphdr *iph = (struct iphdr *)pack;
+#if defined(BUILD_IPv6)
 	struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
+#endif
 	struct tun_t *tun = (struct tun_t *)pdp->ipif;
 	struct apn_ctx *apn = tun->priv;
 
@@ -692,11 +720,13 @@ static int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
 	LOGPPDP(LOGL_DEBUG, pdp, "Packet received: forwarding to tun\n");
 
 	switch (iph->version) {
+#if defined(BUILD_IPv6)
 	case 6:
 		/* daddr: all-routers multicast addr */
 		if (IN6_ARE_ADDR_EQUAL(&ip6h->ip6_dst, &all_router_mcast_addr))
 			return handle_router_mcast(pdp->gsn, pdp, &apn->v6_lladdr, pack, len);
 		break;
+#endif
 	case 4:
 		break;
 	default:

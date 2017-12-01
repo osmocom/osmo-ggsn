@@ -334,8 +334,10 @@ static struct cmd_node apn_node = {
 
 static const struct value_string pdp_type_names[] = {
 	{ APN_TYPE_IPv4, "v4" },
+#if defined(BUILD_IPv6)
 	{ APN_TYPE_IPv6, "v6" },
 	{ APN_TYPE_IPv4v6, "v4v6" },
+#endif
 	{ 0, NULL }
 };
 
@@ -345,13 +347,17 @@ static const struct value_string apn_gtpu_mode_names[] = {
 	{ 0, NULL }
 };
 
-
+#if defined(BUILD_IPv6)
+#define V4V6V46_ARGS	"(v4|v6|v4v6)"
 #define V4V6V46_STRING	"IPv4(-only) PDP Type\n"	\
 			"IPv6(-only) PDP Type\n"	\
 			"IPv4v6 (dual-stack) PDP Type\n"
-
+#else
+#define V4V6V46_ARGS	"(v4)"
+#define V4V6V46_STRING	"IPv4(-only) PDP Type\n"
+#endif
 DEFUN(cfg_apn_type_support, cfg_apn_type_support_cmd,
-	"type-support (v4|v6|v4v6)",
+	"type-support " V4V6V46_ARGS,
 	"Enable support for PDP Type\n"
 	V4V6V46_STRING)
 {
@@ -363,7 +369,7 @@ DEFUN(cfg_apn_type_support, cfg_apn_type_support_cmd,
 }
 
 DEFUN(cfg_apn_no_type_support, cfg_apn_no_type_support_cmd,
-	"no type-support (v4|v6|v4v6)",
+	"no type-support " V4V6V46_ARGS,
 	NO_STR "Disable support for PDP Type\n"
 	V4V6V46_STRING)
 {
@@ -480,6 +486,7 @@ DEFUN(cfg_apn_no_ip_ifconfig, cfg_apn_no_ip_ifconfig_cmd,
 	return CMD_SUCCESS;
 }
 
+#if defined(BUILD_IPv6)
 DEFUN(cfg_apn_ipv6_prefix, cfg_apn_ipv6_prefix_cmd,
 	"ipv6 prefix (static|dynamic) X:X::X:X/M",
 	IP6_STR PREFIX_STR "IPv6 Address/Prefix-Length\n")
@@ -512,6 +519,7 @@ DEFUN(cfg_apn_no_ipv6_ifconfig, cfg_apn_no_ipv6_ifconfig_cmd,
 	memset(&apn->v6.cfg.ifconfig_prefix, 0, sizeof(apn->v6.cfg.ifconfig_prefix));
 	return CMD_SUCCESS;
 }
+#endif
 
 #define DNS_STRINGS "Configure DNS Server\n" "primary/secondary DNS\n" "IP address of DNS Sever\n"
 
@@ -528,6 +536,7 @@ DEFUN(cfg_apn_ip_dns, cfg_apn_ip_dns_cmd,
 	return CMD_SUCCESS;
 }
 
+#if defined(BUILD_IPv6)
 DEFUN(cfg_apn_ipv6_dns, cfg_apn_ipv6_dns_cmd,
 	"ipv6 dns <0-1> X:X::X:X",
 	IP6_STR DNS_STRINGS)
@@ -540,20 +549,27 @@ DEFUN(cfg_apn_ipv6_dns, cfg_apn_ipv6_dns_cmd,
 
 	return CMD_SUCCESS;
 }
+#endif
 
+#if defined(BUILD_IPv6)
+#define IPV46_ARGS "(ip|ipv6)"
+#else
+#define IPV46_ARGS "(ip)"
+#endif
 DEFUN(cfg_apn_no_dns, cfg_apn_no_dns_cmd,
-	"no (ip|ipv6) dns <0-1>",
+	"no " IPV46_ARGS " dns <0-1>",
 	NO_STR IP_STR IP6_STR "Disable DNS Server\n" "primary/secondary DNS\n")
 {
 	struct apn_ctx *apn = (struct apn_ctx *) vty->index;
-	struct in46_addr *a;
+	struct in46_addr *a = NULL;
 	int idx = atoi(argv[1]);
 
 	if (!strcmp(argv[0], "ip"))
 		a = &apn->v4.cfg.dns[idx];
+#if defined(BUILD_IPv6)
 	else
 		a = &apn->v6.cfg.dns[idx];
-
+#endif
 	memset(a, 0, sizeof(*a));
 
 	return CMD_SUCCESS;
@@ -656,6 +672,7 @@ static void config_write_apn(struct vty *vty, struct apn_ctx *apn)
 	if (apn->v4.cfg.ifconfig_prefix.addr.len)
 		vty_dump_prefix(vty, "  ip ifconfig", &apn->v4.cfg.ifconfig_prefix);
 
+#if defined(BUILD_IPv6)
 	/* IPv6 prefixes + DNS */
 	if (apn->v6.cfg.static_prefix.addr.len)
 		vty_dump_prefix(vty, "  ipv6 prefix static", &apn->v6.cfg.static_prefix);
@@ -668,7 +685,7 @@ static void config_write_apn(struct vty *vty, struct apn_ctx *apn)
 	}
 	if (apn->v6.cfg.ifconfig_prefix.addr.len)
 		vty_dump_prefix(vty, "  ipv6 ifconfig", &apn->v6.cfg.ifconfig_prefix);
-
+#endif
 	/* must be last */
 	vty_out(vty, "  %sshutdown%s", apn->cfg.shutdown ? "" : "no ", VTY_NEWLINE);
 }
@@ -704,8 +721,12 @@ static const char *print_gsnaddr(const struct ul16_t *in)
 	struct in46_addr in46;
 
 	in46.len = in->l;
+#if defined(BUILD_IPv6)
 	OSMO_ASSERT(in->l <= sizeof(in46.v6));
-	memcpy(&in46.v6, in->v, in->l);
+#else
+	OSMO_ASSERT(in->l <= sizeof(in46.v4));
+#endif
+	memcpy(&in46.v4, in->v, in->l);
 
 	return in46a_ntoa(&in46);
 }
@@ -781,7 +802,9 @@ static void ippool_show_pdp_contexts(struct vty *vty, struct ippool_t *pool)
 static void apn_show_pdp_contexts(struct vty *vty, struct apn_ctx *apn)
 {
 	ippool_show_pdp_contexts(vty, apn->v4.pool);
+#if defined(BUILD_IPv6)
 	ippool_show_pdp_contexts(vty, apn->v6.pool);
+#endif
 }
 
 DEFUN(show_pdpctx, show_pdpctx_cmd,
@@ -885,14 +908,16 @@ int ggsn_vty_init(void)
 	install_element(APN_NODE, &cfg_apn_ipdown_script_cmd);
 	install_element(APN_NODE, &cfg_apn_no_ipdown_script_cmd);
 	install_element(APN_NODE, &cfg_apn_ip_prefix_cmd);
-	install_element(APN_NODE, &cfg_apn_ipv6_prefix_cmd);
 	install_element(APN_NODE, &cfg_apn_ip_dns_cmd);
-	install_element(APN_NODE, &cfg_apn_ipv6_dns_cmd);
 	install_element(APN_NODE, &cfg_apn_no_dns_cmd);
 	install_element(APN_NODE, &cfg_apn_ip_ifconfig_cmd);
 	install_element(APN_NODE, &cfg_apn_no_ip_ifconfig_cmd);
+#if defined(BUILD_IPv6)
+	install_element(APN_NODE, &cfg_apn_ipv6_prefix_cmd);
+	install_element(APN_NODE, &cfg_apn_ipv6_dns_cmd);
 	install_element(APN_NODE, &cfg_apn_ipv6_ifconfig_cmd);
 	install_element(APN_NODE, &cfg_apn_no_ipv6_ifconfig_cmd);
+#endif
 	install_element(APN_NODE, &cfg_apn_gpdu_seq_cmd);
 	install_element(APN_NODE, &cfg_apn_no_gpdu_seq_cmd);
 

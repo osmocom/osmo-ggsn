@@ -39,9 +39,9 @@ AC_SUBST(EXEC_LDFLAGS)
 
 
 case "${host}" in
-  i*86-*-linux-gnu*) 
+  i*86-*-linux-gnu*)
     EXEC_LDADD="" ;;
-  *solaris*) 
+  *solaris*)
     EXEC_LDADD="-lresolv -lsocket -lnsl" ;;
 esac
 
@@ -64,12 +64,19 @@ dnl GTP Linux kernel dependencies
 AC_ARG_ENABLE([gtp-linux],
 	AS_HELP_STRING([--enable-gtp-linux], [Build GTP tunneling Linux kernel]),
 	[enable_gtp_linux="$enableval"], [enable_gtp_linux="no"])
-
 AS_IF([test "x$enable_gtp_linux" = "xyes"], [
 	PKG_CHECK_MODULES([LIBGTPNL], [libgtpnl >= 1.0.0])
 ])
-
 AM_CONDITIONAL([ENABLE_GTP_KERNEL], [test "$enable_gtp_linux" = "yes"])
+
+# Enable/disable IPv6 support
+AC_ARG_ENABLE([ipv6], [AS_HELP_STRING([--enable-ipv6], [Build IPv6 support])],
+    [enable_ipv6="$enableval"],[enable_ipv6="yes"])
+if test "x$enable_ipv6" = "xyes" ; then
+    AC_DEFINE(BUILD_IPv6, 1, [Define if we want to build IPv6 support])
+fi
+AM_CONDITIONAL(BUILD_IPv6, test "x$enable_ipv6" = "xyes")
+#AC_SUBST(enable_ipv6)
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -127,7 +134,7 @@ AC_EGREP_HEADER(struct iphdr, netinet/ip.h,
 # Checks for library functions.
 AC_PROG_GCC_TRADITIONAL
 # AC_FUNC_MALLOC
-# AC_FUNC_MEMCMP 
+# AC_FUNC_MEMCMP
 AC_CHECK_FUNCS([gethostbyname inet_ntoa memset select socket strdup strerror strtol])
 AC_CHECK_FUNCS(inet_aton inet_addr, break)
 
@@ -170,4 +177,5 @@ AC_OUTPUT
 
 echo "
 osmo-ggsn Configuration:
-  GTP Linux kernel support:			${enable_gtp_linux}"
+  GTP Linux kernel support:			${enable_gtp_linux}
+  IPv6 support:		                       	${enable_ipv6}"

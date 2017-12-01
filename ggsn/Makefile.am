@@ -12,7 +12,10 @@ osmo_ggsn_LDADD += -lgtpnl
 endif
 
 osmo_ggsn_DEPENDENCIES = ../gtp/libgtp.la ../lib/libmisc.a
-osmo_ggsn_SOURCES = ggsn_vty.c ggsn.c ggsn.h gtp-kernel.h icmpv6.c icmpv6.h checksum.c checksum.h
+osmo_ggsn_SOURCES = ggsn_vty.c ggsn.c ggsn.h gtp-kernel.h checksum.c checksum.h
+if BUILD_IPv6
+osmo_ggsn_SOURCES += icmpv6.c icmpv6.h
+endif
 
 if ENABLE_GTP_KERNEL
 osmo_ggsn_SOURCES += gtp-kernel.c

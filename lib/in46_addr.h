@@ -4,13 +4,17 @@
 
 #include "../gtp/pdp.h"
 
+#include "config.h"
+
 /* a simple wrapper around an in6_addr to also contain the length of the address,
  * thereby implicitly indicating the address family of the address */
 struct in46_addr {
 	uint8_t len;
 	union {
 		struct in_addr v4;
+#if defined(BUILD_IPv6)
 		struct in6_addr v6;
+#endif
 	};
 };
 

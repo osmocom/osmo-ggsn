@@ -62,7 +62,9 @@
 
 #if defined(__linux__)
 
+#if defined(BUILD_IPv6)
 #include <linux/ipv6.h>
+#endif
 
 static int tun_nlattr(struct nlmsghdr *n, int nsize, int type, void *d, int dlen)
 {
@@ -197,6 +199,7 @@ static int tun_setaddr4(struct tun_t *this, struct in_addr *addr,
 	return 0;
 }
 
+#if defined(BUILD_IPv6)
 static int tun_setaddr6(struct tun_t *this, struct in6_addr *addr, struct in6_addr *dstaddr,
 			size_t prefixlen)
 {
@@ -280,6 +283,7 @@ static int tun_setaddr6(struct tun_t *this, struct in6_addr *addr, struct in6_ad
 
 	return 0;
 }
+#endif /* BUILD_IPv6 */
 
 int tun_setaddr(struct tun_t *this, struct in46_addr *addr, struct in46_addr *dstaddr, size_t prefixlen)
 {
@@ -288,8 +292,10 @@ int tun_setaddr(struct tun_t *this, struct in46_addr *addr, struct in46_addr *ds
 	case 4:
 		netmask.s_addr = htonl(0xffffffff << (32 - prefixlen));
 		return tun_setaddr4(this, &addr->v4, dstaddr ? &dstaddr->v4 : NULL, &netmask);
+#if defined(BUILD_IPv6)
 	case 16:
 		return tun_setaddr6(this, &addr->v6, dstaddr ? &dstaddr->v6 : NULL, prefixlen);
+#endif
 	default:
 		return -1;
 	}
@@ -762,11 +768,13 @@ int tun_runscript(struct tun_t *tun, char *script)
  */
 int netdev_ip_local_get(const char *devname, struct in46_prefix *prefix_list, size_t prefix_size, int flags)
 {
+#if defined(BUILD_IPv6)
 	static const uint8_t ll_prefix[] = { 0xfe,0x80, 0,0, 0,0, 0,0 };
+	bool is_ipv6_ll;
+#endif
 	struct ifaddrs *ifaddr, *ifa;
 	struct in46_addr netmask;
 	size_t count = 0;
-	bool is_ipv6_ll;
 
 	if (getifaddrs(&ifaddr) == -1) {
 		return -1;
@@ -792,7 +800,7 @@ int netdev_ip_local_get(const char *devname, struct in46_prefix *prefix_list, si
 			}
 			count++;
 		}
-
+#if defined(BUILD_IPv6)
 		if (ifa->ifa_addr->sa_family == AF_INET6 && (flags & IP_TYPE_IPv6)) {
 			struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) ifa->ifa_addr;
 			struct sockaddr_in6 *netmask6 = (struct sockaddr_in6 *) ifa->ifa_netmask;
@@ -812,6 +820,7 @@ int netdev_ip_local_get(const char *devname, struct in46_prefix *prefix_list, si
 			}
 			count++;
 		}
+#endif
 	}
 
 	freeifaddrs(ifaddr);

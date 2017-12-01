@@ -22,6 +22,8 @@
 #include "ippool.h"
 #include "lookup.h"
 
+#include "config.h"
+
 int ippool_printaddr(struct ippool_t *this)
 {
 	unsigned int n;
@@ -96,18 +98,24 @@ static unsigned long int ippool_hash4(struct in_addr *addr)
 	return lookup((unsigned char *)&addr->s_addr, sizeof(addr->s_addr), 0);
 }
 
+#if defined(BUILD_IPv6)
 static unsigned long int ippool_hash6(struct in6_addr *addr, unsigned int len)
 {
 	/* TODO: Review hash spread for IPv6 */
 	return lookup((unsigned char *)addr->s6_addr, len, 0);
 }
+#endif
 
 unsigned long int ippool_hash(struct in46_addr *addr)
 {
+#if defined(BUILD_IPv6)
 	if (addr->len == 4)
 		return ippool_hash4(&addr->v4);
 	else
 		return ippool_hash6(&addr->v6, addr->len);
+#else
+	return ippool_hash4(&addr->v4);
+#endif
 }
 
 /* Get IP address and mask */
@@ -148,11 +156,14 @@ int ippool_aton(struct in46_addr *addr, size_t *prefixlen, const char *pool_in, 
 		*prefixlen = 32;
 		addr->len = sizeof(struct in_addr);
 		addr->v4 = ((struct sockaddr_in*)ai->ai_addr)->sin_addr;
-	} else {
+	}
+#if defined(BUILD_IPv6)
+	else {
 		*prefixlen = 128;
 		addr->len = sizeof(struct in6_addr);
 		addr->v6 = ((struct sockaddr_in6*)ai->ai_addr)->sin6_addr;
 	}
+#endif
 	freeaddrinfo(ai);
 
 	/* parse prefixlen */
@@ -177,7 +188,7 @@ int ippool_aton(struct in46_addr *addr, size_t *prefixlen, const char *pool_in, 
 void in46a_inc(struct in46_addr *addr)
 {
 	size_t addrlen;
-	uint8_t *a = (uint8_t *)&addr->v6;
+	uint8_t *a = (uint8_t *)&addr->v4;
 	for (addrlen = addr->len; addrlen > 0; addrlen--) {
 		if (++a[addrlen-1])
 			break;
@@ -215,11 +226,12 @@ int ippool_new(struct ippool_t **this, const struct in46_prefix *dyn, const stru
 	} else {
 		addr = dyn->addr;
 		addrprefixlen = dyn->prefixlen;
+#if defined(BUILD_IPv6)
 		/* we want to work with /64 prefixes, i.e. allocate /64 prefixes rather
 		 * than /128 (single IPv6 addresses) */
 		if (addr.len == sizeof(struct in6_addr))
 			addr.len = 64/8;
-
+#endif
 		dynsize = (1 << (addr.len*8 - addrprefixlen));
 		if (flags & IPPOOL_NONETWORK)	/* Exclude network address from pool */
 			dynsize--;
@@ -404,8 +416,10 @@ int ippool_newip(struct ippool_t *this, struct ippoolm_t **member,
 	if (addr) {
 		if (addr->len == 4 && addr->v4.s_addr)
 			specified = 1;
+#if defined(BUILD_IPv6)
 		if (addr->len == 16 && !IN6_IS_ADDR_UNSPECIFIED(&addr->v6))
 			specified = 1;
+#endif
 	}
 
 	/* First check to see if this type of address is allowed */

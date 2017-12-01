@@ -20,29 +20,37 @@ static const struct in46_addr g_ia4 = {
 	.v4.s_addr = 0x0d0c0b0a,
 };
 
+#if defined(BUILD_IPv6)
 static const struct in46_addr g_ia6 = {
 	.len = 16,
 	.v6.s6_addr = { 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 },
 };
+#endif
 
 static void test_in46a_to_af(void)
 {
+#if defined(BUILD_IPv6)
 	struct in46_addr ia;
+#endif
 
 	printf("Testing in46a_to_af()\n");
 
 	OSMO_ASSERT(in46a_to_af(&g_ia4) == AF_INET);
+#if defined(BUILD_IPv6)
 	OSMO_ASSERT(in46a_to_af(&g_ia6) == AF_INET6);
 
 	ia.len = 8;
 	OSMO_ASSERT(in46a_to_af(&ia) == AF_INET6);
+#endif
 }
 
 static void test_in46a_to_sas(void)
 {
 	struct sockaddr_storage ss;
 	struct sockaddr_in *sin = (struct sockaddr_in *) &ss;
+#if defined(BUILD_IPv6)
 	struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) &ss;
+#endif
 
 	printf("Testing in46a_to_sas()\n");
 
@@ -51,10 +59,12 @@ static void test_in46a_to_sas(void)
 	OSMO_ASSERT(sin->sin_family == AF_INET);
 	OSMO_ASSERT(sin->sin_addr.s_addr == g_ia4.v4.s_addr);
 
+#if defined(BUILD_IPv6)
 	memset(&ss, 0, sizeof(ss));
 	OSMO_ASSERT(in46a_to_sas(&ss, &g_ia6) == 0);
 	OSMO_ASSERT(sin6->sin6_family == AF_INET6);
 	OSMO_ASSERT(!memcmp(&sin6->sin6_addr, &g_ia6.v6, sizeof(sin6->sin6_addr)));
+#endif
 }
 
 static void test_in46a_ntop(void)
@@ -79,10 +89,11 @@ static void test_in46a_ntop(void)
 	res = in46a_ntop(&ia, buf, sizeof(buf));
 	OSMO_ASSERT(res && !strcmp(res, "1.2.3.4"));
 	printf("res = %s\n", res);
-
+#if defined(BUILD_IPv6)
 	res = in46a_ntop(&g_ia6, buf, sizeof(buf));
 	OSMO_ASSERT(res && !strcmp(res, "102:304:506:708:90a:b0c:d0e:f10"));
 	printf("res = %s\n", res);
+#endif
 }
 
 static void test_in46p_ntoa(void)
@@ -108,11 +119,12 @@ static void test_in46a_equal(void)
 	b.v4.s_addr = g_ia4.v4.s_addr;
 	OSMO_ASSERT(in46a_equal(&g_ia4, &b));
 
+#if defined(BUILD_IPv6)
 	memset(&b, 0xff, sizeof(b));
 	b.len = g_ia6.len;
 	b.v6 = g_ia6.v6;
 	OSMO_ASSERT(in46a_equal(&g_ia6, &b));
-
+#endif
 }
 
 
@@ -155,10 +167,12 @@ static void test_in46a_within_mask(void)
 
 static void test_in46a_to_eua(void)
 {
+#if defined(BUILD_IPv6)
 	const struct in46_addr ia_v6_8 = {
 		.len = 8,
 		.v6.s6_addr = { 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 },
 	};
+#endif
 	struct ul66_t eua;
 
 	printf("testing in46a_to_eua()\n");
@@ -174,6 +188,7 @@ static void test_in46a_to_eua(void)
 	OSMO_ASSERT(eua.v[1] == PDP_EUA_TYPE_v4);
 	OSMO_ASSERT(osmo_load32le(&eua.v[2]) == g_ia4.v4.s_addr);
 
+#if defined(BUILD_IPv6)
 	/* IPv6 address */
 	OSMO_ASSERT(in46a_to_eua(&g_ia6, &eua) == 0);
 	OSMO_ASSERT(eua.v[0] == PDP_EUA_ORG_IETF);
@@ -185,6 +200,7 @@ static void test_in46a_to_eua(void)
 	OSMO_ASSERT(eua.v[0] == PDP_EUA_ORG_IETF);
 	OSMO_ASSERT(eua.v[1] == PDP_EUA_TYPE_v6);
 	OSMO_ASSERT(!memcmp(&eua.v[2], &ia_v6_8.v6, 16));
+#endif
 }
 
 static void test_in46a_from_eua(void)
@@ -193,10 +209,11 @@ static void test_in46a_from_eua(void)
 	struct ul66_t eua;
 	const uint8_t v4_unspec[] = { PDP_EUA_ORG_IETF, PDP_EUA_TYPE_v4 };
 	const uint8_t v4_spec[] = { PDP_EUA_ORG_IETF, PDP_EUA_TYPE_v4, 1,2,3,4 };
+#if defined(BUILD_IPv6)
 	const uint8_t v6_unspec[] = { PDP_EUA_ORG_IETF, PDP_EUA_TYPE_v6 };
 	const uint8_t v6_spec[] = { PDP_EUA_ORG_IETF, PDP_EUA_TYPE_v6,
 				    1,2,3,4,5,6,7,8,9,0xa,0xb,0xc,0xd,0xe,0xf,0x10 };
-
+#endif
 	memset(&eua, 0, sizeof(eua));
 
 	printf("Testing in46a_from_eua()\n");
@@ -232,6 +249,7 @@ static void test_in46a_from_eua(void)
 	OSMO_ASSERT(ia.len == 4);
 	OSMO_ASSERT(ia.v4.s_addr == htonl(0x01020304));
 
+#if defined(BUILD_IPv6)
 	/* unspecified V6 */
 	memcpy(eua.v, v6_unspec, sizeof(v6_unspec));
 	eua.l = sizeof(v6_unspec);
@@ -245,6 +263,7 @@ static void test_in46a_from_eua(void)
 	OSMO_ASSERT(in46a_from_eua(&eua, &ia) == 0);
 	OSMO_ASSERT(ia.len == 16);
 	OSMO_ASSERT(!memcmp(&ia.v6, v6_spec+2, ia.len));
+#endif
 }
 
 static void test_in46a_netmasklen(void)
@@ -275,6 +294,7 @@ static void test_in46a_netmasklen(void)
 	len = in46a_netmasklen(&netmask);
 	OSMO_ASSERT(len == 0);
 
+#if defined(BUILD_IPv6)
 	printf("Testing in46a_netmasklen() with IPv6 addresses\n");
 	const struct in46_addr netmaskA = {
 		.len = 16,
@@ -303,6 +323,7 @@ static void test_in46a_netmasklen(void)
 	};
 	len = in46a_netmasklen(&netmaskD);
 	OSMO_ASSERT(len == 0);
+#endif
 }
 
 int main(int argc, char **argv)
