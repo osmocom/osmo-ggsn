@@ -60,9 +60,6 @@
 #include "tun.h"
 #include "syserr.h"
 
-static int tun_setaddr4(struct tun_t *this, struct in_addr *addr,
-			struct in_addr *dstaddr, struct in_addr *netmask);
-
 #if defined(__linux__)
 
 #include <linux/ipv6.h>
@@ -103,175 +100,6 @@ static int tun_sifflags(struct tun_t *this, int flags)
 	}
 	close(fd);
 	return 0;
-}
-
-int tun_addaddr(struct tun_t *this,
-		struct in_addr *addr,
-		struct in_addr *dstaddr, struct in_addr *netmask)
-{
-
-#if defined(__linux__)
-	struct {
-		struct nlmsghdr n;
-		struct ifaddrmsg i;
-		char buf[TUN_NLBUFSIZE];
-	} req;
-
-	struct sockaddr_nl local;
-	socklen_t addr_len;
-	int fd;
-	int status;
-
-	struct sockaddr_nl nladdr;
-	struct iovec iov;
-	struct msghdr msg;
-
-	if (!this->addrs)	/* Use ioctl for first addr to make ping work */
-		return tun_setaddr4(this, addr, dstaddr, netmask);
-
-	memset(&req, 0, sizeof(req));
-	req.n.nlmsg_len = NLMSG_LENGTH(sizeof(struct ifaddrmsg));
-	req.n.nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE;
-	req.n.nlmsg_type = RTM_NEWADDR;
-	req.i.ifa_family = AF_INET;
-	req.i.ifa_prefixlen = 32;	/* 32 FOR IPv4 */
-	req.i.ifa_flags = 0;
-	req.i.ifa_scope = RT_SCOPE_HOST;	/* TODO or 0 */
-	req.i.ifa_index = if_nametoindex(this->devname);
-	if (!req.i.ifa_index) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno, "Unable to get ifindex for %s", this->devname);
-		return -1;
-	}
-
-	tun_nlattr(&req.n, sizeof(req), IFA_ADDRESS, addr, sizeof(addr));
-	tun_nlattr(&req.n, sizeof(req), IFA_LOCAL, dstaddr, sizeof(dstaddr));
-
-	if ((fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE)) < 0) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno, "socket() failed");
-		return -1;
-	}
-
-	memset(&local, 0, sizeof(local));
-	local.nl_family = AF_NETLINK;
-	local.nl_groups = 0;
-
-	if (bind(fd, (struct sockaddr *)&local, sizeof(local)) < 0) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno, "bind() failed");
-		close(fd);
-		return -1;
-	}
-
-	addr_len = sizeof(local);
-	if (getsockname(fd, (struct sockaddr *)&local, &addr_len) < 0) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno,
-			"getsockname() failed");
-		close(fd);
-		return -1;
-	}
-
-	if (addr_len != sizeof(local)) {
-		SYS_ERR(DTUN, LOGL_ERROR, 0,
-			"Wrong address length %d", addr_len);
-		close(fd);
-		return -1;
-	}
-
-	if (local.nl_family != AF_NETLINK) {
-		SYS_ERR(DTUN, LOGL_ERROR, 0,
-			"Wrong address family %d", local.nl_family);
-		close(fd);
-		return -1;
-	}
-
-	iov.iov_base = (void *)&req.n;
-	iov.iov_len = req.n.nlmsg_len;
-
-	msg.msg_name = (void *)&nladdr;
-	msg.msg_namelen = sizeof(nladdr);
-	msg.msg_iov = &iov;
-	msg.msg_iovlen = 1;
-	msg.msg_control = NULL;
-	msg.msg_controllen = 0;
-	msg.msg_flags = 0;
-
-	memset(&nladdr, 0, sizeof(nladdr));
-	nladdr.nl_family = AF_NETLINK;
-	nladdr.nl_pid = 0;
-	nladdr.nl_groups = 0;
-
-	req.n.nlmsg_seq = 0;
-	req.n.nlmsg_flags |= NLM_F_ACK;
-
-	status = sendmsg(fd, &msg, 0);
-	if (status != req.n.nlmsg_len) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno, "sendmsg() failed, returned %d", status);
-		close(fd);
-		return -1;
-	}
-
-	status = tun_sifflags(this, IFF_UP | IFF_RUNNING);
-	if (status == -1) {
-		close(fd);
-		return -1;
-	}
-
-
-	close(fd);
-	this->addrs++;
-	return 0;
-
-#elif defined (__FreeBSD__) || defined (__APPLE__)
-
-	int fd;
-	struct ifaliasreq areq;
-
-	/* TODO: Is this needed on FreeBSD? */
-	if (!this->addrs)	/* Use ioctl for first addr to make ping work */
-		return tun_setaddr4(this, addr, dstaddr, netmask);	/* TODO dstaddr */
-
-	memset(&areq, 0, sizeof(areq));
-
-	/* Set up interface name */
-	strncpy(areq.ifra_name, this->devname, IFNAMSIZ);
-	areq.ifra_name[IFNAMSIZ - 1] = 0;	/* Make sure to terminate */
-
-	((struct sockaddr_in *)&areq.ifra_addr)->sin_family = AF_INET;
-	((struct sockaddr_in *)&areq.ifra_addr)->sin_len =
-	    sizeof(areq.ifra_addr);
-	((struct sockaddr_in *)&areq.ifra_addr)->sin_addr.s_addr = addr->s_addr;
-
-	((struct sockaddr_in *)&areq.ifra_mask)->sin_family = AF_INET;
-	((struct sockaddr_in *)&areq.ifra_mask)->sin_len =
-	    sizeof(areq.ifra_mask);
-	((struct sockaddr_in *)&areq.ifra_mask)->sin_addr.s_addr =
-	    netmask->s_addr;
-
-	/* For some reason FreeBSD uses ifra_broadcast for specifying dstaddr */
-	((struct sockaddr_in *)&areq.ifra_broadaddr)->sin_family = AF_INET;
-	((struct sockaddr_in *)&areq.ifra_broadaddr)->sin_len =
-	    sizeof(areq.ifra_broadaddr);
-	((struct sockaddr_in *)&areq.ifra_broadaddr)->sin_addr.s_addr =
-	    dstaddr->s_addr;
-
-	/* Create a channel to the NET kernel. */
-	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno, "socket() failed");
-		return -1;
-	}
-
-	if (ioctl(fd, SIOCAIFADDR, (void *)&areq) < 0) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno,
-			"ioctl(SIOCAIFADDR) failed");
-		close(fd);
-		return -1;
-	}
-
-	close(fd);
-	this->addrs++;
-	return 0;
-
-#endif
-
 }
 
 static int tun_setaddr4(struct tun_t *this, struct in_addr *addr,
@@ -465,6 +293,175 @@ int tun_setaddr(struct tun_t *this, struct in46_addr *addr, struct in46_addr *ds
 	default:
 		return -1;
 	}
+}
+
+int tun_addaddr(struct tun_t *this,
+		struct in_addr *addr,
+		struct in_addr *dstaddr, struct in_addr *netmask)
+{
+
+#if defined(__linux__)
+	struct {
+		struct nlmsghdr n;
+		struct ifaddrmsg i;
+		char buf[TUN_NLBUFSIZE];
+	} req;
+
+	struct sockaddr_nl local;
+	socklen_t addr_len;
+	int fd;
+	int status;
+
+	struct sockaddr_nl nladdr;
+	struct iovec iov;
+	struct msghdr msg;
+
+	if (!this->addrs)	/* Use ioctl for first addr to make ping work */
+		return tun_setaddr4(this, addr, dstaddr, netmask);
+
+	memset(&req, 0, sizeof(req));
+	req.n.nlmsg_len = NLMSG_LENGTH(sizeof(struct ifaddrmsg));
+	req.n.nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE;
+	req.n.nlmsg_type = RTM_NEWADDR;
+	req.i.ifa_family = AF_INET;
+	req.i.ifa_prefixlen = 32;	/* 32 FOR IPv4 */
+	req.i.ifa_flags = 0;
+	req.i.ifa_scope = RT_SCOPE_HOST;	/* TODO or 0 */
+	req.i.ifa_index = if_nametoindex(this->devname);
+	if (!req.i.ifa_index) {
+		SYS_ERR(DTUN, LOGL_ERROR, errno, "Unable to get ifindex for %s", this->devname);
+		return -1;
+	}
+
+	tun_nlattr(&req.n, sizeof(req), IFA_ADDRESS, addr, sizeof(addr));
+	tun_nlattr(&req.n, sizeof(req), IFA_LOCAL, dstaddr, sizeof(dstaddr));
+
+	if ((fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE)) < 0) {
+		SYS_ERR(DTUN, LOGL_ERROR, errno, "socket() failed");
+		return -1;
+	}
+
+	memset(&local, 0, sizeof(local));
+	local.nl_family = AF_NETLINK;
+	local.nl_groups = 0;
+
+	if (bind(fd, (struct sockaddr *)&local, sizeof(local)) < 0) {
+		SYS_ERR(DTUN, LOGL_ERROR, errno, "bind() failed");
+		close(fd);
+		return -1;
+	}
+
+	addr_len = sizeof(local);
+	if (getsockname(fd, (struct sockaddr *)&local, &addr_len) < 0) {
+		SYS_ERR(DTUN, LOGL_ERROR, errno,
+			"getsockname() failed");
+		close(fd);
+		return -1;
+	}
+
+	if (addr_len != sizeof(local)) {
+		SYS_ERR(DTUN, LOGL_ERROR, 0,
+			"Wrong address length %d", addr_len);
+		close(fd);
+		return -1;
+	}
+
+	if (local.nl_family != AF_NETLINK) {
+		SYS_ERR(DTUN, LOGL_ERROR, 0,
+			"Wrong address family %d", local.nl_family);
+		close(fd);
+		return -1;
+	}
+
+	iov.iov_base = (void *)&req.n;
+	iov.iov_len = req.n.nlmsg_len;
+
+	msg.msg_name = (void *)&nladdr;
+	msg.msg_namelen = sizeof(nladdr);
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+	msg.msg_control = NULL;
+	msg.msg_controllen = 0;
+	msg.msg_flags = 0;
+
+	memset(&nladdr, 0, sizeof(nladdr));
+	nladdr.nl_family = AF_NETLINK;
+	nladdr.nl_pid = 0;
+	nladdr.nl_groups = 0;
+
+	req.n.nlmsg_seq = 0;
+	req.n.nlmsg_flags |= NLM_F_ACK;
+
+	status = sendmsg(fd, &msg, 0);
+	if (status != req.n.nlmsg_len) {
+		SYS_ERR(DTUN, LOGL_ERROR, errno, "sendmsg() failed, returned %d", status);
+		close(fd);
+		return -1;
+	}
+
+	status = tun_sifflags(this, IFF_UP | IFF_RUNNING);
+	if (status == -1) {
+		close(fd);
+		return -1;
+	}
+
+
+	close(fd);
+	this->addrs++;
+	return 0;
+
+#elif defined (__FreeBSD__) || defined (__APPLE__)
+
+	int fd;
+	struct ifaliasreq areq;
+
+	/* TODO: Is this needed on FreeBSD? */
+	if (!this->addrs)	/* Use ioctl for first addr to make ping work */
+		return tun_setaddr4(this, addr, dstaddr, netmask);	/* TODO dstaddr */
+
+	memset(&areq, 0, sizeof(areq));
+
+	/* Set up interface name */
+	strncpy(areq.ifra_name, this->devname, IFNAMSIZ);
+	areq.ifra_name[IFNAMSIZ - 1] = 0;	/* Make sure to terminate */
+
+	((struct sockaddr_in *)&areq.ifra_addr)->sin_family = AF_INET;
+	((struct sockaddr_in *)&areq.ifra_addr)->sin_len =
+	    sizeof(areq.ifra_addr);
+	((struct sockaddr_in *)&areq.ifra_addr)->sin_addr.s_addr = addr->s_addr;
+
+	((struct sockaddr_in *)&areq.ifra_mask)->sin_family = AF_INET;
+	((struct sockaddr_in *)&areq.ifra_mask)->sin_len =
+	    sizeof(areq.ifra_mask);
+	((struct sockaddr_in *)&areq.ifra_mask)->sin_addr.s_addr =
+	    netmask->s_addr;
+
+	/* For some reason FreeBSD uses ifra_broadcast for specifying dstaddr */
+	((struct sockaddr_in *)&areq.ifra_broadaddr)->sin_family = AF_INET;
+	((struct sockaddr_in *)&areq.ifra_broadaddr)->sin_len =
+	    sizeof(areq.ifra_broadaddr);
+	((struct sockaddr_in *)&areq.ifra_broadaddr)->sin_addr.s_addr =
+	    dstaddr->s_addr;
+
+	/* Create a channel to the NET kernel. */
+	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+		SYS_ERR(DTUN, LOGL_ERROR, errno, "socket() failed");
+		return -1;
+	}
+
+	if (ioctl(fd, SIOCAIFADDR, (void *)&areq) < 0) {
+		SYS_ERR(DTUN, LOGL_ERROR, errno,
+			"ioctl(SIOCAIFADDR) failed");
+		close(fd);
+		return -1;
+	}
+
+	close(fd);
+	this->addrs++;
+	return 0;
+
+#endif
+
 }
 
 static int tun_route(struct tun_t *this,
