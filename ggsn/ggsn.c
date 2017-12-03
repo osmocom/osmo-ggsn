@@ -436,13 +436,13 @@ static int build_ipcp_pco(struct msgb *msg, uint8_t id, const struct in46_addr *
 	if (dns1 && dns1->len == 4) {
 		msgb_put_u8(msg, 0x81);		/* DNS1 Tag */
 		msgb_put_u8(msg, 2 + dns1->len);/* DNS1 Length, incl. TL */
-		msgb_put_u32(msg, dns1->v4.s_addr);
+		msgb_put_u32(msg, ntohl(dns1->v4.s_addr));
 	}
 
 	if (dns2 && dns2->len == 4) {
 		msgb_put_u8(msg, 0x83);		/* DNS2 Tag */
 		msgb_put_u8(msg, 2 + dns2->len);/* DNS2 Length, incl. TL */
-		msgb_put_u32(msg, dns2->v4.s_addr);
+		msgb_put_u32(msg, ntohl(dns2->v4.s_addr));
 	}
 
 	/* patch in length values */
