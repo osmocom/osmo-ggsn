@@ -113,12 +113,15 @@ static void test_pool_sizes(void)
 	/* 65534 addresses [0.1..255.254] */
 	test_pool_size("192.168.0.0/16", IPPOOL_NONETWORK | IPPOOL_NOBROADCAST, NULL, 0, 65534);
 
-	/* 256 prefixes of /64 each */
-	test_pool_size("2001:DB8::/56", 0, NULL, 0, 256);
-
 	/* 253 addresses [1..254] & exclude 192.168.23.1/24 */
 	char *blacklist[] = {"176.16.222.10/24", "192.168.23.1/24", "192.168.38.2/24"};
 	test_pool_size("192.168.23.0/24", IPPOOL_NONETWORK | IPPOOL_NOBROADCAST, blacklist, 3, 253);
+}
+
+static void test_pool_sizes_v6(void)
+{
+	/* 256 prefixes of /64 each */
+	test_pool_size("2001:DB8::/56", 0, NULL, 0, 256);
 }
 
 int main(int argc, char **argv)
@@ -129,6 +132,10 @@ int main(int argc, char **argv)
 
 	srand(time(NULL));
 
-	test_pool_sizes();
+	if (argc < 2 || strcmp(argv[1], "-v6")) {
+		test_pool_sizes();
+	} else {
+		test_pool_sizes_v6();
+	}
 	return 0;
 }

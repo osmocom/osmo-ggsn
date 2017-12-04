@@ -1,7 +1,11 @@
 AM_CFLAGS = -Wall -I$(top_srcdir)/include $(LIBOSMOCORE_CFLAGS) -g
 
-EXTRA_DIST = ippool_test.ok ippool_test.err \
-	     in46a_test.ok
+EXTRA_DIST = ippool_test.ok \
+	     ippool_test.err \
+	     ippool_v6_test.ok \
+	     ippool_v6_test.err \
+	     in46a_test.ok \
+	     in46a_v6_test.ok
 
 noinst_PROGRAMS = ippool_test in46a_test
 
