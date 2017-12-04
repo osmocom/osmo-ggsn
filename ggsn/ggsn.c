@@ -653,7 +653,7 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 		dst.v6 = ip6h->ip6_dst;
 		pool = apn->v6.pool;
 	} else {
-		LOGP(DTUN, LOGL_NOTICE, "non-IPv packet received from tun\n");
+		LOGP(DTUN, LOGL_NOTICE, "non-IPv%u packet received from tun\n", iph->version);
 		return -1;
 	}
 
