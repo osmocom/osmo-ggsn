@@ -400,8 +400,6 @@ static bool pco_contains_proto(struct ul255_t *pco, uint16_t prot)
 		uint8_t cur_len = cur[2];
 		if (cur_prot == prot)
 			return true;
-		if (cur_len == 0)
-			break;
 		cur += cur_len + 3;
 	}
 	return false;
