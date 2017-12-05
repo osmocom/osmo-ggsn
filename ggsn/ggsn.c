@@ -661,12 +661,13 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 	if (!pool)
 		return 0;
 
-	DEBUGP(DTUN, "Received packet from tun!\n");
+	DEBUGP(DTUN, "Received packet for APN(%s) from tun %s", apn->cfg.name, tun->devname);
 
 	if (ippool_getip(pool, &ipm, &dst)) {
-		DEBUGP(DTUN, "Received packet with no PDP contex!!\n");
+		DEBUGPC(DTUN, " with no PDP contex!!\n");
 		return 0;
 	}
+	DEBUGPC(DTUN, "\n");
 
 	if (ipm->peer)		/* Check if a peer protocol is defined */
 		gtp_data_req(apn->ggsn->gsn, (struct pdp_t *)ipm->peer, pack, len);
@@ -689,7 +690,7 @@ static int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
 	OSMO_ASSERT(tun);
 	OSMO_ASSERT(apn);
 
-	LOGPPDP(LOGL_DEBUG, pdp, "Packet received: forwarding to tun\n");
+	LOGPPDP(LOGL_DEBUG, pdp, "Packet received on APN(%s): forwarding to tun %s\n", apn->cfg.name, tun->devname);
 
 	switch (iph->version) {
 	case 6:
