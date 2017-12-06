@@ -137,7 +137,7 @@ static void test_in46a_to_eua(void)
 #endif
 
 	/* IPv4 address */
-	OSMO_ASSERT(in46a_to_eua(&g_ia4, &eua) == 0);
+	OSMO_ASSERT(in46a_to_eua(&g_ia4, 1, &eua) == 0);
 	OSMO_ASSERT(eua.v[0] == PDP_EUA_ORG_IETF);
 	OSMO_ASSERT(eua.v[1] == PDP_EUA_TYPE_v4);
 	OSMO_ASSERT(osmo_load32le(&eua.v[2]) == g_ia4.v4.s_addr);
@@ -154,7 +154,7 @@ static void test_in46a_from_eua(void)
 	printf("Testing in46a_from_eua() with IPv4 addresses\n");
 
 	/* default: v4 unspec */
-	OSMO_ASSERT(in46a_from_eua(&eua, &ia) == 0);
+	OSMO_ASSERT(in46a_from_eua(&eua, &ia) == 1);
 	OSMO_ASSERT(ia.len == 4);
 	OSMO_ASSERT(ia.v4.s_addr == 0);
 
@@ -173,14 +173,14 @@ static void test_in46a_from_eua(void)
 	/* unspecified V4 */
 	memcpy(eua.v, v4_unspec, sizeof(v4_unspec));
 	eua.l = sizeof(v4_unspec);
-	OSMO_ASSERT(in46a_from_eua(&eua, &ia) == 0);
+	OSMO_ASSERT(in46a_from_eua(&eua, &ia) == 1);
 	OSMO_ASSERT(ia.len == 4);
 	OSMO_ASSERT(ia.v4.s_addr == 0);
 
 	/* specified V4 */
 	memcpy(eua.v, v4_spec, sizeof(v4_spec));
 	eua.l = sizeof(v4_spec);
-	OSMO_ASSERT(in46a_from_eua(&eua, &ia) == 0);
+	OSMO_ASSERT(in46a_from_eua(&eua, &ia) == 1);
 	OSMO_ASSERT(ia.len == 4);
 	OSMO_ASSERT(ia.v4.s_addr == htonl(0x01020304));
 }
@@ -278,19 +278,41 @@ static void test_in46a_to_eua_v6(void)
 	};
 	struct ul66_t eua;
 
-	printf("testing in46a_to_eua() with IPv6 addresses\n");
+	printf("Testing in46a_to_eua() with IPv6 addresses\n");
 
 	/* IPv6 address */
-	OSMO_ASSERT(in46a_to_eua(&g_ia6, &eua) == 0);
+	OSMO_ASSERT(in46a_to_eua(&g_ia6, 1, &eua) == 0);
 	OSMO_ASSERT(eua.v[0] == PDP_EUA_ORG_IETF);
 	OSMO_ASSERT(eua.v[1] == PDP_EUA_TYPE_v6);
 	OSMO_ASSERT(!memcmp(&eua.v[2], &g_ia6.v6, 16));
 
 	/* IPv6 address with prefix / length 8 */
-	OSMO_ASSERT(in46a_to_eua(&ia_v6_8, &eua) == 0);
+	OSMO_ASSERT(in46a_to_eua(&ia_v6_8, 1, &eua) == 0);
 	OSMO_ASSERT(eua.v[0] == PDP_EUA_ORG_IETF);
 	OSMO_ASSERT(eua.v[1] == PDP_EUA_TYPE_v6);
 	OSMO_ASSERT(!memcmp(&eua.v[2], &ia_v6_8.v6, 16));
+}
+
+static void test_in46a_to_eua_v4v6() {
+	const struct in46_addr ia_v4v6[2] = {
+		{
+		.len = 16,
+		.v6.s6_addr = { 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 },
+		},
+		{
+		.len = 4,
+		.v4.s_addr = 0x0d0c0b0a,
+		}
+	};
+	struct ul66_t eua;
+	printf("Testing in46a_to_eua() with IPv4v6 addresses\n");
+
+	/* IPv4 address */
+	OSMO_ASSERT(in46a_to_eua(ia_v4v6, 2, &eua) == 0);
+	OSMO_ASSERT(eua.v[0] == PDP_EUA_ORG_IETF);
+	OSMO_ASSERT(eua.v[1] == PDP_EUA_TYPE_v4v6);
+	OSMO_ASSERT(osmo_load32le(&eua.v[2]) == g_ia4.v4.s_addr);
+	OSMO_ASSERT(!memcmp(&eua.v[6], &g_ia6.v6, 16));
 }
 
 static void test_in46a_from_eua_v6(void)
@@ -308,16 +330,65 @@ static void test_in46a_from_eua_v6(void)
 	/* unspecified V6 */
 	memcpy(eua.v, v6_unspec, sizeof(v6_unspec));
 	eua.l = sizeof(v6_unspec);
-	OSMO_ASSERT(in46a_from_eua(&eua, &ia) == 0);
+	OSMO_ASSERT(in46a_from_eua(&eua, &ia) == 1);
 	OSMO_ASSERT(ia.len == 16);
 	OSMO_ASSERT(IN6_IS_ADDR_UNSPECIFIED(&ia.v6));
 
 	/* specified V6 */
 	memcpy(eua.v, v6_spec, sizeof(v6_spec));
 	eua.l = sizeof(v6_spec);
-	OSMO_ASSERT(in46a_from_eua(&eua, &ia) == 0);
+	OSMO_ASSERT(in46a_from_eua(&eua, &ia) == 1);
 	OSMO_ASSERT(ia.len == 16);
 	OSMO_ASSERT(!memcmp(&ia.v6, v6_spec+2, ia.len));
+}
+
+static void test_in46a_from_eua_v4v6(void) {
+	struct in46_addr ia[2];
+	struct ul66_t eua;
+	const uint8_t v4_unspec_v6_unspec[] = { PDP_EUA_ORG_IETF, PDP_EUA_TYPE_v4v6 };
+	const uint8_t v4_spec_v6_unspec[] = { PDP_EUA_ORG_IETF, PDP_EUA_TYPE_v4v6, 1,2,3,4 };
+	const uint8_t v4_unspec_v6_spec[] = { PDP_EUA_ORG_IETF, PDP_EUA_TYPE_v4v6, 1,2,3,4,5,6,7,8,9,0xa,0xb,0xc,0xd,0xe,0xf,0x10 };
+	const uint8_t v4_spec_v6_spec[] = { PDP_EUA_ORG_IETF, PDP_EUA_TYPE_v4v6, 1,2,3,4, 1,2,3,4,5,6,7,8,9,0xa,0xb,0xc,0xd,0xe,0xf,0x10 };
+
+	memset(&eua, 0, sizeof(eua));
+
+	printf("Testing in46a_from_eua() with IPv4v6 addresses\n");
+
+	/* unspecified V4 & V6 */
+	memcpy(eua.v, v4_unspec_v6_unspec, sizeof(v4_unspec_v6_unspec));
+	eua.l = sizeof(v4_unspec_v6_unspec);
+	OSMO_ASSERT(in46a_from_eua(&eua, ia) == 2);
+	OSMO_ASSERT(ia[0].len == 4);
+	OSMO_ASSERT(ia[1].len == 16);
+	OSMO_ASSERT(ia[0].v4.s_addr == 0);
+	OSMO_ASSERT(IN6_IS_ADDR_UNSPECIFIED(&ia[1].v6));
+
+	/* specified V4, unspecified V6 */
+	memcpy(eua.v, v4_spec_v6_unspec, sizeof(v4_spec_v6_unspec));
+	eua.l = sizeof(v4_spec_v6_unspec);
+	OSMO_ASSERT(in46a_from_eua(&eua, ia) == 2);
+	OSMO_ASSERT(ia[0].len == 4);
+	OSMO_ASSERT(ia[1].len == 16);
+	OSMO_ASSERT(ia[0].v4.s_addr == htonl(0x01020304));
+	OSMO_ASSERT(IN6_IS_ADDR_UNSPECIFIED(&ia[1].v6));
+
+	/* unspecified V4, specified V6 */
+	memcpy(eua.v, v4_unspec_v6_spec, sizeof(v4_unspec_v6_spec));
+	eua.l = sizeof(v4_unspec_v6_spec);
+	OSMO_ASSERT(in46a_from_eua(&eua, ia) == 2);
+	OSMO_ASSERT(ia[0].len == 4);
+	OSMO_ASSERT(ia[1].len == 16);
+	OSMO_ASSERT(ia[0].v4.s_addr == 0);
+	OSMO_ASSERT(!memcmp(&ia[1].v6, v4_unspec_v6_spec+2, ia[1].len));
+
+	/* specified V4, specified V6 */
+	memcpy(eua.v, v4_spec_v6_spec, sizeof(v4_spec_v6_spec));
+	eua.l = sizeof(v4_spec_v6_spec);
+	OSMO_ASSERT(in46a_from_eua(&eua, ia) == 2);
+	OSMO_ASSERT(ia[0].len == 4);
+	OSMO_ASSERT(ia[1].len == 16);
+	OSMO_ASSERT(ia[0].v4.s_addr == htonl(0x01020304));
+	OSMO_ASSERT(!memcmp(&ia[1].v6, v4_spec_v6_spec+6, ia[1].len));
 }
 
 static void test_in46a_netmasklen_v6(void)
@@ -378,6 +449,8 @@ int main(int argc, char **argv)
 		test_in46a_equal_v6();
 		test_in46a_to_eua_v6();
 		test_in46a_from_eua_v6();
+		test_in46a_to_eua_v4v6();
+		test_in46a_from_eua_v4v6();
 		test_in46a_netmasklen_v6();
 	}
 	return 0;

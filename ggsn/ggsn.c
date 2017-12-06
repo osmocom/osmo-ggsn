@@ -335,17 +335,20 @@ static bool send_trap(const struct gsn_t *gsn, const struct pdp_t *pdp, const st
 static int delete_context(struct pdp_t *pdp)
 {
 	struct gsn_t *gsn = pdp->gsn;
-	struct ippoolm_t *ipp = (struct ippoolm_t *)pdp->peer;
 	struct apn_ctx *apn = pdp->priv;
+	struct ippoolm_t *member;
+	int i;
 
 	LOGPPDP(LOGL_INFO, pdp, "Deleting PDP context\n");
-	struct ippoolm_t *member = pdp->peer;
 
-	if (pdp->peer) {
-		send_trap(gsn, pdp, member, "imsi-rem-ip"); /* TRAP with IP removal */
-		ippool_freeip(ipp->pool, ipp);
-	} else
-		LOGPPDP(LOGL_ERROR, pdp, "Cannot find/free IP Pool member\n");
+	for (i = 0; i < 2; i++) {
+		if (pdp->peer[i]) {
+			member = pdp->peer[i];
+			send_trap(gsn, pdp, member, "imsi-rem-ip"); /* TRAP with IP removal */
+			ippool_freeip(member->pool, member);
+		} else if(i == 0)
+			LOGPPDP(LOGL_ERROR, pdp, "Cannot find/free IP Pool member\n");
+	}
 
 	if (gtp_kernel_tunnel_del(pdp, apn->tun.cfg.dev_name)) {
 		LOGPPDP(LOGL_ERROR, pdp, "Cannot delete tunnel from kernel:%s\n",
@@ -512,10 +515,10 @@ int create_context_ind(struct pdp_t *pdp)
 	static char name_buf[256];
 	struct gsn_t *gsn = pdp->gsn;
 	struct ggsn_ctx *ggsn = gsn->priv;
-	struct in46_addr addr;
-	struct ippoolm_t *member;
+	struct in46_addr addr[2];
+	struct ippoolm_t *member = NULL;
 	struct apn_ctx *apn;
-	int rc;
+	int rc, num_addr, i;
 
 	osmo_apn_to_str(name_buf, pdp->apn_req.v, pdp->apn_req.l);
 
@@ -550,55 +553,63 @@ int create_context_ind(struct pdp_t *pdp)
 	memcpy(pdp->qos_neg.v, pdp->qos_req.v, pdp->qos_req.l);	/* TODO */
 	pdp->qos_neg.l = pdp->qos_req.l;
 
-	if (in46a_from_eua(&pdp->eua, &addr)) {
+	memset(addr, 0, sizeof(addr));
+	if ((num_addr = in46a_from_eua(&pdp->eua, addr)) < 0) {
 		LOGPPDP(LOGL_ERROR, pdp, "Cannot decode EUA from MS/SGSN: %s\n",
 			osmo_hexdump(pdp->eua.v, pdp->eua.l));
 		gtp_create_context_resp(gsn, pdp, GTPCAUSE_UNKNOWN_PDP);
 		return 0;
 	}
 
-	if (addr.len == sizeof(struct in_addr)) {
-		/* does this APN actually have an IPv4 pool? */
-		if (!apn_supports_ipv4(apn))
-			goto err_wrong_af;
+	/* Allocate dynamic addresses from the pool */
+	for (i = 0; i < num_addr; i++) {
+		if (addr[i].len == sizeof(struct in_addr)) {
+			/* does this APN actually have an IPv4 pool? */
+			if (!apn_supports_ipv4(apn))
+				goto err_wrong_af;
 
-		rc = ippool_newip(apn->v4.pool, &member, &addr, 0);
-		if (rc < 0)
-			goto err_pool_full;
-		in46a_to_eua(&member->addr, &pdp->eua);
+			rc = ippool_newip(apn->v4.pool, &member, &addr[i], 0);
+			if (rc < 0)
+				goto err_pool_full;
+			/* copy back */
+			memcpy(&addr[i].v4.s_addr, &member->addr.v4, 4);
 
+		} else if (addr[i].len == sizeof(struct in6_addr)) {
+
+			/* does this APN actually have an IPv6 pool? */
+			if (!apn_supports_ipv6(apn))
+				goto err_wrong_af;
+
+			rc = ippool_newip(apn->v6.pool, &member, &addr[i], 0);
+			if (rc < 0)
+				goto err_pool_full;
+
+			/* IPv6 doesn't really send the real/allocated address at this point, but just
+			 * the link-identifier which the MS shall use for router solicitation */
+			/* initialize upper 64 bits to prefix, they are discarded by MS anyway */
+			memcpy(addr[i].v6.s6_addr, &member->addr.v6, 8);
+			/* use allocated 64bit prefix as lower 64bit, used as link id by MS */
+			memcpy(addr[i].v6.s6_addr+8, &member->addr.v6, 8);
+		} else
+			OSMO_ASSERT(0);
+
+		pdp->peer[i] = member;
+		member->peer = pdp;
+	}
+
+	in46a_to_eua(addr, num_addr, &pdp->eua);
+
+	if (apn_supports_ipv4(apn)) {
 		/* TODO: In IPv6, EUA doesn't contain the actual IP addr/prefix! */
 		if (gtp_kernel_tunnel_add(pdp, apn->tun.cfg.dev_name) < 0) {
 			LOGPPDP(LOGL_ERROR, pdp, "Cannot add tunnel to kernel: %s\n", strerror(errno));
 			gtp_create_context_resp(gsn, pdp, GTPCAUSE_SYS_FAIL);
 			return 0;
 		}
-	} else if (addr.len == sizeof(struct in6_addr)) {
-		struct in46_addr tmp;
+	}
 
-		/* does this APN actually have an IPv6 pool? */
-		if (!apn_supports_ipv6(apn))
-			goto err_wrong_af;
-
-		rc = ippool_newip(apn->v6.pool, &member, &addr, 0);
-		if (rc < 0)
-			goto err_pool_full;
-
-		/* IPv6 doesn't really send the real/allocated address at this point, but just
-		 * the link-identifier which the MS shall use for router solicitation */
-		tmp.len = addr.len;
-		/* initialize upper 64 bits to prefix, they are discarded by MS anyway */
-		memcpy(tmp.v6.s6_addr, &member->addr.v6, 8);
-		/* use allocated 64bit prefix as lower 64bit, used as link id by MS */
-		memcpy(tmp.v6.s6_addr+8, &member->addr.v6, 8);
-		in46a_to_eua(&tmp, &pdp->eua);
-	} else
-		OSMO_ASSERT(0);
-
-	pdp->peer = member;
 	pdp->ipif = apn->tun.tun;	/* TODO */
 	pdp->priv = apn;
-	member->peer = pdp;
 
 	if (!send_trap(gsn, pdp, member, "imsi-ass-ip")) { /* TRAP with IP assignment */
 		gtp_create_context_resp(gsn, pdp, GTPCAUSE_NO_RESOURCES);

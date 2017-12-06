@@ -3,6 +3,8 @@ Testing in46a_to_sas() with IPv6 addresses
 Testing in46a_ntop() with IPv6 addresses
 res = 102:304:506:708:90a:b0c:d0e:f10
 Testing in46a_equal() with IPv6 addresses
-testing in46a_to_eua() with IPv6 addresses
+Testing in46a_to_eua() with IPv6 addresses
 Testing in46a_from_eua() with IPv6 addresses
+Testing in46a_to_eua() with IPv4v6 addresses
+Testing in46a_from_eua() with IPv4v6 addresses
 Testing in46a_netmasklen() with IPv6 addresses

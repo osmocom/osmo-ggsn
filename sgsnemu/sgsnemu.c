@@ -1617,7 +1617,7 @@ int main(int argc, char **argv)
 		/* Otherwise it is deallocated by gtplib */
 		pdp_newpdp(&pdp, myimsi, options.nsapi, NULL);
 
-		pdp->peer = &iparr[n];
+		pdp->peer[0] = &iparr[n]; /* FIXME: support v4v6, have 2 peers */
 		pdp->ipif = tun;	/* TODO */
 		iparr[n].pdp = pdp;
 

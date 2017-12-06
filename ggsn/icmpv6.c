@@ -183,12 +183,17 @@ static bool icmpv6_validate_router_solicit(const uint8_t *pack, unsigned len)
 int handle_router_mcast(struct gsn_t *gsn, struct pdp_t *pdp, const struct in6_addr *own_ll_addr,
 			const uint8_t *pack, unsigned len)
 {
-	struct ippoolm_t *member = pdp->peer;
+	struct ippoolm_t *member;
 	const struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
 	const struct icmpv6_hdr *ic6h = (struct icmpv6_hdr *) (pack + sizeof(*ip6h));
 	struct msgb *msg;
 
 	OSMO_ASSERT(pdp);
+
+	member = pdp->peer[0];
+	OSMO_ASSERT(member);
+	if (member->addr.len == sizeof(struct in_addr)) /* ipv4v6 context */
+		member = pdp->peer[1];
 	OSMO_ASSERT(member);
 
 	if (len < sizeof(*ip6h)) {

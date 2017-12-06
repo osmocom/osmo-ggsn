@@ -253,33 +253,66 @@ unsigned int in46a_netmasklen(const struct in46_addr *netmask)
 	}
 }
 
-/*! Convert given PDP End User Address to in46_addr
- *  \returns 0 on success; negative on error */
-int in46a_to_eua(const struct in46_addr *src, struct ul66_t *eua)
+/*! Convert given array of in46_addr to PDP End User Address
+ *  \param[in] src Array containing 1 or 2 in46_addr
+ *  \param[out] eua End User Address structure to fill
+ *  \returns 0 on success; negative on error
+ *
+ * In case size is 2, this function expects to find exactly one IPv4 and one
+ * IPv6 addresses in src. */
+int in46a_to_eua(const struct in46_addr *src, unsigned int size, struct ul66_t *eua)
 {
-	switch (src->len) {
-	case 4:
-		eua->l = 6;
-		eua->v[0] = PDP_EUA_ORG_IETF;
-		eua->v[1] = PDP_EUA_TYPE_v4;
-		memcpy(&eua->v[2], &src->v4, 4);	/* Copy a 4 byte address */
-		break;
-	case 8:
-	case 16:
-		eua->l = 18;
-		eua->v[0] = PDP_EUA_ORG_IETF;
-		eua->v[1] = PDP_EUA_TYPE_v6;
-		memcpy(&eua->v[2], &src->v6, 16);	/* Copy a 16 byte address */
-		break;
-	default:
-		OSMO_ASSERT(0);
-		return -1;
+	const struct in46_addr *src_v4, *src_v6;
+	if (size == 1) {
+		switch (src->len) {
+		case 4:
+			eua->l = 6;
+			eua->v[0] = PDP_EUA_ORG_IETF;
+			eua->v[1] = PDP_EUA_TYPE_v4;
+			memcpy(&eua->v[2], &src->v4, 4);	/* Copy a 4 byte address */
+			break;
+		case 8:
+		case 16:
+			eua->l = 18;
+			eua->v[0] = PDP_EUA_ORG_IETF;
+			eua->v[1] = PDP_EUA_TYPE_v6;
+			memcpy(&eua->v[2], &src->v6, 16);	/* Copy a 16 byte address */
+			break;
+		default:
+			OSMO_ASSERT(0);
+			return -1;
+		}
+		return 0;
 	}
+
+	if (src[0].len == src[1].len)
+		return -1; /* we should have a v4 and a v6 address */
+
+	src_v4 = (src[0].len == 4) ? &src[0] : &src[1];
+	src_v6 = (src[0].len == 4) ? &src[1] : &src[0];
+
+	eua->l = 22;
+	eua->v[0] = PDP_EUA_ORG_IETF;
+	eua->v[1] = PDP_EUA_TYPE_v4v6;
+	memcpy(&eua->v[2], &src_v4->v4, 4);
+	memcpy(&eua->v[6], &src_v6->v6, 16);
+
 	return 0;
 }
 
-/*! Convert given in46_addr to PDP End User Address
- *  \returns 0 on success; negative on error */
+/*! Convert given PDP End User Address to an array of in46_addr
+ *  \param[in] eua End User Address structure to parse
+ *  \param[out] dst Array containing 2 in46_addr
+ *  \returns number of parsed addresses (1 or 2) on success; negative on error
+ *
+ * This function expects to receive an End User Address struct together with an
+ * array of 2 zeroed in46_addr structs. The in46_addr structs are filled in
+ * order, hence if the function returns 1 the parsed address will be stored in
+ * the first struct and the second one will be left intact. If 2 is returned, it
+ * is guaranteed that one of them is an IPv4 and the other one is an IPv6, but
+ * the order in which they are presented is not specified and must be
+ * discovered for instance by checking the len field of each address.
+ */
 int in46a_from_eua(const struct ul66_t *eua, struct in46_addr *dst)
 {
 	if (eua->l < 2)
@@ -295,22 +328,46 @@ int in46a_from_eua(const struct ul66_t *eua, struct in46_addr *dst)
 			memcpy(&dst->v4, &eua->v[2], 4);	/* Copy a 4 byte address */
 		else
 			dst->v4.s_addr = 0;
-		break;
+		return 1;
 	case PDP_EUA_TYPE_v6:
 		dst->len = 16;
 		if (eua->l >= 18)
 			memcpy(&dst->v6, &eua->v[2], 16);	/* Copy a 16 byte address */
 		else
 			memset(&dst->v6, 0, 16);
-		break;
+		return 1;
+	case PDP_EUA_TYPE_v4v6:
+		/* 3GPP TS 29.060, section 7.7.27 */
+		switch (eua->l) {
+			case 2: /* v4 & v6 dynamic */
+				dst[0].v4.s_addr = 0;
+				memset(&dst[1].v6, 0, 16);
+				break;
+			case 6: /* v4 static, v6 dynamic */
+				memcpy(&dst[0].v4, &eua->v[2], 4);
+				memset(&dst[1].v6, 0, 16);
+				break;
+			case 18: /* v4 dynamic, v6 static */
+				dst[0].v4.s_addr = 0;
+				memcpy(&dst[1].v6, &eua->v[2], 16);
+				break;
+			case 22:  /* v4 & v6 static */
+				memcpy(&dst[0].v4, &eua->v[2], 4);
+				memcpy(&dst[1].v6, &eua->v[6], 16);
+				break;
+			default:
+				return -1;
+		}
+		dst[0].len = 4;
+		dst[1].len = 16;
+		return 2;
 	default:
 		return -1;
 	}
-	return 0;
 
 default_to_dyn_v4:
 	/* assume dynamic IPv4 by default */
 	dst->len = 4;
 	dst->v4.s_addr = 0;
-	return 0;
+	return 1;
 }
