@@ -1,7 +1,59 @@
 <vtydoc xmlns='urn:osmocom:xml:libosmocore:vty:doc:1.0'>
-  <node id='0'>
+  <node id='_common_cmds_'>
+    <name>Common Commands</name>
+    <description>These commands are available on all VTY nodes. They are listed here only once, to unclutter the VTY reference.</description>
+    <command id='help'>
+      <params>
+        <param name='help' doc='Description of the interactive help system' />
+      </params>
+    </command>
+    <command id='list'>
+      <params>
+        <param name='list' doc='Print command list' />
+      </params>
+    </command>
+    <command id='write terminal'>
+      <params>
+        <param name='write' doc='Write running configuration to memory, network, or terminal' />
+        <param name='terminal' doc='Write to terminal' />
+      </params>
+    </command>
+    <command id='write file'>
+      <params>
+        <param name='write' doc='Write running configuration to memory, network, or terminal' />
+        <param name='file' doc='Write to configuration file' />
+      </params>
+    </command>
+    <command id='write memory'>
+      <params>
+        <param name='write' doc='Write running configuration to memory, network, or terminal' />
+        <param name='memory' doc='Write configuration to the file (same as write file)' />
+      </params>
+    </command>
+    <command id='write'>
+      <params>
+        <param name='write' doc='Write running configuration to memory, network, or terminal' />
+      </params>
+    </command>
+    <command id='show running-config'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='running-config' doc='running configuration' />
+      </params>
+    </command>
+    <command id='exit'>
+      <params>
+        <param name='exit' doc='Exit current mode and down to previous mode' />
+      </params>
+    </command>
+    <command id='end'>
+      <params>
+        <param name='end' doc='End current mode and change to enable mode.' />
+      </params>
+    </command>
   </node>
-  <node id='1'>
+  <node id='view'>
+    <name>view</name>
     <command id='show version'>
       <params>
         <param name='show' doc='Show running system information' />
@@ -12,21 +64,6 @@
       <params>
         <param name='show' doc='Show running system information' />
         <param name='online-help' doc='Online help' />
-      </params>
-    </command>
-    <command id='list'>
-      <params>
-        <param name='list' doc='Print command list' />
-      </params>
-    </command>
-    <command id='exit'>
-      <params>
-        <param name='exit' doc='Exit current mode and down to previous mode' />
-      </params>
-    </command>
-    <command id='help'>
-      <params>
-        <param name='help' doc='Description of the interactive help system' />
       </params>
     </command>
     <command id='enable'>
@@ -67,19 +104,19 @@
     </command>
     <command id='logging enable'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='enable' doc='Enables logging to this vty' />
       </params>
     </command>
     <command id='logging disable'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='disable' doc='Disables logging to this vty' />
       </params>
     </command>
     <command id='logging filter all (0|1)'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='filter' doc='Filter log messages' />
         <param name='all' doc='Do you want to log all messages?' />
         <param name='0' doc='Only print messages matched by other filters' />
@@ -88,7 +125,7 @@
     </command>
     <command id='logging color (0|1)'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='color' doc='Configure color-printing for log messages' />
         <param name='0' doc='Don&apos;t use color for printing messages' />
         <param name='1' doc='Use color for printing messages' />
@@ -96,7 +133,7 @@
     </command>
     <command id='logging timestamp (0|1)'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='timestamp' doc='Configure log message timestamping' />
         <param name='0' doc='Don&apos;t prefix each log message' />
         <param name='1' doc='Prefix each log message with current timestamp' />
@@ -104,7 +141,7 @@
     </command>
     <command id='logging print extended-timestamp (0|1)'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='print' doc='Log output settings' />
         <param name='extended-timestamp' doc='Configure log message timestamping' />
         <param name='0' doc='Don&apos;t prefix each log message' />
@@ -113,7 +150,7 @@
     </command>
     <command id='logging print category (0|1)'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='print' doc='Log output settings' />
         <param name='category' doc='Configure log message' />
         <param name='0' doc='Don&apos;t prefix each log message' />
@@ -122,23 +159,23 @@
     </command>
     <command id='logging set-log-mask MASK'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='set-log-mask' doc='Set the logmask of this logging target' />
-        <param name='MASK' doc='The logmask to use' />
+        <param name='MASK' doc='List of logging categories to log, e.g. &apos;abc:mno:xyz&apos;. Available log categories depend on the specific application, refer to the &apos;logging level&apos; command. Optionally add individual log levels like &apos;abc,1:mno,3:xyz,5&apos;, where the level numbers are LOGL_DEBUG=1 LOGL_INFO=3 LOGL_NOTICE=5 LOGL_ERROR=7 LOGL_FATAL=8' />
       </params>
     </command>
     <command id='logging set log mask MASK'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='set' doc='Decide which categories to output.' />
         <param name='log' doc='Log commands' />
         <param name='mask' doc='Mask commands' />
-        <param name='MASK' doc='The logmask to use' />
+        <param name='MASK' doc='&apos;set log mask&apos; is deprecated, please refer to the docs of &apos;set-log-mask&apos; instead' />
       </params>
     </command>
     <command id='logging level (all|ip|tun|ggsn|sgsn|icmp6|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp) (everything|debug|info|notice|error|fatal)'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='level' doc='Set the log level for a specified category' />
         <param name='all' doc='Global setting for all subsystems' />
         <param name='ip' doc='IP Pool and other groups' />
@@ -234,53 +271,8 @@
       </params>
     </command>
   </node>
-  <node id='2'>
-  </node>
-  <node id='3'>
-    <command id='help'>
-      <params>
-        <param name='help' doc='Description of the interactive help system' />
-      </params>
-    </command>
-    <command id='list'>
-      <params>
-        <param name='list' doc='Print command list' />
-      </params>
-    </command>
-    <command id='write terminal'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-        <param name='terminal' doc='Write to terminal' />
-      </params>
-    </command>
-    <command id='write file'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-        <param name='file' doc='Write to configuration file' />
-      </params>
-    </command>
-    <command id='write memory'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-        <param name='memory' doc='Write configuration to the file (same as write file)' />
-      </params>
-    </command>
-    <command id='write'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-      </params>
-    </command>
-    <command id='show running-config'>
-      <params>
-        <param name='show' doc='Show running system information' />
-        <param name='running-config' doc='running configuration' />
-      </params>
-    </command>
-    <command id='exit'>
-      <params>
-        <param name='exit' doc='Exit current mode and down to previous mode' />
-      </params>
-    </command>
+  <node id='enable'>
+    <name>enable</name>
     <command id='disable'>
       <params>
         <param name='disable' doc='Turn off privileged mode command' />
@@ -363,19 +355,19 @@
     </command>
     <command id='logging enable'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='enable' doc='Enables logging to this vty' />
       </params>
     </command>
     <command id='logging disable'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='disable' doc='Disables logging to this vty' />
       </params>
     </command>
     <command id='logging filter all (0|1)'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='filter' doc='Filter log messages' />
         <param name='all' doc='Do you want to log all messages?' />
         <param name='0' doc='Only print messages matched by other filters' />
@@ -384,7 +376,7 @@
     </command>
     <command id='logging color (0|1)'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='color' doc='Configure color-printing for log messages' />
         <param name='0' doc='Don&apos;t use color for printing messages' />
         <param name='1' doc='Use color for printing messages' />
@@ -392,7 +384,7 @@
     </command>
     <command id='logging timestamp (0|1)'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='timestamp' doc='Configure log message timestamping' />
         <param name='0' doc='Don&apos;t prefix each log message' />
         <param name='1' doc='Prefix each log message with current timestamp' />
@@ -400,7 +392,7 @@
     </command>
     <command id='logging print extended-timestamp (0|1)'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='print' doc='Log output settings' />
         <param name='extended-timestamp' doc='Configure log message timestamping' />
         <param name='0' doc='Don&apos;t prefix each log message' />
@@ -409,7 +401,7 @@
     </command>
     <command id='logging print category (0|1)'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='print' doc='Log output settings' />
         <param name='category' doc='Configure log message' />
         <param name='0' doc='Don&apos;t prefix each log message' />
@@ -418,23 +410,23 @@
     </command>
     <command id='logging set-log-mask MASK'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='set-log-mask' doc='Set the logmask of this logging target' />
-        <param name='MASK' doc='The logmask to use' />
+        <param name='MASK' doc='List of logging categories to log, e.g. &apos;abc:mno:xyz&apos;. Available log categories depend on the specific application, refer to the &apos;logging level&apos; command. Optionally add individual log levels like &apos;abc,1:mno,3:xyz,5&apos;, where the level numbers are LOGL_DEBUG=1 LOGL_INFO=3 LOGL_NOTICE=5 LOGL_ERROR=7 LOGL_FATAL=8' />
       </params>
     </command>
     <command id='logging set log mask MASK'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='set' doc='Decide which categories to output.' />
         <param name='log' doc='Log commands' />
         <param name='mask' doc='Mask commands' />
-        <param name='MASK' doc='The logmask to use' />
+        <param name='MASK' doc='&apos;set log mask&apos; is deprecated, please refer to the docs of &apos;set-log-mask&apos; instead' />
       </params>
     </command>
     <command id='logging level (all|ip|tun|ggsn|sgsn|icmp6|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp) (everything|debug|info|notice|error|fatal)'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='level' doc='Set the log level for a specified category' />
         <param name='all' doc='Global setting for all subsystems' />
         <param name='ip' doc='IP Pool and other groups' />
@@ -530,56 +522,8 @@
       </params>
     </command>
   </node>
-  <node id='4'>
-    <command id='help'>
-      <params>
-        <param name='help' doc='Description of the interactive help system' />
-      </params>
-    </command>
-    <command id='list'>
-      <params>
-        <param name='list' doc='Print command list' />
-      </params>
-    </command>
-    <command id='write terminal'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-        <param name='terminal' doc='Write to terminal' />
-      </params>
-    </command>
-    <command id='write file'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-        <param name='file' doc='Write to configuration file' />
-      </params>
-    </command>
-    <command id='write memory'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-        <param name='memory' doc='Write configuration to the file (same as write file)' />
-      </params>
-    </command>
-    <command id='write'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-      </params>
-    </command>
-    <command id='show running-config'>
-      <params>
-        <param name='show' doc='Show running system information' />
-        <param name='running-config' doc='running configuration' />
-      </params>
-    </command>
-    <command id='exit'>
-      <params>
-        <param name='exit' doc='Exit current mode and down to previous mode' />
-      </params>
-    </command>
-    <command id='end'>
-      <params>
-        <param name='end' doc='End current mode and change to enable mode.' />
-      </params>
-    </command>
+  <node id='config'>
+    <name>config</name>
     <command id='hostname WORD'>
       <params>
         <param name='hostname' doc='Set system&apos;s network name' />
@@ -827,59 +771,11 @@
       </params>
     </command>
   </node>
-  <node id='7'>
-    <command id='help'>
-      <params>
-        <param name='help' doc='Description of the interactive help system' />
-      </params>
-    </command>
-    <command id='list'>
-      <params>
-        <param name='list' doc='Print command list' />
-      </params>
-    </command>
-    <command id='write terminal'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-        <param name='terminal' doc='Write to terminal' />
-      </params>
-    </command>
-    <command id='write file'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-        <param name='file' doc='Write to configuration file' />
-      </params>
-    </command>
-    <command id='write memory'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-        <param name='memory' doc='Write configuration to the file (same as write file)' />
-      </params>
-    </command>
-    <command id='write'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-      </params>
-    </command>
-    <command id='show running-config'>
-      <params>
-        <param name='show' doc='Show running system information' />
-        <param name='running-config' doc='running configuration' />
-      </params>
-    </command>
-    <command id='exit'>
-      <params>
-        <param name='exit' doc='Exit current mode and down to previous mode' />
-      </params>
-    </command>
-    <command id='end'>
-      <params>
-        <param name='end' doc='End current mode and change to enable mode.' />
-      </params>
-    </command>
+  <node id='config-log'>
+    <name>config-log</name>
     <command id='logging filter all (0|1)'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='filter' doc='Filter log messages' />
         <param name='all' doc='Do you want to log all messages?' />
         <param name='0' doc='Only print messages matched by other filters' />
@@ -888,7 +784,7 @@
     </command>
     <command id='logging color (0|1)'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='color' doc='Configure color-printing for log messages' />
         <param name='0' doc='Don&apos;t use color for printing messages' />
         <param name='1' doc='Use color for printing messages' />
@@ -896,7 +792,7 @@
     </command>
     <command id='logging timestamp (0|1)'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='timestamp' doc='Configure log message timestamping' />
         <param name='0' doc='Don&apos;t prefix each log message' />
         <param name='1' doc='Prefix each log message with current timestamp' />
@@ -904,7 +800,7 @@
     </command>
     <command id='logging print extended-timestamp (0|1)'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='print' doc='Log output settings' />
         <param name='extended-timestamp' doc='Configure log message timestamping' />
         <param name='0' doc='Don&apos;t prefix each log message' />
@@ -913,16 +809,23 @@
     </command>
     <command id='logging print category (0|1)'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='print' doc='Log output settings' />
         <param name='category' doc='Configure log message' />
         <param name='0' doc='Don&apos;t prefix each log message' />
         <param name='1' doc='Prefix each log message with category/subsystem name' />
       </params>
     </command>
+    <command id='logging set-log-mask MASK'>
+      <params>
+        <param name='logging' doc='Configure logging' />
+        <param name='set-log-mask' doc='Set the logmask of this logging target' />
+        <param name='MASK' doc='List of logging categories to log, e.g. &apos;abc:mno:xyz&apos;. Available log categories depend on the specific application, refer to the &apos;logging level&apos; command. Optionally add individual log levels like &apos;abc,1:mno,3:xyz,5&apos;, where the level numbers are LOGL_DEBUG=1 LOGL_INFO=3 LOGL_NOTICE=5 LOGL_ERROR=7 LOGL_FATAL=8' />
+      </params>
+    </command>
     <command id='logging level (all|ip|tun|ggsn|sgsn|icmp6|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp) (everything|debug|info|notice|error|fatal)'>
       <params>
-        <param name='logging' doc='Configure log message to this terminal' />
+        <param name='logging' doc='Configure logging' />
         <param name='level' doc='Set the log level for a specified category' />
         <param name='all' doc='Global setting for all subsystems' />
         <param name='ip' doc='IP Pool and other groups' />
@@ -956,56 +859,8 @@
       </params>
     </command>
   </node>
-  <node id='8'>
-    <command id='help'>
-      <params>
-        <param name='help' doc='Description of the interactive help system' />
-      </params>
-    </command>
-    <command id='list'>
-      <params>
-        <param name='list' doc='Print command list' />
-      </params>
-    </command>
-    <command id='write terminal'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-        <param name='terminal' doc='Write to terminal' />
-      </params>
-    </command>
-    <command id='write file'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-        <param name='file' doc='Write to configuration file' />
-      </params>
-    </command>
-    <command id='write memory'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-        <param name='memory' doc='Write configuration to the file (same as write file)' />
-      </params>
-    </command>
-    <command id='write'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-      </params>
-    </command>
-    <command id='show running-config'>
-      <params>
-        <param name='show' doc='Show running system information' />
-        <param name='running-config' doc='running configuration' />
-      </params>
-    </command>
-    <command id='exit'>
-      <params>
-        <param name='exit' doc='Exit current mode and down to previous mode' />
-      </params>
-    </command>
-    <command id='end'>
-      <params>
-        <param name='end' doc='End current mode and change to enable mode.' />
-      </params>
-    </command>
+  <node id='config-stats'>
+    <name>config-stats</name>
     <command id='local-ip ADDR'>
       <params>
         <param name='local-ip' doc='Set the IP address to which we bind locally' />
@@ -1073,56 +928,8 @@
       </params>
     </command>
   </node>
-  <node id='9'>
-    <command id='help'>
-      <params>
-        <param name='help' doc='Description of the interactive help system' />
-      </params>
-    </command>
-    <command id='list'>
-      <params>
-        <param name='list' doc='Print command list' />
-      </params>
-    </command>
-    <command id='write terminal'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-        <param name='terminal' doc='Write to terminal' />
-      </params>
-    </command>
-    <command id='write file'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-        <param name='file' doc='Write to configuration file' />
-      </params>
-    </command>
-    <command id='write memory'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-        <param name='memory' doc='Write configuration to the file (same as write file)' />
-      </params>
-    </command>
-    <command id='write'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-      </params>
-    </command>
-    <command id='show running-config'>
-      <params>
-        <param name='show' doc='Show running system information' />
-        <param name='running-config' doc='running configuration' />
-      </params>
-    </command>
-    <command id='exit'>
-      <params>
-        <param name='exit' doc='Exit current mode and down to previous mode' />
-      </params>
-    </command>
-    <command id='end'>
-      <params>
-        <param name='end' doc='End current mode and change to enable mode.' />
-      </params>
-    </command>
+  <node id='config-line'>
+    <name>config-line</name>
     <command id='login'>
       <params>
         <param name='login' doc='Enable password checking' />
@@ -1141,7 +948,8 @@
       </params>
     </command>
   </node>
-  <node id='14'>
+  <node id='config-ctrl'>
+    <name>config-ctrl</name>
     <command id='bind A.B.C.D'>
       <params>
         <param name='bind' doc='Set bind address to listen for Control connections' />
@@ -1149,56 +957,8 @@
       </params>
     </command>
   </node>
-  <node id='26'>
-    <command id='help'>
-      <params>
-        <param name='help' doc='Description of the interactive help system' />
-      </params>
-    </command>
-    <command id='list'>
-      <params>
-        <param name='list' doc='Print command list' />
-      </params>
-    </command>
-    <command id='write terminal'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-        <param name='terminal' doc='Write to terminal' />
-      </params>
-    </command>
-    <command id='write file'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-        <param name='file' doc='Write to configuration file' />
-      </params>
-    </command>
-    <command id='write memory'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-        <param name='memory' doc='Write configuration to the file (same as write file)' />
-      </params>
-    </command>
-    <command id='write'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-      </params>
-    </command>
-    <command id='show running-config'>
-      <params>
-        <param name='show' doc='Show running system information' />
-        <param name='running-config' doc='running configuration' />
-      </params>
-    </command>
-    <command id='exit'>
-      <params>
-        <param name='exit' doc='Exit current mode and down to previous mode' />
-      </params>
-    </command>
-    <command id='end'>
-      <params>
-        <param name='end' doc='End current mode and change to enable mode.' />
-      </params>
-    </command>
+  <node id='config-ggsn'>
+    <name>config-ggsn</name>
     <command id='description .TEXT'>
       <params>
         <param name='description' doc='Save human-readable description of the object' />
@@ -1278,56 +1038,8 @@
       </params>
     </command>
   </node>
-  <node id='27'>
-    <command id='help'>
-      <params>
-        <param name='help' doc='Description of the interactive help system' />
-      </params>
-    </command>
-    <command id='list'>
-      <params>
-        <param name='list' doc='Print command list' />
-      </params>
-    </command>
-    <command id='write terminal'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-        <param name='terminal' doc='Write to terminal' />
-      </params>
-    </command>
-    <command id='write file'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-        <param name='file' doc='Write to configuration file' />
-      </params>
-    </command>
-    <command id='write memory'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-        <param name='memory' doc='Write configuration to the file (same as write file)' />
-      </params>
-    </command>
-    <command id='write'>
-      <params>
-        <param name='write' doc='Write running configuration to memory, network, or terminal' />
-      </params>
-    </command>
-    <command id='show running-config'>
-      <params>
-        <param name='show' doc='Show running system information' />
-        <param name='running-config' doc='running configuration' />
-      </params>
-    </command>
-    <command id='exit'>
-      <params>
-        <param name='exit' doc='Exit current mode and down to previous mode' />
-      </params>
-    </command>
-    <command id='end'>
-      <params>
-        <param name='end' doc='End current mode and change to enable mode.' />
-      </params>
-    </command>
+  <node id='config-ggsn-apn'>
+    <name>config-ggsn-apn</name>
     <command id='description .TEXT'>
       <params>
         <param name='description' doc='Save human-readable description of the object' />
@@ -1474,6 +1186,19 @@
         <param name='no' doc='Negate a command or set its defaults' />
         <param name='ipv6' doc='IPv6 Information' />
         <param name='ifconfig' doc='GGSN-based interface configuration' />
+      </params>
+    </command>
+    <command id='g-pdu tx-sequence-numbers'>
+      <params>
+        <param name='g-pdu' doc='G-PDU Configuration' />
+        <param name='tx-sequence-numbers' doc='Enable transmission of G-PDU sequence numbers' />
+      </params>
+    </command>
+    <command id='no g-pdu tx-sequence-numbers'>
+      <params>
+        <param name='no' doc='Negate a command or set its defaults' />
+        <param name='g-pdu' doc='G-PDU Configuration' />
+        <param name='tx-sequence-numbers' doc='Disable transmission of G-PDU sequence numbers' />
       </params>
     </command>
   </node>
