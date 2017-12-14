@@ -513,6 +513,24 @@ DEFUN(cfg_apn_no_ipv6_ifconfig, cfg_apn_no_ipv6_ifconfig_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN(cfg_apn_ipv6_linklocal, cfg_apn_ipv6_linklocal_cmd,
+	"ipv6 link-local X:X::X:X/M",
+	IP6_STR IFCONFIG_STR "IPv6 Link-local Adress/Prefix-Length\n")
+{
+	struct apn_ctx *apn = (struct apn_ctx *) vty->index;
+	str2prefix(&apn->v6.cfg.ll_prefix, argv[0]);
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_apn_no_ipv6_linklocal, cfg_apn_no_ipv6_linklocal_cmd,
+	"no ipv6 link-local",
+	NO_STR IP6_STR IFCONFIG_STR)
+{
+	struct apn_ctx *apn = (struct apn_ctx *) vty->index;
+	memset(&apn->v6.cfg.ll_prefix, 0, sizeof(apn->v6.cfg.ll_prefix));
+	return CMD_SUCCESS;
+}
+
 #define DNS_STRINGS "Configure DNS Server\n" "primary/secondary DNS\n" "IP address of DNS Sever\n"
 
 DEFUN(cfg_apn_ip_dns, cfg_apn_ip_dns_cmd,
@@ -893,6 +911,8 @@ int ggsn_vty_init(void)
 	install_element(APN_NODE, &cfg_apn_no_ip_ifconfig_cmd);
 	install_element(APN_NODE, &cfg_apn_ipv6_ifconfig_cmd);
 	install_element(APN_NODE, &cfg_apn_no_ipv6_ifconfig_cmd);
+	install_element(APN_NODE, &cfg_apn_ipv6_linklocal_cmd);
+	install_element(APN_NODE, &cfg_apn_no_ipv6_linklocal_cmd);
 	install_element(APN_NODE, &cfg_apn_gpdu_seq_cmd);
 	install_element(APN_NODE, &cfg_apn_no_gpdu_seq_cmd);
 

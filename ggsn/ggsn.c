@@ -241,13 +241,28 @@ int apn_start(struct apn_ctx *apn)
 			}
 		}
 
+		if (apn->v6.cfg.ll_prefix.addr.len) {
+			LOGPAPN(LOGL_INFO, apn, "Setting tun IPv6 link-local address %s\n",
+				in46p_ntoa(&apn->v6.cfg.ll_prefix));
+			if (tun_addaddr(apn->tun.tun, &apn->v6.cfg.ll_prefix.addr, NULL,
+					apn->v6.cfg.ll_prefix.prefixlen)) {
+				LOGPAPN(LOGL_ERROR, apn, "Failed to set tun IPv6 link-local address %s: %s. "
+					"Ensure you have ipv6 support and not used the disable_ipv6 sysctl?\n",
+					in46p_ntoa(&apn->v6.cfg.ll_prefix), strerror(errno));
+				apn_stop(apn, false);
+				return -1;
+			}
+			apn->v6_lladdr = apn->v6.cfg.ll_prefix.addr.v6;
+		}
+
 		if (apn->tun.cfg.ipup_script) {
 			LOGPAPN(LOGL_INFO, apn, "Running ip-up script %s\n",
 				apn->tun.cfg.ipup_script);
 			tun_runscript(apn->tun.tun, apn->tun.cfg.ipup_script);
 		}
 
-		if (apn->cfg.apn_type_mask & (APN_TYPE_IPv6|APN_TYPE_IPv4v6)) {
+		if (apn->cfg.apn_type_mask & (APN_TYPE_IPv6|APN_TYPE_IPv4v6) &&
+		    apn->v6.cfg.ll_prefix.addr.len == 0) {
 			rc = tun_ip_local_get(apn->tun.tun, &ipv6_tun_linklocal_ip, 1, IP_TYPE_IPv6_LINK);
 			if (rc < 1) {
 				LOGPAPN(LOGL_ERROR, apn, "Cannot obtain IPv6 link-local address of interface: %s\n",
