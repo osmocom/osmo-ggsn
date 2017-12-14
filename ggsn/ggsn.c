@@ -194,6 +194,7 @@ int apn_start(struct apn_ctx *apn)
 	struct in46_prefix ipv6_tun_linklocal_ip;
 	struct in46_prefix *blacklist;
 	int blacklist_size;
+	int rc;
 
 	if (apn->started)
 		return 0;
@@ -247,9 +248,10 @@ int apn_start(struct apn_ctx *apn)
 		}
 
 		if (apn->cfg.apn_type_mask & (APN_TYPE_IPv6|APN_TYPE_IPv4v6)) {
-			if (tun_ip_local_get(apn->tun.tun, &ipv6_tun_linklocal_ip, 1, IP_TYPE_IPv6_LINK) < 1) {
-				LOGPAPN(LOGL_ERROR, apn, "Cannot obtain IPv6 link-local address of "
-					"interface: %s\n", strerror(errno));
+			rc = tun_ip_local_get(apn->tun.tun, &ipv6_tun_linklocal_ip, 1, IP_TYPE_IPv6_LINK);
+			if (rc < 1) {
+				LOGPAPN(LOGL_ERROR, apn, "Cannot obtain IPv6 link-local address of interface: %s\n",
+					rc ? strerror(errno) : "tun interface has no link-local IP assigned");
 				apn_stop(apn, false);
 				return -1;
 			}
