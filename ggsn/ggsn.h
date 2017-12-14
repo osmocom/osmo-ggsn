@@ -22,6 +22,7 @@ struct ggsn_ctx;
 struct apn_ctx_ip {
 	struct {
 		struct in46_prefix ifconfig_prefix;
+		struct in46_prefix ll_prefix;
 		struct in46_prefix static_prefix;
 		struct in46_prefix dynamic_prefix;
 		/* v4 DNS server names */
