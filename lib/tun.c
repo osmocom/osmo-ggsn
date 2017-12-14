@@ -333,8 +333,9 @@ int tun_addaddr(struct tun_t *this,
 		return -1;
 	}
 
-	tun_nlattr(&req.n, sizeof(req), IFA_ADDRESS, addr, sizeof(addr));
-	tun_nlattr(&req.n, sizeof(req), IFA_LOCAL, dstaddr, sizeof(dstaddr));
+	tun_nlattr(&req.n, sizeof(req), IFA_ADDRESS, addr, sizeof(*addr));
+	if (dstaddr)
+		tun_nlattr(&req.n, sizeof(req), IFA_LOCAL, dstaddr, sizeof(*dstaddr));
 
 	if ((fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE)) < 0) {
 		SYS_ERR(DTUN, LOGL_ERROR, errno, "socket() failed");
