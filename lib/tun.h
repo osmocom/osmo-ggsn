@@ -80,8 +80,8 @@ extern int tun_free(struct tun_t *tun);
 extern int tun_decaps(struct tun_t *this);
 extern int tun_encaps(struct tun_t *tun, void *pack, unsigned len);
 
-extern int tun_addaddr(struct tun_t *this, struct in_addr *addr,
-		       struct in_addr *dstaddr, struct in_addr *netmask);
+extern int tun_addaddr(struct tun_t *this, struct in46_addr *addr,
+		       struct in46_addr *dstaddr, size_t prefixlen);
 
 extern int tun_setaddr(struct tun_t *this, struct in46_addr *our_adr,
 		       struct in46_addr *his_adr, size_t prefixlen);
