@@ -85,7 +85,7 @@ struct {
 	int debug;		/* Print debug messages */
 	int createif;		/* Create local network interface */
 	char *tun_dev_name;
-	struct in_addr netaddr, destaddr, net;	/* Network interface  */
+	struct in46_addr netaddr, destaddr, net;	/* Network interface  */
 	size_t prefixlen;
 	char *ipup, *ipdown;	/* Filename of scripts */
 	int defaultroute;	/* Set up default route */
@@ -873,23 +873,21 @@ static int process_options(int argc, char **argv)
 	/* net                                                          */
 	/* Store net as in_addr net and mask                            */
 	if (args_info.net_arg) {
-		struct in46_addr in46;
 		if (ippool_aton
-		    (&in46, &options.prefixlen, args_info.net_arg, 0)) {
+		    (&options.net, &options.prefixlen, args_info.net_arg, 0)) {
 			SYS_ERR(DSGSN, LOGL_ERROR, 0,
 				"Invalid network address: %s!",
 				args_info.net_arg);
 			exit(1);
 		}
-		options.net.s_addr = in46.v4.s_addr;
-		options.netaddr.s_addr = options.net.s_addr;
-		options.destaddr.s_addr = options.net.s_addr;
+		options.netaddr = options.net;
+		options.destaddr = options.net;
 
 	} else {
-		options.net.s_addr = 0;
+		memset(&options.net, 0, sizeof(options.net));
 		options.prefixlen = 0;
-		options.netaddr.s_addr = 0;
-		options.destaddr.s_addr = 0;
+		memset(&options.netaddr, 0, sizeof(options.netaddr));
+		memset(&options.destaddr, 0, sizeof(options.destaddr));
 	}
 
 	/* ipup */
@@ -1427,7 +1425,7 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 		break;
 	}
 
-	if ((options.createif) && (!options.net.s_addr)) {
+	if ((options.createif) && (!options.net.len)) {
 		size_t prefixlen = 32;
 		if (addr.len == 16)
 			prefixlen = 64;
@@ -1580,15 +1578,13 @@ int main(int argc, char **argv)
 			maxfd = tun->fd;
 	}
 
-	if ((options.createif) && (options.net.s_addr)) {
-		struct in_addr mask;
-		mask.s_addr = options.prefixlen ? (0xFFFFFFFF >> (32 - options.prefixlen)) : 0;
+	if ((options.createif) && (options.net.len)) {
 		/* printf("Setting up interface and routing\n"); */
-		tun_addaddr(tun, &options.netaddr, &options.destaddr, &mask);
+		tun_addaddr(tun, &options.netaddr, &options.destaddr, options.prefixlen);
 		if (options.defaultroute) {
 			struct in_addr rm;
 			rm.s_addr = 0;
-			tun_addroute(tun, &rm, &options.destaddr, &rm);
+			tun_addroute(tun, &rm, &options.destaddr.v4, &rm);
 		}
 		if (options.ipup)
 			tun_runscript(tun, options.ipup);
