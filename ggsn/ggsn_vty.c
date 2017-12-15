@@ -686,6 +686,8 @@ static void config_write_apn(struct vty *vty, struct apn_ctx *apn)
 	}
 	if (apn->v6.cfg.ifconfig_prefix.addr.len)
 		vty_dump_prefix(vty, "  ipv6 ifconfig", &apn->v6.cfg.ifconfig_prefix);
+	if (apn->v6.cfg.ll_prefix.addr.len)
+		vty_dump_prefix(vty, "  ipv6 link-local", &apn->v6.cfg.ll_prefix);
 
 	/* must be last */
 	vty_out(vty, "  %sshutdown%s", apn->cfg.shutdown ? "" : "no ", VTY_NEWLINE);
