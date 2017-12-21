@@ -38,7 +38,7 @@ set -x
 
 cd "$base"
 autoreconf --install --force
-./configure CFLAGS="-Werror" CPPFLAGS="-Werror" $GTP
+./configure --enable-sanitize CFLAGS="-Werror" CPPFLAGS="-Werror" $GTP
 $MAKE $PARALLEL_MAKE
 $MAKE distcheck
 
