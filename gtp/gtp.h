@@ -12,6 +12,8 @@
 #ifndef _GTP_H
 #define _GTP_H
 
+#include <osmocom/core/utils.h>
+
 #define GTP_MODE_GGSN 1
 #define GTP_MODE_SGSN 2
 
@@ -84,6 +86,10 @@
 #define GTP_DATA_TRAN_RSP   241	/* Data Record Transfer Response */
 /* 242-254 For future use. */
 #define GTP_GPDU            255	/* G-PDU */
+
+extern const struct value_string gtp_type_names[];
+static inline const char *gtp_type_name(uint8_t val)
+{ return get_value_string(gtp_type_names, val); }
 
 /* GTP information element cause codes from 29.060 v3.9.0 7.7 */
 /*                                                            */

@@ -86,6 +86,51 @@ const char *gtp_version()
 	return VERSION;
 }
 
+const struct value_string gtp_type_names[] = {
+	{ GTP_ECHO_REQ,        "Echo Request" },
+	{ GTP_ECHO_RSP,        "Echo Response" },
+	{ GTP_NOT_SUPPORTED,   "Version Not Supported" },
+	{ GTP_ALIVE_REQ,       "Node Alive Request" },
+	{ GTP_ALIVE_RSP,       "Node Alive Response" },
+	{ GTP_REDIR_REQ,       "Redirection Request" },
+	{ GTP_REDIR_RSP,       "Redirection Response" },
+	{ GTP_CREATE_PDP_REQ,  "Create PDP Context Request" },
+	{ GTP_CREATE_PDP_RSP,  "Create PDP Context Response" },
+	{ GTP_UPDATE_PDP_REQ,  "Update PDP Context Request" },
+	{ GTP_UPDATE_PDP_RSP,  "Update PDP Context Response" },
+	{ GTP_DELETE_PDP_REQ,  "Delete PDP Context Request" },
+	{ GTP_DELETE_PDP_RSP,  "Delete PDP Context Response" },
+	{ GTP_ERROR,           "Error Indication" },
+	{ GTP_PDU_NOT_REQ,     "PDU Notification Request" },
+	{ GTP_PDU_NOT_RSP,     "PDU Notification Response" },
+	{ GTP_PDU_NOT_REJ_REQ, "PDU Notification Reject Request" },
+	{ GTP_PDU_NOT_REJ_RSP, "PDU Notification Reject Response" },
+	{ GTP_SUPP_EXT_HEADER, "Supported Extension Headers Notification" },
+	{ GTP_SND_ROUTE_REQ,   "Send Routeing Information for GPRS Request" },
+	{ GTP_SND_ROUTE_RSP,   "Send Routeing Information for GPRS Response" },
+	{ GTP_FAILURE_REQ,     "Failure Report Request" },
+	{ GTP_FAILURE_RSP,     "Failure Report Response" },
+	{ GTP_MS_PRESENT_REQ,  "Note MS GPRS Present Request" },
+	{ GTP_MS_PRESENT_RSP,  "Note MS GPRS Present Response" },
+	{ GTP_IDEN_REQ,        "Identification Request" },
+	{ GTP_IDEN_RSP,        "Identification Response" },
+	{ GTP_SGSN_CONTEXT_REQ,"SGSN Context Request" },
+	{ GTP_SGSN_CONTEXT_RSP,"SGSN Context Response" },
+	{ GTP_SGSN_CONTEXT_ACK,"SGSN Context Acknowledge" },
+	{ GTP_FWD_RELOC_REQ,   "Forward Relocation Request" },
+	{ GTP_FWD_RELOC_RSP,   "Forward Relocation Response" },
+	{ GTP_FWD_RELOC_COMPL, "Forward Relocation Complete" },
+	{ GTP_RELOC_CANCEL_REQ,"Relocation Cancel Request" },
+	{ GTP_RELOC_CANCEL_RSP,"Relocation Cancel Response" },
+	{ GTP_FWD_SRNS,        "Forward SRNS Context" },
+	{ GTP_FWD_RELOC_ACK,   "Forward Relocation Complete Acknowledge" },
+	{ GTP_FWD_SRNS_ACK,    "Forward SRNS Context Acknowledge" },
+	{ GTP_DATA_TRAN_REQ,   "Data Record Transfer Request" },
+	{ GTP_DATA_TRAN_RSP,   "Data Record Transfer Response" },
+	{ GTP_GPDU,            "G-PDU" },
+	{ 0, NULL }
+};
+
 /* gtp_new */
 /* gtp_free */
 
