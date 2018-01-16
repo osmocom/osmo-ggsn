@@ -7,8 +7,8 @@ AM_CFLAGS = -O2 -D_GNU_SOURCE -fno-builtin -Wall -DSBINDIR='"$(sbindir)"' -ggdb 
 osmo_ggsn_LDADD = @EXEC_LDADD@ -lgtp -L../gtp ../lib/libmisc.a $(LIBOSMOCORE_LIBS) $(LIBOSMOCTRL_LIBS) $(LIBOSMOVTY_LIBS)
 
 if ENABLE_GTP_KERNEL
-AM_CFLAGS += -DGTP_KERNEL
-osmo_ggsn_LDADD += -lgtpnl
+AM_CFLAGS += -DGTP_KERNEL $(LIBGTPNL_CFLAGS)
+osmo_ggsn_LDADD += $(LIBGTPNL_LIBS)
 endif
 
 osmo_ggsn_DEPENDENCIES = ../gtp/libgtp.la ../lib/libmisc.a
