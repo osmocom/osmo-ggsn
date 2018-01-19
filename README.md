@@ -263,8 +263,7 @@ following:
 
 1. Install sgsnemu on a Linux Box. See under installation above.
 2. Connect your Linux box with sgsnemu installed to the GPRS core
-network. Use the same LAN switch as the one your SGSN is connected
-to. You also need a free IP address that can be used by sgsnemu.
+network. You also need a free IP address that can be used by sgsnemu.
 3. You need to configure networking in terms of interface address,
 subnet mask and default route. See the Linux Networking HOWTO for
 details.
