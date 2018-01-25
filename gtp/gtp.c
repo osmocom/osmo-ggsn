@@ -1,19 +1,19 @@
-/* 
+/*
  *  OsmoGGSN - Gateway GPRS Support Node
  *  Copyright (C) 2002, 2003, 2004 Mondru AB.
  *  Copyright (C) 2010-2011, 2016-2017 Harald Welte <laforge@gnumonks.org>
  *  Copyright (C) 2015-2017 sysmocom - s.f.m.c. GmbH
- * 
+ *
  *  The contents of this file may be used under the terms of the GNU
  *  General Public License Version 2, provided that the above copyright
  *  notice and this permission notice is included in all copies or
  *  substantial portions of the software.
- * 
+ *
  */
 
 /*
  * gtp.c: Contains all GTP functionality. Should be able to handle multiple
- * tunnels in the same program. 
+ * tunnels in the same program.
  *
  * TODO:
  *  - Do we need to handle fragmentation?
@@ -326,19 +326,19 @@ static uint32_t get_tei(void *pack)
 
 /* ***********************************************************
  * Reliable delivery of signalling messages
- * 
+ *
  * Sequence numbers are used for both signalling messages and
  * data messages.
  *
  * For data messages each tunnel maintains a sequence counter,
  * which is incremented by one each time a new data message
  * is sent. The sequence number starts at (0) zero at tunnel
- * establishment, and wraps around at 65535 (29.060 9.3.1.1 
+ * establishment, and wraps around at 65535 (29.060 9.3.1.1
  * and 09.60 8.1.1.1). The sequence numbers are either ignored,
  * or can be used to check the validity of the message in the
  * receiver, or for reordering af packets.
  *
- * For signalling messages the sequence number is used by 
+ * For signalling messages the sequence number is used by
  * signalling messages for which a response is defined. A response
  * message should copy the sequence from the corresponding request
  * message. The sequence number "unambiguously" identifies a request
@@ -356,7 +356,7 @@ static uint32_t get_tei(void *pack)
  * with path setup and teardown.
  *
  * If a response message is lost, the request will be retransmitted, and
- * the receiving GSN will receive a "duplicated" request. The standard 
+ * the receiving GSN will receive a "duplicated" request. The standard
  * requires the receiving GSN to send a response, with the same information
  * as in the original response. For most messages this happens automatically:
  *
@@ -371,22 +371,22 @@ static uint32_t get_tei(void *pack)
  *   a nonexist reply message.
  *
  * The correct solution will be to make a queue containing response messages.
- * This queue should be checked whenever a request is received. If the 
+ * This queue should be checked whenever a request is received. If the
  * response is allready in the queue that response should be transmitted.
  * It should be possible to find messages in this queue on the basis of
  * the sequence number and peer GSN IP address (The sequense number is unique
  * within each path). This need to be implemented by a hash table. Furthermore
  * it should be possibly to delete messages based on a timeout. This can be
  * achieved by means of a linked list. The timeout value need to be larger
- * than T3-RESPONSE * N3-REQUESTS (recommended value 5). These timers are 
+ * than T3-RESPONSE * N3-REQUESTS (recommended value 5). These timers are
  * set in the peer GSN, so there is no way to know these parameters. On the
  * other hand the timeout value need to be so small that we do not receive
  * wraparound sequence numbere before the message is deleted. 60 seconds is
  * probably not a bad choise.
- * 
+ *
  * This queue however is first really needed from gtp1.
  *
- * gtp_req: 
+ * gtp_req:
  *   Send off a signalling message with appropiate sequence
  *   number. Store packet in queue.
  * gtp_conf:
@@ -897,7 +897,7 @@ int gtp_free(struct gsn_t *gsn)
  * For response messages we need to be able to respond to
  * the relevant src port even if it is locally allocated by
  * the peer.
- * 
+ *
  * The need for path management!
  * We might need to keep a list of active paths. This might
  * be in the form of remote IP address + UDP port numbers.
@@ -987,9 +987,9 @@ int gtp_echo_conf(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
 /* This message is somewhat special in that it actually is a
  * response to some other message with unsupported GTP version
  * For this reason it has parameters like a response, and does
- * its own message transmission. No signalling queue is used 
+ * its own message transmission. No signalling queue is used
  * The reply is sent to the peer IP and peer UDP. This means that
- * the peer will be receiving a GTP0 message on a GTP1 port! 
+ * the peer will be receiving a GTP0 message on a GTP1 port!
  * In practice however this will never happen as a GTP0 GSN will
  * only listen to the GTP0 port, and therefore will never receive
  * anything else than GTP0 */
@@ -1052,7 +1052,7 @@ int gtp_extheader_ind(struct gsn_t *gsn, struct sockaddr_in *peer,
  * Messages: create, update and delete PDP context
  *
  * Information storage
- * Information storage for each PDP context is defined in 
+ * Information storage for each PDP context is defined in
  * 23.060 section 13.3. Includes IMSI, MSISDN, APN, PDP-type,
  * PDP-address (IP address), sequence numbers, charging ID.
  * For the SGSN it also includes radio related mobility
@@ -1138,7 +1138,7 @@ extern int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
 				  pdp->cch_pdp);
 	}
 
-	/* TODO 
+	/* TODO
 	   gtpie_tv2(&packet, &length, GTP_MAX, GTPIE_TRACE_REF,
 	   pdp->traceref);
 	   gtpie_tv2(&packet, &length, GTP_MAX, GTPIE_TRACE_TYPE,
@@ -1582,7 +1582,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 		    (!memcmp(pdp->msisdn.v, pdp_old->msisdn.v, pdp->msisdn.l)))
 		{
 			/* OK! We are dealing with the same APN. We will copy new
-			 * parameters to the old pdp and send off confirmation 
+			 * parameters to the old pdp and send off confirmation
 			 * We ignore the following information elements:
 			 * QoS: MS will get originally negotiated QoS.
 			 * End user address (EUA). MS will get old EUA anyway.
@@ -1898,14 +1898,14 @@ int gtp_update_context(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 
 	gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_NSAPI, pdp->nsapi);
 
-	/* TODO 
+	/* TODO
 	   gtpie_tv2(&packet, &length, GTP_MAX, GTPIE_TRACE_REF,
 	   pdp->traceref);
 	   gtpie_tv2(&packet, &length, GTP_MAX, GTPIE_TRACE_TYPE,
 	   pdp->tracetype); */
 
 	/* TODO if ggsn update message
-	   gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_EUA, 
+	   gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_EUA,
 	   pdp->eua.l, pdp->eua.v);
 	 */
 
@@ -1977,8 +1977,8 @@ int gtp_update_pdp_resp(struct gsn_t *gsn, int version,
 		gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_CHARGING_ID,
 			  pdp->teid_own);
 
-		/* If ggsn 
-		   gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_EUA, 
+		/* If ggsn
+		   gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_EUA,
 		   pdp->eua.l, pdp->eua.v); */
 
 		gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_GSN_ADDR,
@@ -2172,7 +2172,7 @@ int gtp_update_pdp_ind(struct gsn_t *gsn, int version,
 	   GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 	   "Missing mandatory information field");
 	   memcpy(pdp, &pdp_backup, sizeof(pdp_backup));
-	   return gtp_update_pdp_resp(gsn, version, pdp, 
+	   return gtp_update_pdp_resp(gsn, version, pdp,
 	   GTPCAUSE_MAN_IE_MISSING);
 	   } */
 
@@ -2442,7 +2442,7 @@ int gtp_delete_pdp_resp(struct gsn_t *gsn, int version,
 					if (pdp_getgtp1
 					    (&secondary_pdp,
 					     linked_pdp->secondary_tei[n])) {
-						LOGP(DLGTP, LOGL_ERROR, 
+						LOGP(DLGTP, LOGL_ERROR,
 							"Unknown secondary PDP context\n");
 						return EOF;
 					}
@@ -2745,10 +2745,10 @@ int gtp_gpdu_ind(struct gsn_t *gsn, int version,
 	return 0;
 }
 
-/* Receives GTP packet and sends off for further processing 
+/* Receives GTP packet and sends off for further processing
  * Function will check the validity of the header. If the header
- * is not valid the packet is either dropped or a version not 
- * supported is returned to the peer. 
+ * is not valid the packet is either dropped or a version not
+ * supported is returned to the peer.
  * TODO: Need to decide on return values! */
 int gtp_decaps0(struct gsn_t *gsn)
 {
@@ -3298,7 +3298,7 @@ int char2ul_t(char *src, struct ul_t dst)
 /* ***********************************************************
  * IP address conversion functions
  * There exist several types of address representations:
- * - eua: End User Address. (29.060, 7.7.27, message type 128) 
+ * - eua: End User Address. (29.060, 7.7.27, message type 128)
  *   Used for signalling address to mobile station. Supports IPv4
  *   IPv6 x.25 etc. etc.
  * - gsna: GSN Address. (29.060, 7.7.32, message type 133): IP address
