@@ -1,13 +1,13 @@
-/* 
+/*
  *  OsmoGGSN - Gateway GPRS Support Node
  *  Copyright (C) 2002, 2003 Mondru AB.
  *  Copyright (C) 2017 Harald Welte <laforge@gnumonks.org>
- * 
+ *
  *  The contents of this file may be used under the terms of the GNU
  *  General Public License Version 2, provided that the above copyright
  *  notice and this permission notice is included in all copies or
  *  substantial portions of the software.
- * 
+ *
  */
 
 #ifndef _PDP_H
@@ -72,16 +72,16 @@ struct ul255_t {
  * and 09.60.
  * 31 * 4 + 15 structs +  = 120 + 15 structs ~ 2k / context
  * Structs: IP address 16+4 bytes (6), APN 255 bytes (2)
- * QOS: 255 bytes (3), msisdn 16 bytes (1), 
+ * QOS: 255 bytes (3), msisdn 16 bytes (1),
  *
  * TODO: We need to consider who manages the pdp_t hash tables
  * Is it gtp_lib, or is it the application?
- * I suppose that it will be gtp_lib. 
+ * I suppose that it will be gtp_lib.
  * SGSN will ask gtplib for new pdp_t. Fill out the fields,
  * and pass it on to gtp_create_pdp_req.
  * GGSN will receive gtp_create_pdp_ind, create new pdp_t and
  * send responce to SGSN.
- * SGSN will receive response and gtplib will find the 
+ * SGSN will receive response and gtplib will find the
  * original pdp_t corresponding to the request. This will be
  * passed on to the application.
  * Eventually the SGSN will close the connection, and the
@@ -89,10 +89,10 @@ struct ul255_t {
  * This means that gtplib need to have functions to
  * allocate, free, sort and find pdp_t
  * (newpdp, freepdp, getpdp)
- * Hash tables: TID, IMSI, IP etc.) 
+ * Hash tables: TID, IMSI, IP etc.)
  *
  *
- * Secondary PDP Context Activation Procedure 
+ * Secondary PDP Context Activation Procedure
  *
  * With GTP version 1 it is possible to establish multiple PDP
  * contexts with the same IP address. With this scheme the first

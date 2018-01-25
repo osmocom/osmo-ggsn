@@ -1,17 +1,17 @@
-/* 
+/*
  *  OsmoGGSN - Gateway GPRS Support Node
  *  Copyright (C) 2002, 2003, 2004 Mondru AB.
  *  Copyright (C) 2017 Harald Welte <laforge@gnumonks.org>
- * 
+ *
  *  The contents of this file may be used under the terms of the GNU
  *  General Public License Version 2, provided that the above copyright
  *  notice and this permission notice is included in all copies or
  *  substantial portions of the software.
- * 
+ *
  */
 
 /*
- * pdp.c: 
+ * pdp.c:
  *
  */
 
@@ -44,17 +44,17 @@ static struct pdp_t *hashtid[PDP_MAX];	/* Hash table for IMSI + NSAPI */
  * Functions related to PDP storage
  *
  * Lifecycle
- * For a GGSN pdp context life begins with the reception of a 
+ * For a GGSN pdp context life begins with the reception of a
  * create pdp context request. It normally ends with the reception
  * of a delete pdp context request, but will also end with the
- * reception of an error indication message. 
+ * reception of an error indication message.
  * Provisions should probably be made for terminating pdp contexts
- * based on either idle timeout, or by sending downlink probe 
+ * based on either idle timeout, or by sending downlink probe
  * messages (ping?) to see if the MS is still responding.
- * 
+ *
  * For an SGSN pdp context life begins with the application just
  * before sending off a create pdp context request. It normally
- * ends when a delete pdp context response message is received 
+ * ends when a delete pdp context response message is received
  * from the GGSN, but should also end when with the reception of
  * an error indication message.
  *
@@ -64,15 +64,15 @@ static struct pdp_t *hashtid[PDP_MAX];	/* Hash table for IMSI + NSAPI */
  * Downlink packets received in the GGSN are identified only by their
  * network interface together with their destination IP address (Two
  * network interfaces can use the same private IP address). Each IMSI
- * (mobile station) can have several PDP contexts using the same IP 
+ * (mobile station) can have several PDP contexts using the same IP
  * address. In this case the traffic flow template (TFT) is used to
- * determine the correct PDP context for a particular IMSI. Also it 
+ * determine the correct PDP context for a particular IMSI. Also it
  * should be possible for each PDP context to use several IP adresses
  * For fixed wireless access a mobile station might need a full class
  * C network. Even in the case of several IP adresses the PDP context
  * should be determined on the basis of the network IP address.
  * Thus we need a hash table based on network interface + IP address.
- * 
+ *
  * Uplink packets are for GTP0 identified by their IMSI and NSAPI, which
  * is collectively called the tunnel identifier. There is also a 16 bit
  * flow label that can be used for identification of uplink packets. This
@@ -85,7 +85,7 @@ static struct pdp_t *hashtid[PDP_MAX];	/* Hash table for IMSI + NSAPI */
  * Thus we need a hash table based on TID (IMSI and NSAPI). The TEID will
  * be used for directly addressing the PDP context.
 
- * pdp_newpdp 
+ * pdp_newpdp
  * Gives you a pdp context with no hash references In some way
  * this should have a limited lifetime.
  *
@@ -296,7 +296,7 @@ int pdp_iphash(void* ipif, struct ul66_t *eua) {
   /#printf("IPhash %ld\n", lookup(eua->v, eua->l, ipif) % PDP_MAX);#/
   return (lookup(eua->v, eua->l, ipif) % PDP_MAX);
 }
-    
+
 int pdp_ipset(struct pdp_t *pdp, void* ipif, struct ul66_t *eua) {
   int hash;
   struct pdp_t *pdp2;
@@ -304,7 +304,7 @@ int pdp_ipset(struct pdp_t *pdp, void* ipif, struct ul66_t *eua) {
 
   if (PDP_DEBUG) printf("Begin pdp_ipset %d %d %2x%2x%2x%2x\n",
 			(unsigned) ipif, eua->l,
-			eua->v[2], eua->v[3], 
+			eua->v[2], eua->v[3],
 			eua->v[4], eua->v[5]);
 
   pdp->ipnext = NULL;
@@ -316,9 +316,9 @@ int pdp_ipset(struct pdp_t *pdp, void* ipif, struct ul66_t *eua) {
 
   for (pdp2 = haship[hash]; pdp2; pdp2 = pdp2->ipnext)
     pdp_prev = pdp2;
-  if (!pdp_prev) 
+  if (!pdp_prev)
     haship[hash] = pdp;
-  else 
+  else
     pdp_prev->ipnext = pdp;
   if (PDP_DEBUG) printf("End pdp_ipset\n");
   return 0;
@@ -331,9 +331,9 @@ int pdp_ipdel(struct pdp_t *pdp) {
   if (PDP_DEBUG) printf("Begin pdp_ipdel\n");
   for (pdp2 = haship[hash]; pdp2; pdp2 = pdp2->ipnext) {
     if (pdp2 == pdp) {
-      if (!pdp_prev) 
+      if (!pdp_prev)
 	haship[hash] = pdp2->ipnext;
-      else 
+      else
 	pdp_prev->ipnext = pdp2->ipnext;
       if (PDP_DEBUG) printf("End pdp_ipdel: PDP found\n");
       return 0;
@@ -347,17 +347,17 @@ int pdp_ipdel(struct pdp_t *pdp) {
 int pdp_ipget(struct pdp_t **pdp, void* ipif, struct ul66_t *eua) {
   int hash = pdp_iphash(ipif, eua);
   struct pdp_t *pdp2;
-  /#printf("Begin pdp_ipget %d %d %2x%2x%2x%2x\n", (unsigned)ipif, eua->l, 
+  /#printf("Begin pdp_ipget %d %d %2x%2x%2x%2x\n", (unsigned)ipif, eua->l,
     eua->v[2],eua->v[3],eua->v[4],eua->v[5]);#/
   for (pdp2 = haship[hash]; pdp2; pdp2 = pdp2->ipnext) {
-    if ((pdp2->ipif == ipif) && (pdp2->eua.l == eua->l) && 
+    if ((pdp2->ipif == ipif) && (pdp2->eua.l == eua->l) &&
 	(memcmp(&pdp2->eua.v, &eua->v, eua->l) == 0)) {
       *pdp = pdp2;
       /#printf("End pdp_ipget. Found\n");#/
       return 0;
     }
   }
-  if (PDP_DEBUG) printf("End pdp_ipget Notfound %d %d %2x%2x%2x%2x\n", 
+  if (PDP_DEBUG) printf("End pdp_ipget Notfound %d %d %2x%2x%2x%2x\n",
 	 (unsigned)ipif, eua->l, eua->v[2],eua->v[3],eua->v[4],eua->v[5]);
   return EOF; /# End of linked list and not found #/
 }
