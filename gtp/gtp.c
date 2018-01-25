@@ -213,7 +213,7 @@ int gtp_set_cb_data_ind(struct gsn_t *gsn,
  * to hold the packet header.
  * returns the length of the header. 0 on error.
  **/
-static unsigned int get_default_gtp(int version, uint8_t type, void *packet)
+static unsigned int get_default_gtp(uint8_t version, uint8_t type, void *packet)
 {
 	struct gtp0_header *gtp0_default = (struct gtp0_header *)packet;
 	struct gtp1_header_long *gtp1_default =
@@ -402,7 +402,7 @@ static uint32_t get_tei(void *pack)
  *   a predefined timeout.
  *************************************************************/
 
-static int gtp_req(struct gsn_t *gsn, int version, struct pdp_t *pdp,
+static int gtp_req(struct gsn_t *gsn, uint8_t version, struct pdp_t *pdp,
 	    union gtp_packet *packet, int len,
 	    struct in_addr *inetaddr, void *cbp)
 {
@@ -477,7 +477,7 @@ static int gtp_req(struct gsn_t *gsn, int version, struct pdp_t *pdp,
  * Remove signalling packet from retransmission queue.
  * return 0 on success, EOF if packet was not found */
 
-static int gtp_conf(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
+static int gtp_conf(struct gsn_t *gsn, uint8_t version, struct sockaddr_in *peer,
 	     union gtp_packet *packet, int len, uint8_t * type, void **cbp)
 {
 	uint8_t ver = GTPHDR_F_GET_VER(packet->flags);
@@ -568,7 +568,7 @@ int gtp_retranstimeout(struct gsn_t *gsn, struct timeval *timeout)
 	return 0;
 }
 
-static int gtp_resp(int version, struct gsn_t *gsn, struct pdp_t *pdp,
+static int gtp_resp(uint8_t version, struct gsn_t *gsn, struct pdp_t *pdp,
 	     union gtp_packet *packet, int len,
 	     struct sockaddr_in *peer, int fd, uint16_t seq, uint64_t tid)
 {
@@ -626,7 +626,7 @@ static int gtp_resp(int version, struct gsn_t *gsn, struct pdp_t *pdp,
 	return 0;
 }
 
-static int gtp_notification(struct gsn_t *gsn, int version,
+static int gtp_notification(struct gsn_t *gsn, uint8_t version,
 		     union gtp_packet *packet, int len,
 		     struct sockaddr_in *peer, int fd, uint16_t seq)
 {
@@ -671,7 +671,7 @@ static int gtp_notification(struct gsn_t *gsn, int version,
 	return 0;
 }
 
-static int gtp_dublicate(struct gsn_t *gsn, int version,
+static int gtp_dublicate(struct gsn_t *gsn, uint8_t version,
 		  struct sockaddr_in *peer, uint16_t seq)
 {
 	struct qmsg_t *qmsg;
@@ -1016,7 +1016,7 @@ int gtp_unsup_ind(struct gsn_t *gsn, struct sockaddr_in *peer,
 }
 
 /* Send off an Supported Extension Headers Notification */
-static int gtp_extheader_req(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
+static int gtp_extheader_req(struct gsn_t *gsn, uint8_t version, struct sockaddr_in *peer,
 		      int fd, void *pack, unsigned len)
 {
 	union gtp_packet packet;
@@ -1936,7 +1936,7 @@ int gtp_update_context(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 }
 
 /* Send Update PDP Context Response */
-static int gtp_update_pdp_resp(struct gsn_t *gsn, int version,
+static int gtp_update_pdp_resp(struct gsn_t *gsn, uint8_t version,
 			struct sockaddr_in *peer, int fd,
 			void *pack, unsigned len,
 			struct pdp_t *pdp, uint8_t cause)
@@ -1998,7 +1998,7 @@ static int gtp_update_pdp_resp(struct gsn_t *gsn, int version,
 }
 
 /* Handle Update PDP Context Request */
-static int gtp_update_pdp_ind(struct gsn_t *gsn, int version,
+static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 		       struct sockaddr_in *peer, int fd,
 		       void *pack, unsigned len)
 {
@@ -2226,7 +2226,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, int version,
 }
 
 /* Handle Update PDP Context Response */
-static int gtp_update_pdp_conf(struct gsn_t *gsn, int version,
+static int gtp_update_pdp_conf(struct gsn_t *gsn, uint8_t version,
 			struct sockaddr_in *peer, void *pack, unsigned len)
 {
 	struct pdp_t *pdp;
@@ -2614,7 +2614,7 @@ int gtp_delete_pdp_conf(struct gsn_t *gsn, int version,
 }
 
 /* Send Error Indication (response to a GPDU message) - 3GPP TS 29.060 7.3.7 */
-static int gtp_error_ind_resp(struct gsn_t *gsn, int version,
+static int gtp_error_ind_resp(struct gsn_t *gsn, uint8_t version,
 		       struct sockaddr_in *peer, int fd,
 		       void *pack, unsigned len)
 {
@@ -2636,7 +2636,7 @@ static int gtp_error_ind_resp(struct gsn_t *gsn, int version,
 }
 
 /* Handle Error Indication */
-static int gtp_error_ind_conf(struct gsn_t *gsn, int version,
+static int gtp_error_ind_conf(struct gsn_t *gsn, uint8_t version,
 		       struct sockaddr_in *peer, void *pack, unsigned len)
 {
 	union gtpie_member *ie[GTPIE_SIZE];
@@ -2692,7 +2692,7 @@ static int gtp_error_ind_conf(struct gsn_t *gsn, int version,
 	return 0;
 }
 
-static int gtp_gpdu_ind(struct gsn_t *gsn, int version,
+static int gtp_gpdu_ind(struct gsn_t *gsn, uint8_t version,
 		 struct sockaddr_in *peer, int fd, void *pack, unsigned len)
 {
 
