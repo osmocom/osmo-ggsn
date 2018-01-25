@@ -2757,7 +2757,7 @@ int gtp_decaps0(struct gsn_t *gsn)
 	socklen_t peerlen;
 	int status;
 	struct gtp0_header *pheader;
-	int version = 0;	/* GTP version should be determined from header! */
+	uint8_t version;
 	int fd = gsn->fd0;
 
 	/* TODO: Need strategy of userspace buffering and blocking */
@@ -2793,12 +2793,14 @@ int gtp_decaps0(struct gsn_t *gsn)
 
 		pheader = (struct gtp0_header *)(buffer);
 
+		version = GTPHDR_F_GET_VER(pheader->flags);
+
 		/* Version should be gtp0 (or earlier) */
 		/* 09.60 is somewhat unclear on this issue. On gsn->fd0 we expect only */
 		/* GTP 0 messages. If other version message is received we reply that we */
 		/* only support version 0, implying that this is the only version */
 		/* supported on this port */
-		if (GTPHDR_F_GET_VER(pheader->flags) > 0) {
+		if (version > 0) {
 			gsn->unsup++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status, "Unsupported GTP version\n");
@@ -2902,7 +2904,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 	socklen_t peerlen;
 	int status;
 	struct gtp1_header_short *pheader;
-	int version = 1;	/* TODO GTP version should be determined from header! */
+	uint8_t version;
 	int fd = gsn->fd1c;
 
 	/* TODO: Need strategy of userspace buffering and blocking */
@@ -2938,8 +2940,10 @@ int gtp_decaps1c(struct gsn_t *gsn)
 
 		pheader = (struct gtp1_header_short *)(buffer);
 
+		version = GTPHDR_F_GET_VER(pheader->flags);
+
 		/* Version must be no larger than GTP 1 */
-		if (GTPHDR_F_GET_VER(pheader->flags) > 1) {
+		if (version > 1) {
 			gsn->unsup++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status, "Unsupported GTP version\n");
@@ -2952,7 +2956,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 		/* 29.060 is somewhat unclear on this issue. On gsn->fd1c we expect only */
 		/* GTP 1 messages. If GTP 0 message is received we silently discard */
 		/* the message */
-		if (GTPHDR_F_GET_VER(pheader->flags) < 1) {
+		if (version < 1) {
 			gsn->unsup++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status, "Unsupported GTP version\n");
@@ -3077,7 +3081,7 @@ int gtp_decaps1u(struct gsn_t *gsn)
 	socklen_t peerlen;
 	int status;
 	struct gtp1_header_short *pheader;
-	int version = 1;	/* GTP version should be determined from header! */
+	uint8_t version;
 	int fd = gsn->fd1u;
 
 	/* TODO: Need strategy of userspace buffering and blocking */
@@ -3114,8 +3118,10 @@ int gtp_decaps1u(struct gsn_t *gsn)
 
 		pheader = (struct gtp1_header_short *)(buffer);
 
+		version = GTPHDR_F_GET_VER(pheader->flags);
+
 		/* Version must be no larger than GTP 1 */
-		if (GTPHDR_F_GET_VER(pheader->flags) > 1) {
+		if (version > 1) {
 			gsn->unsup++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status, "Unsupported GTP version\n");
@@ -3127,7 +3133,7 @@ int gtp_decaps1u(struct gsn_t *gsn)
 		/* 29.060 is somewhat unclear on this issue. On gsn->fd1c we expect only */
 		/* GTP 1 messages. If GTP 0 message is received we silently discard */
 		/* the message */
-		if (GTPHDR_F_GET_VER(pheader->flags) < 1) {
+		if (version < 1) {
 			gsn->unsup++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status, "Unsupported GTP version\n");
