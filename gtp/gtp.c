@@ -2698,7 +2698,6 @@ static int gtp_gpdu_ind(struct gsn_t *gsn, uint8_t version,
 
 	int hlen;
 
-	/* Need to include code to verify packet src and dest addresses */
 	struct pdp_t *pdp;
 
 	switch (version) {

@@ -736,7 +736,9 @@ static int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
 	struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
 	struct tun_t *tun = (struct tun_t *)pdp->ipif;
 	struct apn_ctx *apn = tun->priv;
+	char straddr[INET6_ADDRSTRLEN];
 	struct ippoolm_t *peer;
+	uint8_t pref_offset;
 
 	OSMO_ASSERT(tun);
 	OSMO_ASSERT(apn);
@@ -752,6 +754,16 @@ static int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
 			return -1;
 		}
 
+		/* Validate packet comes from IPaddr assigned to the pdp ctx.
+		   If packet is a LL addr, then EUA is in the lower 64 bits,
+		   otherwise it's used as the 64 prefix */
+		pref_offset = IN6_IS_ADDR_LINKLOCAL(&ip6h->ip6_src) ? 8 : 0;
+		if (memcmp(((uint8_t*)&ip6h->ip6_src) + pref_offset, &peer->addr.v6, 8)) {
+			LOGPPDP(LOGL_ERROR, pdp, "Packet from MS using unassigned src IPv6: %s\n",
+				inet_ntop(AF_INET6, &ip6h->ip6_src, straddr, sizeof(straddr)));
+			return -1;
+		}
+
 		/* daddr: all-routers multicast addr */
 		if (IN6_ARE_ADDR_EQUAL(&ip6h->ip6_dst, &all_router_mcast_addr))
 			return handle_router_mcast(pdp->gsn, pdp, &peer->addr.v6,
@@ -762,6 +774,13 @@ static int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
 		if (!peer) {
 			LOGPPDP(LOGL_ERROR, pdp, "Packet from MS IPv4 with unassigned EUA: %s\n",
 				osmo_hexdump(pack, len));
+			return -1;
+		}
+
+		/* Validate packet comes from IPaddr assigned to the pdp ctx */
+		if (memcmp(&iph->saddr, &peer->addr.v4, sizeof(peer->addr.v4))) {
+			LOGPPDP(LOGL_ERROR, pdp, "Packet from MS using unassigned src IPv4: %s\n",
+				inet_ntop(AF_INET, &iph->saddr, straddr, sizeof(straddr)));
 			return -1;
 		}
 		break;
