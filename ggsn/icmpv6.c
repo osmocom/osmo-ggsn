@@ -180,21 +180,14 @@ static bool icmpv6_validate_router_solicit(const uint8_t *pack, unsigned len)
 }
 
 /* handle incoming packets to the all-routers multicast address */
-int handle_router_mcast(struct gsn_t *gsn, struct pdp_t *pdp, const struct in6_addr *own_ll_addr,
+int handle_router_mcast(struct gsn_t *gsn, struct pdp_t *pdp,
+			const struct in6_addr *pdp_prefix,
+			const struct in6_addr *own_ll_addr,
 			const uint8_t *pack, unsigned len)
 {
-	struct ippoolm_t *member;
 	const struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
 	const struct icmpv6_hdr *ic6h = (struct icmpv6_hdr *) (pack + sizeof(*ip6h));
 	struct msgb *msg;
-
-	OSMO_ASSERT(pdp);
-
-	member = pdp->peer[0];
-	OSMO_ASSERT(member);
-	if (member->addr.len == sizeof(struct in_addr)) /* ipv4v6 context */
-		member = pdp->peer[1];
-	OSMO_ASSERT(member);
 
 	if (len < sizeof(*ip6h)) {
 		LOGP(DICMP6, LOGL_NOTICE, "Packet too short: %u bytes\n", len);
@@ -226,7 +219,7 @@ int handle_router_mcast(struct gsn_t *gsn, struct pdp_t *pdp, const struct in6_a
 		/* Send router advertisement from GGSN link-local
 		 * address to MS link-local address, including prefix
 		 * allocated to this PDP context */
-		msg = icmpv6_construct_ra(own_ll_addr, &ip6h->ip6_src, &member->addr.v6);
+		msg = icmpv6_construct_ra(own_ll_addr, &ip6h->ip6_src, pdp_prefix);
 		/* Send the constructed RA to the MS */
 		gtp_data_req(gsn, pdp, msgb_data(msg), msgb_length(msg));
 		msgb_free(msg);

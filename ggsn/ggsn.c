@@ -425,6 +425,30 @@ static bool pco_contains_proto(struct ul255_t *pco, uint16_t prot)
 	return false;
 }
 
+/*! Get the peer of pdp based on IP version used.
+ *  \param[in] pdp PDP context to select the peer from.
+ *  \param[in] v4v6 IP version to select. Valid values are 4 and 6.
+ *  \returns The selected peer matching the given IP version. NULL if not present.
+ */
+static struct ippoolm_t *pdp_get_peer_ipv(struct pdp_t *pdp, bool is_ipv6) {
+	uint8_t len1, len2, i;
+
+	if (is_ipv6) {
+		len1 = 8;
+		len2 = 16;
+	} else {
+		len1 = sizeof(struct in_addr);
+		len2 = len1;
+	}
+
+	for (i = 0; i < 2; i++) {
+		struct ippoolm_t * ippool = pdp->peer[i];
+		if (ippool && (ippool->addr.len == len1 || ippool->addr.len == len2))
+			return ippool;
+	}
+	return NULL;
+}
+
 /* determine if PDP context has IPv6 support */
 static bool pdp_has_v4(struct pdp_t *pdp)
 {
@@ -712,6 +736,7 @@ static int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
 	struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
 	struct tun_t *tun = (struct tun_t *)pdp->ipif;
 	struct apn_ctx *apn = tun->priv;
+	struct ippoolm_t *peer;
 
 	OSMO_ASSERT(tun);
 	OSMO_ASSERT(apn);
@@ -720,11 +745,25 @@ static int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
 
 	switch (iph->version) {
 	case 6:
+		peer = pdp_get_peer_ipv(pdp, true);
+		if (!peer) {
+			LOGPPDP(LOGL_ERROR, pdp, "Packet from MS IPv6 with unassigned EUA: %s\n",
+				osmo_hexdump(pack, len));
+			return -1;
+		}
+
 		/* daddr: all-routers multicast addr */
 		if (IN6_ARE_ADDR_EQUAL(&ip6h->ip6_dst, &all_router_mcast_addr))
-			return handle_router_mcast(pdp->gsn, pdp, &apn->v6_lladdr, pack, len);
+			return handle_router_mcast(pdp->gsn, pdp, &peer->addr.v6,
+						&apn->v6_lladdr, pack, len);
 		break;
 	case 4:
+		peer = pdp_get_peer_ipv(pdp, false);
+		if (!peer) {
+			LOGPPDP(LOGL_ERROR, pdp, "Packet from MS IPv4 with unassigned EUA: %s\n",
+				osmo_hexdump(pack, len));
+			return -1;
+		}
 		break;
 	default:
 		LOGPPDP(LOGL_ERROR, pdp, "Packet from MS is neither IPv4 nor IPv6: %s\n",
