@@ -2701,7 +2701,8 @@ int gtp_gpdu_ind(struct gsn_t *gsn, int version,
 	/* Need to include code to verify packet src and dest addresses */
 	struct pdp_t *pdp;
 
-	if (version == 0) {
+	switch (version) {
+	case 0:
 		if (pdp_getgtp0
 		    (&pdp, ntoh16(((union gtp_packet *)pack)->gtp0.h.flow))) {
 			gsn->err_unknownpdp++;
@@ -2711,7 +2712,8 @@ int gtp_gpdu_ind(struct gsn_t *gsn, int version,
 						  len);
 		}
 		hlen = GTP0_HEADER_SIZE;
-	} else if (version == 1) {
+		break;
+	case 1:
 		if (pdp_getgtp1
 		    (&pdp, ntoh32(((union gtp_packet *)pack)->gtp1l.h.tei))) {
 			gsn->err_unknownpdp++;
@@ -2726,7 +2728,8 @@ int gtp_gpdu_ind(struct gsn_t *gsn, int version,
 			hlen = GTP1_HEADER_SIZE_LONG;
 		else
 			hlen = GTP1_HEADER_SIZE_SHORT;
-	} else {
+		break;
+	default:
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Unknown version: %d\n", version);
 	}
