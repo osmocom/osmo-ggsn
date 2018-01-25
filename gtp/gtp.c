@@ -2802,8 +2802,8 @@ int gtp_decaps0(struct gsn_t *gsn)
 		/* supported on this port */
 		if (version > 0) {
 			gsn->unsup++;
-			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
-				    status, "Unsupported GTP version\n");
+			GTP_LOGPKG(LOGL_ERROR, &peer, buffer, status,
+				"Unsupported GTP version %"PRIu8"\n", version);
 			gtp_unsup_req(gsn, 0, &peer, gsn->fd0, buffer, status);	/* 29.60: 11.1.1 */
 			continue;
 		}
@@ -2945,8 +2945,8 @@ int gtp_decaps1c(struct gsn_t *gsn)
 		/* Version must be no larger than GTP 1 */
 		if (version > 1) {
 			gsn->unsup++;
-			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
-				    status, "Unsupported GTP version\n");
+			GTP_LOGPKG(LOGL_ERROR, &peer, buffer, status,
+				"Unsupported GTP version %"PRIu8"\n", version);
 			gtp_unsup_req(gsn, version, &peer, fd, buffer, status);
 			/*29.60: 11.1.1 */
 			continue;
@@ -2958,8 +2958,8 @@ int gtp_decaps1c(struct gsn_t *gsn)
 		/* the message */
 		if (version < 1) {
 			gsn->unsup++;
-			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
-				    status, "Unsupported GTP version\n");
+			GTP_LOGPKG(LOGL_ERROR, &peer, buffer, status,
+				"Unsupported GTP version %"PRIu8"\n", version);
 			continue;
 		}
 
@@ -3123,8 +3123,8 @@ int gtp_decaps1u(struct gsn_t *gsn)
 		/* Version must be no larger than GTP 1 */
 		if (version > 1) {
 			gsn->unsup++;
-			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
-				    status, "Unsupported GTP version\n");
+			GTP_LOGPKG(LOGL_ERROR, &peer, buffer, status,
+				"Unsupported GTP version %"PRIu8"\n", version);
 			gtp_unsup_req(gsn, 1, &peer, gsn->fd1c, buffer, status);	/*29.60: 11.1.1 */
 			continue;
 		}
@@ -3135,8 +3135,8 @@ int gtp_decaps1u(struct gsn_t *gsn)
 		/* the message */
 		if (version < 1) {
 			gsn->unsup++;
-			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
-				    status, "Unsupported GTP version\n");
+			GTP_LOGPKG(LOGL_ERROR, &peer, buffer, status,
+				"Unsupported GTP version %"PRIu8"\n", version);
 			continue;
 		}
 
