@@ -267,8 +267,6 @@ int pdp_ipdel(struct pdp_t *pdp);
 int pdp_ipget(struct pdp_t **pdp, void* ipif, struct ul66_t *eua);
 */
 
-int pdp_ntoeua(struct in_addr *src, struct ul66_t *eua);
-int pdp_euaton(struct ul66_t *eua, struct in_addr *dst);
 uint64_t pdp_gettid(uint64_t imsi, uint8_t nsapi);
 
 #endif /* !_PDP_H */
