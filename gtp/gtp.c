@@ -2696,7 +2696,7 @@ int gtp_gpdu_ind(struct gsn_t *gsn, int version,
 		 struct sockaddr_in *peer, int fd, void *pack, unsigned len)
 {
 
-	int hlen = GTP1_HEADER_SIZE_SHORT;
+	int hlen;
 
 	/* Need to include code to verify packet src and dest addresses */
 	struct pdp_t *pdp;
@@ -2732,6 +2732,7 @@ int gtp_gpdu_ind(struct gsn_t *gsn, int version,
 	default:
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Unknown version: %d\n", version);
+		return EOF;
 	}
 
 	/* If the GPDU was not from the peer GSN tell him to delete context */
