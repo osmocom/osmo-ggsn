@@ -3296,15 +3296,6 @@ int gtp_data_req(struct gsn_t *gsn, struct pdp_t *pdp, void *pack, unsigned len)
  * Conversion functions
  *************************************************************/
 
-int char2ul_t(char *src, struct ul_t dst)
-{
-	dst.l = strlen(src) + 1;
-	dst.v = malloc(dst.l);
-	dst.v[0] = dst.l - 1;
-	memcpy(&dst.v[1], src, dst.v[0]);
-	return 0;
-}
-
 /* ***********************************************************
  * IP address conversion functions
  * There exist several types of address representations:
