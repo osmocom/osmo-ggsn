@@ -484,15 +484,6 @@ static struct ippoolm_t *pdp_get_peer_ipv(struct pdp_t *pdp, bool is_ipv6) {
 	return NULL;
 }
 
-/* determine if PDP context has IPv6 support */
-static bool pdp_has_v4(struct pdp_t *pdp)
-{
-	if (pdp->eua.l == 4+2)
-		return true;
-	else
-		return false;
-}
-
 /* construct an IPCP PCO response from request*/
 static int build_ipcp_pco(struct apn_ctx *apn, struct pdp_t *pdp, struct msgb *msg)
 {
@@ -540,12 +531,13 @@ static int build_ipcp_pco(struct apn_ctx *apn, struct pdp_t *pdp, struct msgb *m
 static void process_pco(struct apn_ctx *apn, struct pdp_t *pdp)
 {
 	struct msgb *msg = msgb_alloc(256, "PCO");
+	struct ippoolm_t *peer_v4 = pdp_get_peer_ipv(pdp, false);
 	unsigned int i;
 
 	OSMO_ASSERT(msg);
 	msgb_put_u8(msg, 0x80); /* ext-bit + configuration protocol byte */
 
-	if (pdp_has_v4(pdp))
+	if (peer_v4)
 		build_ipcp_pco(apn, pdp, msg);
 
 	if (pco_contains_proto(&pdp->pco_req, PCO_P_DNS_IPv6_ADDR)) {
