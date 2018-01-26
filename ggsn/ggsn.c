@@ -377,6 +377,41 @@ static int delete_context(struct pdp_t *pdp)
 
 #include <osmocom/gsm/tlv.h>
 
+/* RFC 1332 */
+enum ipcp_options {
+	IPCP_OPT_IPADDR = 3,
+	IPCP_OPT_PRIMARY_DNS = 129,
+	IPCP_OPT_SECONDARY_DNS = 131,
+};
+
+struct ipcp_option_hdr {
+	uint8_t type;
+	uint8_t len;
+	uint8_t data[0];
+};
+
+struct ipcp_hdr {
+	uint8_t code;
+	uint8_t id;
+	uint16_t len;
+	uint8_t options[0];
+};
+
+/* determine if IPCP contains given option */
+static struct ipcp_option_hdr *ipcp_contains_option(struct ipcp_hdr *ipcp, enum ipcp_options opt)
+{
+	uint8_t *cur = ipcp->options;
+
+	/* iterate over Options and check if protocol contained */
+	while (cur + 2 <= ((uint8_t *)ipcp) + ipcp->len) {
+		struct ipcp_option_hdr *cur_opt = (struct ipcp_option_hdr *) cur;
+		if (cur_opt->type == opt)
+			return cur_opt;
+		cur += cur_opt->len;
+	}
+	return NULL;
+}
+
 /* 3GPP TS 24.008 10.6.5.3 */
 enum pco_protocols {
 	PCO_P_LCP		= 0xC021,
@@ -410,7 +445,7 @@ enum pco_protocols {
 };
 
 /* determine if PCO contains given protocol */
-static bool pco_contains_proto(struct ul255_t *pco, uint16_t prot)
+static uint8_t *pco_contains_proto(struct ul255_t *pco, uint16_t prot)
 {
 	uint8_t *cur = pco->v + 1;
 
@@ -419,10 +454,10 @@ static bool pco_contains_proto(struct ul255_t *pco, uint16_t prot)
 		uint16_t cur_prot = osmo_load16be(cur);
 		uint8_t cur_len = cur[2];
 		if (cur_prot == prot)
-			return true;
+			return cur;
 		cur += cur_len + 3;
 	}
-	return false;
+	return NULL;
 }
 
 /*! Get the peer of pdp based on IP version used.
@@ -458,30 +493,36 @@ static bool pdp_has_v4(struct pdp_t *pdp)
 		return false;
 }
 
-/* construct an IPCP PCO from up to two given DNS addreses */
-static int build_ipcp_pco(struct msgb *msg, uint8_t id, const struct in46_addr *dns1,
-			  const struct in46_addr *dns2)
+/* construct an IPCP PCO response from request*/
+static int build_ipcp_pco(struct apn_ctx *apn, struct pdp_t *pdp, struct msgb *msg)
 {
-	uint8_t *len1, *len2;
+	const struct in46_addr *dns1 = &apn->v4.cfg.dns[0];
+	const struct in46_addr *dns2 = &apn->v4.cfg.dns[1];
+	struct ipcp_hdr *ipcp;
+	uint8_t *len1, *len2, *pco_ipcp;
 	uint8_t *start = msg->tail;
 	unsigned int len_appended;
+
+	if (!(pco_ipcp = pco_contains_proto(&pdp->pco_req, PCO_P_IPCP)))
+		return 0;
+	ipcp = (struct ipcp_hdr*) (pco_ipcp + 3);  /* 2=type + 1=len */
 
 	/* Three byte T16L header */
 	msgb_put_u16(msg, 0x8021);	/* IPCP */
 	len1 = msgb_put(msg, 1);	/* Length of contents: delay */
 
 	msgb_put_u8(msg, 0x02);		/* ACK */
-	msgb_put_u8(msg, id);		/* ID: Needs to match request */
+	msgb_put_u8(msg, ipcp->id);	/* ID: Needs to match request */
 	msgb_put_u8(msg, 0x00);		/* Length MSB */
 	len2 = msgb_put(msg, 1);	/* Length LSB: delay */
 
-	if (dns1 && dns1->len == 4) {
+	if (dns1->len == 4 && ipcp_contains_option(ipcp, IPCP_OPT_PRIMARY_DNS)) {
 		msgb_put_u8(msg, 0x81);		/* DNS1 Tag */
 		msgb_put_u8(msg, 2 + dns1->len);/* DNS1 Length, incl. TL */
 		msgb_put_u32(msg, ntohl(dns1->v4.s_addr));
 	}
 
-	if (dns2 && dns2->len == 4) {
+	if (dns2->len == 4 && ipcp_contains_option(ipcp, IPCP_OPT_SECONDARY_DNS)) {
 		msgb_put_u8(msg, 0x83);		/* DNS2 Tag */
 		msgb_put_u8(msg, 2 + dns2->len);/* DNS2 Length, incl. TL */
 		msgb_put_u32(msg, ntohl(dns2->v4.s_addr));
@@ -504,11 +545,8 @@ static void process_pco(struct apn_ctx *apn, struct pdp_t *pdp)
 	OSMO_ASSERT(msg);
 	msgb_put_u8(msg, 0x80); /* ext-bit + configuration protocol byte */
 
-	/* FIXME: also check if primary / secondary DNS was requested */
-	if (pdp_has_v4(pdp) && pco_contains_proto(&pdp->pco_req, PCO_P_IPCP)) {
-		/* FIXME: properly implement this for IPCP */
-		build_ipcp_pco(msg, 0, &apn->v4.cfg.dns[0], &apn->v4.cfg.dns[1]);
-	}
+	if (pdp_has_v4(pdp))
+		build_ipcp_pco(apn, pdp, msg);
 
 	if (pco_contains_proto(&pdp->pco_req, PCO_P_DNS_IPv6_ADDR)) {
 		for (i = 0; i < ARRAY_SIZE(apn->v6.cfg.dns); i++) {
