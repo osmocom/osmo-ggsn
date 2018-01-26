@@ -587,7 +587,8 @@ int create_context_ind(struct pdp_t *pdp)
 	struct gsn_t *gsn = pdp->gsn;
 	struct ggsn_ctx *ggsn = gsn->priv;
 	struct in46_addr addr[2];
-	struct ippoolm_t *member = NULL;
+	struct ippoolm_t *member = NULL, *addrv4 = NULL, *addrv6 = NULL;
+	char straddrv4[INET_ADDRSTRLEN], straddrv6[INET6_ADDRSTRLEN];
 	struct apn_ctx *apn;
 	int rc, num_addr, i;
 
@@ -645,6 +646,8 @@ int create_context_ind(struct pdp_t *pdp)
 			/* copy back */
 			memcpy(&addr[i].v4.s_addr, &member->addr.v4, 4);
 
+			addrv4 = member;
+
 		} else if (addr[i].len == sizeof(struct in6_addr)) {
 
 			/* does this APN actually have an IPv6 pool? */
@@ -661,6 +664,8 @@ int create_context_ind(struct pdp_t *pdp)
 			memcpy(addr[i].v6.s6_addr, &member->addr.v6, 8);
 			/* use allocated 64bit prefix as lower 64bit, used as link id by MS */
 			memcpy(addr[i].v6.s6_addr+8, &member->addr.v6, 8);
+
+			addrv6 = member;
 		} else
 			OSMO_ASSERT(0);
 
@@ -682,6 +687,7 @@ int create_context_ind(struct pdp_t *pdp)
 	pdp->ipif = apn->tun.tun;	/* TODO */
 	pdp->priv = apn;
 
+	/* TODO: change trap to send 2 IPs */
 	if (!send_trap(gsn, pdp, member, "imsi-ass-ip")) { /* TRAP with IP assignment */
 		gtp_create_context_resp(gsn, pdp, GTPCAUSE_NO_RESOURCES);
 		return 0;
@@ -692,8 +698,10 @@ int create_context_ind(struct pdp_t *pdp)
 	/* Transmit G-PDU sequence numbers (only) if configured in APN */
 	pdp->tx_gpdu_seq = apn->cfg.tx_gpdu_seq;
 
-	LOGPPDP(LOGL_INFO, pdp, "Successful PDP Context Creation: APN=%s(%s), TEIC=%u, IP=%s\n",
-		name_buf, apn->cfg.name, pdp->teic_own, in46a_ntoa(&member->addr));
+	LOGPPDP(LOGL_INFO, pdp, "Successful PDP Context Creation: APN=%s(%s), TEIC=%u, IPv4=%s, IPv6=%s\n",
+		name_buf, apn->cfg.name, pdp->teic_own,
+		addrv4 ? inet_ntop(AF_INET, &addrv4->addr.v4, straddrv4, sizeof(straddrv4)) : "none",
+		addrv6 ? inet_ntop(AF_INET6, &addrv6->addr.v6, straddrv6, sizeof(straddrv6)) : "none");
 	gtp_create_context_resp(gsn, pdp, GTPCAUSE_ACC_REQ);
 	return 0;		/* Success */
 
