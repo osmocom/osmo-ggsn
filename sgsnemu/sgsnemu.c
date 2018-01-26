@@ -1400,7 +1400,7 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 		return EOF;	/* Not what we expected */
 	}
 
-	if (in46a_from_eua(&pdp->eua, &addr)) {
+	if (in46a_from_eua(&pdp->eua, &addr) < 1) {
 		printf
 		    ("Received create PDP context response. Cause value: %d\n",
 		     cause);
