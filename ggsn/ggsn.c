@@ -726,6 +726,7 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 	struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
 	struct ippool_t *pool;
 	char straddr[INET6_ADDRSTRLEN];
+	uint8_t pref_offset;
 
 	switch (iph->version) {
 	case 4:
@@ -739,9 +740,12 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 		/* Due to the fact that 3GPP requires an allocation of a
 		 * /64 prefix to each MS, we must instruct
 		 * ippool_getip() below to match only the leading /64
-		 * prefix, i.e. the first 8 bytes of the address */
+		 * prefix, i.e. the first 8 bytes of the address. If the ll addr
+		 * is used, then the match should be done on the trailing 64
+		 * bits. */
 		dst.len = 8;
-		dst.v6 = ip6h->ip6_dst;
+		pref_offset = IN6_IS_ADDR_LINKLOCAL(&ip6h->ip6_dst) ? 8 : 0;
+		memcpy(&dst.v6, ((uint8_t*)&ip6h->ip6_dst) + pref_offset, 8);
 		pool = apn->v6.pool;
 		break;
 	default:
