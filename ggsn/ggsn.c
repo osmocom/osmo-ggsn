@@ -726,13 +726,15 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 	struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
 	struct ippool_t *pool;
 
-	if (iph->version == 4) {
+	switch (iph->version) {
+	case 4:
 		if (len < sizeof(*iph) || len < 4*iph->ihl)
 			return -1;
 		dst.len = 4;
 		dst.v4.s_addr = iph->daddr;
 		pool = apn->v4.pool;
-	} else if (iph->version == 6) {
+		break;
+	case 6:
 		/* Due to the fact that 3GPP requires an allocation of a
 		 * /64 prefix to each MS, we must instruct
 		 * ippool_getip() below to match only the leading /64
@@ -740,7 +742,8 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 		dst.len = 8;
 		dst.v6 = ip6h->ip6_dst;
 		pool = apn->v6.pool;
-	} else {
+		break;
+	default:
 		LOGP(DTUN, LOGL_NOTICE, "non-IPv%u packet received from tun\n", iph->version);
 		return -1;
 	}
