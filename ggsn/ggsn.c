@@ -725,6 +725,7 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 	struct iphdr *iph = (struct iphdr *)pack;
 	struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
 	struct ippool_t *pool;
+	char straddr[INET6_ADDRSTRLEN];
 
 	switch (iph->version) {
 	case 4:
@@ -755,7 +756,9 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 	DEBUGP(DTUN, "Received packet for APN(%s) from tun %s", apn->cfg.name, tun->devname);
 
 	if (ippool_getip(pool, &ipm, &dst)) {
-		DEBUGPC(DTUN, " with no PDP contex!!\n");
+		DEBUGPC(DTUN, " with no PDP contex! (%s)\n", iph->version == 4 ?
+			inet_ntop(AF_INET, &iph->saddr, straddr, sizeof(straddr)) :
+			inet_ntop(AF_INET6, &ip6h->ip6_src, straddr, sizeof(straddr)));
 		return 0;
 	}
 	DEBUGPC(DTUN, "\n");
