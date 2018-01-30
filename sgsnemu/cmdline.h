@@ -370,6 +370,10 @@ extern "C" {
 		unsigned int pdp_type_given;
 				/**< @brief Whether pdp-type was given.  */
 
+		int createif_mode_counter;
+			     /**< @brief Counter for mode createif */
+		int pinghost_mode_counter;
+			     /**< @brief Counter for mode pinghost */
 	};
 
 /** @brief The additional parameters to pass to parser functions */

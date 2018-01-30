@@ -65,12 +65,14 @@ const char *gengetopt_args_info_help[] = {
 	"      --charging=INT            Charging characteristics  (default=`0x0800')",
 	"  -u, --uid=STRING              Login user ID  (default=`mig')",
 	"  -p, --pwd=STRING              Login password  (default=`hemmelig')",
+	"\n Mode: createif\n  any option of this mode is related to tun interface, all payload going in and\n  out  via tunN interface",
 	"      --createif                Create local network interface  (default=off)",
 	"  -n, --net=STRING              Network address for local interface",
 	"      --defaultroute            Create default route  (default=off)",
 	"      --ipup=STRING             Script to run after link-up",
 	"      --ipdown=STRING           Script to run after link-down",
 	"      --tun-device=STRING       Name of the local network interface",
+	"\n Mode: pinghost\n  generate ICMP payload inside G-PDU without setting up tun interface",
 	"      --pinghost=STRING         Ping remote host",
 	"      --pingrate=INT            Number of ping req per second  (default=`1')",
 	"      --pingsize=INT            Number of ping data bytes  (default=`56')",
@@ -168,6 +170,8 @@ void clear_given(struct gengetopt_args_info *args_info)
 	args_info->pingquiet_given = 0;
 	args_info->no_tx_gpdu_seq_given = 0;
 	args_info->pdp_type_given = 0;
+	args_info->createif_mode_counter = 0;
+	args_info->pinghost_mode_counter = 0;
 }
 
 static
@@ -290,19 +294,19 @@ void init_args_info(struct gengetopt_args_info *args_info)
 	args_info->charging_help = gengetopt_args_info_help[28];
 	args_info->uid_help = gengetopt_args_info_help[29];
 	args_info->pwd_help = gengetopt_args_info_help[30];
-	args_info->createif_help = gengetopt_args_info_help[31];
-	args_info->net_help = gengetopt_args_info_help[32];
-	args_info->defaultroute_help = gengetopt_args_info_help[33];
-	args_info->ipup_help = gengetopt_args_info_help[34];
-	args_info->ipdown_help = gengetopt_args_info_help[35];
-	args_info->tun_device_help = gengetopt_args_info_help[36];
-	args_info->pinghost_help = gengetopt_args_info_help[37];
-	args_info->pingrate_help = gengetopt_args_info_help[38];
-	args_info->pingsize_help = gengetopt_args_info_help[39];
-	args_info->pingcount_help = gengetopt_args_info_help[40];
-	args_info->pingquiet_help = gengetopt_args_info_help[41];
-	args_info->no_tx_gpdu_seq_help = gengetopt_args_info_help[42];
-	args_info->pdp_type_help = gengetopt_args_info_help[43];
+	args_info->createif_help = gengetopt_args_info_help[32];
+	args_info->net_help = gengetopt_args_info_help[33];
+	args_info->defaultroute_help = gengetopt_args_info_help[34];
+	args_info->ipup_help = gengetopt_args_info_help[35];
+	args_info->ipdown_help = gengetopt_args_info_help[36];
+	args_info->tun_device_help = gengetopt_args_info_help[37];
+	args_info->pinghost_help = gengetopt_args_info_help[39];
+	args_info->pingrate_help = gengetopt_args_info_help[40];
+	args_info->pingsize_help = gengetopt_args_info_help[41];
+	args_info->pingcount_help = gengetopt_args_info_help[42];
+	args_info->pingquiet_help = gengetopt_args_info_help[43];
+	args_info->no_tx_gpdu_seq_help = gengetopt_args_info_help[44];
+	args_info->pdp_type_help = gengetopt_args_info_help[45];
 
 }
 
@@ -361,8 +365,7 @@ void cmdline_parser_params_init(struct cmdline_parser_params *params)
 
 struct cmdline_parser_params *cmdline_parser_params_create(void)
 {
-	struct cmdline_parser_params *params =
-	    (struct cmdline_parser_params *)
+	struct cmdline_parser_params *params = (struct cmdline_parser_params *)
 	    malloc(sizeof(struct cmdline_parser_params));
 	cmdline_parser_params_init(params);
 	return params;
@@ -853,6 +856,30 @@ int update_arg(void *field, char **orig_field,
 	return 0;		/* OK */
 }
 
+static int check_modes(int given1[], const char *options1[],
+		       int given2[], const char *options2[])
+{
+	int i = 0, j = 0, errors = 0;
+
+	while (given1[i] >= 0) {
+		if (given1[i]) {
+			while (given2[j] >= 0) {
+				if (given2[j]) {
+					++errors;
+					fprintf(stderr,
+						"%s: option %s conflicts with option %s\n",
+						package_name, options1[i],
+						options2[j]);
+				}
+				++j;
+			}
+		}
+		++i;
+	}
+
+	return errors;
+}
+
 int
 cmdline_parser_internal(int argc, char **argv,
 			struct gengetopt_args_info *args_info,
@@ -1073,6 +1100,7 @@ cmdline_parser_internal(int argc, char **argv,
 
 			break;
 		case 'n':	/* Network address for local interface.  */
+			args_info->createif_mode_counter += 1;
 
 			if (update_arg((void *)&(args_info->net_arg),
 				       &(args_info->net_orig),
@@ -1391,6 +1419,7 @@ cmdline_parser_internal(int argc, char **argv,
 			else if (strcmp
 				 (long_options[option_index].name,
 				  "createif") == 0) {
+				args_info->createif_mode_counter += 1;
 
 				if (update_arg
 				    ((void *)&(args_info->createif_flag), 0,
@@ -1405,6 +1434,7 @@ cmdline_parser_internal(int argc, char **argv,
 			else if (strcmp
 				 (long_options[option_index].name,
 				  "defaultroute") == 0) {
+				args_info->createif_mode_counter += 1;
 
 				if (update_arg
 				    ((void *)&(args_info->defaultroute_flag), 0,
@@ -1419,6 +1449,7 @@ cmdline_parser_internal(int argc, char **argv,
 			/* Script to run after link-up.  */
 			else if (strcmp(long_options[option_index].name, "ipup")
 				 == 0) {
+				args_info->createif_mode_counter += 1;
 
 				if (update_arg((void *)&(args_info->ipup_arg),
 					       &(args_info->ipup_orig),
@@ -1434,6 +1465,7 @@ cmdline_parser_internal(int argc, char **argv,
 			else if (strcmp
 				 (long_options[option_index].name,
 				  "ipdown") == 0) {
+				args_info->createif_mode_counter += 1;
 
 				if (update_arg((void *)&(args_info->ipdown_arg),
 					       &(args_info->ipdown_orig),
@@ -1449,6 +1481,7 @@ cmdline_parser_internal(int argc, char **argv,
 			else if (strcmp
 				 (long_options[option_index].name,
 				  "tun-device") == 0) {
+				args_info->createif_mode_counter += 1;
 
 				if (update_arg
 				    ((void *)&(args_info->tun_device_arg),
@@ -1465,6 +1498,7 @@ cmdline_parser_internal(int argc, char **argv,
 			else if (strcmp
 				 (long_options[option_index].name,
 				  "pinghost") == 0) {
+				args_info->pinghost_mode_counter += 1;
 
 				if (update_arg
 				    ((void *)&(args_info->pinghost_arg),
@@ -1481,6 +1515,7 @@ cmdline_parser_internal(int argc, char **argv,
 			else if (strcmp
 				 (long_options[option_index].name,
 				  "pingrate") == 0) {
+				args_info->pinghost_mode_counter += 1;
 
 				if (update_arg
 				    ((void *)&(args_info->pingrate_arg),
@@ -1496,6 +1531,7 @@ cmdline_parser_internal(int argc, char **argv,
 			else if (strcmp
 				 (long_options[option_index].name,
 				  "pingsize") == 0) {
+				args_info->pinghost_mode_counter += 1;
 
 				if (update_arg
 				    ((void *)&(args_info->pingsize_arg),
@@ -1512,6 +1548,7 @@ cmdline_parser_internal(int argc, char **argv,
 			else if (strcmp
 				 (long_options[option_index].name,
 				  "pingcount") == 0) {
+				args_info->pinghost_mode_counter += 1;
 
 				if (update_arg
 				    ((void *)&(args_info->pingcount_arg),
@@ -1527,6 +1564,7 @@ cmdline_parser_internal(int argc, char **argv,
 			else if (strcmp
 				 (long_options[option_index].name,
 				  "pingquiet") == 0) {
+				args_info->pinghost_mode_counter += 1;
 
 				if (update_arg
 				    ((void *)&(args_info->pingquiet_flag), 0,
@@ -1565,6 +1603,31 @@ cmdline_parser_internal(int argc, char **argv,
 			abort();
 		}		/* switch */
 	}			/* while */
+
+	if (args_info->createif_mode_counter
+	    && args_info->pinghost_mode_counter) {
+		int createif_given[] =
+		    { args_info->createif_given, args_info->net_given,
+			args_info->defaultroute_given, args_info->ipup_given,
+			args_info->ipdown_given, args_info->tun_device_given, -1
+		};
+		const char *createif_desc[] =
+		    { "--createif", "--net", "--defaultroute", "--ipup",
+			"--ipdown", "--tun-device", 0
+		};
+		int pinghost_given[] =
+		    { args_info->pinghost_given, args_info->pingrate_given,
+			args_info->pingsize_given, args_info->pingcount_given,
+			args_info->pingquiet_given, -1
+		};
+		const char *pinghost_desc[] =
+		    { "--pinghost", "--pingrate", "--pingsize", "--pingcount",
+			"--pingquiet", 0
+		};
+		error_occurred +=
+		    check_modes(createif_given, createif_desc, pinghost_given,
+				pinghost_desc);
+	}
 
 	if (check_required) {
 		error_occurred +=
