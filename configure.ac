@@ -18,7 +18,6 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_AWK
 AC_PROG_CPP
-AC_PROG_CXX
 LT_INIT
 
 dnl check for pkg-config (explained in detail in libosmocore/configure.ac)
