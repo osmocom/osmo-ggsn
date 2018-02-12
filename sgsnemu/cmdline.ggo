@@ -26,7 +26,7 @@ option  "pidfile"      - "Filename of process id file"    string default="./sgsn
 option  "statedir"     - "Directory of nonvolatile data"  string default="./" no
 
 option  "dns"          - "DNS Server to use"              string no
-option  "listen"       l "Local interface"                string no
+option  "listen"       l "Local host"                     string no
 option  "remote"       r "Remote host"                    string no
 
 option  "contexts"     - "Number of contexts"             int    default="1" no

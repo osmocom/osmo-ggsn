@@ -69,11 +69,11 @@ extern "C" {
 		const char *dns_help;
 			/**< @brief DNS Server to use help description.  */
 		char *listen_arg;
-			/**< @brief Local interface.  */
+			/**< @brief Local host.  */
 		char *listen_orig;
-			/**< @brief Local interface original value given at command line.  */
+			/**< @brief Local host original value given at command line.  */
 		const char *listen_help;
-			   /**< @brief Local interface help description.  */
+			   /**< @brief Local host help description.  */
 		char *remote_arg;
 			/**< @brief Remote host.  */
 		char *remote_orig;

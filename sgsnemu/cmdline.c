@@ -41,7 +41,7 @@ const char *gengetopt_args_info_help[] = {
 	"      --pidfile=STRING          Filename of process id file\n                                  (default=`./sgsnemu.pid')",
 	"      --statedir=STRING         Directory of nonvolatile data  (default=`./')",
 	"      --dns=STRING              DNS Server to use",
-	"  -l, --listen=STRING           Local interface",
+	"  -l, --listen=STRING           Local host",
 	"  -r, --remote=STRING           Remote host",
 	"      --contexts=INT            Number of contexts  (default=`1')",
 	"      --timelimit=INT           Exit after timelimit seconds  (default=`0')",
@@ -1003,7 +1003,7 @@ cmdline_parser_internal(int argc, char **argv,
 				goto failure;
 
 			break;
-		case 'l':	/* Local interface.  */
+		case 'l':	/* Local host.  */
 
 			if (update_arg((void *)&(args_info->listen_arg),
 				       &(args_info->listen_orig),
