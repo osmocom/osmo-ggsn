@@ -1462,7 +1462,7 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 		free(forwarding);
 	}
 
-	ipset((struct iphash_t *)pdp->peer, &addr);
+	ipset(iph, &addr);
 
 	state = 2;		/* Connected */
 
