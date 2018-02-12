@@ -1312,8 +1312,8 @@ static int delete_context(struct pdp_t *pdp)
 	if (tun && options.ipdown)
 		tun_runscript(tun, options.ipdown);
 
-	ipdel((struct iphash_t *)pdp->peer);
-	memset(pdp->peer, 0, sizeof(struct iphash_t));	/* To be sure */
+	ipdel((struct iphash_t *)pdp->peer[0]);
+	memset(pdp->peer[0], 0, sizeof(struct iphash_t));	/* To be sure */
 
 	if (1 == options.contexts)
 		state = 5;	/* Disconnected */
