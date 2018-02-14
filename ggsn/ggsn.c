@@ -56,6 +56,7 @@
 #include <osmocom/vty/stats.h>
 #include <osmocom/vty/ports.h>
 #include <osmocom/vty/command.h>
+#include <osmocom/vty/misc.h>
 #include <osmocom/gsm/apn.h>
 
 #include "../lib/tun.h"
@@ -1062,6 +1063,7 @@ int main(int argc, char **argv)
 
 	tall_ggsn_ctx = talloc_named_const(NULL, 0, "OsmoGGSN");
 	msgb_talloc_ctx_init(tall_ggsn_ctx, 0);
+	g_vty_info.tall_ctx = tall_ggsn_ctx;
 
 	/* Handle keyboard interrupt SIGINT */
 	signal(SIGINT, &signal_handler);
@@ -1076,6 +1078,7 @@ int main(int argc, char **argv)
 
 	vty_init(&g_vty_info);
 	logging_vty_add_cmds(NULL);
+	osmo_talloc_vty_add_cmds();
 	osmo_stats_vty_add_cmds(&log_info);
 	ggsn_vty_init();
 	ctrl_vty_init(tall_ggsn_ctx);
