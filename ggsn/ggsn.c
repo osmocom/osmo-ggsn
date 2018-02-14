@@ -284,6 +284,14 @@ int apn_start(struct apn_ctx *apn)
 			apn_stop(apn, false);
 			return -1;
 		}
+		if (apn->ggsn->gsn == NULL) {
+			/* skip bringing up the APN now if the GSN is not initialized yet.
+			 * This happens during initial load of the config file, as the
+			 * "no shutdown" in the ggsn node only happens after the "apn" nodes
+			 * are brought up */
+			LOGPAPN(LOGL_NOTICE, apn, "Skipping APN start\n");
+			return 0;
+		}
 		/* use GTP kernel module for data packet encapsulation */
 		if (gtp_kernel_init(apn->ggsn->gsn, apn->tun.cfg.dev_name,
 				    &apn->v4.cfg.ifconfig_prefix, apn->tun.cfg.ipup_script) < 0) {
