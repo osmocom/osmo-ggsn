@@ -157,6 +157,34 @@
         <param name='1' doc='Prefix each log message with category/subsystem name' />
       </params>
     </command>
+    <command id='logging print category-hex (0|1)'>
+      <params>
+        <param name='logging' doc='Configure logging' />
+        <param name='print' doc='Log output settings' />
+        <param name='category-hex' doc='Configure log message' />
+        <param name='0' doc='Don&apos;t prefix each log message' />
+        <param name='1' doc='Prefix each log message with category/subsystem nr in hex (&apos;&lt;000b&gt;&apos;)' />
+      </params>
+    </command>
+    <command id='logging print level (0|1)'>
+      <params>
+        <param name='logging' doc='Configure logging' />
+        <param name='print' doc='Log output settings' />
+        <param name='level' doc='Configure log message' />
+        <param name='0' doc='Don&apos;t prefix each log message' />
+        <param name='1' doc='Prefix each log message with the log level name' />
+      </params>
+    </command>
+    <command id='logging print file (0|1|basename)'>
+      <params>
+        <param name='logging' doc='Configure logging' />
+        <param name='print' doc='Log output settings' />
+        <param name='file' doc='Configure log message' />
+        <param name='0' doc='Don&apos;t prefix each log message' />
+        <param name='1' doc='Prefix each log message with the source file and line' />
+        <param name='basename' doc='Prefix each log message with the source file&apos;s basename (strip leading paths) and line' />
+      </params>
+    </command>
     <command id='logging set-log-mask MASK'>
       <params>
         <param name='logging' doc='Configure logging' />
@@ -173,7 +201,7 @@
         <param name='MASK' doc='&apos;set log mask&apos; is deprecated, please refer to the docs of &apos;set-log-mask&apos; instead' />
       </params>
     </command>
-    <command id='logging level (all|ip|tun|ggsn|sgsn|icmp6|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp) (everything|debug|info|notice|error|fatal)'>
+    <command id='logging level (all|ip|tun|ggsn|sgsn|icmp6|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf) (everything|debug|info|notice|error|fatal)'>
       <params>
         <param name='logging' doc='Configure logging' />
         <param name='level' doc='Set the log level for a specified category' />
@@ -200,6 +228,7 @@
         <param name='lsua' doc='libosmo-sigtran SCCP User Adaptation' />
         <param name='lm3ua' doc='libosmo-sigtran MTP3 User Adaptation' />
         <param name='lmgcp' doc='libosmo-mgcp Media Gateway Control Protocol' />
+        <param name='ljibuf' doc='libosmo-netif Jitter Buffer' />
         <param name='everything' doc='Don&apos;t use. It doesn&apos;t log anything' />
         <param name='debug' doc='Log debug messages and higher levels' />
         <param name='info' doc='Log informational messages and higher levels' />
@@ -219,6 +248,43 @@
       <params>
         <param name='show' doc='Show running system information' />
         <param name='alarms' doc='Show current logging configuration' />
+      </params>
+    </command>
+    <command id='show talloc-context (application|all) (full|brief|DEPTH)'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='talloc-context' doc='Show talloc memory hierarchy' />
+        <param name='application' doc='Application&apos;s context' />
+        <param name='all' doc='All contexts, if NULL-context tracking is enabled' />
+        <param name='full' doc='Display a full talloc memory hierarchy' />
+        <param name='brief' doc='Display a brief talloc memory hierarchy' />
+        <param name='DEPTH' doc='Specify required maximal depth value' />
+      </params>
+    </command>
+    <command id='show talloc-context (application|all) (full|brief|DEPTH) tree ADDRESS'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='talloc-context' doc='Show talloc memory hierarchy' />
+        <param name='application' doc='Application&apos;s context' />
+        <param name='all' doc='All contexts, if NULL-context tracking is enabled' />
+        <param name='full' doc='Display a full talloc memory hierarchy' />
+        <param name='brief' doc='Display a brief talloc memory hierarchy' />
+        <param name='DEPTH' doc='Specify required maximal depth value' />
+        <param name='tree' doc='Display only a specific memory chunk' />
+        <param name='ADDRESS' doc='Chunk address (e.g. 0xdeadbeef)' />
+      </params>
+    </command>
+    <command id='show talloc-context (application|all) (full|brief|DEPTH) filter REGEXP'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='talloc-context' doc='Show talloc memory hierarchy' />
+        <param name='application' doc='Application&apos;s context' />
+        <param name='all' doc='All contexts, if NULL-context tracking is enabled' />
+        <param name='full' doc='Display a full talloc memory hierarchy' />
+        <param name='brief' doc='Display a brief talloc memory hierarchy' />
+        <param name='DEPTH' doc='Specify required maximal depth value' />
+        <param name='filter' doc='Filter chunks using regular expression' />
+        <param name='REGEXP' doc='Regular expression' />
       </params>
     </command>
     <command id='show stats'>
@@ -408,6 +474,34 @@
         <param name='1' doc='Prefix each log message with category/subsystem name' />
       </params>
     </command>
+    <command id='logging print category-hex (0|1)'>
+      <params>
+        <param name='logging' doc='Configure logging' />
+        <param name='print' doc='Log output settings' />
+        <param name='category-hex' doc='Configure log message' />
+        <param name='0' doc='Don&apos;t prefix each log message' />
+        <param name='1' doc='Prefix each log message with category/subsystem nr in hex (&apos;&lt;000b&gt;&apos;)' />
+      </params>
+    </command>
+    <command id='logging print level (0|1)'>
+      <params>
+        <param name='logging' doc='Configure logging' />
+        <param name='print' doc='Log output settings' />
+        <param name='level' doc='Configure log message' />
+        <param name='0' doc='Don&apos;t prefix each log message' />
+        <param name='1' doc='Prefix each log message with the log level name' />
+      </params>
+    </command>
+    <command id='logging print file (0|1|basename)'>
+      <params>
+        <param name='logging' doc='Configure logging' />
+        <param name='print' doc='Log output settings' />
+        <param name='file' doc='Configure log message' />
+        <param name='0' doc='Don&apos;t prefix each log message' />
+        <param name='1' doc='Prefix each log message with the source file and line' />
+        <param name='basename' doc='Prefix each log message with the source file&apos;s basename (strip leading paths) and line' />
+      </params>
+    </command>
     <command id='logging set-log-mask MASK'>
       <params>
         <param name='logging' doc='Configure logging' />
@@ -424,7 +518,7 @@
         <param name='MASK' doc='&apos;set log mask&apos; is deprecated, please refer to the docs of &apos;set-log-mask&apos; instead' />
       </params>
     </command>
-    <command id='logging level (all|ip|tun|ggsn|sgsn|icmp6|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp) (everything|debug|info|notice|error|fatal)'>
+    <command id='logging level (all|ip|tun|ggsn|sgsn|icmp6|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf) (everything|debug|info|notice|error|fatal)'>
       <params>
         <param name='logging' doc='Configure logging' />
         <param name='level' doc='Set the log level for a specified category' />
@@ -451,6 +545,7 @@
         <param name='lsua' doc='libosmo-sigtran SCCP User Adaptation' />
         <param name='lm3ua' doc='libosmo-sigtran MTP3 User Adaptation' />
         <param name='lmgcp' doc='libosmo-mgcp Media Gateway Control Protocol' />
+        <param name='ljibuf' doc='libosmo-netif Jitter Buffer' />
         <param name='everything' doc='Don&apos;t use. It doesn&apos;t log anything' />
         <param name='debug' doc='Log debug messages and higher levels' />
         <param name='info' doc='Log informational messages and higher levels' />
@@ -470,6 +565,43 @@
       <params>
         <param name='show' doc='Show running system information' />
         <param name='alarms' doc='Show current logging configuration' />
+      </params>
+    </command>
+    <command id='show talloc-context (application|all) (full|brief|DEPTH)'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='talloc-context' doc='Show talloc memory hierarchy' />
+        <param name='application' doc='Application&apos;s context' />
+        <param name='all' doc='All contexts, if NULL-context tracking is enabled' />
+        <param name='full' doc='Display a full talloc memory hierarchy' />
+        <param name='brief' doc='Display a brief talloc memory hierarchy' />
+        <param name='DEPTH' doc='Specify required maximal depth value' />
+      </params>
+    </command>
+    <command id='show talloc-context (application|all) (full|brief|DEPTH) tree ADDRESS'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='talloc-context' doc='Show talloc memory hierarchy' />
+        <param name='application' doc='Application&apos;s context' />
+        <param name='all' doc='All contexts, if NULL-context tracking is enabled' />
+        <param name='full' doc='Display a full talloc memory hierarchy' />
+        <param name='brief' doc='Display a brief talloc memory hierarchy' />
+        <param name='DEPTH' doc='Specify required maximal depth value' />
+        <param name='tree' doc='Display only a specific memory chunk' />
+        <param name='ADDRESS' doc='Chunk address (e.g. 0xdeadbeef)' />
+      </params>
+    </command>
+    <command id='show talloc-context (application|all) (full|brief|DEPTH) filter REGEXP'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='talloc-context' doc='Show talloc memory hierarchy' />
+        <param name='application' doc='Application&apos;s context' />
+        <param name='all' doc='All contexts, if NULL-context tracking is enabled' />
+        <param name='full' doc='Display a full talloc memory hierarchy' />
+        <param name='brief' doc='Display a brief talloc memory hierarchy' />
+        <param name='DEPTH' doc='Specify required maximal depth value' />
+        <param name='filter' doc='Filter chunks using regular expression' />
+        <param name='REGEXP' doc='Regular expression' />
       </params>
     </command>
     <command id='show stats'>
@@ -816,14 +948,35 @@
         <param name='1' doc='Prefix each log message with category/subsystem name' />
       </params>
     </command>
-    <command id='logging set-log-mask MASK'>
+    <command id='logging print category-hex (0|1)'>
       <params>
         <param name='logging' doc='Configure logging' />
-        <param name='set-log-mask' doc='Set the logmask of this logging target' />
-        <param name='MASK' doc='List of logging categories to log, e.g. &apos;abc:mno:xyz&apos;. Available log categories depend on the specific application, refer to the &apos;logging level&apos; command. Optionally add individual log levels like &apos;abc,1:mno,3:xyz,5&apos;, where the level numbers are LOGL_DEBUG=1 LOGL_INFO=3 LOGL_NOTICE=5 LOGL_ERROR=7 LOGL_FATAL=8' />
+        <param name='print' doc='Log output settings' />
+        <param name='category-hex' doc='Configure log message' />
+        <param name='0' doc='Don&apos;t prefix each log message' />
+        <param name='1' doc='Prefix each log message with category/subsystem nr in hex (&apos;&lt;000b&gt;&apos;)' />
       </params>
     </command>
-    <command id='logging level (all|ip|tun|ggsn|sgsn|icmp6|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp) (everything|debug|info|notice|error|fatal)'>
+    <command id='logging print level (0|1)'>
+      <params>
+        <param name='logging' doc='Configure logging' />
+        <param name='print' doc='Log output settings' />
+        <param name='level' doc='Configure log message' />
+        <param name='0' doc='Don&apos;t prefix each log message' />
+        <param name='1' doc='Prefix each log message with the log level name' />
+      </params>
+    </command>
+    <command id='logging print file (0|1|basename)'>
+      <params>
+        <param name='logging' doc='Configure logging' />
+        <param name='print' doc='Log output settings' />
+        <param name='file' doc='Configure log message' />
+        <param name='0' doc='Don&apos;t prefix each log message' />
+        <param name='1' doc='Prefix each log message with the source file and line' />
+        <param name='basename' doc='Prefix each log message with the source file&apos;s basename (strip leading paths) and line' />
+      </params>
+    </command>
+    <command id='logging level (all|ip|tun|ggsn|sgsn|icmp6|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf) (everything|debug|info|notice|error|fatal)'>
       <params>
         <param name='logging' doc='Configure logging' />
         <param name='level' doc='Set the log level for a specified category' />
@@ -850,6 +1003,7 @@
         <param name='lsua' doc='libosmo-sigtran SCCP User Adaptation' />
         <param name='lm3ua' doc='libosmo-sigtran MTP3 User Adaptation' />
         <param name='lmgcp' doc='libosmo-mgcp Media Gateway Control Protocol' />
+        <param name='ljibuf' doc='libosmo-netif Jitter Buffer' />
         <param name='everything' doc='Don&apos;t use. It doesn&apos;t log anything' />
         <param name='debug' doc='Log debug messages and higher levels' />
         <param name='info' doc='Log informational messages and higher levels' />
@@ -1186,6 +1340,20 @@
         <param name='no' doc='Negate a command or set its defaults' />
         <param name='ipv6' doc='IPv6 Information' />
         <param name='ifconfig' doc='GGSN-based interface configuration' />
+      </params>
+    </command>
+    <command id='ipv6 link-local X:X::X:X/M'>
+      <params>
+        <param name='ipv6' doc='IPv6 Information' />
+        <param name='link-local' doc='GGSN-based interface configuration' />
+        <param name='X:X::X:X/M' doc='IPv6 Link-local Adress/Prefix-Length' />
+      </params>
+    </command>
+    <command id='no ipv6 link-local'>
+      <params>
+        <param name='no' doc='Negate a command or set its defaults' />
+        <param name='ipv6' doc='IPv6 Information' />
+        <param name='link-local' doc='GGSN-based interface configuration' />
       </params>
     </command>
     <command id='g-pdu tx-sequence-numbers'>
