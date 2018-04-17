@@ -20,6 +20,7 @@
 #endif
 
 #include <osmocom/core/application.h>
+#include <osmocom/core/msgb.h>
 
 #include <ctype.h>
 #include <netdb.h>
@@ -79,6 +80,7 @@ struct gsn_t *gsn = NULL;	/* GSN instance */
 struct tun_t *tun = NULL;	/* TUN instance */
 int maxfd = 0;			/* For select() */
 int echoversion = 1;		/* First try this version */
+void *tall_sgsnemu_ctx;		/* root talloc ctx */
 
 /* Struct with local versions of gengetopt options */
 struct {
@@ -1540,7 +1542,9 @@ int main(int argc, char **argv)
 	signal(SIGHUP,  signal_handler);
 	signal(SIGINT,  signal_handler);
 
-	osmo_init_logging(&log_info);
+	tall_sgsnemu_ctx = talloc_named_const(NULL, 0, "sgsnemu");
+	msgb_talloc_ctx_init(tall_sgsnemu_ctx, 0);
+	osmo_init_logging2(tall_sgsnemu_ctx, &log_info);
 
 	/* Process options given in configuration file and command line */
 	if (process_options(argc, argv))

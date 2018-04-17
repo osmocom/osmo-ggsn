@@ -7,6 +7,7 @@
 #include <osmocom/core/utils.h>
 #include <osmocom/core/application.h>
 #include <osmocom/core/logging.h>
+#include <osmocom/core/msgb.h>
 #include <osmocom/core/bits.h>
 
 #include "../../lib/syserr.h"
@@ -108,7 +109,9 @@ static void test_gtpie_tv8()
 
 int main(int argc, char **argv)
 {
-	osmo_init_logging(&log_info);
+	void *tall_ctx = talloc_named_const(NULL, 1, "Root context");
+	msgb_talloc_ctx_init(tall_ctx, 0);
+	osmo_init_logging2(tall_ctx, &log_info);
 	log_set_use_color(osmo_stderr_target, 0);
 	log_set_print_filename(osmo_stderr_target, 0);
 

@@ -1073,7 +1073,7 @@ int main(int argc, char **argv)
 	signal(SIGUSR2, &signal_handler);
 
 	osmo_init_ignore_signals();
-	osmo_init_logging(&log_info);
+	osmo_init_logging2(tall_ggsn_ctx, &log_info);
 	osmo_stats_init(tall_ggsn_ctx);
 
 	vty_init(&g_vty_info);
