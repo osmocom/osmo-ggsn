@@ -632,8 +632,13 @@ int create_context_ind(struct pdp_t *pdp)
 
 	memcpy(pdp->qos_neg0, pdp->qos_req0, sizeof(pdp->qos_req0));
 
+#if 0
 	memcpy(pdp->qos_neg.v, pdp->qos_req.v, pdp->qos_req.l);	/* TODO */
 	pdp->qos_neg.l = pdp->qos_req.l;
+#else
+	memset(pdp->qos_neg.v, 0, sizeof(pdp->qos_neg.v));
+	pdp->qos_neg.l = 0xe;
+#endif
 
 	memset(addr, 0, sizeof(addr));
 	if ((num_addr = in46a_from_eua(&pdp->eua, addr)) < 0) {
