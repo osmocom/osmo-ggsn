@@ -1246,6 +1246,9 @@ int gtp_create_pdp_resp(struct gsn_t *gsn, int version, struct pdp_t *pdp,
 	unsigned int length =
 	    get_default_gtp(version, GTP_CREATE_PDP_RSP, &packet);
 
+	LOGP(DLGTP, LOGL_DEBUG, "XXXXXXXXXXXXXX  Create PDP Context Reponse version=%d cause=%u\n",
+	     version, cause);
+
 	gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_CAUSE, cause);
 
 	if (cause == GTPCAUSE_ACC_REQ) {

@@ -538,6 +538,8 @@ static void process_pco(struct apn_ctx *apn, struct pdp_t *pdp)
 	OSMO_ASSERT(msg);
 	msgb_put_u8(msg, 0x80); /* ext-bit + configuration protocol byte */
 
+	LOGPPDP(LOGL_ERROR, pdp, "XXXXXXXXXXX  using APN %s\n", apn->cfg.name);
+
 	if (peer_v4)
 		build_ipcp_pco(apn, pdp, msg);
 
@@ -550,11 +552,15 @@ static void process_pco(struct apn_ctx *apn, struct pdp_t *pdp)
 		}
 	}
 
+	LOGPPDP(LOGL_ERROR, pdp, "XXXXXXXXXXX  pco_contains_proto(v4) = %d\n",
+		!!pco_contains_proto(&pdp->pco_req, PCO_P_DNS_IPv4_ADDR));
 	if (pco_contains_proto(&pdp->pco_req, PCO_P_DNS_IPv4_ADDR)) {
 		for (i = 0; i < ARRAY_SIZE(apn->v4.cfg.dns); i++) {
 			struct in46_addr *i46a = &apn->v4.cfg.dns[i];
 			if (i46a->len != 4)
 				continue;
+			LOGPPDP(LOGL_ERROR, pdp, "XXXXXXXXXXX  c4.cfg.dns %s\n", osmo_hexdump_nospc((uint8_t *)&i46a->v4,
+												    i46a->len));
 			msgb_t16lv_put(msg, PCO_P_DNS_IPv4_ADDR, i46a->len, (uint8_t *)&i46a->v4);
 		}
 	}
@@ -618,8 +624,11 @@ int create_context_ind(struct pdp_t *pdp)
 	}
 
 	/* FIXME: we manually force all context requests to dynamic here! */
-	if (pdp->eua.l > 2)
+	if (pdp->eua.l > 2) {
+		LOGPPDP(LOGL_DEBUG, pdp, "Forcing context request to dynamic (eua.l %u->2)\n",
+			pdp->eua.l);
 		pdp->eua.l = 2;
+	}
 
 	memcpy(pdp->qos_neg0, pdp->qos_req0, sizeof(pdp->qos_req0));
 
