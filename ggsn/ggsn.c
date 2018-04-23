@@ -632,13 +632,15 @@ int create_context_ind(struct pdp_t *pdp)
 
 	memcpy(pdp->qos_neg0, pdp->qos_req0, sizeof(pdp->qos_req0));
 
-#if 0
+#if 1
 	memcpy(pdp->qos_neg.v, pdp->qos_req.v, pdp->qos_req.l);	/* TODO */
 	pdp->qos_neg.l = pdp->qos_req.l;
 #else
+	LOGPPDP(LOGL_ERROR, pdp, "PATCHING QoS to 14 bytes of zero\n");
 	memset(pdp->qos_neg.v, 0, sizeof(pdp->qos_neg.v));
 	pdp->qos_neg.l = 0xe;
 #endif
+	LOGPPDP(LOGL_ERROR, pdp, "SENDING QoS 0x%x %s\n", pdp->qos_neg.l, osmo_hexdump(pdp->qos_neg.v, pdp->qos_neg.l));
 
 	memset(addr, 0, sizeof(addr));
 	if ((num_addr = in46a_from_eua(&pdp->eua, addr)) < 0) {
