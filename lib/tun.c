@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -57,6 +58,7 @@
 
 #include "tun.h"
 #include "syserr.h"
+#include "gtp-kernel.h"
 
 static int tun_setaddr4(struct tun_t *this, struct in_addr *addr,
 			struct in_addr *dstaddr, struct in_addr *netmask)
@@ -145,7 +147,7 @@ int tun_addaddr(struct tun_t *this, struct in46_addr *addr, struct in46_addr *ds
 	}
 }
 
-int tun_new(struct tun_t **tun, const char *dev_name)
+int tun_new(struct tun_t **tun, const char *dev_name, int fd0, int fd1u, bool use_kernel)
 {
 
 #if defined(__linux__)
@@ -168,30 +170,49 @@ int tun_new(struct tun_t **tun, const char *dev_name)
 	(*tun)->routes = 0;
 
 #if defined(__linux__)
-	/* Open the actual tun device */
-	if (((*tun)->fd = open("/dev/net/tun", O_RDWR)) < 0) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno, "open() failed");
-		goto err_free;
+	if (!use_kernel) {
+		/* Open the actual tun device */
+		if (((*tun)->fd = open("/dev/net/tun", O_RDWR)) < 0) {
+			SYS_ERR(DTUN, LOGL_ERROR, errno, "open() failed");
+			goto err_free;
+		}
+
+		/* Set device flags. For some weird reason this is also the method
+		   used to obtain the network interface name */
+		memset(&ifr, 0, sizeof(ifr));
+		if (dev_name)
+			strcpy(ifr.ifr_name, dev_name);
+		ifr.ifr_flags = IFF_TUN | IFF_NO_PI;	/* Tun device, no packet info */
+		if (ioctl((*tun)->fd, TUNSETIFF, (void *)&ifr) < 0) {
+			SYS_ERR(DTUN, LOGL_ERROR, errno, "ioctl() failed");
+			goto err_close;
+		}
+
+		strncpy((*tun)->devname, ifr.ifr_name, IFNAMSIZ);
+		(*tun)->devname[IFNAMSIZ - 1] = 0;
+
+		ioctl((*tun)->fd, TUNSETNOCSUM, 1);	/* Disable checksums */
+		return 0;
+	} else {
+		strncpy((*tun)->devname, dev_name, IFNAMSIZ);
+		(*tun)->devname[IFNAMSIZ - 1] = 0;
+		(*tun)->fd = -1;
+
+		if (gtp_kernel_create(-1, dev_name, fd0, fd1u) < 0) {
+			LOGP(DTUN, LOGL_ERROR, "cannot create GTP tunnel device: %s\n",
+				strerror(errno));
+			return -1;
+		}
+		LOGP(DTUN, LOGL_NOTICE, "GTP kernel configured\n");
+		return 0;
 	}
-
-	/* Set device flags. For some weird reason this is also the method
-	   used to obtain the network interface name */
-	memset(&ifr, 0, sizeof(ifr));
-	if (dev_name)
-		strcpy(ifr.ifr_name, dev_name);
-	ifr.ifr_flags = IFF_TUN | IFF_NO_PI;	/* Tun device, no packet info */
-	if (ioctl((*tun)->fd, TUNSETIFF, (void *)&ifr) < 0) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno, "ioctl() failed");
-		goto err_close;
-	}
-
-	strncpy((*tun)->devname, ifr.ifr_name, IFNAMSIZ);
-	(*tun)->devname[IFNAMSIZ - 1] = 0;
-
-	ioctl((*tun)->fd, TUNSETNOCSUM, 1);	/* Disable checksums */
-	return 0;
 
 #elif defined(__FreeBSD__) || defined (__APPLE__)
+
+	if (use_kernel) {
+		LOGP(DTUN, LOGL_ERROR, "No kernel GTP-U support in FreeBSD!\n");
+		return -1;
+	}
 
 	/* Find suitable device */
 	for (devnum = 0; devnum < 255; devnum++) {	/* TODO 255 */
@@ -247,9 +268,13 @@ int tun_free(struct tun_t *tun)
 		netdev_delroute(&tun->dstaddr, &tun->addr, &tun->netmask);
 	}
 
-	if (close(tun->fd)) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno, "close() failed");
+	if (tun->fd >= 0) {
+		if (close(tun->fd)) {
+			SYS_ERR(DTUN, LOGL_ERROR, errno, "close() failed");
+		}
 	}
+
+	gtp_kernel_stop(tun->devname);
 
 	/* TODO: For solaris we need to unlink streams */
 

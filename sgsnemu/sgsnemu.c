@@ -1571,7 +1571,7 @@ int main(int argc, char **argv)
 	if (options.createif) {
 		printf("Setting up interface\n");
 		/* Create a tunnel interface */
-		if (tun_new((struct tun_t **)&tun, options.tun_dev_name)) {
+		if (tun_new((struct tun_t **)&tun, options.tun_dev_name, -1, -1, false)) {
 			SYS_ERR(DSGSN, LOGL_ERROR, 0,
 				"Failed to create tun");
 			exit(1);
