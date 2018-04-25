@@ -380,9 +380,11 @@ static int delete_context(struct pdp_t *pdp)
 			LOGPPDP(LOGL_ERROR, pdp, "Cannot find/free IP Pool member\n");
 	}
 
-	if (gtp_kernel_tunnel_del(pdp, apn->tun.cfg.dev_name)) {
-		LOGPPDP(LOGL_ERROR, pdp, "Cannot delete tunnel from kernel:%s\n",
-			strerror(errno));
+	if (apn->cfg.gtpu_mode == APN_GTPU_MODE_KERNEL_GTP) {
+		if (gtp_kernel_tunnel_del(pdp, apn->tun.cfg.dev_name)) {
+			LOGPPDP(LOGL_ERROR, pdp, "Cannot delete tunnel from kernel:%s\n",
+				strerror(errno));
+		}
 	}
 
 	return 0;
@@ -688,7 +690,7 @@ int create_context_ind(struct pdp_t *pdp)
 
 	in46a_to_eua(addr, num_addr, &pdp->eua);
 
-	if (apn_supports_ipv4(apn)) {
+	if (apn->cfg.gtpu_mode == APN_GTPU_MODE_KERNEL_GTP && apn_supports_ipv4(apn)) {
 		/* TODO: In IPv6, EUA doesn't contain the actual IP addr/prefix! */
 		if (gtp_kernel_tunnel_add(pdp, apn->tun.cfg.dev_name) < 0) {
 			LOGPPDP(LOGL_ERROR, pdp, "Cannot add tunnel to kernel: %s\n", strerror(errno));
