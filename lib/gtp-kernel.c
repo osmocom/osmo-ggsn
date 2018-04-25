@@ -77,56 +77,20 @@ static int gtp_kernel_init_once(void)
 	return 0;
 }
 
-int gtp_kernel_init(struct gsn_t *gsn, const char *devname, struct in46_prefix *prefix, const char *ipup)
+int gtp_kernel_create(int dest_ns, const char *devname, int fd0, int fd1u)
 {
-	struct in_addr net;
-	const char *net_arg;
-
-	if (!gtp_nl.nl)
-		gtp_kernel_init_once();
-
-	if (prefix->addr.len != 4) {
-		LOGP(DGGSN, LOGL_ERROR, "we only support IPv4 in this path :/");
+	if (gtp_kernel_init_once() < 0)
 		return -1;
-	}
-	net = prefix->addr.v4;
 
-	if (gtp_dev_create(-1, devname, gsn->fd0, gsn->fd1u) < 0) {
-		LOGP(DGGSN, LOGL_ERROR, "cannot create GTP tunnel device: %s\n",
-			strerror(errno));
+	return gtp_dev_create(dest_ns, devname, fd0, fd1u);
+}
+
+int gtp_kernel_create_sgsn(int dest_ns, const char *devname, int fd0, int fd1u)
+{
+	if (gtp_kernel_init_once() < 0)
 		return -1;
-	}
 
-	net_arg = in46p_ntoa(prefix);
-
-	DEBUGP(DGGSN, "Setting route to reach %s via %s\n", net_arg, devname);
-
-	if (gtp_dev_config(devname, &net, prefix->prefixlen) < 0) {
-		LOGP(DGGSN, LOGL_ERROR, "Cannot add route to reach network %s\n", net_arg);
-	}
-
-	/* launch script if it is set to bring up the route to reach
-	 * the MS, eg. ip ro add 10.0.0.0/8 dev gtp0. Better add this
-	 * using native rtnetlink interface given that we know the
-	 * MS network mask, later.
-	 */
-	if (ipup) {
-		char cmd[1024];
-		int err;
-
-		/* eg. /home/ggsn/ipup gtp0 10.0.0.0/8 */
-		snprintf(cmd, sizeof(cmd), "%s %s %s", ipup, devname, net_arg);
-		cmd[sizeof(cmd)-1] = '\0';
-
-		err = system(cmd);
-		if (err < 0) {
-			LOGP(DGGSN, LOGL_ERROR, "Failed to launch script `%s'\n", ipup);
-			return -1;
-		}
-	}
-	LOGP(DGGSN, LOGL_NOTICE, "GTP kernel configured\n");
-
-	return 0;
+	return gtp_dev_create_sgsn(dest_ns, devname, fd0, fd1u);
 }
 
 void gtp_kernel_stop(const char *devname)

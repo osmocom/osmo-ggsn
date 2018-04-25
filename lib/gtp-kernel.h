@@ -7,18 +7,20 @@ extern int debug;
 extern char *ipup;
 
 #ifdef GTP_KERNEL
-int gtp_kernel_init(struct gsn_t *gsn, const char *devname, struct in46_prefix *prefix, const char *ipup);
+int gtp_kernel_create(int dest_ns, const char *devname, int fd0, int fd1u);
+int gtp_kernel_create_sgsn(int dest_ns, const char *devname, int fd0, int fd1u);
 void gtp_kernel_stop(const char *devname);
 
 int gtp_kernel_tunnel_add(struct pdp_t *pdp, const char *devname);
 int gtp_kernel_tunnel_del(struct pdp_t *pdp, const char *devname);
 
 #else
-static inline int gtp_kernel_init(struct gsn_t *gsn, const char *devname, struct in46_prefix *prefix, const char *ipup)
+static inline int gtp_kernel_create(int dest_ns, const char *devname, int fd0, int fd1u)
 {
 	SYS_ERR(DGGSN, LOGL_ERROR, 0, "ggsn compiled without GTP kernel support!\n");
 	return -1;
 }
+#define gtp_kernel_create_sgsn gtp_kernel_create
 
 static inline void gtp_kernel_stop(const char *devname) {}
 
