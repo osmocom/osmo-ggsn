@@ -97,20 +97,6 @@ static int tun_setaddr6(struct tun_t *this, struct in6_addr *addr, struct in6_ad
 	return rc;
 }
 
-int tun_setaddr(struct tun_t *this, struct in46_addr *addr, struct in46_addr *dstaddr, size_t prefixlen)
-{
-	struct in_addr netmask;
-	switch (addr->len) {
-	case 4:
-		netmask.s_addr = htonl(0xffffffff << (32 - prefixlen));
-		return tun_setaddr4(this, &addr->v4, dstaddr ? &dstaddr->v4 : NULL, &netmask);
-	case 16:
-		return tun_setaddr6(this, &addr->v6, dstaddr ? &dstaddr->v6 : NULL, prefixlen);
-	default:
-		return -1;
-	}
-}
-
 static int tun_addaddr4(struct tun_t *this, struct in_addr *addr,
 			struct in_addr *dstaddr, struct in_addr *netmask)
 {
