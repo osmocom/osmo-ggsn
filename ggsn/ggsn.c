@@ -220,7 +220,7 @@ int apn_start(struct apn_ctx *apn)
 		if (apn->v4.cfg.ifconfig_prefix.addr.len) {
 			LOGPAPN(LOGL_INFO, apn, "Setting tun IP address %s\n",
 				in46p_ntoa(&apn->v4.cfg.ifconfig_prefix));
-			if (tun_setaddr(apn->tun.tun, &apn->v4.cfg.ifconfig_prefix.addr, NULL,
+			if (tun_addaddr(apn->tun.tun, &apn->v4.cfg.ifconfig_prefix.addr, NULL,
 					apn->v4.cfg.ifconfig_prefix.prefixlen)) {
 				LOGPAPN(LOGL_ERROR, apn, "Failed to set tun IPv4 address %s: %s\n",
 					in46p_ntoa(&apn->v4.cfg.ifconfig_prefix), strerror(errno));
@@ -232,7 +232,7 @@ int apn_start(struct apn_ctx *apn)
 		if (apn->v6.cfg.ifconfig_prefix.addr.len) {
 			LOGPAPN(LOGL_INFO, apn, "Setting tun IPv6 address %s\n",
 				in46p_ntoa(&apn->v6.cfg.ifconfig_prefix));
-			if (tun_setaddr(apn->tun.tun, &apn->v6.cfg.ifconfig_prefix.addr, NULL,
+			if (tun_addaddr(apn->tun.tun, &apn->v6.cfg.ifconfig_prefix.addr, NULL,
 					apn->v6.cfg.ifconfig_prefix.prefixlen)) {
 				LOGPAPN(LOGL_ERROR, apn, "Failed to set tun IPv6 address %s: %s. "
 					"Ensure you have ipv6 support and not used the disable_ipv6 sysctl?\n",
