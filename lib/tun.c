@@ -1,7 +1,7 @@
 /*
  * TUN interface functions.
  * Copyright (C) 2002, 2003, 2004 Mondru AB.
- * Copyright (C) 2017 by Harald Welte <laforge@gnumonks.org>
+ * Copyright (C) 2017-2018 by Harald Welte <laforge@gnumonks.org>
  *
  * The contents of this file may be used under the terms of the GNU
  * General Public License Version 2, provided that the above copyright
@@ -79,14 +79,14 @@ static int tun_nlattr(struct nlmsghdr *n, int nsize, int type, void *d, int dlen
 }
 #endif
 
-static int tun_sifflags(struct tun_t *this, int flags)
+static int netdev_sifflags(const char *devname, int flags)
 {
 	struct ifreq ifr;
 	int fd;
 
 	memset(&ifr, '\0', sizeof(ifr));
 	ifr.ifr_flags = flags;
-	strncpy(ifr.ifr_name, this->devname, IFNAMSIZ);
+	strncpy(ifr.ifr_name, devname, IFNAMSIZ);
 	ifr.ifr_name[IFNAMSIZ - 1] = 0;	/* Make sure to terminate */
 	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
 		SYS_ERR(DTUN, LOGL_ERROR, errno, "socket() failed");
@@ -187,7 +187,7 @@ static int tun_setaddr4(struct tun_t *this, struct in_addr *addr,
 
 	/* TODO: How does it work on Solaris? */
 
-	tun_sifflags(this, IFF_UP | IFF_RUNNING);
+	netdev_sifflags(this->devname, IFF_UP | IFF_RUNNING);
 
 #if defined(__FreeBSD__) || defined (__APPLE__)
 	tun_addroute(this, dstaddr, addr, &this->netmask);
@@ -270,7 +270,7 @@ static int tun_setaddr6(struct tun_t *this, struct in6_addr *addr, struct in6_ad
 
 	/* TODO: How does it work on Solaris? */
 
-	tun_sifflags(this, IFF_UP | IFF_RUNNING);
+	netdev_sifflags(this->devname, IFF_UP | IFF_RUNNING);
 
 #if 0	/* FIXME */
 //#if defined(__FreeBSD__) || defined (__APPLE__)
@@ -400,7 +400,7 @@ static int tun_addaddr4(struct tun_t *this,
 		return -1;
 	}
 
-	status = tun_sifflags(this, IFF_UP | IFF_RUNNING);
+	status = netdev_sifflags(this->devname, IFF_UP | IFF_RUNNING);
 	if (status == -1) {
 		close(fd);
 		return -1;
@@ -570,7 +570,7 @@ static int tun_addaddr6(struct tun_t *this,
 		return -1;
 	}
 
-	status = tun_sifflags(this, IFF_UP | IFF_RUNNING);
+	status = netdev_sifflags(this->devname, IFF_UP | IFF_RUNNING);
 	if (status == -1) {
 		close(fd);
 		return -1;
