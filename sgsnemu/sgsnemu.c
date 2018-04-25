@@ -1432,8 +1432,7 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 		if (addr.len == 16)
 			prefixlen = 64;
 		/* printf("Setting up interface and routing\n"); */
-		/* FIXME: use tun_addattr() not tun_setaddr() */
-		tun_setaddr(tun, &addr, &addr, prefixlen);
+		tun_addaddr(tun, &addr, &addr, prefixlen);
 		if (options.defaultroute) {
 			struct in_addr rm;
 			rm.s_addr = 0;
