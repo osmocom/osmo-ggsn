@@ -1437,7 +1437,7 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 		if (options.defaultroute) {
 			struct in_addr rm;
 			rm.s_addr = 0;
-			tun_addroute(tun, &rm, &addr.v4, &rm);
+			netdev_addroute(&rm, &addr.v4, &rm);
 		}
 		if (options.ipup)
 			tun_runscript(tun, options.ipup);
@@ -1588,7 +1588,7 @@ int main(int argc, char **argv)
 		if (options.defaultroute) {
 			struct in_addr rm;
 			rm.s_addr = 0;
-			tun_addroute(tun, &rm, &options.destaddr.v4, &rm);
+			netdev_addroute(&rm, &options.destaddr.v4, &rm);
 		}
 		if (options.ipup)
 			tun_runscript(tun, options.ipup);

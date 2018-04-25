@@ -86,8 +86,7 @@ extern int tun_addaddr(struct tun_t *this, struct in46_addr *addr,
 extern int tun_setaddr(struct tun_t *this, struct in46_addr *our_adr,
 		       struct in46_addr *his_adr, size_t prefixlen);
 
-int tun_addroute(struct tun_t *this, struct in_addr *dst,
-		 struct in_addr *gateway, struct in_addr *mask);
+int netdev_addroute(struct in_addr *dst, struct in_addr *gateway, struct in_addr *mask);
 
 extern int tun_set_cb_ind(struct tun_t *this,
 			  int (*cb_ind) (struct tun_t * tun, void *pack,

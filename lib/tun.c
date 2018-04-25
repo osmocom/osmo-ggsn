@@ -274,7 +274,7 @@ static int tun_setaddr6(struct tun_t *this, struct in6_addr *addr, struct in6_ad
 
 #if 0	/* FIXME */
 //#if defined(__FreeBSD__) || defined (__APPLE__)
-	tun_addroute6(this, dstaddr, addr, prefixlen);
+	netdev_addroute6(dstaddr, addr, prefixlen);
 	this->routes = 1;
 #endif
 
@@ -644,9 +644,7 @@ int tun_addaddr(struct tun_t *this, struct in46_addr *addr, struct in46_addr *ds
 	}
 }
 
-static int tun_route(struct tun_t *this,
-	      struct in_addr *dst,
-	      struct in_addr *gateway, struct in_addr *mask, int delete)
+static int netdev_route(struct in_addr *dst, struct in_addr *gateway, struct in_addr *mask, int delete)
 {
 
 #if defined(__linux__)
@@ -745,18 +743,14 @@ static int tun_route(struct tun_t *this,
 
 }
 
-int tun_addroute(struct tun_t *this,
-		 struct in_addr *dst,
-		 struct in_addr *gateway, struct in_addr *mask)
+int netdev_addroute(struct in_addr *dst, struct in_addr *gateway, struct in_addr *mask)
 {
-	return tun_route(this, dst, gateway, mask, 0);
+	return netdev_route(dst, gateway, mask, 0);
 }
 
-int tun_delroute(struct tun_t *this,
-		 struct in_addr *dst,
-		 struct in_addr *gateway, struct in_addr *mask)
+int netdev_delroute(struct in_addr *dst, struct in_addr *gateway, struct in_addr *mask)
 {
-	return tun_route(this, dst, gateway, mask, 1);
+	return netdev_route(dst, gateway, mask, 1);
 }
 
 int tun_new(struct tun_t **tun, const char *dev_name)
@@ -858,7 +852,7 @@ int tun_free(struct tun_t *tun)
 {
 
 	if (tun->routes) {
-		tun_delroute(tun, &tun->dstaddr, &tun->addr, &tun->netmask);
+		netdev_delroute(&tun->dstaddr, &tun->addr, &tun->netmask);
 	}
 
 	if (close(tun->fd)) {
