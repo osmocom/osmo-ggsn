@@ -102,8 +102,8 @@ static int netdev_sifflags(const char *devname, int flags)
 	return 0;
 }
 
-static int tun_setaddr4(struct tun_t *this, struct in_addr *addr,
-			struct in_addr *dstaddr, struct in_addr *netmask)
+static int netdev_setaddr4(const char *devname, struct in_addr *addr,
+			   struct in_addr *dstaddr, struct in_addr *netmask)
 {
 	struct ifreq ifr;
 	int fd;
@@ -122,7 +122,7 @@ static int tun_setaddr4(struct tun_t *this, struct in_addr *addr,
 	    sizeof(struct sockaddr_in);
 #endif
 
-	strncpy(ifr.ifr_name, this->devname, IFNAMSIZ);
+	strncpy(ifr.ifr_name, devname, IFNAMSIZ);
 	ifr.ifr_name[IFNAMSIZ - 1] = 0;	/* Make sure to terminate */
 
 	/* Create a channel to the NET kernel. */
@@ -132,7 +132,6 @@ static int tun_setaddr4(struct tun_t *this, struct in_addr *addr,
 	}
 
 	if (addr) {		/* Set the interface address */
-		this->addr.s_addr = addr->s_addr;
 		memcpy(&((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr, addr,
 		       sizeof(*addr));
 		if (ioctl(fd, SIOCSIFADDR, (void *)&ifr) < 0) {
@@ -149,7 +148,6 @@ static int tun_setaddr4(struct tun_t *this, struct in_addr *addr,
 	}
 
 	if (dstaddr) {		/* Set the destination address */
-		this->dstaddr.s_addr = dstaddr->s_addr;
 		memcpy(&((struct sockaddr_in *)&ifr.ifr_dstaddr)->sin_addr,
 		       dstaddr, sizeof(*dstaddr));
 		if (ioctl(fd, SIOCSIFDSTADDR, (caddr_t) & ifr) < 0) {
@@ -161,7 +159,6 @@ static int tun_setaddr4(struct tun_t *this, struct in_addr *addr,
 	}
 
 	if (netmask) {		/* Set the netmask */
-		this->netmask.s_addr = netmask->s_addr;
 #if defined(__linux__)
 		memcpy(&((struct sockaddr_in *)&ifr.ifr_netmask)->sin_addr,
 		       netmask, sizeof(*netmask));
@@ -180,25 +177,45 @@ static int tun_setaddr4(struct tun_t *this, struct in_addr *addr,
 	}
 
 	close(fd);
-	this->addrs++;
 
 	/* On linux the route to the interface is set automatically
 	   on FreeBSD we have to do this manually */
 
 	/* TODO: How does it work on Solaris? */
 
-	netdev_sifflags(this->devname, IFF_UP | IFF_RUNNING);
+	netdev_sifflags(devname, IFF_UP | IFF_RUNNING);
 
 #if defined(__FreeBSD__) || defined (__APPLE__)
-	tun_addroute(this, dstaddr, addr, &this->netmask);
-	this->routes = 1;
+	netdev_addroute(dstaddr, addr, &this->netmask);
 #endif
 
 	return 0;
 }
 
-static int tun_setaddr6(struct tun_t *this, struct in6_addr *addr, struct in6_addr *dstaddr,
-			size_t prefixlen)
+static int tun_setaddr4(struct tun_t *this, struct in_addr *addr,
+			struct in_addr *dstaddr, struct in_addr *netmask)
+{
+	int rc;
+	rc = netdev_setaddr4(this->devname, addr, dstaddr, netmask);
+	if (rc < 0)
+		return rc;
+
+	if (addr)
+		this->addr.s_addr = addr->s_addr;
+	if (dstaddr)
+		this->dstaddr.s_addr = dstaddr->s_addr;
+	if (netmask)
+		this->netmask.s_addr = netmask->s_addr;
+	this->addrs++;
+#if defined(__FreeBSD__) || defined (__APPLE__)
+	this->routes = 1;
+#endif
+
+	return rc;
+}
+
+static int netdev_setaddr6(const char *devname, struct in6_addr *addr, struct in6_addr *dstaddr,
+			   size_t prefixlen)
 {
 	struct in6_ifreq ifr;
 	int fd;
@@ -207,13 +224,13 @@ static int tun_setaddr6(struct tun_t *this, struct in6_addr *addr, struct in6_ad
 
 #if defined(__linux__)
 	ifr.ifr6_prefixlen = prefixlen;
-	ifr.ifr6_ifindex = if_nametoindex(this->devname);
+	ifr.ifr6_ifindex = if_nametoindex(devname);
 	if (ifr.ifr6_ifindex == 0) {
-		SYS_ERR(DTUN, LOGL_ERROR, 0, "Error getting ifindex for %s\n", this->devname);
+		SYS_ERR(DTUN, LOGL_ERROR, 0, "Error getting ifindex for %s\n", devname);
 		return -1;
 	}
 #elif defined(__FreeBSD__) || defined (__APPLE__)
-	strncpy(ifr.ifr_name, this->devname, IFNAMSIZ);
+	strncpy(ifr.ifr_name, devname, IFNAMSIZ);
 #endif
 
 	/* Create a channel to the NET kernel */
@@ -239,7 +256,6 @@ static int tun_setaddr6(struct tun_t *this, struct in6_addr *addr, struct in6_ad
 #if 0
 	/* FIXME: looks like this is not possible/necessary for IPv6? */
 	if (dstaddr) {
-		memcpy(&this->dstaddr, dstaddr, sizeof(*dstaddr));
 		memcpy(&ifr.ifr6_addr, dstaddr, sizeof(*dstaddr));
 		if (ioctl(fd, SIOCSIFDSTADDR, (caddr_t *) &ifr) < 0) {
 			SYS_ERR(DTUN, LOGL_ERROR, "ioctl(SIOCSIFDSTADDR) failed");
@@ -263,22 +279,37 @@ static int tun_setaddr6(struct tun_t *this, struct in6_addr *addr, struct in6_ad
 #endif
 
 	close(fd);
-	this->addrs++;
 
 	/* On linux the route to the interface is set automatically
 	   on FreeBSD we have to do this manually */
 
 	/* TODO: How does it work on Solaris? */
 
-	netdev_sifflags(this->devname, IFF_UP | IFF_RUNNING);
+	netdev_sifflags(devname, IFF_UP | IFF_RUNNING);
 
 #if 0	/* FIXME */
 //#if defined(__FreeBSD__) || defined (__APPLE__)
 	netdev_addroute6(dstaddr, addr, prefixlen);
-	this->routes = 1;
 #endif
 
 	return 0;
+}
+
+static int tun_setaddr6(struct tun_t *this, struct in6_addr *addr, struct in6_addr *dstaddr,
+			size_t prefixlen)
+{
+	int rc;
+	rc = netdev_setaddr6(this->devname, addr, dstaddr, prefixlen);
+	if (rc < 0)
+		return rc;
+	if (dstaddr)
+		memcpy(&this->dstaddr, dstaddr, sizeof(*dstaddr));
+	this->addrs++;
+#if defined(__FreeBSD__) || defined (__APPLE__)
+	this->routes = 1;
+#endif
+
+	return rc;
 }
 
 int tun_setaddr(struct tun_t *this, struct in46_addr *addr, struct in46_addr *dstaddr, size_t prefixlen)
@@ -295,9 +326,8 @@ int tun_setaddr(struct tun_t *this, struct in46_addr *addr, struct in46_addr *ds
 	}
 }
 
-static int tun_addaddr4(struct tun_t *this,
-		struct in_addr *addr,
-		struct in_addr *dstaddr, struct in_addr *netmask)
+static int netdev_addaddr4(const char *devname, struct in_addr *addr,
+			   struct in_addr *dstaddr, struct in_addr *netmask)
 {
 
 #if defined(__linux__)
@@ -316,9 +346,6 @@ static int tun_addaddr4(struct tun_t *this,
 	struct iovec iov;
 	struct msghdr msg;
 
-	if (!this->addrs)	/* Use ioctl for first addr to make ping work */
-		return tun_setaddr4(this, addr, dstaddr, netmask);
-
 	memset(&req, 0, sizeof(req));
 	req.n.nlmsg_len = NLMSG_LENGTH(sizeof(struct ifaddrmsg));
 	req.n.nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE;
@@ -327,9 +354,9 @@ static int tun_addaddr4(struct tun_t *this,
 	req.i.ifa_prefixlen = 32;	/* 32 FOR IPv4 */
 	req.i.ifa_flags = 0;
 	req.i.ifa_scope = RT_SCOPE_HOST;	/* TODO or 0 */
-	req.i.ifa_index = if_nametoindex(this->devname);
+	req.i.ifa_index = if_nametoindex(devname);
 	if (!req.i.ifa_index) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno, "Unable to get ifindex for %s", this->devname);
+		SYS_ERR(DTUN, LOGL_ERROR, errno, "Unable to get ifindex for %s", devname);
 		return -1;
 	}
 
@@ -400,7 +427,7 @@ static int tun_addaddr4(struct tun_t *this,
 		return -1;
 	}
 
-	status = netdev_sifflags(this->devname, IFF_UP | IFF_RUNNING);
+	status = netdev_sifflags(devname, IFF_UP | IFF_RUNNING);
 	if (status == -1) {
 		close(fd);
 		return -1;
@@ -408,7 +435,6 @@ static int tun_addaddr4(struct tun_t *this,
 
 
 	close(fd);
-	this->addrs++;
 	return 0;
 
 #elif defined (__FreeBSD__) || defined (__APPLE__)
@@ -416,14 +442,10 @@ static int tun_addaddr4(struct tun_t *this,
 	int fd;
 	struct ifaliasreq areq;
 
-	/* TODO: Is this needed on FreeBSD? */
-	if (!this->addrs)	/* Use ioctl for first addr to make ping work */
-		return tun_setaddr4(this, addr, dstaddr, netmask);	/* TODO dstaddr */
-
 	memset(&areq, 0, sizeof(areq));
 
 	/* Set up interface name */
-	strncpy(areq.ifra_name, this->devname, IFNAMSIZ);
+	strncpy(areq.ifra_name, devname, IFNAMSIZ);
 	areq.ifra_name[IFNAMSIZ - 1] = 0;	/* Make sure to terminate */
 
 	((struct sockaddr_in *)&areq.ifra_addr)->sin_family = AF_INET;
@@ -458,16 +480,32 @@ static int tun_addaddr4(struct tun_t *this,
 	}
 
 	close(fd);
-	this->addrs++;
 	return 0;
 
 #endif
 
 }
 
-static int tun_addaddr6(struct tun_t *this,
-		struct in6_addr *addr,
-		struct in6_addr *dstaddr, int prefixlen)
+static int tun_addaddr4(struct tun_t *this, struct in_addr *addr,
+			struct in_addr *dstaddr, struct in_addr *netmask)
+{
+	int rc;
+
+	/* TODO: Is this needed on FreeBSD? */
+	if (!this->addrs)	/* Use ioctl for first addr to make ping work */
+		return tun_setaddr4(this, addr, dstaddr, netmask);	/* TODO dstaddr */
+
+	rc = netdev_addaddr4(this->devname, addr, dstaddr, netmask);
+	if (rc < 0)
+		return rc;
+
+	this->addrs++;
+
+	return rc;
+}
+
+static int netdev_addaddr6(const char *devname, struct in6_addr *addr,
+			   struct in6_addr *dstaddr, int prefixlen)
 {
 
 #if defined(__linux__)
@@ -486,9 +524,6 @@ static int tun_addaddr6(struct tun_t *this,
 	struct iovec iov;
 	struct msghdr msg;
 
-	if (!this->addrs)	/* Use ioctl for first addr to make ping work */
-		return tun_setaddr6(this, addr, dstaddr, prefixlen);
-
 	memset(&req, 0, sizeof(req));
 	req.n.nlmsg_len = NLMSG_LENGTH(sizeof(struct ifaddrmsg));
 	req.n.nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE;
@@ -497,9 +532,9 @@ static int tun_addaddr6(struct tun_t *this,
 	req.i.ifa_prefixlen = 64;	/* 64 FOR IPv6 */
 	req.i.ifa_flags = 0;
 	req.i.ifa_scope = RT_SCOPE_HOST;	/* TODO or 0 */
-	req.i.ifa_index = if_nametoindex(this->devname);
+	req.i.ifa_index = if_nametoindex(devname);
 	if (!req.i.ifa_index) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno, "Unable to get ifindex for %s", this->devname);
+		SYS_ERR(DTUN, LOGL_ERROR, errno, "Unable to get ifindex for %s", devname);
 		return -1;
 	}
 
@@ -570,7 +605,7 @@ static int tun_addaddr6(struct tun_t *this,
 		return -1;
 	}
 
-	status = netdev_sifflags(this->devname, IFF_UP | IFF_RUNNING);
+	status = netdev_sifflags(devname, IFF_UP | IFF_RUNNING);
 	if (status == -1) {
 		close(fd);
 		return -1;
@@ -578,7 +613,6 @@ static int tun_addaddr6(struct tun_t *this,
 
 
 	close(fd);
-	this->addrs++;
 	return 0;
 
 #elif defined (__FreeBSD__) || defined (__APPLE__)
@@ -586,14 +620,10 @@ static int tun_addaddr6(struct tun_t *this,
 	int fd;
 	struct ifaliasreq areq;
 
-	/* TODO: Is this needed on FreeBSD? */
-	if (!this->addrs)	/* Use ioctl for first addr to make ping work */
-		return tun_setaddr6(this, addr, dstaddr, netmask);	/* TODO dstaddr */
-
 	memset(&areq, 0, sizeof(areq));
 
 	/* Set up interface name */
-	strncpy(areq.ifra_name, this->devname, IFNAMSIZ);
+	strncpy(areq.ifra_name, devname, IFNAMSIZ);
 	areq.ifra_name[IFNAMSIZ - 1] = 0;	/* Make sure to terminate */
 
 	((struct sockaddr_in6 *)&areq.ifra_addr)->sin6_family = AF_INET6;
@@ -623,11 +653,28 @@ static int tun_addaddr6(struct tun_t *this,
 	}
 
 	close(fd);
-	this->addrs++;
 	return 0;
 
 #endif
 
+}
+
+static int tun_addaddr6(struct tun_t *this,
+		struct in6_addr *addr,
+		struct in6_addr *dstaddr, int prefixlen)
+{
+	int rc;
+
+	if (!this->addrs)	/* Use ioctl for first addr to make ping work */
+		return tun_setaddr6(this, addr, dstaddr, prefixlen);
+
+	rc = netdev_addaddr6(this->devname, addr, dstaddr, prefixlen);
+	if (rc < 0)
+		return rc;
+
+	this->addrs++;
+
+	return rc;
 }
 
 int tun_addaddr(struct tun_t *this, struct in46_addr *addr, struct in46_addr *dstaddr, size_t prefixlen)
