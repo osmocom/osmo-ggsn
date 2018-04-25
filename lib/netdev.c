@@ -109,7 +109,6 @@ int netdev_setaddr4(const char *devname, struct in_addr *addr,
 
 #if defined(__linux__)
 	ifr.ifr_netmask.sa_family = AF_INET;
-
 #elif defined(__FreeBSD__) || defined (__APPLE__)
 	((struct sockaddr_in *)&ifr.ifr_addr)->sin_len =
 	    sizeof(struct sockaddr_in);
@@ -157,7 +156,6 @@ int netdev_setaddr4(const char *devname, struct in_addr *addr,
 #if defined(__linux__)
 		memcpy(&((struct sockaddr_in *)&ifr.ifr_netmask)->sin_addr,
 		       netmask, sizeof(*netmask));
-
 #elif defined(__FreeBSD__) || defined (__APPLE__)
 		((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr =
 		    netmask->s_addr;
@@ -173,13 +171,10 @@ int netdev_setaddr4(const char *devname, struct in_addr *addr,
 
 	close(fd);
 
-	/* On linux the route to the interface is set automatically
-	   on FreeBSD we have to do this manually */
-
-	/* TODO: How does it work on Solaris? */
-
 	netdev_sifflags(devname, IFF_UP | IFF_RUNNING);
 
+	/* On linux the route to the interface is set automatically
+	   on FreeBSD we have to do this manually */
 #if defined(__FreeBSD__) || defined (__APPLE__)
 	netdev_addroute(dstaddr, addr, &this->netmask);
 #endif
@@ -254,13 +249,10 @@ int netdev_setaddr6(const char *devname, struct in6_addr *addr, struct in6_addr 
 
 	close(fd);
 
-	/* On linux the route to the interface is set automatically
-	   on FreeBSD we have to do this manually */
-
-	/* TODO: How does it work on Solaris? */
-
 	netdev_sifflags(devname, IFF_UP | IFF_RUNNING);
 
+	/* On linux the route to the interface is set automatically
+	   on FreeBSD we have to do this manually */
 #if 0	/* FIXME */
 //#if defined(__FreeBSD__) || defined (__APPLE__)
 	netdev_addroute6(dstaddr, addr, prefixlen);
@@ -272,7 +264,7 @@ int netdev_setaddr6(const char *devname, struct in6_addr *addr, struct in6_addr 
 int netdev_addaddr4(const char *devname, struct in_addr *addr,
 		    struct in_addr *dstaddr, struct in_addr *netmask)
 {
-
+	int fd;
 #if defined(__linux__)
 	struct {
 		struct nlmsghdr n;
@@ -282,7 +274,6 @@ int netdev_addaddr4(const char *devname, struct in_addr *addr,
 
 	struct sockaddr_nl local;
 	socklen_t addr_len;
-	int fd;
 	int status;
 
 	struct sockaddr_nl nladdr;
@@ -375,14 +366,7 @@ int netdev_addaddr4(const char *devname, struct in_addr *addr,
 		close(fd);
 		return -1;
 	}
-
-
-	close(fd);
-	return 0;
-
 #elif defined (__FreeBSD__) || defined (__APPLE__)
-
-	int fd;
 	struct ifaliasreq areq;
 
 	memset(&areq, 0, sizeof(areq));
@@ -421,18 +405,15 @@ int netdev_addaddr4(const char *devname, struct in_addr *addr,
 		close(fd);
 		return -1;
 	}
-
+#endif
 	close(fd);
 	return 0;
-
-#endif
-
 }
 
 int netdev_addaddr6(const char *devname, struct in6_addr *addr,
 		    struct in6_addr *dstaddr, int prefixlen)
 {
-
+	int fd;
 #if defined(__linux__)
 	struct {
 		struct nlmsghdr n;
@@ -442,7 +423,6 @@ int netdev_addaddr6(const char *devname, struct in6_addr *addr,
 
 	struct sockaddr_nl local;
 	socklen_t addr_len;
-	int fd;
 	int status;
 
 	struct sockaddr_nl nladdr;
@@ -535,14 +515,7 @@ int netdev_addaddr6(const char *devname, struct in6_addr *addr,
 		close(fd);
 		return -1;
 	}
-
-
-	close(fd);
-	return 0;
-
 #elif defined (__FreeBSD__) || defined (__APPLE__)
-
-	int fd;
 	struct ifaliasreq areq;
 
 	memset(&areq, 0, sizeof(areq));
@@ -576,21 +549,16 @@ int netdev_addaddr6(const char *devname, struct in6_addr *addr,
 		close(fd);
 		return -1;
 	}
-
+#endif
 	close(fd);
 	return 0;
-
-#endif
-
 }
 
 static int netdev_route(struct in_addr *dst, struct in_addr *gateway, struct in_addr *mask, int delete)
 {
-
-#if defined(__linux__)
-
-	struct rtentry r;
 	int fd;
+#if defined(__linux__)
+	struct rtentry r;
 
 	memset(&r, '\0', sizeof(r));
 	r.rt_flags = RTF_UP | RTF_GATEWAY;	/* RTF_HOST not set */
@@ -625,19 +593,13 @@ static int netdev_route(struct in_addr *dst, struct in_addr *gateway, struct in_
 			return -1;
 		}
 	}
-	close(fd);
-	return 0;
-
 #elif defined(__FreeBSD__) || defined (__APPLE__)
-
 	struct {
 		struct rt_msghdr rt;
 		struct sockaddr_in dst;
 		struct sockaddr_in gate;
 		struct sockaddr_in mask;
 	} req;
-
-	int fd;
 	struct rt_msghdr *rtm;
 
 	if ((fd = socket(AF_ROUTE, SOCK_RAW, 0)) == -1) {
@@ -677,10 +639,9 @@ static int netdev_route(struct in_addr *dst, struct in_addr *gateway, struct in_
 		close(fd);
 		return -1;
 	}
+#endif
 	close(fd);
 	return 0;
-#endif
-
 }
 
 int netdev_addroute(struct in_addr *dst, struct in_addr *gateway, struct in_addr *mask)
