@@ -65,7 +65,7 @@ AC_ARG_ENABLE([gtp-linux],
 	[enable_gtp_linux="$enableval"], [enable_gtp_linux="no"])
 
 AS_IF([test "x$enable_gtp_linux" = "xyes"], [
-	PKG_CHECK_MODULES([LIBGTPNL], [libgtpnl >= 1.0.0])
+	PKG_CHECK_MODULES([LIBGTPNL], [libgtpnl >= 1.2.0])
 ])
 
 AM_CONDITIONAL([ENABLE_GTP_KERNEL], [test "$enable_gtp_linux" = "yes"])
@@ -135,9 +135,9 @@ adl_FUNC_GETOPT_LONG
 
 AM_INIT_AUTOMAKE([foreign])
 
-PKG_CHECK_MODULES(LIBOSMOCORE, libosmocore >= 0.6.4)
-PKG_CHECK_MODULES(LIBOSMOVTY, libosmovty >= 0.3.0)
-PKG_CHECK_MODULES(LIBOSMOCTRL, libosmoctrl)
+PKG_CHECK_MODULES(LIBOSMOCORE, libosmocore >= 0.11.0)
+PKG_CHECK_MODULES(LIBOSMOVTY, libosmovty >= 0.11.0)
+PKG_CHECK_MODULES(LIBOSMOCTRL, libosmoctrl >= 0.11.0)
 
 AC_ARG_ENABLE(sanitize,
 	[AS_HELP_STRING(

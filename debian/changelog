@@ -1,3 +1,110 @@
+osmo-ggsn (1.2.0) unstable; urgency=medium
+
+  [ Neels Hofmeyr ]
+  * fix compiler warnings: return 0 in main(), in 3 tests
+  * add --enable-sanitize config option
+  * sanitize build: ensure uint16/32 alignment in gtpie_test and in46a_test
+  * configure: add --enable-werror
+  * jenkins.sh: use --enable-werror configure flag, not CFLAGS
+
+  [ Harald Welte ]
+  * sgsnemu: Don't leak FILE handle in proc_read()
+  * sgsnemu: Fix format string in printing tun-device name
+  * sgsnemu: Make sure buffer has space for terminating-NUL
+  * sgsnemu: Free strings in error path
+  * gtp: Fix buffer overflow in imsi_gtp2str()
+  * gtp: Explicit OSMO_ASSERT to ensure pdp variable is set
+  * tun: Don't copy 16byte IPv6 address to 'struct in_addr'
+  * ippool: Correctly compute size of static pool
+  * remove unused argument to alloc_ippool_blacklist()
+  * factor out netdev_ip_local_get() from tun_ip_local_get()
+  * Properly NULL-out blacklist in alloc_ippool_blacklist()
+  * gtp_kernel: Change gtp_kernel_init() function signature
+  * gtp-kernel: Re-add support for kernel GTP-U acceleration
+  * gtp-kernel: Get rid of hard-coded kernel GTP device name
+  * gtp-kernel: shut down kernel GTP device in apn_down()
+  * gtp-kernel: Align logging for APN start in kernel-gtp case with that of TUN
+  * gtp-kernel: Avoid global state variable
+  * gtp-kernel: Make sure repeated calls to gtp_kernel_init() are safe
+  * gtp-kernel: proper cleanup in error path
+  * gtp-kernel: Get rid of SYS_ERR where not applicable
+  * gtp-kernel: Add function name to pdp_debug() function calls
+  * gtp-kernel: Add device nime in pdp_debug() log statements
+  * contrib/jenkins.sh: Allow jenkins job to specify if kernel GTP is used
+  * ggsn.c: Fix byte order of IPCP IPv4 DNS servers
+  * ggsn: Ignore PCO with length 0, don't abort processing
+  * README.md: Remove misleading sentence on sgsnemu
+  * Add talloc context introspection via VTY
+  * fix segfault in case of kernel gtp-u
+  * lib/tun.c: Generalize tun_sifflags() to netdev_sifflags
+  * lib/tun.c: generalize tun_*route() to netdev_*route()
+  * lib/tun.c: Generalize tun_{set,add}addr*() functions
+  * lib/tun: split generic network device related stuff to lib/netdev
+  * lib/netdev.c: Cosmetic changes (coding style / cleanups)
+  * ggsn: Don't explicitly use tun_setaddr() API anymore
+  * sgsnemu: Convert from tun_setaddr() to tun_addaddr()
+  * lib/tun: Remove tun_setaddr() API, as everyone is using tun_addaddr() now
+  * Move kernel GTP support from ggsn/ to lib/
+  * ggsn: don't use gtp_kernel_tunnel_{add,del}() for userspace tun
+
+  [ Pau Espin Pedrol ]
+  * ggsn_vty: Stop using deprecated API vty_install_default
+  * contrib/jenkins.sh: Enable Werror in C(PP)FLAGS
+  * examples: Add secondary ipv6 google DNS to osmo-ggsn.cfg
+  * tun_setaddr6: Fix log typo
+  * cosmetic: Reorder tun_addaddr to get rid of decl of tun_setaddr4
+  * ggsn.c: Print version of unhandled ip packet
+  * Remove unused empty src/Makefile.in
+  * tests: Split ipv6 specific tests into a new test group
+  * Add support for IPv4v6 End User Addresses
+  * contrib: jenkins.sh: Build libgtpnl as dep when building with gtp kernel support
+  * cosmetic: sgsnemu.c: Fix trailing whitespace
+  * ggsn.c: Improve logging info on link-local ipv6 addr not found
+  * tun.c: tun_addaddr: Fix segfault and wrong usage of tun_nlattr
+  * Set tun_addaddr ipv agnostic and add support for ipv6
+  * ggsn: Add 'ipv6 link-local' vty cmd
+  * ggsn_vty.c: Print ipv6 link-local cmd when writing config to file
+  * gtp.c: Fix trailing whitespace
+  * gtp.c: Determine GTP version from header
+  * gtp.c: Log unsupported GTP version number
+  * gtp/pdp: Fix trailing whitespace
+  * gtp/pdp: Remove unused APIs pdp_ntoeua pdp_euaton
+  * gtp.c: gtp_gpdu_ind: Convert ifelse to switch statement
+  * gtp.c: gtp_gpdu_ind: Early return to avoid use of uninitialized var
+  * gtp/gtp.c: Remove unused function char2ul_t
+  * gtp/gtp.c: Mark non exported functions as static
+  * gtp/gtp.c: Use uint8_t for version param in static functions
+  * ggsn: encaps_tun: Avoid forwarding packet if EUA is unassigned, fix crash
+  * ggsn: Validate packet src addr from MS
+  * ggsn: Parse PCO_IPCP
+  * ggsn: Parse PCO_IPCP for IPv4v6 pdp ctx
+  * ggsn: Print all addresses on successful pdp ctx creation
+  * ggsn.c: cb_tun_ind: Convert ifelse to switch statement
+  * ggsn.c: cb_tun_ind: log dst addr of packet without pdp ctx
+  * ggsn.c: cb_tun_ind: Don't drop packets targeting pdp ctx ll addr
+  * sgsnemu: Fix bad ptr during context deallocation
+  * sgsnemu: listen param is a host, not an interface
+  * use osmo_init_logging2
+
+  [ Max ]
+  * Log APN and tun names for packets
+  * Enable sanitize for CI tests
+  * Fix stow-enabled jenkins build failure
+  * Add GTP message names
+
+  [ Viktor Tsymbalyuk ]
+  * sgsnemu: sgsnemu stopped after recieving "Request accepted" from ggsn
+  * sgsnemu: created "pinghost" and "createif" modes for mutual exclusion
+  * sgsnemu: fix: no outgoing GTP-U in "createif" mode
+
+  [ Martin Hauke ]
+  * build: Remove AC_PROG_CXX, C++ is never used
+
+  [ Stefan Sperling ]
+  * remove the -f option from osmo-ggsn.service
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Thu, 03 May 2018 16:05:27 +0200
+
 osmo-ggsn (1.1.0) unstable; urgency=medium
 
   * libgtp: pdp.h: Addition of new tx_gpdu_seq struct member member
