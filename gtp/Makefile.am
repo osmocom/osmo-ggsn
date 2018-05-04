@@ -1,7 +1,9 @@
 # This is _NOT_ the library release version, it's an API version.
 # Please read chapter "Library interface versions" of the libtool documentation
 # before making any modifications: https://www.gnu.org/software/libtool/manual/html_node/Versioning.html
+# If major=current-age is increased, remember to update the dh_strip line in debian/rules!
 LIBVERSION=3:0:0
+
 lib_LTLIBRARIES = libgtp.la
 
 include_HEADERS = gtp.h pdp.h gtpie.h
