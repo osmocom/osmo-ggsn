@@ -418,7 +418,7 @@ static struct ipcp_option_hdr *ipcp_contains_option(struct ipcp_hdr *ipcp, enum 
 	uint8_t *cur = ipcp->options;
 
 	/* iterate over Options and check if protocol contained */
-	while (cur + 2 <= ((uint8_t *)ipcp) + ipcp->len) {
+	while (cur + 2 <= ((uint8_t *)ipcp) + ntohs(ipcp->len)) {
 		struct ipcp_option_hdr *cur_opt = (struct ipcp_option_hdr *) cur;
 		if (cur_opt->type == opt)
 			return cur_opt;
