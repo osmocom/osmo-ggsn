@@ -403,14 +403,14 @@ struct ipcp_option_hdr {
 	uint8_t type;
 	uint8_t len;
 	uint8_t data[0];
-};
+} __attribute__ ((packed));
 
 struct ipcp_hdr {
 	uint8_t code;
 	uint8_t id;
 	uint16_t len;
 	uint8_t options[0];
-};
+} __attribute__ ((packed));
 
 /* determine if IPCP contains given option */
 static struct ipcp_option_hdr *ipcp_contains_option(struct ipcp_hdr *ipcp, enum ipcp_options opt)
