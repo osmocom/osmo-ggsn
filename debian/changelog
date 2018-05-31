@@ -1,3 +1,14 @@
+osmo-ggsn (1.2.2) unstable; urgency=medium
+
+  [ Vadim Yanitskiy ]
+  * ggsn_vty.c: fix: use CONFIG_NODE as parent by default
+
+  [ Philipp Maier ]
+  * ggsn: fix misinterpreted length field in ipcp_contains_option()
+  * ggsn: make sure ipcp_option_hdr and and ipcp_hdr are packed
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Thu, 31 May 2018 12:44:54 +0200
+
 osmo-ggsn (1.2.1) unstable; urgency=medium
 
   * debian/rules: Fix debian packaging after 1.2.0 release
