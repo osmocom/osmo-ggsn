@@ -2835,7 +2835,8 @@ int gtp_decaps0(struct gsn_t *gsn)
 			gsn->unexpect++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status,
-				    "Unexpected GTPv0 Signalling Message\n");
+				    "Unexpected GTPv0 Signalling Message '%s'\n",
+				    get_value_string(gtp_type_names, pheader->type));
 			continue;	/* Silently discard 29.60: 11.1.4 */
 		}
 
@@ -2846,7 +2847,8 @@ int gtp_decaps0(struct gsn_t *gsn)
 			gsn->unexpect++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status,
-				    "Unexpected GTPv0 Signalling Message\n");
+				    "Unexpected GTPv0 Signalling Message '%s'\n",
+				    get_value_string(gtp_type_names, pheader->type));
 			continue;	/* Silently discard 29.60: 11.1.4 */
 		}
 
@@ -3012,7 +3014,8 @@ int gtp_decaps1c(struct gsn_t *gsn)
 			gsn->unexpect++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status,
-				    "Unexpected GTPv1 Signalling Message\n");
+				    "Unexpected GTPv1 Signalling Message '%s'\n",
+				    get_value_string(gtp_type_names, pheader->type));
 			continue;	/* Silently discard 29.60: 11.1.4 */
 		}
 
@@ -3023,7 +3026,8 @@ int gtp_decaps1c(struct gsn_t *gsn)
 			gsn->unexpect++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status,
-				    "Unexpected GTPv1 Signalling Message\n");
+				    "Unexpected GTPv1 Signalling Message '%s'\n",
+				    get_value_string(gtp_type_names, pheader->type));
 			continue;	/* Silently discard 29.60: 11.1.4 */
 		}
 
