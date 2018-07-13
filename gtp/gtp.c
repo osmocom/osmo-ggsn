@@ -2553,6 +2553,9 @@ int gtp_delete_pdp_ind(struct gsn_t *gsn, int version,
 				if (linked_pdp->secondary_tei[n])
 					count++;
 			if (count <= 1) {
+				GTP_LOGPKG(LOGL_NOTICE, peer, pack, len,
+					   "Ignoring CTX DEL without teardown and count=%d\n",
+					   count);
 				return 0;	/* 29.060 7.3.5 Ignore message */
 			}
 		}
