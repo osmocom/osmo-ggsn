@@ -2830,8 +2830,7 @@ int gtp_decaps0(struct gsn_t *gsn)
 
 		if ((gsn->mode == GTP_MODE_GGSN) &&
 		    ((pheader->type == GTP_CREATE_PDP_RSP) ||
-		     (pheader->type == GTP_UPDATE_PDP_RSP) ||
-		     (pheader->type == GTP_DELETE_PDP_RSP))) {
+		     (pheader->type == GTP_UPDATE_PDP_RSP))) {
 			gsn->unexpect++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status,
@@ -2842,8 +2841,7 @@ int gtp_decaps0(struct gsn_t *gsn)
 
 		if ((gsn->mode == GTP_MODE_SGSN) &&
 		    ((pheader->type == GTP_CREATE_PDP_REQ) ||
-		     (pheader->type == GTP_UPDATE_PDP_REQ) ||
-		     (pheader->type == GTP_DELETE_PDP_REQ))) {
+		     (pheader->type == GTP_UPDATE_PDP_REQ))) {
 			gsn->unexpect++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status,
@@ -3009,8 +3007,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 
 		if ((gsn->mode == GTP_MODE_GGSN) &&
 		    ((pheader->type == GTP_CREATE_PDP_RSP) ||
-		     (pheader->type == GTP_UPDATE_PDP_RSP) ||
-		     (pheader->type == GTP_DELETE_PDP_RSP))) {
+		     (pheader->type == GTP_UPDATE_PDP_RSP))) {
 			gsn->unexpect++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status,
@@ -3021,8 +3018,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 
 		if ((gsn->mode == GTP_MODE_SGSN) &&
 		    ((pheader->type == GTP_CREATE_PDP_REQ) ||
-		     (pheader->type == GTP_UPDATE_PDP_REQ) ||
-		     (pheader->type == GTP_DELETE_PDP_REQ))) {
+		     (pheader->type == GTP_UPDATE_PDP_REQ))) {
 			gsn->unexpect++;
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status,
