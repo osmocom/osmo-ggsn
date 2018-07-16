@@ -13,6 +13,7 @@
 #define _GTP_H
 
 #include <osmocom/core/utils.h>
+#include <osmocom/core/defs.h>
 
 #define GTP_MODE_GGSN 1
 #define GTP_MODE_SGSN 2
@@ -323,7 +324,10 @@ extern int gtp_update_context(struct gsn_t *gsn, struct pdp_t *pdp,
 			      void *cbp, struct in_addr *inetaddr);
 
 extern int gtp_delete_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
-				  void *cbp, int teardown);
+				  void *cbp, int teardown)
+		OSMO_DEPRECATED("Use gtp_delete_context_req2() instead, to avoid freeing pdp ctx before reply");
+extern int gtp_delete_context_req2(struct gsn_t *gsn, struct pdp_t *pdp,
+				   void *cbp, int teardown);
 
 extern int gtp_data_req(struct gsn_t *gsn, struct pdp_t *pdp,
 			void *pack, unsigned len);

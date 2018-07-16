@@ -2337,8 +2337,59 @@ err_out:
 	return EOF;
 }
 
-/* API: Send Delete PDP Context Request */
+/* API: Deprecated. Send Delete PDP Context Request And free pdp ctx. */
 int gtp_delete_context_req(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
+			   int teardown)
+{
+	struct pdp_t *linked_pdp;
+	struct pdp_t *secondary_pdp;
+	int n;
+
+	if (pdp_getgtp1(&linked_pdp, pdp->teic_own)) {
+		LOGP(DLGTP, LOGL_ERROR,
+			"Unknown linked PDP context: %u\n", pdp->teic_own);
+		return EOF;
+	}
+
+	if (gtp_delete_context_req2(gsn, pdp, cbp, teardown) == EOF)
+		return EOF;
+
+	if (teardown) {		/* Remove all contexts */
+		for (n = 0; n < PDP_MAXNSAPI; n++) {
+			if (linked_pdp->secondary_tei[n]) {
+				if (pdp_getgtp1
+				    (&secondary_pdp,
+				     linked_pdp->secondary_tei[n])) {
+					LOGP(DLGTP, LOGL_ERROR,
+						"Unknown secondary PDP context\n");
+					return EOF;
+				}
+				if (linked_pdp != secondary_pdp) {
+					if (gsn->cb_delete_context)
+						gsn->cb_delete_context
+						    (secondary_pdp);
+					pdp_freepdp(secondary_pdp);
+				}
+			}
+		}
+		if (gsn->cb_delete_context)
+			gsn->cb_delete_context(linked_pdp);
+		pdp_freepdp(linked_pdp);
+	} else {
+		if (gsn->cb_delete_context)
+			gsn->cb_delete_context(pdp);
+		if (pdp == linked_pdp) {
+			linked_pdp->secondary_tei[pdp->nsapi & 0xf0] = 0;
+			linked_pdp->nodata = 1;
+		} else
+			pdp_freepdp(pdp);
+	}
+
+	return 0;
+}
+
+/* API: Send Delete PDP Context Request. PDP CTX shall be free'd by user at cb_conf(GTP_DELETE_PDP_RSP) */
+int gtp_delete_context_req2(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 			   int teardown)
 {
 	union gtp_packet packet;
@@ -2346,7 +2397,6 @@ int gtp_delete_context_req(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 	    get_default_gtp(pdp->version, GTP_DELETE_PDP_REQ, &packet);
 	struct in_addr addr;
 	struct pdp_t *linked_pdp;
-	struct pdp_t *secondary_pdp;
 	int n;
 	int count = 0;
 
@@ -2382,37 +2432,6 @@ int gtp_delete_context_req(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 	}
 
 	gtp_req(gsn, pdp->version, pdp, &packet, length, &addr, cbp);
-
-	if (teardown) {		/* Remove all contexts */
-		for (n = 0; n < PDP_MAXNSAPI; n++) {
-			if (linked_pdp->secondary_tei[n]) {
-				if (pdp_getgtp1
-				    (&secondary_pdp,
-				     linked_pdp->secondary_tei[n])) {
-					LOGP(DLGTP, LOGL_ERROR,
-						"Unknown secondary PDP context\n");
-					return EOF;
-				}
-				if (linked_pdp != secondary_pdp) {
-					if (gsn->cb_delete_context)
-						gsn->cb_delete_context
-						    (secondary_pdp);
-					pdp_freepdp(secondary_pdp);
-				}
-			}
-		}
-		if (gsn->cb_delete_context)
-			gsn->cb_delete_context(linked_pdp);
-		pdp_freepdp(linked_pdp);
-	} else {
-		if (gsn->cb_delete_context)
-			gsn->cb_delete_context(pdp);
-		if (pdp == linked_pdp) {
-			linked_pdp->secondary_tei[pdp->nsapi & 0xf0] = 0;
-			linked_pdp->nodata = 1;
-		} else
-			pdp_freepdp(pdp);
-	}
 
 	return 0;
 }
@@ -2573,11 +2592,24 @@ int gtp_delete_pdp_conf(struct gsn_t *gsn, int version,
 	uint8_t cause;
 	void *cbp = NULL;
 	uint8_t type = 0;
+	struct pdp_t *pdp = NULL;
 	int hlen = get_hlen(pack);
 
 	/* Remove packet from queue */
 	if (gtp_conf(gsn, version, peer, pack, len, &type, &cbp))
 		return EOF;
+
+	/* Find the context in question. It may not be available if gtp_delete_context_req
+	 * was used and as a result the PDP ctx was already freed */
+	if (pdp_getgtp1(&pdp, get_tei(pack))) {
+		gsn->err_unknownpdp++;
+		GTP_LOGPKG(LOGL_NOTICE, peer, pack, len,
+			    "Unknown PDP context: %u (expected if gtp_delete_context_req is used)\n",
+			     get_tei(pack));
+		if (gsn->cb_conf)
+			gsn->cb_conf(type, EOF, NULL, cbp);
+		return EOF;
+	}
 
 	/* Decode information elements */
 	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
@@ -2585,7 +2617,7 @@ int gtp_delete_pdp_conf(struct gsn_t *gsn, int version,
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Invalid message format\n");
 		if (gsn->cb_conf)
-			gsn->cb_conf(type, EOF, NULL, cbp);
+			gsn->cb_conf(type, EOF, pdp, cbp);
 		return EOF;
 	}
 
@@ -2595,7 +2627,7 @@ int gtp_delete_pdp_conf(struct gsn_t *gsn, int version,
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Missing mandatory information field\n");
 		if (gsn->cb_conf)
-			gsn->cb_conf(type, EOF, NULL, cbp);
+			gsn->cb_conf(type, EOF, pdp, cbp);
 		return EOF;
 	}
 
@@ -2605,13 +2637,13 @@ int gtp_delete_pdp_conf(struct gsn_t *gsn, int version,
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Unexpected cause value received: %d\n", cause);
 		if (gsn->cb_conf)
-			gsn->cb_conf(type, cause, NULL, cbp);
+			gsn->cb_conf(type, cause, pdp, cbp);
 		return EOF;
 	}
 
 	/* Callback function to notify application */
 	if (gsn->cb_conf)
-		gsn->cb_conf(type, cause, NULL, cbp);
+		gsn->cb_conf(type, cause, pdp, cbp);
 
 	return 0;
 }
