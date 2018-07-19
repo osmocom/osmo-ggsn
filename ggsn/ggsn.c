@@ -463,9 +463,9 @@ enum pco_protocols {
 };
 
 /* determine if PCO contains given protocol */
-static uint8_t *pco_contains_proto(struct ul255_t *pco, uint16_t prot, size_t prot_minlen)
+static uint8_t *pco_contains_proto(struct ul255_t *pco, size_t offset, uint16_t prot, size_t prot_minlen)
 {
-	uint8_t *cur = pco->v + 1;
+	uint8_t *cur = pco->v + 1 + offset;
 
 	/* iterate over PCO and check if protocol contained */
 	while (cur + 3 <= pco->v + pco->l) {
@@ -510,47 +510,52 @@ static void build_ipcp_pco(struct apn_ctx *apn, struct pdp_t *pdp, struct msgb *
 	uint8_t *ipcp;
 	uint16_t ipcp_len;
 	uint8_t *len1, *len2, *pco_ipcp;
-	uint8_t *start = msg->tail;
 	unsigned int len_appended;
 	ptrdiff_t consumed;
-	size_t remain;
+	size_t remain, offset = 0;
 
 	/* pco_contains_proto() returns a potentially unaligned pointer into pco_req->v (see OS#3194) */
-	if (!(pco_ipcp = pco_contains_proto(&pdp->pco_req, PCO_P_IPCP, sizeof(struct ipcp_hdr))))
-		return;
+	pco_ipcp = pco_contains_proto(&pdp->pco_req, offset, PCO_P_IPCP, sizeof(struct ipcp_hdr));
+	while (pco_ipcp) {
+		uint8_t *start = msg->tail;
 
-	ipcp = (pco_ipcp + 3);  /* 2=type + 1=len */
-	consumed = (ipcp - &pdp->pco_req.v[0]);
-	remain = sizeof(pdp->pco_req.v) - consumed;
-	ipcp_len = osmo_load16be(ipcp + 2); /* 1=code + 1=id */
-	if (remain < 0 || remain < ipcp_len)
-		return;
+		ipcp = (pco_ipcp + 3);  /* 2=type + 1=len */
+		consumed = (ipcp - &pdp->pco_req.v[0]);
+		remain = sizeof(pdp->pco_req.v) - consumed;
+		ipcp_len = osmo_load16be(ipcp + 2); /* 1=code + 1=id */
+		if (remain < 0 || remain < ipcp_len)
+			return;
 
-	/* Three byte T16L header */
-	msgb_put_u16(msg, 0x8021);	/* IPCP */
-	len1 = msgb_put(msg, 1);	/* Length of contents: delay */
+		/* Three byte T16L header */
+		msgb_put_u16(msg, 0x8021);	/* IPCP */
+		len1 = msgb_put(msg, 1);	/* Length of contents: delay */
 
-	msgb_put_u8(msg, 0x02);		/* ACK */
-	msgb_put_u8(msg, ipcp[1]);	/* ID: Needs to match request */
-	msgb_put_u8(msg, 0x00);		/* Length MSB */
-	len2 = msgb_put(msg, 1);	/* Length LSB: delay */
+		msgb_put_u8(msg, 0x02);		/* ACK */
+		msgb_put_u8(msg, ipcp[1]);	/* ID: Needs to match request */
+		msgb_put_u8(msg, 0x00);		/* Length MSB */
+		len2 = msgb_put(msg, 1);	/* Length LSB: delay */
 
-	if (dns1->len == 4 && ipcp_contains_option(ipcp, ipcp_len, IPCP_OPT_PRIMARY_DNS, 4)) {
-		msgb_put_u8(msg, 0x81);		/* DNS1 Tag */
-		msgb_put_u8(msg, 2 + dns1->len);/* DNS1 Length, incl. TL */
-		msgb_put_u32(msg, ntohl(dns1->v4.s_addr));
+		if (dns1->len == 4 && ipcp_contains_option(ipcp, ipcp_len, IPCP_OPT_PRIMARY_DNS, 4)) {
+			msgb_put_u8(msg, 0x81);		/* DNS1 Tag */
+			msgb_put_u8(msg, 2 + dns1->len);/* DNS1 Length, incl. TL */
+			msgb_put_u32(msg, ntohl(dns1->v4.s_addr));
+		}
+
+		if (dns2->len == 4 && ipcp_contains_option(ipcp, ipcp_len, IPCP_OPT_SECONDARY_DNS, 4)) {
+			msgb_put_u8(msg, 0x83);		/* DNS2 Tag */
+			msgb_put_u8(msg, 2 + dns2->len);/* DNS2 Length, incl. TL */
+			msgb_put_u32(msg, ntohl(dns2->v4.s_addr));
+		}
+
+		/* patch in length values */
+		len_appended = msg->tail - start;
+		*len1 = len_appended - 3;
+		*len2 = len_appended - 3;
+
+		offset += 3 + ipcp_len;
+		pco_ipcp = pco_contains_proto(&pdp->pco_req, offset, PCO_P_IPCP, sizeof(struct ipcp_hdr));
 	}
 
-	if (dns2->len == 4 && ipcp_contains_option(ipcp, ipcp_len, IPCP_OPT_SECONDARY_DNS, 4)) {
-		msgb_put_u8(msg, 0x83);		/* DNS2 Tag */
-		msgb_put_u8(msg, 2 + dns2->len);/* DNS2 Length, incl. TL */
-		msgb_put_u32(msg, ntohl(dns2->v4.s_addr));
-	}
-
-	/* patch in length values */
-	len_appended = msg->tail - start;
-	*len1 = len_appended - 3;
-	*len2 = len_appended - 3;
 }
 
 /* process one PCO request from a MS/UE, putting together the proper responses */
@@ -566,7 +571,7 @@ static void process_pco(struct apn_ctx *apn, struct pdp_t *pdp)
 	if (peer_v4)
 		build_ipcp_pco(apn, pdp, msg);
 
-	if (pco_contains_proto(&pdp->pco_req, PCO_P_DNS_IPv6_ADDR, 0)) {
+	if (pco_contains_proto(&pdp->pco_req, 0, PCO_P_DNS_IPv6_ADDR, 0)) {
 		for (i = 0; i < ARRAY_SIZE(apn->v6.cfg.dns); i++) {
 			struct in46_addr *i46a = &apn->v6.cfg.dns[i];
 			if (i46a->len != 16)
@@ -575,7 +580,7 @@ static void process_pco(struct apn_ctx *apn, struct pdp_t *pdp)
 		}
 	}
 
-	if (pco_contains_proto(&pdp->pco_req, PCO_P_DNS_IPv4_ADDR, 0)) {
+	if (pco_contains_proto(&pdp->pco_req, 0, PCO_P_DNS_IPv4_ADDR, 0)) {
 		for (i = 0; i < ARRAY_SIZE(apn->v4.cfg.dns); i++) {
 			struct in46_addr *i46a = &apn->v4.cfg.dns[i];
 			if (i46a->len != 4)
