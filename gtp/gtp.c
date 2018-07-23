@@ -190,10 +190,33 @@ int gtp_set_cb_conf(struct gsn_t *gsn,
 	return 0;
 }
 
+static void emit_cb_recovery(struct gsn_t *gsn, struct sockaddr_in * peer,
+			     struct pdp_t * pdp, uint8_t recovery)
+{
+	if (gsn->cb_recovery)
+		gsn->cb_recovery(peer, recovery);
+	if (gsn->cb_recovery2)
+		gsn->cb_recovery2(peer, pdp, recovery);
+}
+
 int gtp_set_cb_recovery(struct gsn_t *gsn,
 			int (*cb) (struct sockaddr_in * peer, uint8_t recovery))
 {
 	gsn->cb_recovery = cb;
+	return 0;
+}
+
+/* cb_recovery()
+ * pdp may be NULL if Recovery IE was received from a message independent
+ * of any PDP ctx (such as Echo Response), or because pdp ctx is unknown to the
+ * local setup. In case pdp is known, caller may want to keep that pdp alive to
+ * handle subsequent msg cb as this specific pdp ctx is still valid according to
+ * specs.
+ */
+int gtp_set_cb_recovery2(struct gsn_t *gsn,
+			int (*cb_recovery2) (struct sockaddr_in * peer, struct pdp_t * pdp, uint8_t recovery))
+{
+	gsn->cb_recovery2 = cb_recovery2;
 	return 0;
 }
 
@@ -977,8 +1000,7 @@ int gtp_echo_conf(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
 	if (gsn->cb_conf)
 		gsn->cb_conf(type, recovery, NULL, cbp);
 
-	if (gsn->cb_recovery)
-		gsn->cb_recovery(peer, recovery);
+	emit_cb_recovery(gsn, peer, NULL, recovery);
 
 	return 0;
 }
@@ -1310,6 +1332,8 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 	struct pdp_t pdp_buf;
 	union gtpie_member *ie[GTPIE_SIZE];
 	uint8_t recovery;
+	bool recovery_recvd = false;
+	int rc;
 
 	uint16_t seq = get_seq(pack);
 	int hlen = get_hlen(pack);
@@ -1410,8 +1434,8 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 
 	/* Recovery (optional) */
 	if (!gtpie_gettv1(ie, GTPIE_RECOVERY, 0, &recovery)) {
-		if (gsn->cb_recovery)
-			gsn->cb_recovery(peer, recovery);
+		/* we use recovery futher down after announcing new pdp ctx to user */
+		recovery_recvd = true;
 	}
 
 	/* Selection mode (conditional) */
@@ -1612,6 +1636,9 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 			/* Switch to using the old pdp context */
 			pdp = pdp_old;
 
+			if (recovery_recvd)
+				emit_cb_recovery(gsn, peer, pdp, recovery);
+
 			/* Confirm to peer that things were "successful" */
 			return gtp_create_pdp_resp(gsn, version, pdp,
 						   GTPCAUSE_ACC_REQ);
@@ -1633,13 +1660,16 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 
 	/* Callback function to validata login */
 	if (gsn->cb_create_context_ind != 0)
-		return gsn->cb_create_context_ind(pdp);
+		rc = gsn->cb_create_context_ind(pdp);
 	else {
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "No create_context_ind callback defined\n");
-		return gtp_create_pdp_resp(gsn, version, pdp,
+		rc = gtp_create_pdp_resp(gsn, version, pdp,
 					   GTPCAUSE_NOT_SUPPORTED);
 	}
+	if (recovery_recvd)
+		emit_cb_recovery(gsn, peer, pdp, recovery);
+	return rc;
 }
 
 /* Handle Create PDP Context Response */
@@ -1696,8 +1726,7 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 
 	/* Extract recovery (optional) */
 	if (!gtpie_gettv1(ie, GTPIE_RECOVERY, 0, &recovery)) {
-		if (gsn->cb_recovery)
-			gsn->cb_recovery(peer, recovery);
+		emit_cb_recovery(gsn, peer, pdp, recovery);
 	}
 
 	/* Extract protocol configuration options (optional) */
@@ -2106,8 +2135,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 
 	/* Recovery (optional) */
 	if (!gtpie_gettv1(ie, GTPIE_RECOVERY, 0, &recovery)) {
-		if (gsn->cb_recovery)
-			gsn->cb_recovery(peer, recovery);
+		emit_cb_recovery(gsn, peer, pdp, recovery);
 	}
 
 	if (version == 0) {
@@ -2267,8 +2295,7 @@ static int gtp_update_pdp_conf(struct gsn_t *gsn, uint8_t version,
 
 	/* Extract recovery (optional) */
 	if (!gtpie_gettv1(ie, GTPIE_RECOVERY, 0, &recovery)) {
-		if (gsn->cb_recovery)
-			gsn->cb_recovery(peer, recovery);
+		emit_cb_recovery(gsn, peer, pdp, recovery);
 	}
 
 	/* Check all conditional information elements */
