@@ -13,6 +13,7 @@
 #define _GTP_H
 
 #include <osmocom/core/utils.h>
+#include <osmocom/core/defs.h>
 
 #define GTP_MODE_GGSN 1
 #define GTP_MODE_SGSN 2
@@ -270,6 +271,7 @@ struct gsn_t {
 	int (*cb_conf) (int type, int cause, struct pdp_t * pdp, void *cbp);
 	int (*cb_data_ind) (struct pdp_t * pdp, void *pack, unsigned len);
 	int (*cb_recovery) (struct sockaddr_in * peer, uint8_t recovery);
+	int (*cb_recovery2) (struct sockaddr_in * peer, struct pdp_t * pdp, uint8_t recovery);
 
 	/* Counters */
 
@@ -323,7 +325,10 @@ extern int gtp_update_context(struct gsn_t *gsn, struct pdp_t *pdp,
 			      void *cbp, struct in_addr *inetaddr);
 
 extern int gtp_delete_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
-				  void *cbp, int teardown);
+				  void *cbp, int teardown)
+		OSMO_DEPRECATED("Use gtp_delete_context_req2() instead, to avoid freeing pdp ctx before reply");
+extern int gtp_delete_context_req2(struct gsn_t *gsn, struct pdp_t *pdp,
+				   void *cbp, int teardown);
 
 extern int gtp_data_req(struct gsn_t *gsn, struct pdp_t *pdp,
 			void *pack, unsigned len);
@@ -357,6 +362,11 @@ extern int gtp_set_cb_conf(struct gsn_t *gsn,
 
 int gtp_set_cb_recovery(struct gsn_t *gsn,
 			int (*cb) (struct sockaddr_in * peer,
+				   uint8_t recovery))
+	OSMO_DEPRECATED("Use gtp_set_cb_recovery2() instead, to obtain pdp ctx originating the recovery");
+int gtp_set_cb_recovery2(struct gsn_t *gsn,
+			int (*cb) (struct sockaddr_in * peer,
+				   struct pdp_t * pdp,
 				   uint8_t recovery));
 
 /* Internal functions (not part of the API */

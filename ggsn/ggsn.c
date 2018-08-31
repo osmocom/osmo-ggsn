@@ -413,16 +413,19 @@ struct ipcp_hdr {
 } __attribute__ ((packed));
 
 /* determine if IPCP contains given option */
-static struct ipcp_option_hdr *ipcp_contains_option(struct ipcp_hdr *ipcp, enum ipcp_options opt)
+static uint8_t *ipcp_contains_option(uint8_t *ipcp, size_t ipcp_len, enum ipcp_options opt, size_t opt_minlen)
 {
-	uint8_t *cur = ipcp->options;
+	uint8_t *cur_opt = ipcp + sizeof(struct ipcp_hdr);
 
 	/* iterate over Options and check if protocol contained */
-	while (cur + 2 <= ((uint8_t *)ipcp) + ntohs(ipcp->len)) {
-		struct ipcp_option_hdr *cur_opt = (struct ipcp_option_hdr *) cur;
-		if (cur_opt->type == opt)
+	while (cur_opt + 2 <= ipcp + ipcp_len) {
+		uint8_t type = cur_opt[0];
+		uint8_t len = cur_opt[1]; /* length value includes 2 bytes type/length */
+		if (len < 2)
+			return NULL;
+		if (type == opt && len >= 2 + opt_minlen)
 			return cur_opt;
-		cur += cur_opt->len;
+		cur_opt += len;
 	}
 	return NULL;
 }
@@ -460,15 +463,15 @@ enum pco_protocols {
 };
 
 /* determine if PCO contains given protocol */
-static uint8_t *pco_contains_proto(struct ul255_t *pco, uint16_t prot)
+static uint8_t *pco_contains_proto(struct ul255_t *pco, size_t offset, uint16_t prot, size_t prot_minlen)
 {
-	uint8_t *cur = pco->v + 1;
+	uint8_t *cur = pco->v + 1 + offset;
 
 	/* iterate over PCO and check if protocol contained */
 	while (cur + 3 <= pco->v + pco->l) {
 		uint16_t cur_prot = osmo_load16be(cur);
 		uint8_t cur_len = cur[2];
-		if (cur_prot == prot)
+		if (cur_prot == prot && cur_len >= prot_minlen)
 			return cur;
 		cur += cur_len + 3;
 	}
@@ -500,46 +503,59 @@ static struct ippoolm_t *pdp_get_peer_ipv(struct pdp_t *pdp, bool is_ipv6) {
 }
 
 /* construct an IPCP PCO response from request*/
-static int build_ipcp_pco(struct apn_ctx *apn, struct pdp_t *pdp, struct msgb *msg)
+static void build_ipcp_pco(struct apn_ctx *apn, struct pdp_t *pdp, struct msgb *msg)
 {
 	const struct in46_addr *dns1 = &apn->v4.cfg.dns[0];
 	const struct in46_addr *dns2 = &apn->v4.cfg.dns[1];
-	struct ipcp_hdr *ipcp;
+	uint8_t *ipcp;
+	uint16_t ipcp_len;
 	uint8_t *len1, *len2, *pco_ipcp;
-	uint8_t *start = msg->tail;
 	unsigned int len_appended;
+	ptrdiff_t consumed;
+	size_t remain, offset = 0;
 
-	if (!(pco_ipcp = pco_contains_proto(&pdp->pco_req, PCO_P_IPCP)))
-		return 0;
-	ipcp = (struct ipcp_hdr*) (pco_ipcp + 3);  /* 2=type + 1=len */
+	/* pco_contains_proto() returns a potentially unaligned pointer into pco_req->v (see OS#3194) */
+	pco_ipcp = pco_contains_proto(&pdp->pco_req, offset, PCO_P_IPCP, sizeof(struct ipcp_hdr));
+	while (pco_ipcp) {
+		uint8_t *start = msg->tail;
 
-	/* Three byte T16L header */
-	msgb_put_u16(msg, 0x8021);	/* IPCP */
-	len1 = msgb_put(msg, 1);	/* Length of contents: delay */
+		ipcp = (pco_ipcp + 3);  /* 2=type + 1=len */
+		consumed = (ipcp - &pdp->pco_req.v[0]);
+		remain = sizeof(pdp->pco_req.v) - consumed;
+		ipcp_len = osmo_load16be(ipcp + 2); /* 1=code + 1=id */
+		if (remain < 0 || remain < ipcp_len)
+			return;
 
-	msgb_put_u8(msg, 0x02);		/* ACK */
-	msgb_put_u8(msg, ipcp->id);	/* ID: Needs to match request */
-	msgb_put_u8(msg, 0x00);		/* Length MSB */
-	len2 = msgb_put(msg, 1);	/* Length LSB: delay */
+		/* Three byte T16L header */
+		msgb_put_u16(msg, 0x8021);	/* IPCP */
+		len1 = msgb_put(msg, 1);	/* Length of contents: delay */
 
-	if (dns1->len == 4 && ipcp_contains_option(ipcp, IPCP_OPT_PRIMARY_DNS)) {
-		msgb_put_u8(msg, 0x81);		/* DNS1 Tag */
-		msgb_put_u8(msg, 2 + dns1->len);/* DNS1 Length, incl. TL */
-		msgb_put_u32(msg, ntohl(dns1->v4.s_addr));
+		msgb_put_u8(msg, 0x02);		/* ACK */
+		msgb_put_u8(msg, ipcp[1]);	/* ID: Needs to match request */
+		msgb_put_u8(msg, 0x00);		/* Length MSB */
+		len2 = msgb_put(msg, 1);	/* Length LSB: delay */
+
+		if (dns1->len == 4 && ipcp_contains_option(ipcp, ipcp_len, IPCP_OPT_PRIMARY_DNS, 4)) {
+			msgb_put_u8(msg, 0x81);		/* DNS1 Tag */
+			msgb_put_u8(msg, 2 + dns1->len);/* DNS1 Length, incl. TL */
+			msgb_put_u32(msg, ntohl(dns1->v4.s_addr));
+		}
+
+		if (dns2->len == 4 && ipcp_contains_option(ipcp, ipcp_len, IPCP_OPT_SECONDARY_DNS, 4)) {
+			msgb_put_u8(msg, 0x83);		/* DNS2 Tag */
+			msgb_put_u8(msg, 2 + dns2->len);/* DNS2 Length, incl. TL */
+			msgb_put_u32(msg, ntohl(dns2->v4.s_addr));
+		}
+
+		/* patch in length values */
+		len_appended = msg->tail - start;
+		*len1 = len_appended - 3;
+		*len2 = len_appended - 3;
+
+		offset += 3 + ipcp_len;
+		pco_ipcp = pco_contains_proto(&pdp->pco_req, offset, PCO_P_IPCP, sizeof(struct ipcp_hdr));
 	}
 
-	if (dns2->len == 4 && ipcp_contains_option(ipcp, IPCP_OPT_SECONDARY_DNS)) {
-		msgb_put_u8(msg, 0x83);		/* DNS2 Tag */
-		msgb_put_u8(msg, 2 + dns2->len);/* DNS2 Length, incl. TL */
-		msgb_put_u32(msg, ntohl(dns2->v4.s_addr));
-	}
-
-	/* patch in length values */
-	len_appended = msg->tail - start;
-	*len1 = len_appended - 3;
-	*len2 = len_appended - 3;
-
-	return 0;
 }
 
 /* process one PCO request from a MS/UE, putting together the proper responses */
@@ -555,7 +571,7 @@ static void process_pco(struct apn_ctx *apn, struct pdp_t *pdp)
 	if (peer_v4)
 		build_ipcp_pco(apn, pdp, msg);
 
-	if (pco_contains_proto(&pdp->pco_req, PCO_P_DNS_IPv6_ADDR)) {
+	if (pco_contains_proto(&pdp->pco_req, 0, PCO_P_DNS_IPv6_ADDR, 0)) {
 		for (i = 0; i < ARRAY_SIZE(apn->v6.cfg.dns); i++) {
 			struct in46_addr *i46a = &apn->v6.cfg.dns[i];
 			if (i46a->len != 16)
@@ -564,7 +580,7 @@ static void process_pco(struct apn_ctx *apn, struct pdp_t *pdp)
 		}
 	}
 
-	if (pco_contains_proto(&pdp->pco_req, PCO_P_DNS_IPv4_ADDR)) {
+	if (pco_contains_proto(&pdp->pco_req, 0, PCO_P_DNS_IPv4_ADDR, 0)) {
 		for (i = 0; i < ARRAY_SIZE(apn->v4.cfg.dns); i++) {
 			struct in46_addr *i46a = &apn->v4.cfg.dns[i];
 			if (i46a->len != 4)
@@ -1111,7 +1127,8 @@ int main(int argc, char **argv)
 	if (rc < 0)
 		exit(1);
 
-	g_ctrlh = ctrl_interface_setup(NULL, OSMO_CTRL_PORT_GGSN, NULL);
+	g_ctrlh = ctrl_interface_setup_dynip(NULL, ctrl_vty_get_bind_addr(),
+					     OSMO_CTRL_PORT_GGSN, NULL);
 	if (!g_ctrlh) {
 		LOGP(DGGSN, LOGL_ERROR, "Failed to create CTRL interface.\n");
 		exit(1);
