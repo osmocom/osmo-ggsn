@@ -1,9 +1,16 @@
-osmo-ggsn (1.2.2+ow1) UNRELEASED; urgency=medium
+osmo-ggsn (1.2.2+ow2) unstable; urgency=medium
+
+  * Release version for On-Waves
+  * From commit ee44b82b967929eaf8867d967a22428972b58d0a 
+
+ -- Daniel Willmann <dwillmann@sysmocom.de>  Fri, 31 Aug 2018 18:02:47 +0200
+
+osmo-ggsn (1.2.2+ow1) unstable; urgency=medium
 
   * Release new version for On-Waves
   * commit b673d1c438488fb74abda344e563d733e5ce451a 
 
- -- Daniel Willmann <dwillmann@sysmocom.de>  Tue, 26 Jun 2018 19:11:50 +0200
+ -- Daniel Willmann <dwillmann@sysmocom.de>  Fri, 31 Aug 2018 18:02:02 +0200
 
 osmo-ggsn (1.2.2) unstable; urgency=medium
 
