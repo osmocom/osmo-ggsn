@@ -1,5 +1,5 @@
 ## Process this file with automake to produce Makefile.in
-SUBDIRS = lib gtp ggsn sgsnemu doc tests
+SUBDIRS = lib gtp ggsn sgsnemu doc contrib tests
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libgtp.pc
@@ -11,5 +11,8 @@ dist-hook:
 	echo $(VERSION) > $(distdir)/.tarball-version
 
 EXTRA_DIST = git-version-gen .version README.md README.FreeBSD README.MacOSX
+
+DISTCHECK_CONFIGURE_FLAGS = \
+	--with-systemdsystemunitdir=$$dc_install_base/$(systemdsystemunitdir)
 
 @RELMAKE@

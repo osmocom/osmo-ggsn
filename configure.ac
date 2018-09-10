@@ -38,9 +38,9 @@ AC_SUBST(EXEC_LDFLAGS)
 
 
 case "${host}" in
-  i*86-*-linux-gnu*) 
+  i*86-*-linux-gnu*)
     EXEC_LDADD="" ;;
-  *solaris*) 
+  *solaris*)
     EXEC_LDADD="-lresolv -lsocket -lnsl" ;;
 esac
 
@@ -126,7 +126,7 @@ AC_EGREP_HEADER(struct iphdr, netinet/ip.h,
 # Checks for library functions.
 AC_PROG_GCC_TRADITIONAL
 # AC_FUNC_MALLOC
-# AC_FUNC_MEMCMP 
+# AC_FUNC_MEMCMP
 AC_CHECK_FUNCS([gethostbyname inet_ntoa memset select socket strdup strerror strtol])
 AC_CHECK_FUNCS(inet_aton inet_addr, break)
 
@@ -169,6 +169,22 @@ then
 	CPPFLAGS="$CPPFLAGS $WERROR_FLAGS"
 fi
 
+# https://www.freedesktop.org/software/systemd/man/daemon.html
+AC_ARG_WITH([systemdsystemunitdir],
+     [AS_HELP_STRING([--with-systemdsystemunitdir=DIR], [Directory for systemd service files])],,
+     [with_systemdsystemunitdir=auto])
+AS_IF([test "x$with_systemdsystemunitdir" = "xyes" -o "x$with_systemdsystemunitdir" = "xauto"], [
+     def_systemdsystemunitdir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)
+
+     AS_IF([test "x$def_systemdsystemunitdir" = "x"],
+   [AS_IF([test "x$with_systemdsystemunitdir" = "xyes"],
+    [AC_MSG_ERROR([systemd support requested but pkg-config unable to query systemd package])])
+    with_systemdsystemunitdir=no],
+   [with_systemdsystemunitdir="$def_systemdsystemunitdir"])])
+AS_IF([test "x$with_systemdsystemunitdir" != "xno"],
+      [AC_SUBST([systemdsystemunitdir], [$with_systemdsystemunitdir])])
+AM_CONDITIONAL([HAVE_SYSTEMD], [test "x$with_systemdsystemunitdir" != "xno"])
+
 AC_MSG_RESULT([CFLAGS="$CFLAGS"])
 AC_MSG_RESULT([CPPFLAGS="$CPPFLAGS"])
 
@@ -181,6 +197,8 @@ AC_CONFIG_FILES([Makefile
                  intl/Makefile
                  po/Makefile
                  sgsnemu/Makefile
+                 contrib/Makefile
+                 contrib/systemd/Makefile
                  tests/Makefile
                  tests/lib/Makefile
                  tests/gtp/Makefile

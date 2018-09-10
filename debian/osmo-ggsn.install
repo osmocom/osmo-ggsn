@@ -1,3 +1,4 @@
+/lib/systemd/system/osmo-ggsn.service
 /usr/bin/osmo-ggsn
 /usr/bin/sgsnemu
 /usr/share/man/man8/*
