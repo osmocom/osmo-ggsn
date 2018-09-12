@@ -1,3 +1,8 @@
+osmoconfdir = $(sysconfdir)/osmocom
+osmoconf_DATA = osmo-ggsn.cfg
+
+EXTRA_DIST = osmo-ggsn.cfg
+
 CFG_FILES = find $(srcdir) -name '*.cfg*' | sed -e 's,^$(srcdir),,'
 
 dist-hook:

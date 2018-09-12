@@ -1,3 +1,4 @@
+/etc/osmocom/osmo-ggsn.cfg
 /lib/systemd/system/osmo-ggsn.service
 /usr/bin/osmo-ggsn
 /usr/bin/sgsnemu
