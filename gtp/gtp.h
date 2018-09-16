@@ -369,6 +369,8 @@ int gtp_set_cb_recovery2(struct gsn_t *gsn,
 				   struct pdp_t * pdp,
 				   uint8_t recovery));
 
+void gtp_clear_queues(struct gsn_t *gsn);
+
 /* Internal functions (not part of the API */
 
 extern int gtp_echo_req(struct gsn_t *gsn, int version, void *cbp,

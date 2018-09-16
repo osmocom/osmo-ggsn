@@ -496,6 +496,24 @@ static int gtp_req(struct gsn_t *gsn, uint8_t version, struct pdp_t *pdp,
 	return 0;
 }
 
+
+/**
+ * @brief clear the request and response queue. Useful for debugging to reset "some" state.
+ * @param gsn The GGSN instance
+ */
+void gtp_clear_queues(struct gsn_t *gsn)
+{
+	struct qmsg_t *qmsg;
+
+	while (!queue_getfirst(gsn->queue_req, &qmsg)) {
+		queue_freemsg(gsn->queue_req, qmsg);
+	}
+
+	while (!queue_getfirst(gsn->queue_resp, &qmsg)) {
+		queue_freemsg(gsn->queue_resp, qmsg);
+	}
+}
+
 /* gtp_conf
  * Remove signalling packet from retransmission queue.
  * return 0 on success, EOF if packet was not found */
