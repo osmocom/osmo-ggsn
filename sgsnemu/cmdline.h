@@ -242,6 +242,12 @@ extern "C" {
 				/**< @brief Name of the local network interface original value given at command line.  */
 		const char *tun_device_help;
 			       /**< @brief Name of the local network interface help description.  */
+		char *netns_arg;
+			/**< @brief Network namespace to use.  */
+		char *netns_orig;
+			/**< @brief Network namespace to use original value given at command line.  */
+		const char *netns_help;
+			  /**< @brief Network namespace to use help description.  */
 		char *pinghost_arg;
 			/**< @brief Ping remote host.  */
 		char *pinghost_orig;
@@ -355,6 +361,8 @@ extern "C" {
 				/**< @brief Whether ipdown was given.  */
 		unsigned int tun_device_given;
 					/**< @brief Whether tun-device was given.  */
+		unsigned int netns_given;
+				/**< @brief Whether netns was given.  */
 		unsigned int pinghost_given;
 				/**< @brief Whether pinghost was given.  */
 		unsigned int pingrate_given;

@@ -72,6 +72,7 @@ const char *gengetopt_args_info_help[] = {
 	"      --ipup=STRING             Script to run after link-up",
 	"      --ipdown=STRING           Script to run after link-down",
 	"      --tun-device=STRING       Name of the local network interface",
+	"      --netns=STRING            Network namespace to use",
 	"\n Mode: pinghost\n  generate ICMP payload inside G-PDU without setting up tun interface",
 	"      --pinghost=STRING         Ping remote host",
 	"      --pingrate=INT            Number of ping req per second  (default=`1')",
@@ -163,6 +164,7 @@ void clear_given(struct gengetopt_args_info *args_info)
 	args_info->ipup_given = 0;
 	args_info->ipdown_given = 0;
 	args_info->tun_device_given = 0;
+	args_info->netns_given = 0;
 	args_info->pinghost_given = 0;
 	args_info->pingrate_given = 0;
 	args_info->pingsize_given = 0;
@@ -244,6 +246,8 @@ void clear_args(struct gengetopt_args_info *args_info)
 	args_info->ipdown_orig = NULL;
 	args_info->tun_device_arg = NULL;
 	args_info->tun_device_orig = NULL;
+	args_info->netns_arg = NULL;
+	args_info->netns_orig = NULL;
 	args_info->pinghost_arg = NULL;
 	args_info->pinghost_orig = NULL;
 	args_info->pingrate_arg = 1;
@@ -300,13 +304,14 @@ void init_args_info(struct gengetopt_args_info *args_info)
 	args_info->ipup_help = gengetopt_args_info_help[35];
 	args_info->ipdown_help = gengetopt_args_info_help[36];
 	args_info->tun_device_help = gengetopt_args_info_help[37];
-	args_info->pinghost_help = gengetopt_args_info_help[39];
-	args_info->pingrate_help = gengetopt_args_info_help[40];
-	args_info->pingsize_help = gengetopt_args_info_help[41];
-	args_info->pingcount_help = gengetopt_args_info_help[42];
-	args_info->pingquiet_help = gengetopt_args_info_help[43];
-	args_info->no_tx_gpdu_seq_help = gengetopt_args_info_help[44];
-	args_info->pdp_type_help = gengetopt_args_info_help[45];
+	args_info->netns_help = gengetopt_args_info_help[38];
+	args_info->pinghost_help = gengetopt_args_info_help[40];
+	args_info->pingrate_help = gengetopt_args_info_help[41];
+	args_info->pingsize_help = gengetopt_args_info_help[42];
+	args_info->pingcount_help = gengetopt_args_info_help[43];
+	args_info->pingquiet_help = gengetopt_args_info_help[44];
+	args_info->no_tx_gpdu_seq_help = gengetopt_args_info_help[45];
+	args_info->pdp_type_help = gengetopt_args_info_help[46];
 
 }
 
@@ -432,6 +437,8 @@ static void cmdline_parser_release(struct gengetopt_args_info *args_info)
 	free_string_field(&(args_info->ipdown_orig));
 	free_string_field(&(args_info->tun_device_arg));
 	free_string_field(&(args_info->tun_device_orig));
+	free_string_field(&(args_info->netns_arg));
+	free_string_field(&(args_info->netns_orig));
 	free_string_field(&(args_info->pinghost_arg));
 	free_string_field(&(args_info->pinghost_orig));
 	free_string_field(&(args_info->pingrate_orig));
@@ -545,6 +552,8 @@ int cmdline_parser_dump(FILE * outfile, struct gengetopt_args_info *args_info)
 	if (args_info->tun_device_given)
 		write_into_file(outfile, "tun-device",
 				args_info->tun_device_orig, 0);
+	if (args_info->netns_given)
+		write_into_file(outfile, "netns", args_info->netns_orig, 0);
 	if (args_info->pinghost_given)
 		write_into_file(outfile, "pinghost", args_info->pinghost_orig,
 				0);
@@ -706,6 +715,12 @@ cmdline_parser_required2(struct gengetopt_args_info *args_info,
 	if (args_info->tun_device_given && !args_info->createif_given) {
 		fprintf(stderr,
 			"%s: '--tun-device' option depends on option 'createif'%s\n",
+			prog_name, (additional_error ? additional_error : ""));
+		error_occurred = 1;
+	}
+	if (args_info->netns_given && !args_info->createif_given) {
+		fprintf(stderr,
+			"%s: '--netns' option depends on option 'createif'%s\n",
 			prog_name, (additional_error ? additional_error : ""));
 		error_occurred = 1;
 	}
@@ -954,6 +969,7 @@ cmdline_parser_internal(int argc, char **argv,
 			{"ipup", 1, NULL, 0},
 			{"ipdown", 1, NULL, 0},
 			{"tun-device", 1, NULL, 0},
+			{"netns", 1, NULL, 0},
 			{"pinghost", 1, NULL, 0},
 			{"pingrate", 1, NULL, 0},
 			{"pingsize", 1, NULL, 0},
@@ -1494,6 +1510,22 @@ cmdline_parser_internal(int argc, char **argv,
 					goto failure;
 
 			}
+			/* Network namespace to use.  */
+			else if (strcmp
+				 (long_options[option_index].name,
+				  "netns") == 0) {
+				args_info->createif_mode_counter += 1;
+
+				if (update_arg((void *)&(args_info->netns_arg),
+					       &(args_info->netns_orig),
+					       &(args_info->netns_given),
+					       &(local_args_info.netns_given),
+					       optarg, 0, 0, ARG_STRING,
+					       check_ambiguity, override, 0, 0,
+					       "netns", '-', additional_error))
+					goto failure;
+
+			}
 			/* Ping remote host.  */
 			else if (strcmp
 				 (long_options[option_index].name,
@@ -1609,11 +1641,12 @@ cmdline_parser_internal(int argc, char **argv,
 		int createif_given[] =
 		    { args_info->createif_given, args_info->net_given,
 			args_info->defaultroute_given, args_info->ipup_given,
-			args_info->ipdown_given, args_info->tun_device_given, -1
+			args_info->ipdown_given, args_info->tun_device_given,
+			args_info->netns_given, -1
 		};
 		const char *createif_desc[] =
 		    { "--createif", "--net", "--defaultroute", "--ipup",
-			"--ipdown", "--tun-device", 0
+			"--ipdown", "--tun-device", "--netns", 0
 		};
 		int pinghost_given[] =
 		    { args_info->pinghost_given, args_info->pingrate_given,

@@ -59,6 +59,7 @@ modeoption   "defaultroute" - "Create default route"           flag   dependon="
 modeoption   "ipup"         - "Script to run after link-up"    string dependon="createif" no        mode="createif"
 modeoption   "ipdown"       - "Script to run after link-down"  string dependon="createif" no        mode="createif"
 modeoption   "tun-device"   - "Name of the local network interface" string dependon="createif" no   mode="createif"
+modeoption   "netns"        - "Network namespace to use"       string dependon="createif" no        mode="createif"
 
 modeoption   "pinghost"     - "Ping remote host"               string no                                mode="pinghost"
 modeoption   "pingrate"     - "Number of ping req per second"  int default="1" dependon="pinghost" no   mode="pinghost"

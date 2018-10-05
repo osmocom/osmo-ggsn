@@ -50,6 +50,7 @@
 #include "../lib/tun.h"
 #include "../lib/ippool.h"
 #include "../lib/syserr.h"
+#include "../lib/netns.h"
 #include "../gtp/pdp.h"
 #include "../gtp/gtp.h"
 #include "cmdline.h"
@@ -81,12 +82,16 @@ struct tun_t *tun = NULL;	/* TUN instance */
 int maxfd = 0;			/* For select() */
 int echoversion = 1;		/* First try this version */
 void *tall_sgsnemu_ctx;		/* root talloc ctx */
+#if defined(__linux__)
+int netns = -1;			/* network namespace */
+#endif
 
 /* Struct with local versions of gengetopt options */
 struct {
 	int debug;		/* Print debug messages */
 	int createif;		/* Create local network interface */
 	char *tun_dev_name;
+	char *netns;
 	struct in46_addr netaddr, destaddr, net;	/* Network interface  */
 	size_t prefixlen;
 	char *ipup, *ipdown;	/* Filename of scripts */
@@ -294,6 +299,8 @@ static int process_options(int argc, char **argv)
 		printf("createif: %d\n", args_info.createif_flag);
 		if (args_info.tun_device_arg)
 			printf("tun-device: %s\n", args_info.tun_device_arg);
+		if (args_info.netns_arg)
+			printf("netns: %s\n", args_info.netns_arg);
 		if (args_info.ipup_arg)
 			printf("ipup: %s\n", args_info.ipup_arg);
 		if (args_info.ipdown_arg)
@@ -352,6 +359,8 @@ static int process_options(int argc, char **argv)
 			printf("createif: %d\n", args_info.createif_flag);
 			if (args_info.tun_device_arg)
 				printf("tun-device: %s\n", args_info.tun_device_arg);
+			if (args_info.netns_arg)
+				printf("netns: %s\n", args_info.netns_arg);
 			if (args_info.ipup_arg)
 				printf("ipup: %s\n", args_info.ipup_arg);
 			if (args_info.ipdown_arg)
@@ -870,6 +879,7 @@ static int process_options(int argc, char **argv)
 	/* createif */
 	options.createif = args_info.createif_flag;
 	options.tun_dev_name = args_info.tun_device_arg;
+	options.netns = args_info.netns_arg;
 
 	/* net                                                          */
 	/* Store net as in_addr net and mask                            */
@@ -1313,9 +1323,22 @@ static int create_ping(void *gsn, struct pdp_t *pdp,
 
 static int delete_context(struct pdp_t *pdp)
 {
+	if (tun && options.ipdown) {
+#if defined(__linux__)
+		sigset_t oldmask;
 
-	if (tun && options.ipdown)
+		if ((options.netns)) {
+			switch_ns(netns, &oldmask);
+		}
+#endif
 		tun_runscript(tun, options.ipdown);
+
+#if defined(__linux__)
+		if ((options.netns)) {
+			restore_ns(&oldmask);
+		}
+#endif
+	}
 
 	ipdel((struct iphash_t *)pdp->peer[0]);
 	memset(pdp->peer[0], 0, sizeof(struct iphash_t));	/* To be sure */
@@ -1377,6 +1400,9 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 {
 	struct in46_addr addr;
+#if defined(__linux__)
+	sigset_t oldmask;
+#endif
 
 	struct iphash_t *iph = (struct iphash_t *)cbp;
 
@@ -1430,6 +1456,12 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 		break;
 	}
 
+#if defined(__linux__)
+	if ((options.createif) && (options.netns)) {
+		switch_ns(netns, &oldmask);
+	}
+#endif
+
 	if ((options.createif) && (!options.net.len)) {
 		size_t prefixlen = 32;
 		if (addr.len == 16)
@@ -1469,6 +1501,12 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 		free(accept_ra);
 		free(forwarding);
 	}
+
+#if defined(__linux__)
+	if ((options.createif) && (options.netns)) {
+		restore_ns(&oldmask);
+	}
+#endif
 
 	ipset(iph, &addr);
 
@@ -1543,6 +1581,9 @@ int main(int argc, char **argv)
 	struct timezone tz;	/* Used for calculating ping times */
 	struct timeval tv;
 	int diff;
+#if defined(__linux__)
+	sigset_t oldmask;
+#endif
 
 	signal(SIGTERM, signal_handler);
 	signal(SIGHUP,  signal_handler);
@@ -1551,6 +1592,10 @@ int main(int argc, char **argv)
 	tall_sgsnemu_ctx = talloc_named_const(NULL, 0, "sgsnemu");
 	msgb_talloc_ctx_init(tall_sgsnemu_ctx, 0);
 	osmo_init_logging2(tall_sgsnemu_ctx, &log_info);
+
+#if defined(__linux__)
+	init_netns();
+#endif
 
 	/* Process options given in configuration file and command line */
 	if (process_options(argc, argv))
@@ -1574,6 +1619,13 @@ int main(int argc, char **argv)
 		gtp_set_cb_data_ind(gsn, encaps_tun);
 	else
 		gtp_set_cb_data_ind(gsn, encaps_ping);
+
+#if defined(__linux__)
+	if ((options.createif) && (options.netns)) {
+		netns = get_nsfd(options.netns);
+		switch_ns(netns, &oldmask);
+	}
+#endif
 
 	if (options.createif) {
 		printf("Setting up interface\n");
@@ -1599,6 +1651,12 @@ int main(int argc, char **argv)
 		if (options.ipup)
 			tun_runscript(tun, options.ipup);
 	}
+
+#if defined(__linux__)
+	if ((options.createif) && (options.netns)) {
+		restore_ns(&oldmask);
+	}
+#endif
 
 	/* Initialise hash tables */
 	memset(&iphash, 0, sizeof(iphash));
