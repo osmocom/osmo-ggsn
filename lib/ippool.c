@@ -26,16 +26,16 @@ int ippool_printaddr(struct ippool_t *this)
 {
 	unsigned int n;
 	printf("ippool_printaddr\n");
-	printf("Firstdyn %d\n", this->firstdyn - this->member);
-	printf("Lastdyn %d\n", this->lastdyn - this->member);
-	printf("Firststat %d\n", this->firststat - this->member);
-	printf("Laststat %d\n", this->laststat - this->member);
-	printf("Listsize %d\n", this->listsize);
+	printf("Firstdyn %td\n", this->firstdyn - this->member);
+	printf("Lastdyn %td\n", this->lastdyn - this->member);
+	printf("Firststat %td\n", this->firststat - this->member);
+	printf("Laststat %td\n", this->laststat - this->member);
+	printf("Listsize %td\n", this->listsize);
 
 	for (n = 0; n < this->listsize; n++) {
 		char s[256];
 		in46a_ntop(&this->member[n].addr, s, sizeof(s));
-		printf("Unit %d inuse %d prev %d next %d addr %s\n",
+		printf("Unit %d inuse %d prev %td next %td addr %s\n",
 		       n,
 		       this->member[n].inuse,
 		       this->member[n].prev - this->member,
