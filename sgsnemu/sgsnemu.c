@@ -1373,7 +1373,7 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 
 static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 {
-	struct in46_addr addr;
+	struct in46_addr addr[2];
 
 	struct iphash_t *iph = (struct iphash_t *)cbp;
 
