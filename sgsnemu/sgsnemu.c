@@ -293,7 +293,7 @@ static int process_options(int argc, char **argv)
 		printf("timelimit: %d\n", args_info.timelimit_arg);
 		printf("createif: %d\n", args_info.createif_flag);
 		if (args_info.tun_device_arg)
-			printf("tun-device: %d\n", args_info.tun_device_arg);
+			printf("tun-device: %s\n", args_info.tun_device_arg);
 		if (args_info.ipup_arg)
 			printf("ipup: %s\n", args_info.ipup_arg);
 		if (args_info.ipdown_arg)
