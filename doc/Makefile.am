@@ -4,4 +4,5 @@ EXTRA_DIST = $(man_MANS)
 
 SUBDIRS = \
 	examples \
+	manuals \
 	$(NULL)
