@@ -79,7 +79,7 @@ static int queue_seqset(struct queue_t *queue, struct qmsg_t *qmsg,
 	if (QUEUE_DEBUG)
 		printf("Begin queue_seqset seq = %d\n", (int)seq);
 	if (QUEUE_DEBUG)
-		printf("SIZEOF PEER %d, *PEER %d\n", sizeof(peer),
+		printf("SIZEOF PEER %zu, *PEER %zu\n", sizeof(peer),
 		       sizeof(*peer));
 
 	qmsg->seq = seq;
