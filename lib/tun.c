@@ -193,7 +193,10 @@ int tun_new(struct tun_t **tun, const char *dev_name, bool use_kernel, int fd0, 
 		strncpy((*tun)->devname, ifr.ifr_name, IFNAMSIZ);
 		(*tun)->devname[IFNAMSIZ - 1] = 0;
 
-		ioctl((*tun)->fd, TUNSETNOCSUM, 1);	/* Disable checksums */
+		/* Disable checksums */
+		if (ioctl((*tun)->fd, TUNSETNOCSUM, 1) < 0) {
+			SYS_ERR(DTUN, LOGL_NOTICE, errno, "could not disable checksum on %s", (*tun)->devname);
+		}
 		return 0;
 	} else {
 		strncpy((*tun)->devname, dev_name, IFNAMSIZ);
