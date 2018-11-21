@@ -512,7 +512,15 @@ int ippool_newip(struct ippool_t *this, struct ippoolm_t **member,
 		p2->next = NULL;
 		p2->prev = NULL;
 		p2->inuse = 2;	/* Static address in use */
-		memcpy(&p2->addr, addr, sizeof(addr));
+		/* p2->addr.len and addr->len already match (see above). */
+		if (p2->addr.len == sizeof(struct in_addr))
+			p2->addr.v4 = addr->v4;
+		else if (p2->addr.len == sizeof(struct in6_addr))
+			p2->addr.v6 = addr->v6;
+		else {
+			SYS_ERR(DIP, LOGL_ERROR, 0, "MS requested unsupported PDP context type");
+			return -GTPCAUSE_UNKNOWN_PDP;
+		}
 		*member = p2;
 		(void)ippool_hashadd(this, *member);
 		if (0)
