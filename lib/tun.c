@@ -68,10 +68,14 @@ static int tun_setaddr4(struct tun_t *this, struct in_addr *addr,
 	if (rc < 0)
 		return rc;
 
-	if (addr)
-		this->addr.s_addr = addr->s_addr;
-	if (dstaddr)
-		this->dstaddr.s_addr = dstaddr->s_addr;
+	if (addr) {
+		this->addr.len = sizeof(struct in_addr);
+		this->addr.v4.s_addr = addr->s_addr;
+	}
+	if (dstaddr) {
+		this->dstaddr.len = sizeof(struct in_addr);
+		this->dstaddr.v4.s_addr = dstaddr->s_addr;
+	}
 	if (netmask)
 		this->netmask.s_addr = netmask->s_addr;
 	this->addrs++;
@@ -89,8 +93,10 @@ static int tun_setaddr6(struct tun_t *this, struct in6_addr *addr, struct in6_ad
 	rc = netdev_setaddr6(this->devname, addr, dstaddr, prefixlen);
 	if (rc < 0)
 		return rc;
-	if (dstaddr)
-		memcpy(&this->dstaddr, dstaddr, sizeof(*dstaddr));
+	if (dstaddr) {
+		this->dstaddr.len = sizeof(*dstaddr);
+		memcpy(&this->dstaddr.v6, dstaddr, sizeof(*dstaddr));
+	}
 	this->addrs++;
 #if defined(__FreeBSD__) || defined (__APPLE__)
 	this->routes = 1;
@@ -270,7 +276,7 @@ int tun_free(struct tun_t *tun)
 {
 
 	if (tun->routes) {
-		netdev_delroute(&tun->dstaddr, &tun->addr, &tun->netmask);
+		netdev_delroute(&tun->dstaddr.v4, &tun->addr.v4, &tun->netmask);
 	}
 
 	if (tun->fd >= 0) {
@@ -323,7 +329,7 @@ int tun_runscript(struct tun_t *tun, char *script)
 	char smask[TUN_ADDRSIZE];
 	int rc;
 
-	strncpy(snet, inet_ntoa(tun->addr), sizeof(snet));
+	strncpy(snet, inet_ntoa(tun->addr.v4), sizeof(snet));
 	snet[sizeof(snet) - 1] = 0;
 	strncpy(smask, inet_ntoa(tun->netmask), sizeof(smask));
 	smask[sizeof(smask) - 1] = 0;

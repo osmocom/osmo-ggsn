@@ -31,8 +31,8 @@
 
 struct tun_t {
 	int fd;			/* File descriptor to tun interface */
-	struct in_addr addr;
-	struct in_addr dstaddr;
+	struct in46_addr addr;
+	struct in46_addr dstaddr;
 	struct in_addr netmask;
 	int addrs;		/* Number of allocated IP addresses */
 	int routes;		/* One if we allocated an automatic route */
