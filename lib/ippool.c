@@ -202,7 +202,7 @@ int ippool_new(struct ippool_t **this, const struct in46_prefix *dyn, const stru
 	/* Parse only first instance of pool for now */
 
 	int i;
-	struct in46_addr addr;
+	struct in46_addr addr = { 0 };
 	size_t addrprefixlen;
 	struct in46_addr stataddr;
 	size_t stataddrprefixlen;
