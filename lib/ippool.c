@@ -30,7 +30,7 @@ int ippool_printaddr(struct ippool_t *this)
 	printf("Lastdyn %td\n", this->lastdyn - this->member);
 	printf("Firststat %td\n", this->firststat - this->member);
 	printf("Laststat %td\n", this->laststat - this->member);
-	printf("Listsize %td\n", this->listsize);
+	printf("Listsize %u\n", this->listsize);
 
 	for (n = 0; n < this->listsize; n++) {
 		char s[256];
