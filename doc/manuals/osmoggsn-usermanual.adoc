@@ -1,0 +1,29 @@
+OsmoGGSN User Manual
+====================
+Harald Welte <hwelte@sysmocom.de>
+
+
+include::../common/chapters/preface.adoc[]
+
+include::chapters/overview.adoc[]
+
+include::chapters/running.adoc[]
+
+//include::chapters/control.adoc[]
+
+include::../common/chapters/vty.adoc[]
+
+include::../common/chapters/logging.adoc[]
+
+
+include::chapters/configuration.adoc[]
+
+include::../common/chapters/control_if.adoc[]
+
+include::../common/chapters/port_numbers.adoc[]
+
+include::../common/chapters/bibliography.adoc[]
+
+include::../common/chapters/glossary.adoc[]
+
+include::../common/chapters/gfdl.adoc[]
