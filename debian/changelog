@@ -1,3 +1,64 @@
+osmo-ggsn (1.3.0) unstable; urgency=medium
+
+  [ Pau Espin Pedrol ]
+  * ggsn: ctrl iface: listen on IP configured by VTY
+  * gtp: Log type name of unexpected signalling message
+  * gtp: Allow recv DEL CTX REQ in sgsn and DEL CTX RSP in ggsn
+  * gtp: Log ignore CTX DEL REQ due to no teardown and only 1 ctx active
+  * gtp: Add new API to avoid freeing pdp contexts during DEL CTX REQ
+  * gtp: Add new replacement cb_recovery2 for cb_recovery
+  * Install systemd services with autotools
+  * Install sample cfg file to /etc/osmocom
+
+  [ Stefan Sperling ]
+  * fix unaligned access in build_ipcp_pco()
+  * fix support for multiple IPCP in PDP protocol configuration options
+  * check ioctl() call return value in tun_new()
+  * fix allocation of ippool's hash table
+  * replace bogus memcpy() call in ippool_newip()
+  * initialize local variable addr in ippool_new()
+  * fix format string error in ippool_printaddr()
+  * fix a format string directives in queue_seqset()
+  * properly store IPv6 addresses in struct tun_t
+
+  [ Harald Welte ]
+  * debian/rules: Don't overwrite .tarball-version
+  * osmo-ggsn.cfg: Ensure well-formed config file example
+  * sgsnemu: Fix printing of tun device name
+  * ippool.c: Use "%td" format string for ptrdiff_t
+  * initial version of OsmoGGSN user manual
+  * OsmoGGSN: Add VTY reference manual
+  * GGSN: Document how 'ip tuntap' is used for non-root; call netdev 'apn0'
+  * vty-ref: Update URI of docbook 5.0 schema
+
+  [ Alexander Couzens ]
+  * libgtp: implement gtp_clear_queues to clear req/resp queue
+
+  [ Neels Hofmeyr ]
+  * Importing history from osmo-gsm-manuals.git
+  * refactor Makefile build rules, don't use the FORCE
+  * GGSN: don't say 'NITB'
+  * OsmoGGSN: more info on non-root operation / tun creation
+  * OsmoGGSN: multiple instances: mention GTP port
+  * OsmoGGSN: add Routing section for IP forward and masquerading
+  * OsmoGGSN: typo: priveleges
+  * OsmoGGSN VTY ref: prep: convert newlines to unix
+  * OsmoGGSN vty: update VTY reference
+  * OsmoGGSN: fix VTY additions' node IDs
+  * OsmoGGSN: update vty reference
+  * ggsn: update vty reference
+
+  [ Max ]
+  * Expand OsmoGGSN manual
+
+  [ Oliver Smith ]
+  * build manuals moved here from osmo-gsm-manuals.git
+  * Fix DISTCHECK_CONFIGURE_FLAGS override
+  * contrib/jenkins.sh: build and publish manuals
+  * contrib: fix makedistcheck with disabled systemd
+
+ -- Harald Welte <laforge@gnumonks.org>  Sun, 20 Jan 2019 21:34:22 +0100
+
 osmo-ggsn (1.2.2) unstable; urgency=medium
 
   [ Vadim Yanitskiy ]

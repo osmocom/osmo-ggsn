@@ -16,7 +16,7 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
 override_dh_strip:
 	dh_strip -posmo-ggsn --dbg-package=osmo-ggsn-dbg
-	dh_strip -plibgtp3 --dbg-package=libgtp-dbg
+	dh_strip -plibgtp4 --dbg-package=libgtp-dbg
 
 override_dh_auto_configure:
 	dh_auto_configure -- --with-systemdsystemunitdir=/lib/systemd/system

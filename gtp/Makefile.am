@@ -2,7 +2,7 @@
 # Please read chapter "Library interface versions" of the libtool documentation
 # before making any modifications: https://www.gnu.org/software/libtool/manual/html_node/Versioning.html
 # If major=current-age is increased, remember to update the dh_strip line in debian/rules!
-LIBVERSION=3:0:0
+LIBVERSION=4:0:0
 
 lib_LTLIBRARIES = libgtp.la
 
