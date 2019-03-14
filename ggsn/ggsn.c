@@ -1158,5 +1158,5 @@ int main(int argc, char **argv)
 	llist_for_each_entry(ggsn, &g_ggsn_list, list)
 		ggsn_stop(ggsn);
 
-	return 1;
+	return 0;
 }
