@@ -949,13 +949,16 @@ static int process_options(int argc, char **argv)
 		options.pdp_type = PDP_EUA_TYPE_v6;
 	else if (!strcmp(args_info.pdp_type_arg, "v4"))
 		options.pdp_type = PDP_EUA_TYPE_v4;
+	else if (!strcmp(args_info.pdp_type_arg, "v4v6"))
+		options.pdp_type = PDP_EUA_TYPE_v4v6;
 	else {
 		SYS_ERR(DSGSN, LOGL_ERROR, 0, "Unsupported/unknown PDP Type '%s'\n",
 			args_info.pdp_type_arg);
 		return -1;
 	}
 
-	if (options.pingcount && options.pdp_type != PDP_EUA_TYPE_v4) {
+	if (options.pingcount && (options.pdp_type != PDP_EUA_TYPE_v4 &&
+				  options.pdp_type != PDP_EUA_TYPE_v4v6)) {
 		SYS_ERR(DSGSN, LOGL_ERROR, 0, "built-in ping only works with IPv4, use tun-device");
 		return -1;
 	}
@@ -1483,6 +1486,12 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 			prefixlen = 64;
 		/* printf("Setting up interface and routing\n"); */
 		tun_addaddr(tun, &addr, &addr, prefixlen);
+
+#if defined(__linux__)
+		if (addr.len == 16)
+			tun_settoken(tun, &addr);
+#endif
+
 		if (options.defaultroute) {
 			struct in_addr rm;
 			rm.s_addr = 0;
@@ -1494,7 +1503,8 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 
 	/* now that ip-up has been executed, check if we are configured to
 	 * accept router advertisements */
-	if (options.createif && options.pdp_type == PDP_EUA_TYPE_v6) {
+	if (options.createif && (options.pdp_type == PDP_EUA_TYPE_v6 ||
+				 options.pdp_type == PDP_EUA_TYPE_v4v6)) {
 		char *accept_ra, *forwarding;
 
 		accept_ra = proc_ipv6_conf_read(tun->devname, "accept_ra");

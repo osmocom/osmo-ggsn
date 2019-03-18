@@ -59,4 +59,8 @@ extern int tun_runscript(struct tun_t *tun, char *script);
 int tun_ip_local_get(const struct tun_t *tun, struct in46_prefix *prefix_list,
 		     size_t prefix_size, int flags);
 
+#if defined(__linux__)
+extern int tun_settoken(struct tun_t *tun, struct in46_addr *addr);
+#endif
+
 #endif /* !_TUN_H */

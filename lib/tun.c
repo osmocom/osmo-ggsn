@@ -364,3 +364,35 @@ int tun_ip_local_get(const struct tun_t *tun, struct in46_prefix *prefix_list, s
 {
 	return netdev_ip_local_get(tun->devname, prefix_list, prefix_size, flags);
 }
+
+#if defined(__linux__)
+
+int tun_settoken(struct tun_t *tun, struct in46_addr *addr)
+{
+	struct in46_addr token;
+	char buf[2048];
+	int rc;
+
+	rc = system("/sbin/ip token list");
+
+	token = *addr;
+	memset(token.v6.s6_addr, 0, 8);
+
+	printf("TUN Interface Addr: %s\n", in46a_ntoa(addr));
+	printf("TUN Interface token: %s\n", in46a_ntoa(&token));
+
+	/* system("ip token set ::1/64 dev tun0"); */
+	snprintf(buf, sizeof(buf), "/sbin/ip token set %s/64 dev %s",
+		 in46a_ntoa(&token), tun->devname);
+	buf[sizeof(buf) - 1] = 0;
+	printf("Exec TUN CMD: %s\n", buf);
+	rc = system(buf);
+	if (rc == -1) {
+		SYS_ERR(DTUN, LOGL_ERROR, errno,
+			"Error executing command %s", buf);
+		return -1;
+	}
+	return 0;
+}
+
+#endif

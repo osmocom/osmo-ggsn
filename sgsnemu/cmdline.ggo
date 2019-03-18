@@ -68,4 +68,4 @@ modeoption   "pingcount"    - "Number of ping req to send"     int default="0" d
 modeoption   "pingquiet"    - "Do not print ping packet info"  flag dependon="pinghost" off             mode="pinghost"
 
 option  "no-tx-gpdu-seq" - "Don't transmit G-PDU sequence nums"   flag    off
-option  "pdp-type"     t "PDP Type"                       string default="v4" no typestr="(v4|v6)"
+option  "pdp-type"     t "PDP Type"                       string default="v4" no typestr="(v4|v6|v4v6)"

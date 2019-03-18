@@ -80,7 +80,7 @@ const char *gengetopt_args_info_help[] = {
 	"      --pingcount=INT           Number of ping req to send  (default=`0')",
 	"      --pingquiet               Do not print ping packet info  (default=off)",
 	"      --no-tx-gpdu-seq          Don't transmit G-PDU sequence nums\n                                  (default=off)",
-	"  -t, --pdp-type=(v4|v6)        PDP Type  (default=`v4')",
+	"  -t, --pdp-type=(v4|v6|v4v6)   PDP Type  (default=`v4')",
 	0
 };
 
