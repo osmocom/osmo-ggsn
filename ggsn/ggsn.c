@@ -462,18 +462,23 @@ enum pco_protocols {
 	PCO_P_REL_DATA_SVC	= 0x0018,
 };
 
+struct pco_element {
+	uint16_t protocol_id;	/* network byte order */
+	uint8_t length;		/* length of data below */
+	uint8_t data[0];
+} __attribute__((packed));
+
 /* determine if PCO contains given protocol */
 static uint8_t *pco_contains_proto(struct ul255_t *pco, size_t offset, uint16_t prot, size_t prot_minlen)
 {
-	uint8_t *cur = pco->v + 1 + offset;
+	uint8_t *cur = pco->v + 1 /*length*/ + offset;
 
 	/* iterate over PCO and check if protocol contained */
-	while (cur + 3 <= pco->v + pco->l) {
-		uint16_t cur_prot = osmo_load16be(cur);
-		uint8_t cur_len = cur[2];
-		if (cur_prot == prot && cur_len >= prot_minlen)
+	while (cur + sizeof(struct pco_element) <= pco->v + pco->l) {
+		const struct pco_element *elem = (const struct pco_element *)cur;
+		if (ntohs(elem->protocol_id) == prot && elem->length >= prot_minlen)
 			return cur;
-		cur += cur_len + 3;
+		cur += elem->length + sizeof(struct pco_element);
 	}
 	return NULL;
 }
