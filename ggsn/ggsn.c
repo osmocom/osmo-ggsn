@@ -413,9 +413,10 @@ struct ipcp_hdr {
 } __attribute__ ((packed));
 
 /* determine if IPCP contains given option */
-static uint8_t *ipcp_contains_option(uint8_t *ipcp, size_t ipcp_len, enum ipcp_options opt, size_t opt_minlen)
+static const uint8_t *ipcp_contains_option(const uint8_t *ipcp, size_t ipcp_len,
+					   enum ipcp_options opt, size_t opt_minlen)
 {
-	uint8_t *cur_opt = ipcp + sizeof(struct ipcp_hdr);
+	const uint8_t *cur_opt = ipcp + sizeof(struct ipcp_hdr);
 
 	/* iterate over Options and check if protocol contained */
 	while (cur_opt + 2 <= ipcp + ipcp_len) {
@@ -469,9 +470,10 @@ struct pco_element {
 } __attribute__((packed));
 
 /* determine if PCO contains given protocol */
-static uint8_t *pco_contains_proto(struct ul255_t *pco, size_t offset, uint16_t prot, size_t prot_minlen)
+static const uint8_t *pco_contains_proto(const struct ul255_t *pco, size_t offset,
+					 uint16_t prot, size_t prot_minlen)
 {
-	uint8_t *cur = pco->v + 1 /*length*/ + offset;
+	const uint8_t *cur = pco->v + 1 /*length*/ + offset;
 
 	/* iterate over PCO and check if protocol contained */
 	while (cur + sizeof(struct pco_element) <= pco->v + pco->l) {
@@ -512,9 +514,9 @@ static void build_ipcp_pco(const struct apn_ctx *apn, struct pdp_t *pdp, struct 
 {
 	const struct in46_addr *dns1 = &apn->v4.cfg.dns[0];
 	const struct in46_addr *dns2 = &apn->v4.cfg.dns[1];
-	uint8_t *ipcp;
+	const uint8_t *ipcp, *pco_ipcp;
 	uint16_t ipcp_len;
-	uint8_t *len1, *len2, *pco_ipcp;
+	uint8_t *len1, *len2;
 	unsigned int len_appended;
 	ptrdiff_t consumed;
 	size_t remain, offset = 0;
