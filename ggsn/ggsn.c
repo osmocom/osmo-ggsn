@@ -503,7 +503,7 @@ static struct ippoolm_t *pdp_get_peer_ipv(struct pdp_t *pdp, bool is_ipv6) {
 }
 
 /* construct an IPCP PCO response from request*/
-static void build_ipcp_pco(struct apn_ctx *apn, struct pdp_t *pdp, struct msgb *msg)
+static void build_ipcp_pco(const struct apn_ctx *apn, struct pdp_t *pdp, struct msgb *msg)
 {
 	const struct in46_addr *dns1 = &apn->v4.cfg.dns[0];
 	const struct in46_addr *dns2 = &apn->v4.cfg.dns[1];
@@ -559,7 +559,7 @@ static void build_ipcp_pco(struct apn_ctx *apn, struct pdp_t *pdp, struct msgb *
 }
 
 /* process one PCO request from a MS/UE, putting together the proper responses */
-static void process_pco(struct apn_ctx *apn, struct pdp_t *pdp)
+static void process_pco(const struct apn_ctx *apn, struct pdp_t *pdp)
 {
 	struct msgb *msg = msgb_alloc(256, "PCO");
 	struct ippoolm_t *peer_v4 = pdp_get_peer_ipv(pdp, false);
@@ -573,7 +573,7 @@ static void process_pco(struct apn_ctx *apn, struct pdp_t *pdp)
 
 	if (pco_contains_proto(&pdp->pco_req, 0, PCO_P_DNS_IPv6_ADDR, 0)) {
 		for (i = 0; i < ARRAY_SIZE(apn->v6.cfg.dns); i++) {
-			struct in46_addr *i46a = &apn->v6.cfg.dns[i];
+			const struct in46_addr *i46a = &apn->v6.cfg.dns[i];
 			if (i46a->len != 16)
 				continue;
 			msgb_t16lv_put(msg, PCO_P_DNS_IPv6_ADDR, i46a->len, i46a->v6.s6_addr);
@@ -582,7 +582,7 @@ static void process_pco(struct apn_ctx *apn, struct pdp_t *pdp)
 
 	if (pco_contains_proto(&pdp->pco_req, 0, PCO_P_DNS_IPv4_ADDR, 0)) {
 		for (i = 0; i < ARRAY_SIZE(apn->v4.cfg.dns); i++) {
-			struct in46_addr *i46a = &apn->v4.cfg.dns[i];
+			const struct in46_addr *i46a = &apn->v4.cfg.dns[i];
 			if (i46a->len != 4)
 				continue;
 			msgb_t16lv_put(msg, PCO_P_DNS_IPv4_ADDR, i46a->len, (uint8_t *)&i46a->v4);
