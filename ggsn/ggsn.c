@@ -471,8 +471,8 @@ struct pco_element {
 } __attribute__((packed));
 
 /* determine if PCO contains given protocol */
-static const uint8_t *pco_contains_proto(const struct ul255_t *pco, size_t offset,
-					 uint16_t prot, size_t prot_minlen)
+static const struct pco_element *pco_contains_proto(const struct ul255_t *pco, size_t offset,
+						    uint16_t prot, size_t prot_minlen)
 {
 	const uint8_t *cur = pco->v + 1 /*length*/ + offset;
 
@@ -480,7 +480,7 @@ static const uint8_t *pco_contains_proto(const struct ul255_t *pco, size_t offse
 	while (cur + sizeof(struct pco_element) <= pco->v + pco->l) {
 		const struct pco_element *elem = (const struct pco_element *)cur;
 		if (ntohs(elem->protocol_id) == prot && elem->length >= prot_minlen)
-			return cur;
+			return elem;
 		cur += elem->length + sizeof(struct pco_element);
 	}
 	return NULL;
@@ -515,7 +515,8 @@ static void build_ipcp_pco(const struct apn_ctx *apn, struct pdp_t *pdp, struct 
 {
 	const struct in46_addr *dns1 = &apn->v4.cfg.dns[0];
 	const struct in46_addr *dns2 = &apn->v4.cfg.dns[1];
-	const uint8_t *ipcp, *pco_ipcp;
+	const struct pco_element *pco_ipcp;
+	const uint8_t *ipcp;
 	uint16_t ipcp_len;
 	uint8_t *len1, *len2;
 	unsigned int len_appended;
@@ -527,7 +528,7 @@ static void build_ipcp_pco(const struct apn_ctx *apn, struct pdp_t *pdp, struct 
 	while (pco_ipcp) {
 		uint8_t *start = msg->tail;
 
-		ipcp = (pco_ipcp + 3);  /* 2=type + 1=len */
+		ipcp = pco_ipcp->data;
 		consumed = (ipcp - &pdp->pco_req.v[0]);
 		remain = sizeof(pdp->pco_req.v) - consumed;
 		ipcp_len = osmo_load16be(ipcp + 2); /* 1=code + 1=id */
@@ -560,7 +561,7 @@ static void build_ipcp_pco(const struct apn_ctx *apn, struct pdp_t *pdp, struct 
 		*len1 = len_appended - 3;
 		*len2 = len_appended - 3;
 
-		offset += 3 + ipcp_len;
+		offset += sizeof(pco_ipcp) + pco_ipcp->length;
 		pco_ipcp = pco_contains_proto(&pdp->pco_req, offset, PCO_P_IPCP, sizeof(struct ipcp_hdr));
 	}
 
