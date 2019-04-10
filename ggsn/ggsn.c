@@ -419,14 +419,15 @@ static const uint8_t *ipcp_contains_option(const uint8_t *ipcp, size_t ipcp_len,
 	const uint8_t *cur_opt = ipcp + sizeof(struct ipcp_hdr);
 
 	/* iterate over Options and check if protocol contained */
-	while (cur_opt + 2 <= ipcp + ipcp_len) {
-		uint8_t type = cur_opt[0];
-		uint8_t len = cur_opt[1]; /* length value includes 2 bytes type/length */
-		if (len < 2)
+	while (cur_opt + sizeof(struct ipcp_option_hdr) <= ipcp + ipcp_len) {
+		const struct ipcp_option_hdr *cur_opt_hdr = (const struct ipcp_option_hdr *)cur_opt;
+		/* length value includes 2 bytes type/length */
+		if (cur_opt_hdr->len < sizeof(struct ipcp_option_hdr))
 			return NULL;
-		if (type == opt && len >= 2 + opt_minlen)
+		if (cur_opt_hdr->type == opt &&
+		    cur_opt_hdr->len >= sizeof(struct ipcp_option_hdr) + opt_minlen)
 			return cur_opt;
-		cur_opt += len;
+		cur_opt += cur_opt_hdr->len;
 	}
 	return NULL;
 }
