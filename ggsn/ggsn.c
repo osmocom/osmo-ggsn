@@ -1,7 +1,7 @@
 /*
  * OsmoGGSN - Gateway GPRS Support Node
  * Copyright (C) 2002, 2003, 2004 Mondru AB.
- * Copyright (C) 2017 by Harald Welte <laforge@gnumonks.org>
+ * Copyright (C) 2017-2019 by Harald Welte <laforge@gnumonks.org>
  *
  * The contents of this file may be used under the terms of the GNU
  * General Public License Version 2, provided that the above copyright
@@ -47,6 +47,7 @@
 #include <osmocom/core/stats.h>
 #include <osmocom/core/rate_ctr.h>
 #include <osmocom/core/timer.h>
+#include <osmocom/core/utils.h>
 #include <osmocom/ctrl/control_if.h>
 #include <osmocom/ctrl/control_cmd.h>
 #include <osmocom/ctrl/control_vty.h>
@@ -499,6 +500,87 @@ static struct ippoolm_t *pdp_get_peer_ipv(struct pdp_t *pdp, bool is_ipv6) {
 	return NULL;
 }
 
+/* RFC 1334, section 3.2. Packet Format */
+struct pap_element {
+	uint8_t code;
+	uint8_t id;
+	uint16_t len; /* length including header */
+	uint8_t data[0];
+} __attribute__((packed));
+
+enum pap_code {
+	PAP_CODE_AUTH_REQ = 1,
+	PAP_CODE_AUTH_ACK = 2,
+	PAP_CODE_AUTH_NAK = 3,
+};
+
+static const char *pap_welcome = "Welcome to OsmoGGSN " PACKAGE_VERSION;
+
+/* Handle PAP protocol according to RFC 1334 */
+static void process_pco_element_pap(const struct pco_element *pco_in, struct msgb *resp,
+				    const struct apn_ctx *apn, struct pdp_t *pdp)
+{
+	const struct pap_element *pap_in = (const struct pap_element *) pco_in->data;
+	uint16_t pap_in_len;
+	uint8_t peer_id_len;
+	const uint8_t *peer_id;
+	unsigned int pap_welcome_len;
+	uint8_t pap_out_size;
+	struct pap_element *pap_out;
+
+	if (pco_in->length < sizeof(struct pap_element))
+		goto ret_broken;
+
+	pap_in_len = osmo_load16be(&pap_in->len);
+	if (pco_in->length < pap_in_len)
+		goto ret_broken;
+	/* "pco_in->length > pap_in_len" is allowed: RFC1334 2.2 states:
+	   "Octets outside the range of the Length field should be treated as
+	   Data Link Layer padding and should be ignored on reception."
+	 */
+
+	switch (pap_in->code) {
+	case PAP_CODE_AUTH_REQ:
+		if (pap_in_len < sizeof(struct pap_element) + 1)
+			goto ret_broken_auth;
+		peer_id_len = pap_in->data[0];
+		if (pap_in_len < sizeof(struct pap_element) + 1 + peer_id_len)
+			goto ret_broken_auth;
+		peer_id = &pap_in->data[1];
+		LOGPPDP(LOGL_DEBUG, pdp, "PCO PAP PeerId = %s, ACKing\n",
+			osmo_quote_str((const char *)peer_id, peer_id_len));
+		/* Password-Length + Password following here, but we don't care */
+
+		/* Prepare response, we ACK all of them: */
+		pap_welcome_len = strlen(pap_welcome);
+		/* +1: Length field of pap_welcome Message */
+		pap_out_size = sizeof(struct pap_element) + 1 + pap_welcome_len;
+		pap_out = alloca(pap_out_size);
+		pap_out->code = PAP_CODE_AUTH_ACK;
+		pap_out->id = pap_in->id;
+		pap_out->len = htons(pap_out_size);
+		pap_out->data[0] = pap_welcome_len;
+		memcpy(pap_out->data+1, pap_welcome, pap_welcome_len);
+		msgb_t16lv_put(resp, PCO_P_PAP, pap_out_size, (uint8_t *) pap_out);
+		break;
+	case PAP_CODE_AUTH_ACK:
+	case PAP_CODE_AUTH_NAK:
+	default:
+		LOGPPDP(LOGL_NOTICE, pdp, "Unsupported PAP PCO Code %u, ignoring\n", pap_in->code);
+		break;
+	}
+	return;
+
+ret_broken_auth:
+	LOGPPDP(LOGL_NOTICE, pdp, "Invalid PAP AuthenticateReq: %s, ignoring\n",
+		osmo_hexdump_nospc((const uint8_t *)pco_in, pco_in->length));
+	return;
+
+ret_broken:
+	LOGPPDP(LOGL_NOTICE, pdp, "Invalid PAP PCO Length: %s, ignoring\n",
+		osmo_hexdump_nospc((const uint8_t *)pco_in, pco_in->length));
+}
+
 static void process_pco_element_ipcp(const struct pco_element *pco_elem, struct msgb *resp,
 				     const struct apn_ctx *apn, struct pdp_t *pdp)
 {
@@ -580,6 +662,9 @@ static void process_pco_element(const struct pco_element *pco_elem, struct msgb 
 				const struct apn_ctx *apn, struct pdp_t *pdp)
 {
 	switch (ntohs(pco_elem->protocol_id)) {
+	case PCO_P_PAP:
+		process_pco_element_pap(pco_elem, resp, apn, pdp);
+		break;
 	case PCO_P_IPCP:
 		process_pco_element_ipcp(pco_elem, resp, apn, pdp);
 		break;
