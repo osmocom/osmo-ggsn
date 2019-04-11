@@ -595,15 +595,19 @@ static void process_pco_element_ipcp(const struct pco_element *pco_elem, struct 
 	ptrdiff_t consumed;
 	size_t remain;
 
-	if (!peer_v4)
+	if (!peer_v4) {
+		LOGPPDP(LOGL_ERROR, pdp, "IPCP but no IPv4 type ?!?\n");
 		return;
+	}
 
 	ipcp = pco_elem->data;
 	consumed = (ipcp - &pdp->pco_req.v[0]);
 	remain = sizeof(pdp->pco_req.v) - consumed;
 	ipcp_len = osmo_load16be(ipcp + 2); /* 1=code + 1=id */
-	if (remain < 0 || remain < ipcp_len)
+	if (remain < 0 || remain < ipcp_len) {
+		LOGPPDP(LOGL_ERROR, pdp, "Malformed IPCP, ignoring\n");
 		return;
+	}
 
 	/* Three byte T16L header */
 	msgb_put_u16(resp, 0x8021);	/* IPCP */
@@ -636,6 +640,7 @@ static void process_pco_element_dns_ipv6(const struct pco_element *pco_elem, str
 					 const struct apn_ctx *apn, struct pdp_t *pdp)
 {
 	unsigned int i;
+	const uint8_t *tail = resp->tail;
 
 	for (i = 0; i < ARRAY_SIZE(apn->v6.cfg.dns); i++) {
 		const struct in46_addr *i46a = &apn->v6.cfg.dns[i];
@@ -643,12 +648,15 @@ static void process_pco_element_dns_ipv6(const struct pco_element *pco_elem, str
 			continue;
 		msgb_t16lv_put(resp, PCO_P_DNS_IPv6_ADDR, i46a->len, i46a->v6.s6_addr);
 	}
+	if (resp->tail == tail)
+		LOGPPDP(LOGL_NOTICE, pdp, "MS requested IPv6 DNS, but APN has none configured\n");
 }
 
 static void process_pco_element_dns_ipv4(const struct pco_element *pco_elem, struct msgb *resp,
 					 const struct apn_ctx *apn, struct pdp_t *pdp)
 {
 	unsigned int i;
+	const uint8_t *tail = resp->tail;
 
 	for (i = 0; i < ARRAY_SIZE(apn->v4.cfg.dns); i++) {
 		const struct in46_addr *i46a = &apn->v4.cfg.dns[i];
@@ -656,12 +664,17 @@ static void process_pco_element_dns_ipv4(const struct pco_element *pco_elem, str
 			continue;
 		msgb_t16lv_put(resp, PCO_P_DNS_IPv4_ADDR, i46a->len, (uint8_t *)&i46a->v4);
 	}
+	if (resp->tail == tail)
+		LOGPPDP(LOGL_NOTICE, pdp, "MS requested IPv4 DNS, but APN has none configured\n");
 }
 
 static void process_pco_element(const struct pco_element *pco_elem, struct msgb *resp,
 				const struct apn_ctx *apn, struct pdp_t *pdp)
 {
-	switch (ntohs(pco_elem->protocol_id)) {
+	uint16_t protocol_id = ntohs(pco_elem->protocol_id);
+
+	LOGPPDP(LOGL_DEBUG, pdp, "PCO Protocol 0x%04x\n", protocol_id);
+	switch (protocol_id) {
 	case PCO_P_PAP:
 		process_pco_element_pap(pco_elem, resp, apn, pdp);
 		break;
@@ -675,6 +688,8 @@ static void process_pco_element(const struct pco_element *pco_elem, struct msgb 
 		process_pco_element_dns_ipv4(pco_elem, resp, apn, pdp);
 		break;
 	default:
+		LOGPPDP(LOGL_INFO, pdp, "Unknown/Unimplemented PCO Protocol 0x%04x: %s\n",
+			protocol_id, osmo_hexdump_nospc(pco_elem->data, pco_elem->length));
 		break;
 	}
 }
