@@ -639,15 +639,17 @@ int create_context_ind(struct pdp_t *pdp)
 	struct in46_addr addr[2];
 	struct ippoolm_t *member = NULL, *addrv4 = NULL, *addrv6 = NULL;
 	char straddrv4[INET_ADDRSTRLEN], straddrv6[INET6_ADDRSTRLEN];
-	struct apn_ctx *apn;
+	struct apn_ctx *apn = NULL;
 	int rc, num_addr, i;
+	char *apn_name;
 
-	osmo_apn_to_str(name_buf, pdp->apn_req.v, pdp->apn_req.l);
-
-	LOGPPDP(LOGL_DEBUG, pdp, "Processing create PDP context request for APN '%s'\n", name_buf);
+	apn_name = osmo_apn_to_str(name_buf, pdp->apn_req.v, pdp->apn_req.l);
+	LOGPPDP(LOGL_DEBUG, pdp, "Processing create PDP context request for APN '%s'\n",
+		apn_name ? name_buf : "(NONE)");
 
 	/* First find an exact APN name match */
-	apn = ggsn_find_apn(ggsn, name_buf);
+	if (apn_name != NULL)
+		apn = ggsn_find_apn(ggsn, name_buf);
 	/* ignore if the APN has not been started */
 	if (apn && !apn->started)
 		apn = NULL;
