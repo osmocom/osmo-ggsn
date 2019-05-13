@@ -107,7 +107,12 @@ static void pool_close_all_pdp(struct ippool_t *pool)
 		if (!pdp)
 			continue;
 		LOGPPDP(LOGL_DEBUG, pdp, "Sending DELETE PDP CTX due to shutdown\n");
-		gtp_delete_context_req(pdp->gsn, pdp, NULL, 1);
+		gtp_delete_context_req2(pdp->gsn, pdp, NULL, 1);
+		/* We have nothing more to do with pdp ctx, free it. Upon cb_delete_context
+		   called during this call we'll clean up ggsn related stuff attached to this
+		   pdp context. After this call, ippool member is cleared so
+		   data is no longer valid and should not be accessed anymore. */
+		gtp_freepdp_teardown(pdp->gsn, pdp);
 	}
 }
 
@@ -980,6 +985,32 @@ static void signal_handler(int s)
 	}
 }
 
+/* libgtp callback for confirmations */
+static int cb_conf(int type, int cause, struct pdp_t *pdp, void *cbp)
+{
+	int rc = 0;
+
+	if (cause == EOF)
+		LOGP(DGGSN, LOGL_NOTICE, "libgtp EOF (type=%u, pdp=%p, cbp=%p)\n",
+			type, pdp, cbp);
+
+	switch (type) {
+	case GTP_DELETE_PDP_REQ:
+		/* Remark: We actually never reach this path nowadays because
+		   only place where we call gtp_delete_context_req2() is during
+		   apn_stop()->pool_close_all_pdp() path, and in that case we
+		   free all pdp contexts immediatelly without waiting for
+		   confirmation since we want to tear down the whole APN
+		   anyways. As a result, DeleteCtxResponse will never reach here
+		   since it will be dropped at some point in lower layers in the
+		   Rx path. This code is nevertheless left here in order to ease
+		   future developent and avoid possible future memleaks once more
+		   scenarios where GGSN sends a DeleteCtxRequest are introduced. */
+		   if (pdp)
+			rc = pdp_freepdp(pdp);
+	}
+	return rc;
+}
 
 /* Start a given GGSN */
 int ggsn_start(struct ggsn_ctx *ggsn)
@@ -1027,6 +1058,7 @@ int ggsn_start(struct ggsn_ctx *ggsn)
 	gtp_set_cb_data_ind(ggsn->gsn, encaps_tun);
 	gtp_set_cb_delete_context(ggsn->gsn, delete_context);
 	gtp_set_cb_create_context_ind(ggsn->gsn, create_context_ind);
+	gtp_set_cb_conf(ggsn->gsn, cb_conf);
 
 	LOGPGGSN(LOGL_NOTICE, ggsn, "Successfully started\n");
 	ggsn->started = true;

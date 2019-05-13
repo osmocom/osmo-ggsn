@@ -1474,6 +1474,8 @@ static int delete_pdp_conf(struct pdp_t *pdp, int cause)
 {
 	printf("Received delete PDP context response. Cause value: %d\n",
 	       cause);
+	if (pdp)
+		pdp_freepdp(pdp);
 	return 0;
 }
 
@@ -1508,8 +1510,6 @@ static int conf(int type, int cause, struct pdp_t *pdp, void *cbp)
 	case GTP_CREATE_PDP_REQ:
 		return create_pdp_conf(pdp, cbp, cause);
 	case GTP_DELETE_PDP_REQ:
-		if (cause != 128)
-			return 0;	/* Request not accepted. We don't care */
 		return delete_pdp_conf(pdp, cause);
 	default:
 		return 0;
@@ -1756,8 +1756,7 @@ int main(int argc, char **argv)
 			for (n = 0; n < options.contexts; n++) {
 				/* Delete context */
 				printf("Disconnecting PDP context #%d\n", n);
-				gtp_delete_context_req(gsn, iparr[n].pdp, NULL,
-						       1);
+				gtp_delete_context_req2(gsn, iparr[n].pdp, NULL, 1);
 				if ((options.pinghost.s_addr != 0)
 				    && ntransmitted)
 					ping_finish();

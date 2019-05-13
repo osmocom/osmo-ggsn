@@ -2434,7 +2434,9 @@ int gtp_delete_context_req(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 	return 0;
 }
 
-/* API: Send Delete PDP Context Request. PDP CTX shall be free'd by user at cb_conf(GTP_DELETE_PDP_RSP) */
+/* API: Send Delete PDP Context Request. PDP CTX shall be free'd by user at any
+   point in time later than this function through a call to pdp_freepdp(pdp), but
+   it must be freed no later than during cb_conf(GTP_DELETE_PDP_REQ, pdp) */
 int gtp_delete_context_req2(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 			   int teardown)
 {
@@ -2643,7 +2645,7 @@ int gtp_delete_pdp_conf(struct gsn_t *gsn, int version,
 	if (pdp_getgtp1(&pdp, get_tei(pack))) {
 		gsn->err_unknownpdp++;
 		GTP_LOGPKG(LOGL_NOTICE, peer, pack, len,
-			    "Unknown PDP context: %u (expected if gtp_delete_context_req is used)\n",
+			    "Unknown PDP context: %u (expected if gtp_delete_context_req is used or pdp ctx was freed manually before response)\n",
 			     get_tei(pack));
 		if (gsn->cb_conf)
 			gsn->cb_conf(type, EOF, NULL, cbp);
