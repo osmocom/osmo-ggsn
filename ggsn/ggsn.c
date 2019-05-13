@@ -107,7 +107,7 @@ static void pool_close_all_pdp(struct ippool_t *pool)
 		if (!pdp)
 			continue;
 		LOGPPDP(LOGL_DEBUG, pdp, "Sending DELETE PDP CTX due to shutdown\n");
-		gtp_delete_context_req(pdp->gsn, pdp, NULL, 1);
+		gtp_delete_context_req2(pdp->gsn, pdp, NULL, 1);
 	}
 }
 
@@ -972,6 +972,15 @@ static void signal_handler(int s)
 	}
 }
 
+/* libgtp callback for confirmations */
+static int cb_conf(int type, int cause, struct pdp_t *pdp, void *cbp)
+{
+	switch (type) {
+	case GTP_DELETE_PDP_REQ:
+		return pdp_freepdp(pdp);
+	}
+	return 0;
+}
 
 /* Start a given GGSN */
 int ggsn_start(struct ggsn_ctx *ggsn)
@@ -1018,6 +1027,7 @@ int ggsn_start(struct ggsn_ctx *ggsn)
 	gtp_set_cb_data_ind(ggsn->gsn, encaps_tun);
 	gtp_set_cb_delete_context(ggsn->gsn, delete_context);
 	gtp_set_cb_create_context_ind(ggsn->gsn, create_context_ind);
+	gtp_set_cb_conf(ggsn->gsn, cb_conf);
 
 	LOGPGGSN(LOGL_NOTICE, ggsn, "Successfully started\n");
 	ggsn->started = true;
