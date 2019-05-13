@@ -781,6 +781,47 @@ DEFUN(show_pdpctx_imsi, show_pdpctx_imsi_cmd,
 		return CMD_SUCCESS;
 }
 
+DEFUN(show_pdpctx_ip, show_pdpctx_ip_cmd,
+	"show pdp-context ggsn NAME ipv4 A.B.C.D",
+	SHOW_STR "Display information on PDP Context\n"
+	GGSN_STR "GGSN Name\n" "IPv4 address type\n" "IP address\n")
+{
+	struct ggsn_ctx *ggsn;
+	struct apn_ctx *apn;
+	unsigned int i;
+
+	ggsn = ggsn_find(argv[0]);
+	if (!ggsn) {
+		vty_out(vty, "%% No such GGSN '%s'%s", argv[0], VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	/* Iterate over all APNs of a given GGSN */
+	llist_for_each_entry(apn, &ggsn->apn_list, list) {
+		struct ippool_t *pool = apn->v4.pool;
+
+		/* In some rare cases, if GGSN fails to init TUN/TAP interfaces
+		 * (e.g. due to insufficient permissions), it will continue to
+		 * work in such broken state, and pool would be NULL. */
+		if (!pool)
+			continue;
+
+		/* Iterate over all IPv4 pool members */
+		for (i = 0; i < pool->listsize; i++) {
+			struct ippoolm_t *member = &pool->member[i];
+			if (member->inuse == 0)
+				continue;
+			if (strcmp(argv[1], in46a_ntoa(&member->addr)) == 0) {
+				show_one_pdp(vty, member->peer);
+				return CMD_SUCCESS;
+			}
+		}
+	}
+
+	vty_out(vty, "%% No PDP context found for IP '%s'%s", argv[1], VTY_NEWLINE);
+	return CMD_WARNING;
+}
+
 /* show all (active) PDP contexts within a pool */
 static void ippool_show_pdp_contexts(struct vty *vty, struct ippool_t *pool)
 {
@@ -898,6 +939,7 @@ int ggsn_vty_init(void)
 	install_element_ve(&show_pdpctx_apn_cmd);
 	install_element_ve(&show_deprecated_pdpctx_apn_cmd);
 	install_element_ve(&show_pdpctx_imsi_cmd);
+	install_element_ve(&show_pdpctx_ip_cmd);
 	install_element_ve(&show_ggsn_cmd);
 
 	install_element(CONFIG_NODE, &cfg_ggsn_cmd);
