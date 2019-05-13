@@ -26,6 +26,7 @@
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/utils.h>
 #include <osmocom/core/rate_ctr.h>
+#include <osmocom/gsm/apn.h>
 #include <osmocom/gsm/protocol/gsm_04_08_gprs.h>
 
 #include <osmocom/vty/command.h>
@@ -733,6 +734,8 @@ static const char *print_gsnaddr(const struct ul16_t *in)
 static void show_one_pdp(struct vty *vty, struct pdp_t *pdp)
 {
 	struct in46_addr eua46;
+	char name_buf[256];
+	char *apn_name;
 
 	vty_out(vty, "IMSI: %s, NSAPI: %u, MSISDN: %s%s", imsi_gtp2str(&pdp->imsi), pdp->nsapi,
 		osmo_hexdump_nospc(pdp->msisdn.v, pdp->msisdn.l), VTY_NEWLINE);
@@ -742,6 +745,11 @@ static void show_one_pdp(struct vty *vty, struct pdp_t *pdp)
 
 	vty_out(vty, " Data: %s:%08x ", print_gsnaddr(&pdp->gsnlu), pdp->teid_own);
 	vty_out(vty, "<-> %s:%08x%s", print_gsnaddr(&pdp->gsnru), pdp->teid_gn, VTY_NEWLINE);
+
+	apn_name = osmo_apn_to_str(name_buf, pdp->apn_req.v, pdp->apn_req.l);
+	vty_out(vty, " APN requested: %s%s", apn_name ? name_buf : "(NONE)", VTY_NEWLINE);
+	apn_name = osmo_apn_to_str(name_buf, pdp->apn_use.v, pdp->apn_use.l);
+	vty_out(vty, " APN in use: %s%s", apn_name ? name_buf : "(NONE)", VTY_NEWLINE);
 
 	in46a_from_eua(&pdp->eua, &eua46);
 	vty_out(vty, " End-User Address: %s%s", in46a_ntoa(&eua46), VTY_NEWLINE);

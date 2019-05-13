@@ -685,6 +685,12 @@ int create_context_ind(struct pdp_t *pdp)
 		return 0;
 	}
 
+	/* Store the actual APN for logging and the VTY */
+	rc = osmo_apn_from_str(pdp->apn_use.v, sizeof(pdp->apn_use.v), apn->cfg.name);
+	if (rc < 0) /* Unlikely this would happen, but anyway... */
+		LOGPPDP(LOGL_ERROR, pdp, "Failed to store APN '%s'\n", apn->cfg.name);
+	pdp->apn_use.l = rc;
+
 	/* Allocate dynamic addresses from the pool */
 	for (i = 0; i < num_addr; i++) {
 		if (addr[i].len == sizeof(struct in_addr)) {
