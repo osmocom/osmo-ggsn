@@ -805,9 +805,9 @@ static void apn_show_pdp_contexts(struct vty *vty, struct apn_ctx *apn)
 }
 
 DEFUN(show_pdpctx, show_pdpctx_cmd,
-	"show pdp-context ggsn NAME [apn APN]",
+	"show pdp-context ggsn NAME",
 	SHOW_STR "Show PDP Context Information\n"
-	GGSN_STR "GGSN Name\n") // FIXME
+	GGSN_STR "GGSN Name\n")
 {
 	struct ggsn_ctx *ggsn;
 	struct apn_ctx *apn;
@@ -817,20 +817,44 @@ DEFUN(show_pdpctx, show_pdpctx_cmd,
 		vty_out(vty, "%% No such GGSN '%s'%s", argv[0], VTY_NEWLINE);
 		return CMD_WARNING;
 	}
-	if (argc < 2) {
-		llist_for_each_entry(apn, &ggsn->apn_list, list)
-			apn_show_pdp_contexts(vty, apn);
-	} else {
-		apn = ggsn_find_apn(ggsn, argv[1]);
-		if (!apn) {
-			vty_out(vty, "%% No such APN '%s'%s", argv[1], VTY_NEWLINE);
-			return CMD_WARNING;
-		}
+
+	llist_for_each_entry(apn, &ggsn->apn_list, list)
 		apn_show_pdp_contexts(vty, apn);
-	}
 
 	return CMD_SUCCESS;
 }
+
+DEFUN(show_pdpctx_apn, show_pdpctx_apn_cmd,
+	"show pdp-context ggsn NAME apn APN",
+	SHOW_STR "Show PDP Context Information\n"
+	GGSN_STR "GGSN Name\n" "Filter by APN\n" "APN name\n")
+{
+	struct ggsn_ctx *ggsn;
+	struct apn_ctx *apn;
+
+	ggsn = ggsn_find(argv[0]);
+	if (!ggsn) {
+		vty_out(vty, "%% No such GGSN '%s'%s", argv[0], VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	apn = ggsn_find_apn(ggsn, argv[1]);
+	if (!apn) {
+		vty_out(vty, "%% No such APN '%s'%s", argv[1], VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	apn_show_pdp_contexts(vty, apn);
+	return CMD_SUCCESS;
+}
+
+/* Backwards compatibility: the VTY parser is (mis)interpreting
+ * "[apn APN]" as two separate elements: "[apn" and "APN]",
+ * but the first part somehow turns into command "ap". */
+ALIAS_DEPRECATED(show_pdpctx_apn, show_deprecated_pdpctx_apn_cmd,
+		 "show pdp-context ggsn NAME ap APN",
+		 SHOW_STR "Show PDP Context Information\n"
+		 GGSN_STR "GGSN Name\n" "Filter by APN\n" "APN name\n");
 
 static void show_apn(struct vty *vty, struct apn_ctx *apn)
 {
@@ -871,6 +895,8 @@ DEFUN(show_ggsn, show_ggsn_cmd,
 int ggsn_vty_init(void)
 {
 	install_element_ve(&show_pdpctx_cmd);
+	install_element_ve(&show_pdpctx_apn_cmd);
+	install_element_ve(&show_deprecated_pdpctx_apn_cmd);
 	install_element_ve(&show_pdpctx_imsi_cmd);
 	install_element_ve(&show_ggsn_cmd);
 
