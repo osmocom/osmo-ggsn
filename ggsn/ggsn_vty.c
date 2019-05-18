@@ -27,6 +27,7 @@
 #include <osmocom/core/utils.h>
 #include <osmocom/core/rate_ctr.h>
 #include <osmocom/gsm/apn.h>
+#include <osmocom/gsm/gsm48_ie.h>
 #include <osmocom/gsm/protocol/gsm_04_08_gprs.h>
 
 #include <osmocom/vty/command.h>
@@ -736,9 +737,14 @@ static void show_one_pdp(struct vty *vty, struct pdp_t *pdp)
 	struct in46_addr eua46;
 	char name_buf[256];
 	char *apn_name;
+	int rc;
+
+	/* Attempt to decode MSISDN */
+	rc = gsm48_decode_bcd_number2(name_buf, sizeof(name_buf),
+				      pdp->msisdn.v, pdp->msisdn.l, 0);
 
 	vty_out(vty, "IMSI: %s, NSAPI: %u, MSISDN: %s%s", imsi_gtp2str(&pdp->imsi), pdp->nsapi,
-		osmo_hexdump_nospc(pdp->msisdn.v, pdp->msisdn.l), VTY_NEWLINE);
+		rc ? "(NONE)" : name_buf, VTY_NEWLINE);
 
 	vty_out(vty, " Control: %s:%08x ", print_gsnaddr(&pdp->gsnlc), pdp->teic_own);
 	vty_out(vty, "<-> %s:%08x%s", print_gsnaddr(&pdp->gsnrc), pdp->teic_gn, VTY_NEWLINE);
