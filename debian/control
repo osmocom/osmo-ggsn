@@ -7,7 +7,8 @@ Build-Depends: debhelper (>= 9),
                pkg-config,
                libdpkg-perl, git,
                dh-autoreconf,
-               libosmocore-dev (>= 0.8.0)
+               libosmocore-dev (>= 0.8.0),
+               osmo-gsm-manuals-dev
 Standards-Version: 3.9.6
 Vcs-Browser: http://git.osmocom.org/osmo-ggsn/
 Vcs-Git: git://git.osmocom.org/osmo-ggsn
@@ -74,3 +75,12 @@ Description: Debug symbols for OsmoGGSN
  .
  The library libgtp implements the GTP protocol between SGSN and GGSN
  and this package contains the development files for this library.
+
+Package: osmo-ggsn-doc
+Architecture: all
+Section: doc
+Priority: optional
+Depends: ${misc:Depends}
+Description: ${misc:Package} PDF documentation
+ Various manuals: user manual, VTY reference manual and/or
+ protocol/interface manuals.
