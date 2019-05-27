@@ -590,22 +590,34 @@ int gtp_retrans(struct gsn_t *gsn)
 
 int gtp_retranstimeout(struct gsn_t *gsn, struct timeval *timeout)
 {
-	time_t now, later;
+	time_t now, later, diff;
 	struct qmsg_t *qmsg;
+	timeout->tv_usec = 0;
 
 	if (queue_getfirst(gsn->queue_req, &qmsg)) {
 		timeout->tv_sec = 10;
-		timeout->tv_usec = 0;
 	} else {
 		now = time(NULL);
 		later = qmsg->timeout;
 		timeout->tv_sec = later - now;
-		timeout->tv_usec = 0;
 		if (timeout->tv_sec < 0)
 			timeout->tv_sec = 0;	/* No negative allowed */
 		if (timeout->tv_sec > 10)
 			timeout->tv_sec = 10;	/* Max sleep for 10 sec */
 	}
+
+	if (queue_getfirst(gsn->queue_resp, &qmsg)) {
+		/* already set by queue_req, do nothing */
+	} else { /* trigger faster if earlier timeout exists in queue_resp */
+		now = time(NULL);
+		later = qmsg->timeout;
+		diff = later - now;
+		if (diff < 0)
+			diff = 0;
+		if (diff < timeout->tv_sec)
+			timeout->tv_sec = diff;
+	}
+
 	return 0;
 }
 
