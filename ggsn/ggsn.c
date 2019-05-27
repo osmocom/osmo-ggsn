@@ -1022,6 +1022,7 @@ int ggsn_start(struct ggsn_ctx *ggsn)
 
 	/* Start GTP re-transmission timer */
 	osmo_timer_setup(&ggsn->gtp_timer, ggsn_gtp_tmr_cb, ggsn);
+	ggsn_gtp_tmr_start(ggsn);
 
 	gtp_set_cb_data_ind(ggsn->gsn, encaps_tun);
 	gtp_set_cb_delete_context(ggsn->gsn, delete_context);
