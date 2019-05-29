@@ -111,9 +111,9 @@ static void pool_close_all_pdp(struct ippool_t *pool)
 	}
 }
 
-int apn_stop(struct apn_ctx *apn, bool force)
+int apn_stop(struct apn_ctx *apn)
 {
-	LOGPAPN(LOGL_NOTICE, apn, "%sStopping\n", force ? "FORCED " : "");
+	LOGPAPN(LOGL_NOTICE, apn, "Stopping\n");
 	/* check if pools have any active PDP contexts and bail out */
 	pool_close_all_pdp(apn->v4.pool);
 	pool_close_all_pdp(apn->v6.pool);
@@ -223,7 +223,7 @@ int apn_start(struct apn_ctx *apn)
 		LOGPAPN(LOGL_INFO, apn, "Opening Kernel GTP device %s\n", apn->tun.cfg.dev_name);
 		if (apn->cfg.apn_type_mask & (APN_TYPE_IPv6|APN_TYPE_IPv4v6)) {
 			LOGPAPN(LOGL_ERROR, apn, "Kernel GTP currently supports only IPv4\n");
-			apn_stop(apn, false);
+			apn_stop(apn);
 			return -1;
 		}
 		if (gsn == NULL) {
@@ -257,7 +257,7 @@ int apn_start(struct apn_ctx *apn)
 				apn->v4.cfg.ifconfig_prefix.prefixlen)) {
 			LOGPAPN(LOGL_ERROR, apn, "Failed to set tun IPv4 address %s: %s\n",
 				in46p_ntoa(&apn->v4.cfg.ifconfig_prefix), strerror(errno));
-			apn_stop(apn, false);
+			apn_stop(apn);
 			return -1;
 		}
 	}
@@ -270,7 +270,7 @@ int apn_start(struct apn_ctx *apn)
 			LOGPAPN(LOGL_ERROR, apn, "Failed to set tun IPv6 address %s: %s. "
 				"Ensure you have ipv6 support and not used the disable_ipv6 sysctl?\n",
 				in46p_ntoa(&apn->v6.cfg.ifconfig_prefix), strerror(errno));
-			apn_stop(apn, false);
+			apn_stop(apn);
 			return -1;
 		}
 	}
@@ -283,7 +283,7 @@ int apn_start(struct apn_ctx *apn)
 			LOGPAPN(LOGL_ERROR, apn, "Failed to set tun IPv6 link-local address %s: %s. "
 				"Ensure you have ipv6 support and not used the disable_ipv6 sysctl?\n",
 				in46p_ntoa(&apn->v6.cfg.ll_prefix), strerror(errno));
-			apn_stop(apn, false);
+			apn_stop(apn);
 			return -1;
 		}
 		apn->v6_lladdr = apn->v6.cfg.ll_prefix.addr.v6;
@@ -301,7 +301,7 @@ int apn_start(struct apn_ctx *apn)
 		if (rc < 1) {
 			LOGPAPN(LOGL_ERROR, apn, "Cannot obtain IPv6 link-local address of interface: %s\n",
 				rc ? strerror(errno) : "tun interface has no link-local IP assigned");
-			apn_stop(apn, false);
+			apn_stop(apn);
 			return -1;
 		}
 		apn->v6_lladdr = ipv6_tun_linklocal_ip.addr.v6;
@@ -318,7 +318,7 @@ int apn_start(struct apn_ctx *apn)
 				blacklist, blacklist_size)) {
 			LOGPAPN(LOGL_ERROR, apn, "Failed to create IPv4 pool\n");
 			talloc_free(blacklist);
-			apn_stop(apn, false);
+			apn_stop(apn);
 			return -1;
 		}
 		talloc_free(blacklist);
@@ -335,7 +335,7 @@ int apn_start(struct apn_ctx *apn)
 				blacklist, blacklist_size)) {
 			LOGPAPN(LOGL_ERROR, apn, "Failed to create IPv6 pool\n");
 			talloc_free(blacklist);
-			apn_stop(apn, false);
+			apn_stop(apn);
 			return -1;
 		}
 		talloc_free(blacklist);
@@ -1046,7 +1046,7 @@ int ggsn_stop(struct ggsn_ctx *ggsn)
 
 	/* iterate over all APNs and stop them */
 	llist_for_each_entry(apn, &ggsn->apn_list, list)
-		apn_stop(apn, true);
+		apn_stop(apn);
 
 	osmo_timer_del(&ggsn->gtp_timer);
 

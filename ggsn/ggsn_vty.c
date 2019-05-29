@@ -604,7 +604,7 @@ DEFUN(cfg_apn_shutdown, cfg_apn_shutdown_cmd,
 	struct apn_ctx *apn = (struct apn_ctx *) vty->index;
 
 	if (!apn->cfg.shutdown) {
-		if (apn_stop(apn, false)) {
+		if (apn_stop(apn)) {
 			vty_out(vty, "%% Failed to Stop APN%s", VTY_NEWLINE);
 			return CMD_WARNING;
 		}

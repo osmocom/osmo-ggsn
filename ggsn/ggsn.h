@@ -140,4 +140,4 @@ extern void *tall_ggsn_ctx;
 extern int ggsn_start(struct ggsn_ctx *ggsn);
 extern int ggsn_stop(struct ggsn_ctx *ggsn);
 extern int apn_start(struct apn_ctx *apn);
-extern int apn_stop(struct apn_ctx *apn, bool force);
+extern int apn_stop(struct apn_ctx *apn);
