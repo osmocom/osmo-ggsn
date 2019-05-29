@@ -309,6 +309,7 @@ extern int gtp_free(struct gsn_t *gsn);
 extern int gtp_newpdp(struct gsn_t *gsn, struct pdp_t **pdp,
 		      uint64_t imsi, uint8_t nsapi);
 extern int gtp_freepdp(struct gsn_t *gsn, struct pdp_t *pdp);
+extern int gtp_freepdp_teardown(struct gsn_t *gsn, struct pdp_t *pdp);
 
 extern int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
 				  void *cbp);

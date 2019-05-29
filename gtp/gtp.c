@@ -146,7 +146,34 @@ int gtp_newpdp(struct gsn_t *gsn, struct pdp_t **pdp,
 
 int gtp_freepdp(struct gsn_t *gsn, struct pdp_t *pdp)
 {
+	if (gsn->cb_delete_context)
+		gsn->cb_delete_context(pdp);
 	return pdp_freepdp(pdp);
+}
+
+/* Free pdp and all its secondary PDP contexts. Must be called on the primary PDP context. */
+int gtp_freepdp_teardown(struct gsn_t *gsn, struct pdp_t *pdp)
+{
+	int n;
+	struct pdp_t *secondary_pdp;
+	OSMO_ASSERT(!pdp->secondary);
+
+	for (n = 0; n < PDP_MAXNSAPI; n++) {
+		if (pdp->secondary_tei[n]) {
+			if (pdp_getgtp1
+			    (&secondary_pdp,
+			     pdp->secondary_tei[n])) {
+				LOGP(DLGTP, LOGL_ERROR,
+					"Unknown secondary PDP context\n");
+				continue;
+			}
+			if (pdp != secondary_pdp) {
+				gtp_freepdp(gsn, secondary_pdp);
+			}
+		}
+	}
+
+	return gtp_freepdp(gsn, pdp);
 }
 
 /* gtp_gpdu */
@@ -1648,9 +1675,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 
 			DEBUGP(DLGTP, "gtp_create_pdp_ind: Deleting old context\n");
 
-			if (gsn->cb_delete_context)
-				gsn->cb_delete_context(pdp_old);
-			pdp_freepdp(pdp_old);
+			gtp_freepdp(gsn, pdp_old);
 
 			DEBUGP(DLGTP, "gtp_create_pdp_ind: Deleted...\n");
 		}
@@ -2371,8 +2396,6 @@ int gtp_delete_context_req(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 			   int teardown)
 {
 	struct pdp_t *linked_pdp;
-	struct pdp_t *secondary_pdp;
-	int n;
 
 	if (pdp_getgtp1(&linked_pdp, pdp->teic_own)) {
 		LOGP(DLGTP, LOGL_ERROR,
@@ -2384,26 +2407,7 @@ int gtp_delete_context_req(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 		return EOF;
 
 	if (teardown) {		/* Remove all contexts */
-		for (n = 0; n < PDP_MAXNSAPI; n++) {
-			if (linked_pdp->secondary_tei[n]) {
-				if (pdp_getgtp1
-				    (&secondary_pdp,
-				     linked_pdp->secondary_tei[n])) {
-					LOGP(DLGTP, LOGL_ERROR,
-						"Unknown secondary PDP context\n");
-					return EOF;
-				}
-				if (linked_pdp != secondary_pdp) {
-					if (gsn->cb_delete_context)
-						gsn->cb_delete_context
-						    (secondary_pdp);
-					pdp_freepdp(secondary_pdp);
-				}
-			}
-		}
-		if (gsn->cb_delete_context)
-			gsn->cb_delete_context(linked_pdp);
-		pdp_freepdp(linked_pdp);
+		gtp_freepdp_teardown(gsn, linked_pdp);
 	} else {
 		if (gsn->cb_delete_context)
 			gsn->cb_delete_context(pdp);
@@ -2470,10 +2474,8 @@ int gtp_delete_pdp_resp(struct gsn_t *gsn, int version,
 			uint8_t cause, int teardown)
 {
 	union gtp_packet packet;
-	struct pdp_t *secondary_pdp;
 	unsigned int length =
 	    get_default_gtp(version, GTP_DELETE_PDP_RSP, &packet);
-	int n;
 
 	gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_CAUSE, cause);
 
@@ -2482,26 +2484,7 @@ int gtp_delete_pdp_resp(struct gsn_t *gsn, int version,
 
 	if (cause == GTPCAUSE_ACC_REQ) {
 		if ((teardown) || (version == 0)) {	/* Remove all contexts */
-			for (n = 0; n < PDP_MAXNSAPI; n++) {
-				if (linked_pdp->secondary_tei[n]) {
-					if (pdp_getgtp1
-					    (&secondary_pdp,
-					     linked_pdp->secondary_tei[n])) {
-						LOGP(DLGTP, LOGL_ERROR,
-							"Unknown secondary PDP context\n");
-						return EOF;
-					}
-					if (linked_pdp != secondary_pdp) {
-						if (gsn->cb_delete_context)
-							gsn->cb_delete_context
-							    (secondary_pdp);
-						pdp_freepdp(secondary_pdp);
-					}
-				}
-			}
-			if (gsn->cb_delete_context)
-				gsn->cb_delete_context(linked_pdp);
-			pdp_freepdp(linked_pdp);
+			gtp_freepdp_teardown(gsn, linked_pdp);
 		} else {	/* Remove only current context */
 			if (gsn->cb_delete_context)
 				gsn->cb_delete_context(pdp);
@@ -2752,9 +2735,7 @@ static int gtp_error_ind_conf(struct gsn_t *gsn, uint8_t version,
 	 * code should ever change. */
 	OSMO_ASSERT(pdp);
 
-	if (gsn->cb_delete_context)
-		gsn->cb_delete_context(pdp);
-	pdp_freepdp(pdp);
+	gtp_freepdp(gsn, pdp);
 	return 0;
 }
 
