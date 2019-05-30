@@ -2454,8 +2454,7 @@ int gtp_delete_context_req2(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 	    get_default_gtp(pdp->version, GTP_DELETE_PDP_REQ, &packet);
 	struct in_addr addr;
 	struct pdp_t *linked_pdp;
-	int n;
-	int count = 0;
+	int count;
 
 	if (gsna2in_addr(&addr, &pdp->gsnrc)) {
 		gsn->err_address++;
@@ -2470,9 +2469,7 @@ int gtp_delete_context_req2(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 	}
 
 	if (!teardown) {
-		for (n = 0; n < PDP_MAXNSAPI; n++)
-			if (linked_pdp->secondary_tei[n])
-				count++;
+		count = pdp_count_secondary(linked_pdp);
 		if (count <= 1) {
 			LOGP(DLGTP, LOGL_ERROR,
 				"Must use teardown for last context: %d\n", count);
@@ -2562,8 +2559,7 @@ int gtp_delete_pdp_ind(struct gsn_t *gsn, int version,
 
 	uint8_t nsapi;
 	uint8_t teardown = 0;
-	int n;
-	int count = 0;
+	int count;
 
 	/* Is this a duplicate ? */
 	if (!gtp_duplicate(gsn, version, peer, seq)) {
@@ -2633,9 +2629,7 @@ int gtp_delete_pdp_ind(struct gsn_t *gsn, int version,
 			 * signalling messages will eventually lead to a consistent
 			 * situation, allowing the teardown of the PDP context.)
 			 */
-			for (n = 0; n < PDP_MAXNSAPI; n++)
-				if (linked_pdp->secondary_tei[n])
-					count++;
+			count = pdp_count_secondary(linked_pdp);
 			if (count <= 1) {
 				GTP_LOGPKG(LOGL_NOTICE, peer, pack, len,
 					   "Ignoring CTX DEL without teardown and count=%d\n",

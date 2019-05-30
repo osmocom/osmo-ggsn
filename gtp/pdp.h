@@ -260,6 +260,8 @@ int pdp_tidget(struct pdp_t **pdp, uint64_t tid);
 
 void pdp_set_imsi_nsapi(struct pdp_t *pdp, uint64_t teid);
 
+unsigned int pdp_count_secondary(struct pdp_t *pdp);
+
 /*
 int pdp_iphash(void* ipif, struct ul66_t *eua);
 int pdp_ipset(struct pdp_t *pdp, void* ipif, struct ul66_t *eua);

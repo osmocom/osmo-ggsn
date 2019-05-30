@@ -374,3 +374,17 @@ void pdp_set_imsi_nsapi(struct pdp_t *pdp, uint64_t teid)
 	pdp->imsi = teid & 0x0fffffffffffffffull;
 	pdp->nsapi = (teid & 0xf000000000000000ull) >> 60;
 }
+
+/* Count amount of secondary PDP contexts linked to this primary PDP context
+ * (itself included). Must be called on a primary PDP context. */
+unsigned int pdp_count_secondary(struct pdp_t *pdp)
+{
+	unsigned int n;
+	unsigned int count = 0;
+	OSMO_ASSERT(!pdp->secondary);
+
+	for (n = 0; n < PDP_MAXNSAPI; n++)
+		if (pdp->secondary_tei[n])
+			count++;
+	return count;
+}
