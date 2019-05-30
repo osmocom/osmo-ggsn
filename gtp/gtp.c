@@ -1435,6 +1435,61 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 			pdp->apn_req = linked_pdp->apn_req;
 			pdp->teic_gn = linked_pdp->teic_gn;
 			pdp->secondary = 1;
+		} else {
+			/* Not Secondary PDP Context Activation Procedure */
+			/* IMSI (conditional): If the MS is emergency attached
+			   and the MS is UICCless, the IMSI cannot be included
+			   in the message and therefore IMSI shall not be
+			   included in the message. */
+			if (gtpie_gettv0
+			    (ie, GTPIE_IMSI, 0, &pdp->imsi, sizeof(pdp->imsi))) {
+				gsn->missing++;
+				GTP_LOGPKG(LOGL_ERROR, peer, pack,
+					    len, "Missing IMSI not supported\n");
+				return gtp_create_pdp_resp(gsn, version, pdp,
+							   GTPCAUSE_MAN_IE_MISSING);
+			}
+		}
+
+		/* TEID (mandatory) */
+		if (gtpie_gettv4(ie, GTPIE_TEI_DI, 0, &pdp->teid_gn)) {
+			gsn->missing++;
+			GTP_LOGPKG(LOGL_ERROR, peer, pack,
+				    len, "Missing mandatory information field\n");
+			return gtp_create_pdp_resp(gsn, version, pdp,
+						   GTPCAUSE_MAN_IE_MISSING);
+		}
+		/* TEIC (conditional) */
+		if (!linked_pdp) {	/* Not Secondary PDP Context Activation Procedure */
+			if (gtpie_gettv4(ie, GTPIE_TEI_C, 0, &pdp->teic_gn)) {
+				gsn->missing++;
+				GTP_LOGPKG(LOGL_ERROR, peer,
+					    pack, len,
+					    "Missing mandatory information field\n");
+				return gtp_create_pdp_resp(gsn, version, pdp,
+							   GTPCAUSE_MAN_IE_MISSING);
+			}
+		}
+		/* NSAPI (mandatory) */
+		if (gtpie_gettv1(ie, GTPIE_NSAPI, 0, &pdp->nsapi)) {
+			gsn->missing++;
+			GTP_LOGPKG(LOGL_ERROR, peer, pack,
+				    len, "Missing mandatory information field\n");
+			return gtp_create_pdp_resp(gsn, version, pdp,
+						   GTPCAUSE_MAN_IE_MISSING);
+		}
+		/* QoS (mandatory) */
+		if (gtpie_gettlv(ie, GTPIE_QOS_PROFILE, 0, &pdp->qos_req.l,
+				 &pdp->qos_req.v, sizeof(pdp->qos_req.v))) {
+			gsn->missing++;
+			GTP_LOGPKG(LOGL_ERROR, peer, pack,
+				    len, "Missing mandatory information field\n");
+			return gtp_create_pdp_resp(gsn, version, pdp,
+						   GTPCAUSE_MAN_IE_MISSING);
+		}
+		/* TFT (conditional) */
+		if (gtpie_gettlv(ie, GTPIE_TFT, 0, &pdp->tft.l,
+				 &pdp->tft.v, sizeof(pdp->tft.v))) {
 		}
 	}
 	/* if (version == 1) */
@@ -1447,40 +1502,6 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 			return gtp_create_pdp_resp(gsn, version, pdp,
 						   GTPCAUSE_MAN_IE_MISSING);
 		}
-	}
-
-	if ((version == 1) && (!linked_pdp)) {
-		/* Not Secondary PDP Context Activation Procedure */
-		/* IMSI (conditional) */
-		if (gtpie_gettv0
-		    (ie, GTPIE_IMSI, 0, &pdp->imsi, sizeof(pdp->imsi))) {
-			gsn->missing++;
-			GTP_LOGPKG(LOGL_ERROR, peer, pack,
-				    len, "Missing mandatory information field\n");
-			return gtp_create_pdp_resp(gsn, version, pdp,
-						   GTPCAUSE_MAN_IE_MISSING);
-		}
-	}
-
-	/* Recovery (optional) */
-	if (!gtpie_gettv1(ie, GTPIE_RECOVERY, 0, &recovery)) {
-		/* we use recovery futher down after announcing new pdp ctx to user */
-		recovery_recvd = true;
-	}
-
-	/* Selection mode (conditional) */
-	if (!linked_pdp) {	/* Not Secondary PDP Context Activation Procedure */
-		if (gtpie_gettv0(ie, GTPIE_SELECTION_MODE, 0,
-				 &pdp->selmode, sizeof(pdp->selmode))) {
-			gsn->missing++;
-			GTP_LOGPKG(LOGL_ERROR, peer, pack,
-				    len, "Missing mandatory information field\n");
-			return gtp_create_pdp_resp(gsn, version, pdp,
-						   GTPCAUSE_MAN_IE_MISSING);
-		}
-	}
-
-	if (version == 0) {
 		if (gtpie_gettv2(ie, GTPIE_FL_DI, 0, &pdp->flru)) {
 			gsn->missing++;
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
@@ -1488,77 +1509,12 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 			return gtp_create_pdp_resp(gsn, version, pdp,
 						   GTPCAUSE_MAN_IE_MISSING);
 		}
-
 		if (gtpie_gettv2(ie, GTPIE_FL_C, 0, &pdp->flrc)) {
 			gsn->missing++;
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			return gtp_create_pdp_resp(gsn, version, pdp,
 						   GTPCAUSE_MAN_IE_MISSING);
-		}
-	}
-
-	if (version == 1) {
-		/* TEID (mandatory) */
-		if (gtpie_gettv4(ie, GTPIE_TEI_DI, 0, &pdp->teid_gn)) {
-			gsn->missing++;
-			GTP_LOGPKG(LOGL_ERROR, peer, pack,
-				    len, "Missing mandatory information field\n");
-			return gtp_create_pdp_resp(gsn, version, pdp,
-						   GTPCAUSE_MAN_IE_MISSING);
-		}
-
-		/* TEIC (conditional) */
-		if (!linked_pdp) {	/* Not Secondary PDP Context Activation Procedure */
-			if (gtpie_gettv4(ie, GTPIE_TEI_C, 0, &pdp->teic_gn)) {
-				gsn->missing++;
-				GTP_LOGPKG(LOGL_ERROR, peer,
-					    pack, len,
-					    "Missing mandatory information field\n");
-				return gtp_create_pdp_resp(gsn, version, pdp,
-							   GTPCAUSE_MAN_IE_MISSING);
-			}
-		}
-
-		/* NSAPI (mandatory) */
-		if (gtpie_gettv1(ie, GTPIE_NSAPI, 0, &pdp->nsapi)) {
-			gsn->missing++;
-			GTP_LOGPKG(LOGL_ERROR, peer, pack,
-				    len, "Missing mandatory information field\n");
-			return gtp_create_pdp_resp(gsn, version, pdp,
-						   GTPCAUSE_MAN_IE_MISSING);
-		}
-	}
-
-	/* Charging Characteriatics (optional) */
-	/* Trace reference (optional) */
-	/* Trace type (optional) */
-	/* Charging Characteriatics (optional) */
-
-	if (!linked_pdp) {	/* Not Secondary PDP Context Activation Procedure */
-		/* End User Address (conditional) */
-		if (gtpie_gettlv(ie, GTPIE_EUA, 0, &pdp->eua.l,
-				 &pdp->eua.v, sizeof(pdp->eua.v))) {
-			gsn->missing++;
-			GTP_LOGPKG(LOGL_ERROR, peer, pack,
-				    len, "Missing mandatory information field\n");
-			return gtp_create_pdp_resp(gsn, version, pdp,
-						   GTPCAUSE_MAN_IE_MISSING);
-		}
-
-		/* APN */
-		if (gtpie_gettlv(ie, GTPIE_APN, 0, &pdp->apn_req.l,
-				 &pdp->apn_req.v, sizeof(pdp->apn_req.v))) {
-			gsn->missing++;
-			GTP_LOGPKG(LOGL_ERROR, peer, pack,
-				    len, "Missing mandatory information field\n");
-			return gtp_create_pdp_resp(gsn, version, pdp,
-						   GTPCAUSE_MAN_IE_MISSING);
-		}
-
-		/* Extract protocol configuration options (optional) */
-		if (!gtpie_gettlv(ie, GTPIE_PCO, 0, &pdp->pco_req.l,
-				  &pdp->pco_req.v, sizeof(pdp->pco_req.v))) {
 		}
 	}
 
@@ -1581,8 +1537,44 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 		return gtp_create_pdp_resp(gsn, version, pdp,
 					   GTPCAUSE_MAN_IE_MISSING);
 	}
+	/* Recovery (optional) */
+	if (!gtpie_gettv1(ie, GTPIE_RECOVERY, 0, &recovery)) {
+		/* we use recovery futher down after announcing new pdp ctx to user */
+		recovery_recvd = true;
+	}
 
 	if (!linked_pdp) {	/* Not Secondary PDP Context Activation Procedure */
+		/* Selection mode (conditional) */
+		if (gtpie_gettv0(ie, GTPIE_SELECTION_MODE, 0,
+				 &pdp->selmode, sizeof(pdp->selmode))) {
+			gsn->missing++;
+			GTP_LOGPKG(LOGL_ERROR, peer, pack,
+				    len, "Missing mandatory information field\n");
+			return gtp_create_pdp_resp(gsn, version, pdp,
+						   GTPCAUSE_MAN_IE_MISSING);
+		}
+		/* End User Address (conditional) */
+		if (gtpie_gettlv(ie, GTPIE_EUA, 0, &pdp->eua.l,
+				 &pdp->eua.v, sizeof(pdp->eua.v))) {
+			gsn->missing++;
+			GTP_LOGPKG(LOGL_ERROR, peer, pack,
+				    len, "Missing mandatory information field\n");
+			return gtp_create_pdp_resp(gsn, version, pdp,
+						   GTPCAUSE_MAN_IE_MISSING);
+		}
+		/* APN */
+		if (gtpie_gettlv(ie, GTPIE_APN, 0, &pdp->apn_req.l,
+				 &pdp->apn_req.v, sizeof(pdp->apn_req.v))) {
+			gsn->missing++;
+			GTP_LOGPKG(LOGL_ERROR, peer, pack,
+				    len, "Missing mandatory information field\n");
+			return gtp_create_pdp_resp(gsn, version, pdp,
+						   GTPCAUSE_MAN_IE_MISSING);
+		}
+		/* Extract protocol configuration options (optional) */
+		if (!gtpie_gettlv(ie, GTPIE_PCO, 0, &pdp->pco_req.l,
+				  &pdp->pco_req.v, sizeof(pdp->pco_req.v))) {
+		}
 		/* MSISDN (conditional) */
 		if (gtpie_gettlv(ie, GTPIE_MSISDN, 0, &pdp->msisdn.l,
 				 &pdp->msisdn.v, sizeof(pdp->msisdn.v))) {
@@ -1592,26 +1584,6 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 			return gtp_create_pdp_resp(gsn, version, pdp,
 						   GTPCAUSE_MAN_IE_MISSING);
 		}
-	}
-
-	if (version == 1) {
-		/* QoS (mandatory) */
-		if (gtpie_gettlv(ie, GTPIE_QOS_PROFILE, 0, &pdp->qos_req.l,
-				 &pdp->qos_req.v, sizeof(pdp->qos_req.v))) {
-			gsn->missing++;
-			GTP_LOGPKG(LOGL_ERROR, peer, pack,
-				    len, "Missing mandatory information field\n");
-			return gtp_create_pdp_resp(gsn, version, pdp,
-						   GTPCAUSE_MAN_IE_MISSING);
-		}
-
-		/* TFT (conditional) */
-		if (gtpie_gettlv(ie, GTPIE_TFT, 0, &pdp->tft.l,
-				 &pdp->tft.v, sizeof(pdp->tft.v))) {
-		}
-
-		/* Trigger ID */
-		/* OMC identity */
 	}
 
 	/* Initialize our own IP addresses */
@@ -1688,7 +1660,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 	if (pdp)
 		pdp->gsn = gsn;
 
-	/* Callback function to validata login */
+	/* Callback function to validate login */
 	if (gsn->cb_create_context_ind != 0)
 		rc = gsn->cb_create_context_ind(pdp);
 	else {
