@@ -654,9 +654,9 @@ static void config_write_apn(struct vty *vty, struct apn_ctx *apn)
 		vty_out(vty, "  ipdown-script %s%s", apn->tun.cfg.ipdown_script, VTY_NEWLINE);
 
 	for (i = 0; i < 32; i++) {
-		if (!(apn->cfg.apn_type_mask & (1 << i)))
+		if (!(apn->cfg.apn_type_mask & (UINT32_C(1) << i)))
 			continue;
-		vty_out(vty, "  type-support %s%s", get_value_string(pdp_type_names, (1 << i)),
+		vty_out(vty, "  type-support %s%s", get_value_string(pdp_type_names, (UINT32_C(1) << i)),
 			VTY_NEWLINE);
 	}
 
