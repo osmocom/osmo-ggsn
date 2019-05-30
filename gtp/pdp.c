@@ -38,7 +38,6 @@
 
 static struct pdp_t pdpa[PDP_MAX];	/* PDP storage */
 static struct pdp_t *hashtid[PDP_MAX];	/* Hash table for IMSI + NSAPI */
-/* struct pdp_t* haship[PDP_MAX];  Hash table for IP and network interface */
 
 /* ***********************************************************
  * Functions related to PDP storage
@@ -291,77 +290,7 @@ int pdp_getimsi(struct pdp_t **pdp, uint64_t imsi, uint8_t nsapi)
 			  ((uint64_t) nsapi << 60));
 }
 
-/*
-int pdp_iphash(void* ipif, struct ul66_t *eua) {
-  /#printf("IPhash %ld\n", lookup(eua->v, eua->l, ipif) % PDP_MAX);#/
-  return (lookup(eua->v, eua->l, ipif) % PDP_MAX);
-}
 
-int pdp_ipset(struct pdp_t *pdp, void* ipif, struct ul66_t *eua) {
-  int hash;
-  struct pdp_t *pdp2;
-  struct pdp_t *pdp_prev = NULL;
-
-  if (PDP_DEBUG) printf("Begin pdp_ipset %d %d %2x%2x%2x%2x\n",
-			(unsigned) ipif, eua->l,
-			eua->v[2], eua->v[3],
-			eua->v[4], eua->v[5]);
-
-  pdp->ipnext = NULL;
-  pdp->ipif = ipif;
-  pdp->eua.l = eua->l;
-  memcpy(pdp->eua.v, eua->v, eua->l);
-
-  hash = pdp_iphash(pdp->ipif, &pdp->eua);
-
-  for (pdp2 = haship[hash]; pdp2; pdp2 = pdp2->ipnext)
-    pdp_prev = pdp2;
-  if (!pdp_prev)
-    haship[hash] = pdp;
-  else
-    pdp_prev->ipnext = pdp;
-  if (PDP_DEBUG) printf("End pdp_ipset\n");
-  return 0;
-}
-
-int pdp_ipdel(struct pdp_t *pdp) {
-  int hash = pdp_iphash(pdp->ipif, &pdp->eua);
-  struct pdp_t *pdp2;
-  struct pdp_t *pdp_prev = NULL;
-  if (PDP_DEBUG) printf("Begin pdp_ipdel\n");
-  for (pdp2 = haship[hash]; pdp2; pdp2 = pdp2->ipnext) {
-    if (pdp2 == pdp) {
-      if (!pdp_prev)
-	haship[hash] = pdp2->ipnext;
-      else
-	pdp_prev->ipnext = pdp2->ipnext;
-      if (PDP_DEBUG) printf("End pdp_ipdel: PDP found\n");
-      return 0;
-    }
-    pdp_prev = pdp2;
-  }
-  if (PDP_DEBUG) printf("End pdp_ipdel: PDP not found\n");
-  return EOF; /# End of linked list and not found #/
-}
-
-int pdp_ipget(struct pdp_t **pdp, void* ipif, struct ul66_t *eua) {
-  int hash = pdp_iphash(ipif, eua);
-  struct pdp_t *pdp2;
-  /#printf("Begin pdp_ipget %d %d %2x%2x%2x%2x\n", (unsigned)ipif, eua->l,
-    eua->v[2],eua->v[3],eua->v[4],eua->v[5]);#/
-  for (pdp2 = haship[hash]; pdp2; pdp2 = pdp2->ipnext) {
-    if ((pdp2->ipif == ipif) && (pdp2->eua.l == eua->l) &&
-	(memcmp(&pdp2->eua.v, &eua->v, eua->l) == 0)) {
-      *pdp = pdp2;
-      /#printf("End pdp_ipget. Found\n");#/
-      return 0;
-    }
-  }
-  if (PDP_DEBUG) printf("End pdp_ipget Notfound %d %d %2x%2x%2x%2x\n",
-	 (unsigned)ipif, eua->l, eua->v[2],eua->v[3],eua->v[4],eua->v[5]);
-  return EOF; /# End of linked list and not found #/
-}
-*/
 /* Various conversion functions */
 
 uint64_t pdp_gettid(uint64_t imsi, uint8_t nsapi)

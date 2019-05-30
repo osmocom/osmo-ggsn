@@ -262,13 +262,6 @@ void pdp_set_imsi_nsapi(struct pdp_t *pdp, uint64_t teid);
 
 unsigned int pdp_count_secondary(struct pdp_t *pdp);
 
-/*
-int pdp_iphash(void* ipif, struct ul66_t *eua);
-int pdp_ipset(struct pdp_t *pdp, void* ipif, struct ul66_t *eua);
-int pdp_ipdel(struct pdp_t *pdp);
-int pdp_ipget(struct pdp_t **pdp, void* ipif, struct ul66_t *eua);
-*/
-
 uint64_t pdp_gettid(uint64_t imsi, uint8_t nsapi);
 
 #endif /* !_PDP_H */
