@@ -2613,6 +2613,14 @@ int gtp_delete_pdp_ind(struct gsn_t *gsn, int version,
 		gtpie_gettv1(ie, GTPIE_TEARDOWN, 0, &teardown);
 
 		if (!teardown) {
+			/* TS 29.060 section 7.3.5: If a GSN receives a Delete PDP context
+			 * without a Teardown Indicator or with a Teardown Indicator with
+			 * value set to "0" and only that PDP context is active for a PDN
+			 * connection, then the GSN shall ignore the message.  (Note:
+			 * This is symptom of a race condition. The reliable delivery of
+			 * signalling messages will eventually lead to a consistent
+			 * situation, allowing the teardown of the PDP context.)
+			 */
 			for (n = 0; n < PDP_MAXNSAPI; n++)
 				if (linked_pdp->secondary_tei[n])
 					count++;
