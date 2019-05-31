@@ -15,6 +15,8 @@
 #include <osmocom/core/utils.h>
 #include <osmocom/core/defs.h>
 
+#include "pdp.h"
+
 #define GTP_MODE_GGSN 1
 #define GTP_MODE_SGSN 2
 
@@ -263,6 +265,9 @@ struct gsn_t {
 	struct queue_t *queue_req;	/* Request queue */
 	struct queue_t *queue_resp;	/* Response queue */
 
+	struct pdp_t pdpa[PDP_MAX];	/* PDP storage */
+	struct pdp_t *hashtid[PDP_MAX];	/* Hash table for IMSI + NSAPI */
+
 	/* Call back functions */
 	int (*cb_delete_context) (struct pdp_t *);
 	int (*cb_create_context_ind) (struct pdp_t *);
@@ -307,7 +312,7 @@ extern int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 extern int gtp_free(struct gsn_t *gsn);
 
 extern int gtp_newpdp(struct gsn_t *gsn, struct pdp_t **pdp,
-		      uint64_t imsi, uint8_t nsapi);
+		      uint64_t imsi, uint8_t nsapi) OSMO_DEPRECATED("Use gtp_pdp_newpdp() instead");
 extern int gtp_freepdp(struct gsn_t *gsn, struct pdp_t *pdp);
 extern int gtp_freepdp_teardown(struct gsn_t *gsn, struct pdp_t *pdp);
 

@@ -131,16 +131,12 @@ const struct value_string gtp_type_names[] = {
 	{ 0, NULL }
 };
 
-/* gtp_new */
-/* gtp_free */
-
+/* Deprecated, use gtp_pdp_newpdp() instead */
 int gtp_newpdp(struct gsn_t *gsn, struct pdp_t **pdp,
 	       uint64_t imsi, uint8_t nsapi)
 {
 	int rc;
-	rc = pdp_newpdp(pdp, imsi, nsapi, NULL);
-	if (!rc && *pdp)
-		(*pdp)->gsn = gsn;
+	rc = gtp_pdp_newpdp(gsn, pdp, imsi, nsapi, NULL);
 	return rc;
 }
 
@@ -849,7 +845,7 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 	queue_new(&(*gsn)->queue_resp);
 
 	/* Initialise pdp table */
-	pdp_init();
+	pdp_init(*gsn);
 
 	/* Initialise call back functions */
 	(*gsn)->cb_create_context_ind = 0;
@@ -1681,9 +1677,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 		}
 	}
 
-	pdp_newpdp(&pdp, pdp->imsi, pdp->nsapi, pdp);
-	if (pdp)
-		pdp->gsn = gsn;
+	gtp_pdp_newpdp(gsn, &pdp, pdp->imsi, pdp->nsapi, pdp);
 
 	/* Callback function to validate login */
 	if (gsn->cb_create_context_ind != 0)

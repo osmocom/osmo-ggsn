@@ -15,6 +15,8 @@
 
 #include <stdbool.h>
 
+#include <osmocom/core/defs.h>
+
 struct gsn_t;
 
 #define LOGPDPX(ss, level, pdp, fmt, args...)				\
@@ -235,33 +237,40 @@ struct pdp_t {
 	/* to be used by libgtp callers/users (to attach their own private state) */
 	void *priv;
 
-	struct gsn_t *gsn;
+	struct gsn_t *gsn; /* Back pointer to GSN where this pdp ctx belongs to */
 
 	bool tx_gpdu_seq;		/* Transmit (true) or suppress G-PDU sequence numbers */
 };
 
 /* functions related to pdp_t management */
-int pdp_init();
-int pdp_newpdp(struct pdp_t **pdp, uint64_t imsi, uint8_t nsapi,
-	       struct pdp_t *pdp_old);
+int gtp_pdp_newpdp(struct gsn_t *gsn, struct pdp_t **pdp, uint64_t imsi,
+		   uint8_t nsapi, struct pdp_t *pdp_old);
 int pdp_freepdp(struct pdp_t *pdp);
-int pdp_getpdp(struct pdp_t **pdp);
-
-int pdp_getgtp0(struct pdp_t **pdp, uint16_t fl);
-int pdp_getgtp1(struct pdp_t **pdp, uint32_t tei);
-int pdp_getgtp1_peer_d(struct pdp_t **pdp, const struct sockaddr_in *peer, uint32_t teid_gn);
-
-int pdp_getimsi(struct pdp_t **pdp, uint64_t imsi, uint8_t nsapi);
+int gtp_pdp_getgtp0(struct gsn_t *gsn, struct pdp_t **pdp, uint16_t fl);
+int gtp_pdp_getgtp1(struct gsn_t *gsn, struct pdp_t **pdp, uint32_t tei);
+int gtp_pdp_getgtp1_peer_d(struct gsn_t *gsn, struct pdp_t **pdp, const struct sockaddr_in *peer, uint32_t teid_gn);
+int gtp_pdp_getimsi(struct gsn_t *gsn, struct pdp_t **pdp, uint64_t imsi, uint8_t nsapi);
+int gtp_pdp_tidget(struct gsn_t *gsn, struct pdp_t **pdp, uint64_t tid);
 
 int pdp_tidhash(uint64_t tid);
 int pdp_tidset(struct pdp_t *pdp, uint64_t tid);
 int pdp_tiddel(struct pdp_t *pdp);
-int pdp_tidget(struct pdp_t **pdp, uint64_t tid);
 
+uint64_t pdp_gettid(uint64_t imsi, uint8_t nsapi);
 void pdp_set_imsi_nsapi(struct pdp_t *pdp, uint64_t teid);
 
 unsigned int pdp_count_secondary(struct pdp_t *pdp);
 
-uint64_t pdp_gettid(uint64_t imsi, uint8_t nsapi);
+/* Deprecated APIs (support for only 1 GSN per process). Must be used only after first call to gtp_new() and until it is freed. */
+int pdp_init(struct gsn_t *gsn); /* Use only allowed inside libgtp to keep compatiblity with deprecated APIs defined here. */
+int pdp_newpdp(struct pdp_t **pdp, uint64_t imsi, uint8_t nsapi,
+	       struct pdp_t *pdp_old) OSMO_DEPRECATED("Use gtp_pdp_newpdp() instead");
+int pdp_getpdp(struct pdp_t **pdp) OSMO_DEPRECATED("Use gsn_t->pdpa field instead");
+int pdp_getgtp0(struct pdp_t **pdp, uint16_t fl) OSMO_DEPRECATED("Use gtp_pdp_getgtp0() instead");
+int pdp_getgtp1(struct pdp_t **pdp, uint32_t tei) OSMO_DEPRECATED("Use gtp_pdp_getgtp1() instead");
+int pdp_getgtp1_peer_d(struct pdp_t **pdp, const struct sockaddr_in *peer, uint32_t teid_gn) OSMO_DEPRECATED("Use gtp_pdp_getgtp1_peer_d() instead");
+int pdp_getimsi(struct pdp_t **pdp, uint64_t imsi, uint8_t nsapi) OSMO_DEPRECATED("Use gtp_pdp_getimsi() instead");
+int pdp_tidget(struct pdp_t **pdp, uint64_t tid) OSMO_DEPRECATED("Use gtp_pdp_tidget() instead");
+
 
 #endif /* !_PDP_H */

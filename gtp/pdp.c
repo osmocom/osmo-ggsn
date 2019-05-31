@@ -33,13 +33,6 @@
 #include "lookupa.h"
 
 /* ***********************************************************
- * Global variables TODO: most should be moved to gsn_t
- *************************************************************/
-
-static struct pdp_t pdpa[PDP_MAX];	/* PDP storage */
-static struct pdp_t *hashtid[PDP_MAX];	/* Hash table for IMSI + NSAPI */
-
-/* ***********************************************************
  * Functions related to PDP storage
  *
  * Lifecycle
@@ -111,11 +104,16 @@ static struct pdp_t *hashtid[PDP_MAX];	/* Hash table for IMSI + NSAPI */
  *
  *************************************************************/
 
-int pdp_init()
+static struct gsn_t *g_gsn;
+
+int pdp_init(struct gsn_t *gsn)
 {
-	memset(&pdpa, 0, sizeof(pdpa));
-	memset(&hashtid, 0, sizeof(hashtid));
-	/*  memset(&haship, 0, sizeof(haship)); */
+	if(!g_gsn) {
+		g_gsn = gsn;
+	} else {
+		LOGP(DLGTP, LOGL_FATAL, "This interface is depreacted and doesn't support multiple GGSN!");
+		return -1;
+	}
 
 	return 0;
 }
@@ -123,6 +121,13 @@ int pdp_init()
 int pdp_newpdp(struct pdp_t **pdp, uint64_t imsi, uint8_t nsapi,
 	       struct pdp_t *pdp_old)
 {
+	return gtp_pdp_newpdp(g_gsn, pdp, imsi, nsapi, pdp_old);
+}
+
+int gtp_pdp_newpdp(struct gsn_t *gsn, struct pdp_t **pdp, uint64_t imsi, uint8_t nsapi,
+	       struct pdp_t *pdp_old)
+{
+	struct pdp_t *pdpa = gsn->pdpa;
 	int n;
 	for (n = 0; n < PDP_MAX; n++) {	/* TODO: Need to do better than linear search */
 		if (pdpa[n].inuse == 0) {
@@ -132,6 +137,7 @@ int pdp_newpdp(struct pdp_t **pdp, uint64_t imsi, uint8_t nsapi,
 			else
 				memset(*pdp, 0, sizeof(struct pdp_t));
 			(*pdp)->inuse = 1;
+			(*pdp)->gsn = gsn;
 			(*pdp)->imsi = imsi;
 			(*pdp)->nsapi = nsapi;
 			(*pdp)->fllc = (uint16_t) n + 1;
@@ -159,6 +165,8 @@ int pdp_newpdp(struct pdp_t **pdp, uint64_t imsi, uint8_t nsapi,
 
 int pdp_freepdp(struct pdp_t *pdp)
 {
+	struct pdp_t *pdpa = pdp->gsn->pdpa;
+
 	pdp_tiddel(pdp);
 
 	/* Remove any references in primary context */
@@ -173,12 +181,20 @@ int pdp_freepdp(struct pdp_t *pdp)
 
 int pdp_getpdp(struct pdp_t **pdp)
 {
-	*pdp = &pdpa[0];
+	*pdp = &g_gsn->pdpa[0];
 	return 0;
 }
 
 int pdp_getgtp0(struct pdp_t **pdp, uint16_t fl)
 {
+	return gtp_pdp_getgtp0(g_gsn, pdp, fl);
+}
+
+
+int gtp_pdp_getgtp0(struct gsn_t *gsn, struct pdp_t **pdp, uint16_t fl)
+{
+	struct pdp_t *pdpa = gsn->pdpa;
+
 	if ((fl > PDP_MAX) || (fl < 1)) {
 		return EOF;	/* Not found */
 	} else {
@@ -193,6 +209,13 @@ int pdp_getgtp0(struct pdp_t **pdp, uint16_t fl)
 
 int pdp_getgtp1(struct pdp_t **pdp, uint32_t tei)
 {
+	return gtp_pdp_getgtp1(g_gsn, pdp, tei);
+}
+
+int gtp_pdp_getgtp1(struct gsn_t *gsn, struct pdp_t **pdp, uint32_t tei)
+{
+	struct pdp_t *pdpa = gsn->pdpa;
+
 	if ((tei > PDP_MAX) || (tei < 1)) {
 		return EOF;	/* Not found */
 	} else {
@@ -208,6 +231,12 @@ int pdp_getgtp1(struct pdp_t **pdp, uint32_t tei)
 /* get a PDP based on the *peer* address + TEI-Data.  Used for matching inbound Error Ind */
 int pdp_getgtp1_peer_d(struct pdp_t **pdp, const struct sockaddr_in *peer, uint32_t teid_gn)
 {
+	return gtp_pdp_getgtp1_peer_d(g_gsn, pdp, peer, teid_gn);
+}
+
+int gtp_pdp_getgtp1_peer_d(struct gsn_t *gsn, struct pdp_t **pdp, const struct sockaddr_in *peer, uint32_t teid_gn)
+{
+	struct pdp_t *pdpa = gsn->pdpa;
 	unsigned int i;
 
 	/* this is O(n) but we don't have (nor want) another hash... */
@@ -230,6 +259,7 @@ int pdp_tidhash(uint64_t tid)
 
 int pdp_tidset(struct pdp_t *pdp, uint64_t tid)
 {
+	struct pdp_t **hashtid = pdp->gsn->hashtid;
 	int hash = pdp_tidhash(tid);
 	struct pdp_t *pdp2;
 	struct pdp_t *pdp_prev = NULL;
@@ -248,6 +278,7 @@ int pdp_tidset(struct pdp_t *pdp, uint64_t tid)
 
 int pdp_tiddel(struct pdp_t *pdp)
 {
+	struct pdp_t **hashtid = pdp->gsn->hashtid;
 	int hash = pdp_tidhash(pdp->tid);
 	struct pdp_t *pdp2;
 	struct pdp_t *pdp_prev = NULL;
@@ -269,6 +300,12 @@ int pdp_tiddel(struct pdp_t *pdp)
 
 int pdp_tidget(struct pdp_t **pdp, uint64_t tid)
 {
+	return gtp_pdp_tidget(g_gsn, pdp, tid);
+}
+
+int gtp_pdp_tidget(struct gsn_t *gsn, struct pdp_t **pdp, uint64_t tid)
+{
+	struct pdp_t **hashtid = gsn->hashtid;
 	int hash = pdp_tidhash(tid);
 	struct pdp_t *pdp2;
 	DEBUGP(DLGTP, "Begin pdp_tidget tid = %"PRIx64"\n", tid);
@@ -285,7 +322,12 @@ int pdp_tidget(struct pdp_t **pdp, uint64_t tid)
 
 int pdp_getimsi(struct pdp_t **pdp, uint64_t imsi, uint8_t nsapi)
 {
-	return pdp_tidget(pdp,
+	return gtp_pdp_getimsi(g_gsn, pdp, imsi, nsapi);
+}
+
+int gtp_pdp_getimsi(struct gsn_t *gsn, struct pdp_t **pdp, uint64_t imsi, uint8_t nsapi)
+{
+	return gtp_pdp_tidget(gsn, pdp,
 			  (imsi & 0x0fffffffffffffffull) +
 			  ((uint64_t) nsapi << 60));
 }
