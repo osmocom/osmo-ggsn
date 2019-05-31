@@ -2421,13 +2421,14 @@ int gtp_delete_context_req(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 		   because we don't want user to release its related
 		   data and not use it anymore.
 		 */
-		if (gsn->cb_delete_context)
-			gsn->cb_delete_context(pdp);
 		if (pdp == linked_pdp) {
-			linked_pdp->secondary_tei[pdp->nsapi & 0xf0] = 0;
-			linked_pdp->nodata = 1;
-		} else
-			pdp_freepdp(pdp);
+			if (gsn->cb_delete_context)
+				gsn->cb_delete_context(pdp);
+			pdp->secondary_tei[pdp->nsapi & 0xf0] = 0;
+			pdp->nodata = 1;
+		} else {
+			gtp_freepdp(gsn, pdp);
+		}
 	}
 
 	return 0;
@@ -2510,14 +2511,14 @@ int gtp_delete_pdp_resp(struct gsn_t *gsn, int version,
 			   because we don't want user to release its related
 			   data and not use it anymore.
 			 */
-			if (gsn->cb_delete_context)
-				gsn->cb_delete_context(pdp);
 			if (pdp == linked_pdp) {
-				linked_pdp->secondary_tei[pdp->nsapi & 0xf0] =
-				    0;
-				linked_pdp->nodata = 1;
-			} else
-				pdp_freepdp(pdp);
+				if (gsn->cb_delete_context)
+					gsn->cb_delete_context(pdp);
+				pdp->secondary_tei[pdp->nsapi & 0xf0] = 0;
+				pdp->nodata = 1;
+			} else {
+				gtp_freepdp(gsn, pdp);
+			}
 		}
 	}
 	/* if (cause == GTPCAUSE_ACC_REQ) */
