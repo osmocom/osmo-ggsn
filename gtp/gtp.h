@@ -1,12 +1,12 @@
-/* 
+/*
  *  OsmoGGSN - Gateway GPRS Support Node
  *  Copyright (C) 2002, 2003, 2004 Mondru AB.
- * 
+ *
  *  The contents of this file may be used under the terms of the GNU
  *  General Public License Version 2, provided that the above copyright
  *  notice and this permission notice is included in all copies or
  *  substantial portions of the software.
- * 
+ *
  */
 
 #ifndef _GTP_H
@@ -142,7 +142,7 @@ struct ul66_t;
 struct ul16_t;
 struct pdp_t;
 
-/* GTP 0 header. 
+/* GTP 0 header.
  * Explanation to some of the fields:
  * SNDCP NPDU Number flag = 0 except for inter SGSN handover situations
  * SNDCP N-PDU LCC Number 0 = 0xff except for inter SGSN handover situations
@@ -231,13 +231,13 @@ union gtp_packet {
  * Information storage for each gsn instance
  *
  * Normally each instance of the application corresponds to
- * one instance of a gsn. 
- * 
+ * one instance of a gsn.
+ *
  * In order to avoid global variables in the application, and
  * also in order to allow several instances of a gsn in the same
  * application this struct is provided in order to store all
  * relevant information related to the gsn.
- * 
+ *
  * Note that this does not include information storage for '
  * each pdp context. This is stored in another struct.
  *************************************************************/
