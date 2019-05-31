@@ -2409,6 +2409,18 @@ int gtp_delete_context_req(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 	if (teardown) {		/* Remove all contexts */
 		gtp_freepdp_teardown(gsn, linked_pdp);
 	} else {
+		/* If we end up here (no teardown) it means we still
+		   have at least another pdp context active for this
+		   PDN connection (since last DeleteReq should come
+		   with teardown enabled). If the ctx to delete is a
+		   secondary ctx, simply free it. If it's the primary
+		   ctx, mark it as nodata but don't free it since we
+		   need it to hold data linked together and we'll
+		   require it later to tear down the entire tree. Still,
+		   we announce its deletion through cb_delete_context
+		   because we don't want user to release its related
+		   data and not use it anymore.
+		 */
 		if (gsn->cb_delete_context)
 			gsn->cb_delete_context(pdp);
 		if (pdp == linked_pdp) {
@@ -2485,7 +2497,19 @@ int gtp_delete_pdp_resp(struct gsn_t *gsn, int version,
 	if (cause == GTPCAUSE_ACC_REQ) {
 		if ((teardown) || (version == 0)) {	/* Remove all contexts */
 			gtp_freepdp_teardown(gsn, linked_pdp);
-		} else {	/* Remove only current context */
+		} else {
+			/* If we end up here (no teardown) it means we still
+			   have at least another pdp context active for this
+			   PDN connection (since last DeleteReq should come
+			   with teardown enabled). If the ctx to delete is a
+			   secondary ctx, simply free it. If it's the primary
+			   ctx, mark it as nodata but don't free it since we
+			   need it to hold data linked together and we'll
+			   require it later to tear down the entire tree. Still,
+			   we announce its deletion through cb_delete_context
+			   because we don't want user to release its related
+			   data and not use it anymore.
+			 */
 			if (gsn->cb_delete_context)
 				gsn->cb_delete_context(pdp);
 			if (pdp == linked_pdp) {
