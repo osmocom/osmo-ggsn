@@ -351,10 +351,12 @@
         <param name='APN' doc='APN name' />
       </params>
     </command>
-    <command id='show pdp-context imsi IMSI [&lt;0-15&gt;]'>
+    <command id='show pdp-context ggsn NAME imsi IMSI [&lt;0-15&gt;]'>
       <params>
         <param name='show' doc='Show running system information' />
         <param name='pdp-context' doc='Display information on PDP Context' />
+        <param name='ggsn' doc='Gateway GPRS Support NODE (GGSN)' />
+        <param name='NAME' doc='GGSN Name' />
         <param name='imsi' doc='PDP contexts for given IMSI' />
         <param name='IMSI' doc='PDP context for given NSAPI' />
         <param name='[&lt;0-15&gt;]' doc='(null)' />
@@ -709,10 +711,12 @@
         <param name='APN' doc='APN name' />
       </params>
     </command>
-    <command id='show pdp-context imsi IMSI [&lt;0-15&gt;]'>
+    <command id='show pdp-context ggsn NAME imsi IMSI [&lt;0-15&gt;]'>
       <params>
         <param name='show' doc='Show running system information' />
         <param name='pdp-context' doc='Display information on PDP Context' />
+        <param name='ggsn' doc='Gateway GPRS Support NODE (GGSN)' />
+        <param name='NAME' doc='GGSN Name' />
         <param name='imsi' doc='PDP contexts for given IMSI' />
         <param name='IMSI' doc='PDP context for given NSAPI' />
         <param name='[&lt;0-15&gt;]' doc='(null)' />

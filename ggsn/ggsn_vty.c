@@ -764,25 +764,35 @@ static void show_one_pdp(struct vty *vty, struct pdp_t *pdp)
 }
 
 DEFUN(show_pdpctx_imsi, show_pdpctx_imsi_cmd,
-	"show pdp-context imsi IMSI [<0-15>]",
+	"show pdp-context ggsn NAME imsi IMSI [<0-15>]",
 	SHOW_STR "Display information on PDP Context\n"
+	GGSN_STR "GGSN Name\n"
 	"PDP contexts for given IMSI\n"
 	"PDP context for given NSAPI\n")
 {
-	uint64_t imsi = strtoull(argv[0], NULL, 10);
+	struct ggsn_ctx *ggsn;
+	uint64_t imsi;
 	unsigned int nsapi;
 	struct pdp_t *pdp;
 	int num_found = 0;
 
-	if (argc > 1) {
-		nsapi = atoi(argv[1]);
-		if (pdp_getimsi(&pdp, imsi, nsapi)) {
+	ggsn = ggsn_find(argv[0]);
+	if (!ggsn) {
+		vty_out(vty, "%% No such GGSN '%s'%s", argv[0], VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	imsi = strtoull(argv[1], NULL, 10);
+
+	if (argc > 2) {
+		nsapi = atoi(argv[2]);
+		if (gtp_pdp_getimsi(ggsn->gsn, &pdp, imsi, nsapi)) {
 			show_one_pdp(vty, pdp);
 			num_found++;
 		}
 	} else {
 		for (nsapi = 0; nsapi < PDP_MAXNSAPI; nsapi++) {
-			if (pdp_getimsi(&pdp, imsi, nsapi))
+			if (gtp_pdp_getimsi(ggsn->gsn, &pdp, imsi, nsapi))
 				continue;
 			show_one_pdp(vty, pdp);
 			num_found++;
