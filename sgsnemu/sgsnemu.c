@@ -1614,7 +1614,7 @@ int main(int argc, char **argv)
 		/* Allocated here. */
 		/* If create context failes we have to deallocate ourselves. */
 		/* Otherwise it is deallocated by gtplib */
-		pdp_newpdp(&pdp, myimsi, options.nsapi, NULL);
+		gtp_pdp_newpdp(gsn, &pdp, myimsi, options.nsapi, NULL);
 
 		pdp->peer[0] = &iparr[n]; /* FIXME: support v4v6, have 2 peers */
 		pdp->ipif = tun;	/* TODO */
