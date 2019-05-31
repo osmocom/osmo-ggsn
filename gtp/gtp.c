@@ -156,9 +156,8 @@ int gtp_freepdp_teardown(struct gsn_t *gsn, struct pdp_t *pdp)
 
 	for (n = 0; n < PDP_MAXNSAPI; n++) {
 		if (pdp->secondary_tei[n]) {
-			if (pdp_getgtp1
-			    (&secondary_pdp,
-			     pdp->secondary_tei[n])) {
+			if (gtp_pdp_getgtp1(gsn, &secondary_pdp,
+					     pdp->secondary_tei[n])) {
 				LOGP(DLGTP, LOGL_ERROR,
 					"Unknown secondary PDP context\n");
 				continue;
@@ -1150,7 +1149,7 @@ int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
 	   Protocol Configuration Options */
 
 	if (pdp->secondary) {
-		if (pdp_getgtp1(&linked_pdp, pdp->teic_own)) {
+		if (gtp_pdp_getgtp1(gsn, &linked_pdp, pdp->teic_own)) {
 			LOGP(DLGTP, LOGL_ERROR,
 				"Unknown linked PDP context: %u\n", pdp->teic_own);
 			return EOF;
@@ -1430,7 +1429,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 		if (!gtpie_gettv1(ie, GTPIE_NSAPI, 1, &linked_nsapi)) {
 
 			/* Find the primary PDP context */
-			if (pdp_getgtp1(&linked_pdp, get_tei(pack))) {
+			if (gtp_pdp_getgtp1(gsn, &linked_pdp, get_tei(pack))) {
 				gsn->incorrect++;
 				GTP_LOGPKG(LOGL_ERROR, peer,
 					    pack, len,
@@ -1613,9 +1612,9 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 	in_addr2gsna(&pdp->gsnlc, &gsn->gsnc);
 	in_addr2gsna(&pdp->gsnlu, &gsn->gsnu);
 
-	DEBUGP(DLGTP, "gtp_create_pdp_ind: Before pdp_tidget\n");
+	DEBUGP(DLGTP, "gtp_create_pdp_ind: Before gtp_pdp_tidget\n");
 
-	if (!pdp_getimsi(&pdp_old, pdp->imsi, pdp->nsapi)) {
+	if (!gtp_pdp_getimsi(gsn, &pdp_old, pdp->imsi, pdp->nsapi)) {
 		/* Found old pdp with same tid. Now the voodoo begins! */
 		/* 09.60 / 29.060 allows create on existing context to "steal" */
 		/* the context which was allready established */
@@ -1709,7 +1708,7 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 		return EOF;
 
 	/* Find the context in question */
-	if (pdp_getgtp1(&pdp, get_tei(pack))) {
+	if (gtp_pdp_getgtp1(gsn, &pdp, get_tei(pack))) {
 		gsn->err_unknownpdp++;
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Unknown PDP context: %u\n", get_tei(pack));
@@ -2091,7 +2090,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 		pdp_set_imsi_nsapi(pdp, tid);
 
 		/* Find the context in question */
-		if (pdp_getimsi(&pdp, imsi, nsapi)) {
+		if (gtp_pdp_getimsi(gsn, &pdp, imsi, nsapi)) {
 			gsn->err_unknownpdp++;
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Unknown PDP context\n");
@@ -2113,7 +2112,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 		/* IMSI (conditional) */
 		if (gtpie_gettv0(ie, GTPIE_IMSI, 0, &imsi, sizeof(imsi))) {
 			/* Find the context in question */
-			if (pdp_getgtp1(&pdp, get_tei(pack))) {
+			if (gtp_pdp_getgtp1(gsn, &pdp, get_tei(pack))) {
 				gsn->err_unknownpdp++;
 				GTP_LOGPKG(LOGL_ERROR, peer,
 					pack, len, "Unknown PDP context: %u\n",
@@ -2124,7 +2123,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 			}
 		} else {
 			/* Find the context in question */
-			if (pdp_getimsi(&pdp, imsi, nsapi)) {
+			if (gtp_pdp_getimsi(gsn, &pdp, imsi, nsapi)) {
 				gsn->err_unknownpdp++;
 				GTP_LOGPKG(LOGL_ERROR, peer,
 					    pack, len, "Unknown PDP context\n");
@@ -2290,7 +2289,7 @@ static int gtp_update_pdp_conf(struct gsn_t *gsn, uint8_t version,
 		return EOF;
 
 	/* Find the context in question */
-	if (pdp_getgtp1(&pdp, get_tei(pack))) {
+	if (gtp_pdp_getgtp1(gsn, &pdp, get_tei(pack))) {
 		gsn->err_unknownpdp++;
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Unknown PDP context: %u\n", get_tei(pack));
@@ -2391,7 +2390,7 @@ int gtp_delete_context_req(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 {
 	struct pdp_t *linked_pdp;
 
-	if (pdp_getgtp1(&linked_pdp, pdp->teic_own)) {
+	if (gtp_pdp_getgtp1(gsn, &linked_pdp, pdp->teic_own)) {
 		LOGP(DLGTP, LOGL_ERROR,
 			"Unknown linked PDP context: %u\n", pdp->teic_own);
 		return EOF;
@@ -2447,7 +2446,7 @@ int gtp_delete_context_req2(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 		return EOF;
 	}
 
-	if (pdp_getgtp1(&linked_pdp, pdp->teic_own)) {
+	if (gtp_pdp_getgtp1(gsn, &linked_pdp, pdp->teic_own)) {
 		LOGP(DLGTP, LOGL_ERROR,
 			"Unknown linked PDP context: %u\n", pdp->teic_own);
 		return EOF;
@@ -2543,7 +2542,7 @@ int gtp_delete_pdp_ind(struct gsn_t *gsn, int version,
 	}
 
 	/* Find the linked context in question */
-	if (pdp_getgtp1(&linked_pdp, get_tei(pack))) {
+	if (gtp_pdp_getgtp1(gsn, &linked_pdp, get_tei(pack))) {
 		gsn->err_unknownpdp++;
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Unknown PDP context: %u\n", get_tei(pack));
@@ -2583,7 +2582,7 @@ int gtp_delete_pdp_ind(struct gsn_t *gsn, int version,
 		}
 
 		/* Find the context in question */
-		if (pdp_getgtp1(&pdp, linked_pdp->secondary_tei[nsapi & 0x0f])) {
+		if (gtp_pdp_getgtp1(gsn, &pdp, linked_pdp->secondary_tei[nsapi & 0x0f])) {
 			gsn->err_unknownpdp++;
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Unknown PDP context\n");
@@ -2636,7 +2635,7 @@ int gtp_delete_pdp_conf(struct gsn_t *gsn, int version,
 
 	/* Find the context in question. It may not be available if gtp_delete_context_req
 	 * was used and as a result the PDP ctx was already freed */
-	if (pdp_getgtp1(&pdp, get_tei(pack))) {
+	if (gtp_pdp_getgtp1(gsn, &pdp, get_tei(pack))) {
 		gsn->err_unknownpdp++;
 		GTP_LOGPKG(LOGL_NOTICE, peer, pack, len,
 			    "Unknown PDP context: %u (expected if gtp_delete_context_req is used or pdp ctx was freed manually before response)\n",
@@ -2714,7 +2713,7 @@ static int gtp_error_ind_conf(struct gsn_t *gsn, uint8_t version,
 
 	/* Find the context in question */
 	if (version == 0) {
-		if (pdp_tidget(&pdp, be64toh(((union gtp_packet *)pack)->gtp0.h.tid))) {
+		if (gtp_pdp_tidget(gsn, &pdp, be64toh(((union gtp_packet *)pack)->gtp0.h.tid))) {
 			gsn->err_unknownpdp++;
 			GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 				    "Unknown PDP context\n");
@@ -2740,7 +2739,7 @@ static int gtp_error_ind_conf(struct gsn_t *gsn, uint8_t version,
 			return EOF;
 		}
 
-		if (pdp_getgtp1_peer_d(&pdp, peer, teid_gn)) {
+		if (gtp_pdp_getgtp1_peer_d(gsn, &pdp, peer, teid_gn)) {
 			gsn->err_unknownpdp++;
 			GTP_LOGPKG(LOGL_ERROR, peer, pack, len, "Unknown PDP context\n");
 			return EOF;
@@ -2770,8 +2769,8 @@ static int gtp_gpdu_ind(struct gsn_t *gsn, uint8_t version,
 
 	switch (version) {
 	case 0:
-		if (pdp_getgtp0
-		    (&pdp, ntoh16(((union gtp_packet *)pack)->gtp0.h.flow))) {
+		if (gtp_pdp_getgtp0(gsn, &pdp,
+				    ntoh16(((union gtp_packet *)pack)->gtp0.h.flow))) {
 			gsn->err_unknownpdp++;
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Unknown PDP context, GTPv0\n");
@@ -2781,8 +2780,8 @@ static int gtp_gpdu_ind(struct gsn_t *gsn, uint8_t version,
 		hlen = GTP0_HEADER_SIZE;
 		break;
 	case 1:
-		if (pdp_getgtp1
-		    (&pdp, ntoh32(((union gtp_packet *)pack)->gtp1l.h.tei))) {
+		if (gtp_pdp_getgtp1(gsn, &pdp,
+				    ntoh32(((union gtp_packet *)pack)->gtp1l.h.tei))) {
 			gsn->err_unknownpdp++;
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Unknown PDP context, GTPv1\n");
