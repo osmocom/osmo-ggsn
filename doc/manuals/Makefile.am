@@ -1,6 +1,7 @@
 EXTRA_DIST = osmoggsn-usermanual.adoc \
     osmoggsn-usermanual-docinfo.xml \
     osmoggsn-vty-reference.xml \
+    regen_doc.sh \
     chapters \
     vty
 
