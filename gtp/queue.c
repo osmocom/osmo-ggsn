@@ -62,7 +62,7 @@ static int queue_seqhash(struct sockaddr_in *peer, uint16_t seq)
 	return seq % QUEUE_HASH_SIZE;
 }
 
-/*! \brief Insert a message with given sequence number into the hash
+/*! \brief Insert a message with given sequence number into the hash.
  *
  * This function sets the peer and the seq of the qmsg and then inserts
  * the qmsg into the queue hash.  To do so, it does a hashtable lookup
@@ -121,7 +121,10 @@ static int queue_seqdel(struct queue_t *queue, struct qmsg_t *qmsg)
 	return EOF;		/* End of linked list and not found */
 }
 
-/*! \brief Allocates and initialises new queue structure */
+/*! Allocates and initialises new queue structure.
+ *  \param[out] queue pointer where to store the allocated object. Must be freed with queue_free
+ *  \returns zero on success, non-zero on error
+ */
 int queue_new(struct queue_t **queue)
 {
 	if (QUEUE_DEBUG)
@@ -138,7 +141,10 @@ int queue_new(struct queue_t **queue)
 	return 0;
 }
 
-/*! \brief Deallocates queue structure */
+/*! Deallocates queue structure.
+ *  \param[in] queue pointer previously allocated by queue_new
+ *  \returns zero on success, non-zero on error.
+ */
 int queue_free(struct queue_t *queue)
 {
 	if (QUEUE_DEBUG)
@@ -149,7 +155,13 @@ int queue_free(struct queue_t *queue)
 	return 0;
 }
 
-/*! \brief Add a new message to the queue */
+/*! Add a new message to the queue.
+ *  \param[in] queue pointer previously allocated by queue_new
+ *  \param[out] qmsg first message from the queue (if succeeds)
+ *  \param[in] peer who sent the message to add
+ *  \param[in] seq sequence number of the message to add
+ *  \returns zero on success, non-zero on error.
+ */
 int queue_newmsg(struct queue_t *queue, struct qmsg_t **qmsg,
 		 struct sockaddr_in *peer, uint16_t seq)
 {
@@ -176,7 +188,11 @@ int queue_newmsg(struct queue_t *queue, struct qmsg_t **qmsg,
 	}
 }
 
-/*! \brief Simply remoev a given qmsg_t from the queue
+
+/*! Remove an element from the queue.
+ *  \param[in] queue pointer previously allocated by queue_new
+ *  \param[in] qmsg message to free
+ *  \returns zero on success, non-zero on error.
  *
  * Internally, we first delete the entry from the queue, and then update
  * up our global queue->first / queue->last pointers.  Finally,
@@ -210,7 +226,11 @@ int queue_freemsg(struct queue_t *queue, struct qmsg_t *qmsg)
 	return 0;
 }
 
-/*! \brief Move a given qmsg_t to the end of the queue ?!? */
+/*! Move a given qmsg_t to the end of the queue.
+ *  \param[in] queue pointer previously allocated by queue_new
+ *  \param[in] qmsg message to move to the end of the queue
+ *  \returns zero on success, non-zero on error.
+ */
 int queue_back(struct queue_t *queue, struct qmsg_t *qmsg)
 {
 	if (QUEUE_DEBUG)
@@ -236,7 +256,11 @@ int queue_back(struct queue_t *queue, struct qmsg_t *qmsg)
 	return 0;
 }
 
-/*! \brief Get the first element in the entire queue */
+/*! Get the first element in the entire queue.
+ *  \param[in] queue pointer previously allocated by queue_new
+ *  \param[out] qmsg first message from the queue (if succeeds)
+ *  \returns zero on success, non-zero on error.
+ */
 int queue_getfirst(struct queue_t *queue, struct qmsg_t **qmsg)
 {
 	/*printf("queue_getfirst\n"); */
@@ -250,7 +274,13 @@ int queue_getfirst(struct queue_t *queue, struct qmsg_t **qmsg)
 	return 0;
 }
 
-/*! \brief Get a queue entry for a given peer + seq */
+/*! Get a queue entry for a given peer + seq.
+ *  \param[in] queue pointer previously allocated by queue_new
+ *  \param[out] qmsg first message from the queue (if succeeds)
+ *  \param[in] peer who sent the message to retrieve
+ *  \param[in] seq sequence number of the message to retrive
+ *  \returns zero on success, non-zero on error.
+ */
 int queue_seqget(struct queue_t *queue, struct qmsg_t **qmsg,
 		 struct sockaddr_in *peer, uint16_t seq)
 {
@@ -272,7 +302,14 @@ int queue_seqget(struct queue_t *queue, struct qmsg_t **qmsg,
 	return EOF;		/* End of linked list and not found */
 }
 
-/*! \brief look-up a given seq/peer, return cbp + type and free entry */
+/*! look-up a given seq/peer, return cbp + type and free entry.
+ *  \param[in] queue pointer previously allocated by queue_new
+ *  \param[in] peer who sent the message to retrieve
+ *  \param[in] seq sequence number of the message to retrive
+ *  \param[out] type GTP message type
+ *  \param[out] type callback pointer of the message
+ *  \returns zero on success, non-zero on error.
+ */
 int queue_freemsg_seq(struct queue_t *queue, struct sockaddr_in *peer,
 		      uint16_t seq, uint8_t * type, void **cbp)
 {
