@@ -32,3 +32,9 @@ AT_KEYWORDS([gtpie])
 cat $abs_srcdir/gtp/gtpie_test.ok > expout
 AT_CHECK([$abs_top_builddir/tests/gtp/gtpie_test], [], [expout], [])
 AT_CLEANUP
+
+AT_SETUP([queue])
+AT_KEYWORDS([queue])
+cat $abs_srcdir/gtp/queue_test.ok > expout
+AT_CHECK([$abs_top_builddir/tests/gtp/queue_test], [], [expout], [])
+AT_CLEANUP
