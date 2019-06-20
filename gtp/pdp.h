@@ -14,6 +14,7 @@
 #define _PDP_H
 
 #include <stdbool.h>
+#include <netinet/in.h>
 
 #include <osmocom/core/defs.h>
 

@@ -17,6 +17,8 @@
 #ifndef _QUEUE_H
 #define _QUEUE_H
 
+#include "gtp.h"
+
 #define QUEUE_DEBUG 0		/* Print debug information */
 
 #define QUEUE_SIZE 1024		/* Size of retransmission queue */
