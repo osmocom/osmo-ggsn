@@ -419,13 +419,13 @@ struct ipcp_hdr {
 } __attribute__ ((packed));
 
 /* determine if IPCP contains given option */
-static const uint8_t *ipcp_contains_option(const uint8_t *ipcp, size_t ipcp_len,
+static const uint8_t *ipcp_contains_option(const struct ipcp_hdr *ipcp, size_t ipcp_len,
 					   enum ipcp_options opt, size_t opt_minlen)
 {
-	const uint8_t *cur_opt = ipcp + sizeof(struct ipcp_hdr);
+	const uint8_t *cur_opt = ipcp->options;
 
 	/* iterate over Options and check if protocol contained */
-	while (cur_opt + sizeof(struct ipcp_option_hdr) <= ipcp + ipcp_len) {
+	while (cur_opt + sizeof(struct ipcp_option_hdr) <= (uint8_t*)ipcp + ipcp_len) {
 		const struct ipcp_option_hdr *cur_opt_hdr = (const struct ipcp_option_hdr *)cur_opt;
 		/* length value includes 2 bytes type/length */
 		if (cur_opt_hdr->len < sizeof(struct ipcp_option_hdr))
@@ -588,7 +588,7 @@ static void process_pco_element_ipcp(const struct pco_element *pco_elem, struct 
 	const struct in46_addr *dns1 = &apn->v4.cfg.dns[0];
 	const struct in46_addr *dns2 = &apn->v4.cfg.dns[1];
 	uint8_t *start = resp->tail;
-	const uint8_t *ipcp;
+	const struct ipcp_hdr *ipcp;
 	uint16_t ipcp_len;
 	uint8_t *len1, *len2;
 	unsigned int len_appended;
@@ -600,10 +600,10 @@ static void process_pco_element_ipcp(const struct pco_element *pco_elem, struct 
 		return;
 	}
 
-	ipcp = pco_elem->data;
-	consumed = (ipcp - &pdp->pco_req.v[0]);
+	ipcp = (const struct ipcp_hdr *)pco_elem->data;
+	consumed = (pco_elem->data - &pdp->pco_req.v[0]);
 	remain = sizeof(pdp->pco_req.v) - consumed;
-	ipcp_len = osmo_load16be(ipcp + 2); /* 1=code + 1=id */
+	ipcp_len = osmo_load16be(&ipcp->len);
 	if (remain < 0 || remain < ipcp_len) {
 		LOGPPDP(LOGL_ERROR, pdp, "Malformed IPCP, ignoring\n");
 		return;
@@ -614,7 +614,7 @@ static void process_pco_element_ipcp(const struct pco_element *pco_elem, struct 
 	len1 = msgb_put(resp, 1);	/* Length of contents: delay */
 
 	msgb_put_u8(resp, 0x02);	/* ACK */
-	msgb_put_u8(resp, ipcp[1]);	/* ID: Needs to match request */
+	msgb_put_u8(resp, ipcp->id);	/* ID: Needs to match request */
 	msgb_put_u8(resp, 0x00);	/* Length MSB */
 	len2 = msgb_put(resp, 1);	/* Length LSB: delay */
 
