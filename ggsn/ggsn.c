@@ -671,7 +671,7 @@ static void process_pco_element_dns_ipv4(const struct pco_element *pco_elem, str
 static void process_pco_element(const struct pco_element *pco_elem, struct msgb *resp,
 				const struct apn_ctx *apn, struct pdp_t *pdp)
 {
-	uint16_t protocol_id = ntohs(pco_elem->protocol_id);
+	uint16_t protocol_id = osmo_load16be(&pco_elem->protocol_id);
 
 	LOGPPDP(LOGL_DEBUG, pdp, "PCO Protocol 0x%04x\n", protocol_id);
 	switch (protocol_id) {
