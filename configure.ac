@@ -74,8 +74,12 @@ AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h unistd.h])
 
-# Check for if header
-AC_CHECK_HEADERS([linux/if.h net/if.h])
+# Check for if header. Some versions of linux/if.h fail without sys/socket.h included beforehand:
+# see https://algorithmicallyrandom.blogspot.com/2012/07/error-on-including-include.html
+AC_CHECK_HEADERS([linux/if.h net/if.h], [], [], [#ifdef HAVE_SYS_SOCKET_H
+                                                # include <sys/socket.h>
+                                                # endif
+                                                ])
 
 # Check for tun header
 AC_CHECK_HEADERS([linux/if_tun.h net/if_tun.h])
