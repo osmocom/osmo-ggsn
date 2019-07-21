@@ -1452,11 +1452,15 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 		if (!accept_ra || !forwarding)
 			printf("Could not open proc file for %s ?!?\n", tun->devname);
 		else {
-			if (!strcmp(accept_ra, "0") ||
-			    (!strcmp(forwarding, "1") && !strcmp(accept_ra, "1"))) {
-				printf("%s is %s, i.e. your tun device is not configured to accept "
-					"router advertisements; SLAAC will not suceed, please "
+			if (!strcmp(accept_ra, "0")) {
+				printf("accept_ra=0, i.e. your tun device is not configured to accept "
+					"router advertisements; SLAAC will not succeed, please "
 					"fix your setup!\n");
+			}
+			if (!strcmp(forwarding, "1") && !strcmp(accept_ra, "1")) {
+				printf("forwarding=1 and accept_ra=1, i.e. your tun device is not "
+					"configured to accept router advertisements; SLAAC will not "
+					"succeed, please fix your setup!\n");
 			}
 		}
 		free(accept_ra);
