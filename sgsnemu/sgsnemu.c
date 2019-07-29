@@ -1234,7 +1234,7 @@ static int create_ping(void *gsn, struct pdp_t *pdp,
 {
 
 	struct ip_ping pack;
-	uint16_t *p = (uint16_t *) & pack;
+	uint16_t v16;
 	uint8_t *p8 = (uint8_t *) & pack;
 	struct in_addr src;
 	unsigned int n;
@@ -1270,7 +1270,7 @@ static int create_ping(void *gsn, struct pdp_t *pdp,
 	pack.seq = htons(seq);
 
 	/* Generate ICMP payload */
-	p8 = (uint8_t *) & pack + CREATEPING_IP + CREATEPING_ICMP;
+	p8 = (uint8_t *) &pack + CREATEPING_IP + CREATEPING_ICMP;
 	for (n = 0; n < (datasize); n++)
 		p8[n] = n;
 
@@ -1278,11 +1278,13 @@ static int create_ping(void *gsn, struct pdp_t *pdp,
 		gettimeofday(tp, &tz);
 
 	/* Calculate IP header checksum */
-	p = (uint16_t *) & pack;
+	p8 = (uint8_t *) &pack;
 	count = CREATEPING_IP;
 	sum = 0;
 	while (count > 1) {
-		sum += *p++;
+		memcpy(&v16, p8, 2);
+		sum += v16;
+		p8 += 2;
 		count -= 2;
 	}
 	while (sum >> 16)
@@ -1292,14 +1294,16 @@ static int create_ping(void *gsn, struct pdp_t *pdp,
 	/* Calculate ICMP checksum */
 	count = CREATEPING_ICMP + datasize;	/* Length of ICMP message */
 	sum = 0;
-	p = (uint16_t *) & pack;
-	p += CREATEPING_IP / 2;
+	p8 = (uint8_t *) &pack;
+	p8 += CREATEPING_IP;
 	while (count > 1) {
-		sum += *p++;
+		memcpy(&v16, p8, 2);
+		sum += v16;
+		p8 += 2;
 		count -= 2;
 	}
 	if (count > 0)
-		sum += *(unsigned char *)p;
+		sum += *(unsigned char *)p8;
 	while (sum >> 16)
 		sum = (sum & 0xffff) + (sum >> 16);
 	pack.checksum = ~sum;
