@@ -1267,9 +1267,9 @@ int main(int argc, char **argv)
 	osmo_stats_init(tall_ggsn_ctx);
 
 	vty_init(&g_vty_info);
-	logging_vty_add_cmds(NULL);
+	logging_vty_add_cmds();
 	osmo_talloc_vty_add_cmds();
-	osmo_stats_vty_add_cmds(&log_info);
+	osmo_stats_vty_add_cmds();
 	ggsn_vty_init();
 	ctrl_vty_init(tall_ggsn_ctx);
 
