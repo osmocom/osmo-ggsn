@@ -1,3 +1,69 @@
+osmo-ggsn (1.4.0) unstable; urgency=medium
+
+  [ Max ]
+  * Don't return error on normal shutdown
+
+  [ Harald Welte ]
+  * process_pco() const-ify 'apn' argument
+  * ggsn: Remove magic numbers from pco_contains_proto()
+  * ggsn: const-ify input / read-only arguments of PCO related functions
+  * ggsn: Remove magic numbers from ipcp_contains_option()
+  * ggsn: Fix build_ipcp_pco() in presence of invalid IPCP content
+  * ggsn.c: Refactor PCO processing during PDP activation
+  * ggsn: Add minimalistic PAP support
+  * ggsn: More logging from PCO handling (e.g. in case of malconfiguration)
+  * sgsnemu: Fix format string argument count
+
+  [ Vadim Yanitskiy ]
+  * osmo-ggsn: fix VTY command for getting PDP contexts by APN
+  * osmo-ggsn: add VTY command to show PDP context by IPv4
+  * osmo-ggsn: check result of osmo_apn_to_str()
+  * osmo-ggsn: print requested / actual APN in PDP info
+  * osmo-ggsn: properly show subscriber's MSISDN in the VTY
+
+  [ Pau Espin Pedrol ]
+  * ggsn: Drop unused param force in apn_stop()
+  * gtp: Document spec reasoning drop of Rx DeleteCtxReq
+  * ggsn: Start gtp retrans timer during startup
+  * gtp: Take queue_resp into account to schedule retrans timer
+  * gtp: Fix typo dublicate->duplicate
+  * pdp: Introduce new API pdp_count_secondary
+  * gtp_create_pdp_ind: simplify code by reordering and compacting parsing
+  * gtp: Refactor code to use gtp_freepdp(_teardown) APIs
+  * cosmetic: gtp: Document free pdp ctx in non-teardown scenario
+  * gtp: Re-arrange free pdp ctx code in non-teardown scenario
+  * pdp: Drop unused code for haship
+  * cosmetic: gtp.h: Remove trailing whitespaces
+  * ggsn: Fix undefined behaviour shifting beyond sign bit
+  * gtp: Introduce new pdp APIs (and deprecate old ones) to support multiple GSN
+  * gtp: Make use of new libgtp APIs with multi-gsn support
+  * ggsn_vty_reference.xml: Update from last code changes
+  * ggsn: vty: Require ggsn param in <show pdp-context> cmd
+  * sgsnemu: Replace use of deprecated libgtp API pdp_newpdp with new one
+  * cosmetic: gtp: queue: remove trailing whitespace
+  * gtp: Add missing headers
+  * gtp: queue.c: Document queue APIs
+  * gtp: queue: Add unit test queue_test
+  * ggsn: Avoid unaligned mem access reading PCO proto id
+  * ggsn: Use structures instead of raw arrays when parsing ipcp_hdr
+  * configure.ac: Replace obosolete macro AC_CANONICAL_SYSTEM
+  * configure.ac: Use brackets in AC_INIT params
+  * configure.ac: Use prefered AC_CONFIG_HEADERS over AM_CONFIG_HEADER
+  * configure.ac: some versions of linux/if.h require including sys/socket.h
+  * sgsnemu: Fix unaligned pointer access during ip/icmp checksum
+  * Remove undefined param passed to {logging,osmo_stats}_vty_add_cmds
+  * Require libosmocore 1.1.0
+
+  [ Oliver Smith ]
+  * debian: create -doc subpackage with pdf manuals
+  * ggsn: Use gtp_delete_context_req2() everywhere
+  * contrib/jenkins.sh: run "make maintainer-clean"
+
+  [ Daniel Willmann ]
+  * manuals: Add script to regenerate vty/counter documentation
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Wed, 07 Aug 2019 21:28:30 +0200
+
 osmo-ggsn (1.3.0) unstable; urgency=medium
 
   [ Pau Espin Pedrol ]

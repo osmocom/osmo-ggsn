@@ -7,6 +7,3 @@
 # If any interfaces have been added since the last public release: c:r:a + 1.
 # If any interfaces have been removed or changed since the last public release: c:r:0.
 #library	what		description / commit summary line
-libgtp	Several new APIs added	see I653cbdc185165592d985e3efab6e3f1add97877b
-libgtp API (non-used externally) pdp_init modified	see I653cbdc185165592d985e3efab6e3f1add97877b
-libgtp Several pdp_* APIs marked as deprecated	see I653cbdc185165592d985e3efab6e3f1add97877b
