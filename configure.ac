@@ -7,7 +7,7 @@ dnl *This* is the root dir, even if an install-sh exists in ../ or ../../
 AC_CONFIG_AUX_DIR([.])
 
 AC_CONFIG_TESTDIR(tests)
-AC_CANONICAL_TARGET
+AC_CANONICAL_HOST
 
 dnl kernel style compile messages
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
