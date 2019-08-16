@@ -17,6 +17,7 @@
 #include <netinet/in.h>
 
 #include <osmocom/core/defs.h>
+#include <osmocom/core/linuxlist.h>
 
 struct gsn_t;
 
@@ -241,6 +242,8 @@ struct pdp_t {
 	struct gsn_t *gsn; /* Back pointer to GSN where this pdp ctx belongs to */
 
 	bool tx_gpdu_seq;		/* Transmit (true) or suppress G-PDU sequence numbers */
+
+	struct llist_head qmsg_list_req; /* list of req qmsg_t in retrans queue belonging this pdp ctx */
 };
 
 /* functions related to pdp_t management */

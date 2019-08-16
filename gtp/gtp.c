@@ -513,6 +513,8 @@ static int gtp_req(struct gsn_t *gsn, uint8_t version, struct pdp_t *pdp,
 		qmsg->cbp = cbp;
 		qmsg->type = ntoh8(packet->gtp0.h.type);
 		qmsg->fd = fd;
+		if (pdp) /* echo requests are not pdp-bound */
+			llist_add(&qmsg->entry, &pdp->qmsg_list_req);
 	}
 	gsn->seq_next++;	/* Count up this time */
 	return 0;
@@ -697,6 +699,9 @@ static int gtp_resp(uint8_t version, struct gsn_t *gsn, struct pdp_t *pdp,
 		qmsg->cbp = NULL;
 		qmsg->type = 0;
 		qmsg->fd = fd;
+		/* No need to add to pdp list here, because even on pdp ctx free
+		   we want to leave messages in queue_resp until timeout to
+		   detect duplicates */
 	}
 	return 0;
 }

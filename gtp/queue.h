@@ -17,6 +17,8 @@
 #ifndef _QUEUE_H
 #define _QUEUE_H
 
+#include <osmocom/core/linuxlist.h>
+
 #include "gtp.h"
 
 #define QUEUE_DEBUG 0		/* Print debug information */
@@ -39,6 +41,7 @@ struct qmsg_t {			/* Holder for queued packets */
 	int this;		/* Pointer to myself */
 	time_t timeout;		/* When do we retransmit this packet? */
 	int retrans;		/* How many times did we retransmit this? */
+	struct llist_head entry; /* Listed with other qmsg_t belonging to a pdp_t->qmsg_list_req */
 };
 
 struct queue_t {
