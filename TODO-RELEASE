@@ -7,3 +7,5 @@
 # If any interfaces have been added since the last public release: c:r:a + 1.
 # If any interfaces have been removed or changed since the last public release: c:r:0.
 #library	what		description / commit summary line
+libgtp		queue.h		struct qmsg_t got a new field: entry
+libgtp		pdp.h		struct pdp_t got a new field: qmsg_list_req

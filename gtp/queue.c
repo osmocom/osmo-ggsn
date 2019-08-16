@@ -172,6 +172,7 @@ int queue_newmsg(struct queue_t *queue, struct qmsg_t **qmsg,
 	} else {
 		*qmsg = &queue->qmsga[queue->next];
 		queue_seqset(queue, *qmsg, peer, seq);
+		INIT_LLIST_HEAD(&(*qmsg)->entry);
 		(*qmsg)->state = 1;	/* Space taken */
 		(*qmsg)->this = queue->next;
 		(*qmsg)->next = -1;	/* End of the queue */
@@ -205,6 +206,8 @@ int queue_freemsg(struct queue_t *queue, struct qmsg_t *qmsg)
 	if (qmsg->state != 1) {
 		return EOF;	/* Not in queue */
 	}
+
+	llist_del(&qmsg->entry);
 
 	queue_seqdel(queue, qmsg);
 

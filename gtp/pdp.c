@@ -31,6 +31,7 @@
 #include "pdp.h"
 #include "gtp.h"
 #include "lookupa.h"
+#include "queue.h"
 
 /* ***********************************************************
  * Functions related to PDP storage
@@ -156,7 +157,7 @@ int gtp_pdp_newpdp(struct gsn_t *gsn, struct pdp_t **pdp, uint64_t imsi, uint8_t
 			}
 			/* Default: Generate G-PDU sequence numbers on Tx */
 			(*pdp)->tx_gpdu_seq = true;
-
+			INIT_LLIST_HEAD(&(*pdp)->qmsg_list_req);
 			return 0;
 		}
 	}
@@ -165,7 +166,17 @@ int gtp_pdp_newpdp(struct gsn_t *gsn, struct pdp_t **pdp, uint64_t imsi, uint8_t
 
 int pdp_freepdp(struct pdp_t *pdp)
 {
+	struct qmsg_t *qmsg, *qmsg2;
 	struct pdp_t *pdpa = pdp->gsn->pdpa;
+	int rc;
+
+	/* Remove all enqueued messages belonging to this pdp from req tx transmit
+	   queue. queue_freemsg will call llist_del(). */
+	llist_for_each_entry_safe(qmsg, qmsg2, &pdp->qmsg_list_req, entry) {
+		if ((rc = queue_freemsg(pdp->gsn->queue_req, qmsg)))
+			LOGP(DLGTP, LOGL_ERROR,
+			     "Failed freeing qmsg from qmsg_list_req during pdp_freepdp()! %d\n", rc);
+	}
 
 	pdp_tiddel(pdp);
 
