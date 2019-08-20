@@ -757,6 +757,20 @@ static void show_one_pdp_v4only(struct vty *vty, struct pdp_t *pdp, bool v4only)
 	vty_out(vty, "IMSI: %s, NSAPI: %u, MSISDN: %s%s", imsi_gtp2str(&pdp->imsi), pdp->nsapi,
 		rc ? "(NONE)" : name_buf, VTY_NEWLINE);
 
+	vty_out(vty, " Version: %d", pdp->version);
+	if (pdp->version == 1) {
+		if (!pdp->secondary) {
+			vty_out(vty, ", Primary, Num Secondaries: %d%s%s",
+				pdp_count_secondary(pdp) - 1, /* primary included in count */
+				pdp->nodata ? ", No User Plane": "",
+				VTY_NEWLINE);
+		} else {
+			vty_out(vty, ", Secondary%s", VTY_NEWLINE);
+		}
+	} else {
+		vty_out(vty, "%s", VTY_NEWLINE);
+	}
+
 	vty_out(vty, " Control: %s:%08x ", print_gsnaddr(&pdp->gsnlc), pdp->teic_own);
 	vty_out(vty, "<-> %s:%08x%s", print_gsnaddr(&pdp->gsnrc), pdp->teic_gn, VTY_NEWLINE);
 
