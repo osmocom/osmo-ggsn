@@ -6,6 +6,7 @@
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/select.h>
 #include <osmocom/core/timer.h>
+#include <osmocom/ctrl/control_if.h>
 
 #include "../lib/tun.h"
 #include "../lib/ippool.h"
@@ -135,8 +136,11 @@ struct ggsn_ctx *ggsn_find_or_create(void *ctx, const char *name);
 struct apn_ctx *ggsn_find_apn(struct ggsn_ctx *ggsn, const char *name);
 struct apn_ctx *ggsn_find_or_create_apn(struct ggsn_ctx *ggsn, const char *name);
 
-/* ggsn.c */
+/* ggsn_main.c */
+extern struct ctrl_handle *g_ctrlh;
 extern void *tall_ggsn_ctx;
+
+/* ggsn.c */
 extern int ggsn_start(struct ggsn_ctx *ggsn);
 extern int ggsn_stop(struct ggsn_ctx *ggsn);
 extern int apn_start(struct apn_ctx *apn);
