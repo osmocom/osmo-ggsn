@@ -734,7 +734,7 @@ static const char *print_gsnaddr(const struct ul16_t *in)
 
 static void show_one_pdp(struct vty *vty, struct pdp_t *pdp)
 {
-	struct in46_addr eua46;
+	struct ippoolm_t *peer;
 	char name_buf[256];
 	char *apn_name;
 	int rc;
@@ -757,8 +757,12 @@ static void show_one_pdp(struct vty *vty, struct pdp_t *pdp)
 	apn_name = osmo_apn_to_str(name_buf, pdp->apn_use.v, pdp->apn_use.l);
 	vty_out(vty, " APN in use: %s%s", apn_name ? name_buf : "(NONE)", VTY_NEWLINE);
 
-	in46a_from_eua(&pdp->eua, &eua46);
-	vty_out(vty, " End-User Address: %s%s", in46a_ntoa(&eua46), VTY_NEWLINE);
+	if ((peer = pdp_get_peer_ipv(pdp, false)))
+		vty_out(vty, " End-User Address (IPv4): %s%s",
+			in46a_ntop(&peer->addr, name_buf, sizeof(name_buf)), VTY_NEWLINE);
+	if ((peer = pdp_get_peer_ipv(pdp, true)))
+		vty_out(vty, " End-User Address (IPv6): %s%s",
+			in46a_ntop(&peer->addr, name_buf, sizeof(name_buf)), VTY_NEWLINE);
 	vty_out(vty, " Transmit GTP Sequence Number for G-PDU: %s%s",
 		pdp->tx_gpdu_seq ? "Yes" : "No", VTY_NEWLINE);
 }
