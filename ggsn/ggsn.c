@@ -51,6 +51,7 @@
 #include "../lib/syserr.h"
 #include "../lib/in46_addr.h"
 #include "../lib/gtp-kernel.h"
+#include "../lib/util.h"
 #include "../gtp/pdp.h"
 #include "../gtp/gtp.h"
 #include "icmpv6.h"
@@ -363,26 +364,6 @@ static int delete_context(struct pdp_t *pdp)
 	}
 
 	return 0;
-}
-
-/*! Get the peer of pdp based on IP version used.
- *  \param[in] pdp PDP context to select the peer from.
- *  \param[in] v4v6 IP version to select. Valid values are 4 and 6.
- *  \returns The selected peer matching the given IP version. NULL if not present.
- */
-struct ippoolm_t *pdp_get_peer_ipv(struct pdp_t *pdp, bool is_ipv6) {
-	uint8_t i;
-
-	for (i = 0; i < 2; i++) {
-		struct ippoolm_t * ippool = pdp->peer[i];
-		if (!ippool)
-			continue;
-		if (is_ipv6 && in46a_is_v6(&ippool->addr))
-			return ippool;
-		else if (!is_ipv6 && in46a_is_v4(&ippool->addr))
-			return ippool;
-	}
-	return NULL;
 }
 
 static bool apn_supports_ipv4(const struct apn_ctx *apn)

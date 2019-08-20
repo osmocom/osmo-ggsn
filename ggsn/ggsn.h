@@ -145,7 +145,6 @@ extern int ggsn_start(struct ggsn_ctx *ggsn);
 extern int ggsn_stop(struct ggsn_ctx *ggsn);
 extern int apn_start(struct apn_ctx *apn);
 extern int apn_stop(struct apn_ctx *apn);
-extern struct ippoolm_t *pdp_get_peer_ipv(struct pdp_t *pdp, bool is_ipv6);
 
 #define LOGPAPN(level, apn, fmt, args...)			\
 	LOGP(DGGSN, level, "APN(%s): " fmt, (apn)->cfg.name, ## args)

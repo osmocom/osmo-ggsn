@@ -37,6 +37,8 @@
 #include "../gtp/gtp.h"
 #include "../gtp/pdp.h"
 
+#include "../lib/util.h"
+
 #include "ggsn.h"
 
 #define PREFIX_STR	"Prefix (Network/Netmask)\n"

@@ -17,6 +17,8 @@
 #include <osmocom/core/msgb.h>
 #include <osmocom/gsm/tlv.h>
 
+#include "../lib/util.h"
+
 #include "pco.h"
 #include "ggsn.h"
 
