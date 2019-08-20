@@ -26,6 +26,8 @@
 
 #include "../lib/tun.h"
 #include "../lib/syserr.h"
+#include "../lib/util.h"
+#include "../lib/ippool.h"
 #include "../gtp/pdp.h"
 #include "../gtp/gtp.h"
 
@@ -37,16 +39,23 @@
 
 static void pdp_debug(const char *prefix, const char *devname, struct pdp_t *pdp)
 {
-	struct in46_addr ia46;
+	char buf4[INET_ADDRSTRLEN], buf6[INET6_ADDRSTRLEN];
+	struct ippoolm_t *peer;
 	struct in_addr ia;
 
-	in46a_from_eua(&pdp->eua, &ia46);
+	buf4[0] = '\0';
+	if ((peer = pdp_get_peer_ipv(pdp, false)))
+		in46a_ntop(&peer->addr, buf4, sizeof(buf4));
+	buf6[0] = '\0';
+	if ((peer = pdp_get_peer_ipv(pdp, true)))
+		in46a_ntop(&peer->addr, buf6, sizeof(buf6));
+
 	gsna2in_addr(&ia, &pdp->gsnrc);
 
-	LOGPDPX(DGGSN, LOGL_DEBUG, pdp, "%s %s v%u TEID %"PRIx64" EUA=%s SGSN=%s\n", prefix,
+	LOGPDPX(DGGSN, LOGL_DEBUG, pdp, "%s %s v%u TEID %"PRIx64" EUA=(%s,%s) SGSN=%s\n", prefix,
 		devname, pdp->version,
 		pdp->version == 0 ? pdp_gettid(pdp->imsi, pdp->nsapi) : pdp->teid_gn,
-		in46a_ntoa(&ia46), inet_ntoa(ia));
+		buf4, buf6, inet_ntoa(ia));
 }
 
 static struct {
