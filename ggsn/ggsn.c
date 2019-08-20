@@ -482,19 +482,15 @@ struct pco_element {
  *  \returns The selected peer matching the given IP version. NULL if not present.
  */
 static struct ippoolm_t *pdp_get_peer_ipv(struct pdp_t *pdp, bool is_ipv6) {
-	uint8_t len1, len2, i;
-
-	if (is_ipv6) {
-		len1 = 8;
-		len2 = 16;
-	} else {
-		len1 = sizeof(struct in_addr);
-		len2 = len1;
-	}
+	uint8_t i;
 
 	for (i = 0; i < 2; i++) {
 		struct ippoolm_t * ippool = pdp->peer[i];
-		if (ippool && (ippool->addr.len == len1 || ippool->addr.len == len2))
+		if (!ippool)
+			continue;
+		if (is_ipv6 && in46a_is_v6(&ippool->addr))
+			return ippool;
+		else if (!is_ipv6 && in46a_is_v4(&ippool->addr))
 			return ippool;
 	}
 	return NULL;
@@ -798,7 +794,7 @@ int create_context_ind(struct pdp_t *pdp)
 
 	/* Allocate dynamic addresses from the pool */
 	for (i = 0; i < num_addr; i++) {
-		if (addr[i].len == sizeof(struct in_addr)) {
+		if (in46a_is_v4(&addr[i])) {
 			/* does this APN actually have an IPv4 pool? */
 			if (!apn_supports_ipv4(apn))
 				goto err_wrong_af;
@@ -811,7 +807,7 @@ int create_context_ind(struct pdp_t *pdp)
 
 			addrv4 = member;
 
-		} else if (addr[i].len == sizeof(struct in6_addr)) {
+		} else if (in46a_is_v6(&addr[i])) {
 
 			/* does this APN actually have an IPv6 pool? */
 			if (!apn_supports_ipv6(apn))

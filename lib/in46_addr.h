@@ -31,3 +31,11 @@ unsigned int in46a_netmasklen(const struct in46_addr *netmask);
 
 int in46a_to_eua(const struct in46_addr *src, unsigned int size, struct ul66_t *eua);
 int in46a_from_eua(const struct ul66_t *eua, struct in46_addr *dst);
+
+static inline bool in46a_is_v6(const struct in46_addr *addr) {
+	return addr->len == 8 || addr->len == 16;
+}
+
+static inline bool in46a_is_v4(const struct in46_addr *addr) {
+	return addr->len == sizeof(struct in_addr);
+}
