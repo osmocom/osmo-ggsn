@@ -263,7 +263,7 @@ int pdp_tiddel(struct pdp_t *pdp);
 uint64_t pdp_gettid(uint64_t imsi, uint8_t nsapi);
 void pdp_set_imsi_nsapi(struct pdp_t *pdp, uint64_t teid);
 
-unsigned int pdp_count_secondary(struct pdp_t *pdp);
+unsigned int pdp_count_secondary(const struct pdp_t *pdp);
 
 /* Deprecated APIs (support for only 1 GSN per process). Must be used only after first call to gtp_new() and until it is freed. */
 int pdp_init(struct gsn_t *gsn); /* Use only allowed inside libgtp to keep compatiblity with deprecated APIs defined here. */

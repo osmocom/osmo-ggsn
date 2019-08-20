@@ -359,7 +359,7 @@ void pdp_set_imsi_nsapi(struct pdp_t *pdp, uint64_t teid)
 
 /* Count amount of secondary PDP contexts linked to this primary PDP context
  * (itself included). Must be called on a primary PDP context. */
-unsigned int pdp_count_secondary(struct pdp_t *pdp)
+unsigned int pdp_count_secondary(const struct pdp_t *pdp)
 {
 	unsigned int n;
 	unsigned int count = 0;
