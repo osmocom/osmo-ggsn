@@ -153,3 +153,6 @@ extern int apn_stop(struct apn_ctx *apn);
 	LOGP(DGGSN, level, "GGSN(%s): " fmt, (ggsn)->cfg.name, ## args)
 
 #define LOGPPDP(level, pdp, fmt, args...) LOGPDPX(DGGSN, level, pdp, fmt, ## args)
+
+#define LOGTUN(level, tun, fmt, args...) \
+	LOGP(DTUN, level, "TUN(%s): " fmt, (tun)->devname, ## args)

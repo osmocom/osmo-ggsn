@@ -556,7 +556,7 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 		pool = apn->v6.pool;
 		break;
 	default:
-		LOGP(DTUN, LOGL_NOTICE, "non-IPv%u packet received from tun\n", iph->version);
+		LOGTUN(LOGL_NOTICE, tun, "non-IPv%u packet received\n", iph->version);
 		return -1;
 	}
 
@@ -564,15 +564,15 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 	if (!pool)
 		return 0;
 
-	DEBUGP(DTUN, "Received packet for APN(%s) from tun %s", apn->cfg.name, tun->devname);
-
 	if (ippool_getip(pool, &ipm, &dst)) {
-		DEBUGPC(DTUN, " with no PDP contex! (%s)\n", iph->version == 4 ?
+		LOGTUN(LOGL_DEBUG, tun, "Received packet for APN(%s) with no PDP contex! (%s)\n",
+			apn->cfg.name,
+			iph->version == 4 ?
 			inet_ntop(AF_INET, &iph->saddr, straddr, sizeof(straddr)) :
 			inet_ntop(AF_INET6, &ip6h->ip6_src, straddr, sizeof(straddr)));
 		return 0;
 	}
-	DEBUGPC(DTUN, "\n");
+	LOGTUN(LOGL_DEBUG, tun, "Received packet for APN(%s)\n", apn->cfg.name);
 
 	if (ipm->peer)		/* Check if a peer protocol is defined */
 		gtp_data_req(apn->ggsn->gsn, (struct pdp_t *)ipm->peer, pack, len);
