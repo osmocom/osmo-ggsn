@@ -60,7 +60,11 @@ int in46a_to_sas(struct sockaddr_storage *out, const struct in46_addr *in)
 	return 0;
 }
 
-/*! Convenience wrapper around inet_ntop() for \ref in46_addr */
+/*! Convenience wrapper around inet_ntop() for in46_addr.
+ *  \param[in] in the in46_addr to print
+ *  \param[out] dst destination buffer where string representation of the address is stored
+ *  \param[out] dst_size size dst. Usually it should be at least INET6_ADDRSTRLEN.
+ *  \return address of dst on success, NULL on error */
 const char *in46a_ntop(const struct in46_addr *in, char *dst, socklen_t dst_size)
 {
 	int af;
