@@ -12,4 +12,4 @@ osmo_ggsn_LDADD += $(LIBGTPNL_LIBS)
 endif
 
 osmo_ggsn_DEPENDENCIES = ../gtp/libgtp.la ../lib/libmisc.a
-osmo_ggsn_SOURCES = ggsn_vty.c ggsn.c ggsn.h icmpv6.c icmpv6.h checksum.c checksum.h
+osmo_ggsn_SOURCES = ggsn_vty.c ggsn.c ggsn.h icmpv6.c icmpv6.h checksum.c checksum.h pco.c pco.h
