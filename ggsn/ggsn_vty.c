@@ -734,12 +734,21 @@ static const char *print_gsnaddr(const struct ul16_t *in)
 	return in46a_ntoa(&in46);
 }
 
-static void show_one_pdp(struct vty *vty, struct pdp_t *pdp)
+/* Useful for v4v6 APNs, where we first iterate over v4 pool and then over v6
+   pool. param v4only can be used to avoid printing duplicates for pdp context
+   containing both IPv4 and IPv6 addresses. */
+static void show_one_pdp_v4only(struct vty *vty, struct pdp_t *pdp, bool v4only)
 {
-	struct ippoolm_t *peer;
+	struct ippoolm_t *peer4, *peer6;
 	char name_buf[256];
 	char *apn_name;
 	int rc;
+
+	peer4 = pdp_get_peer_ipv(pdp, false);
+	peer6 = pdp_get_peer_ipv(pdp, true);
+
+	if (v4only && peer6)
+		return;
 
 	/* Attempt to decode MSISDN */
 	rc = gsm48_decode_bcd_number2(name_buf, sizeof(name_buf),
@@ -759,14 +768,19 @@ static void show_one_pdp(struct vty *vty, struct pdp_t *pdp)
 	apn_name = osmo_apn_to_str(name_buf, pdp->apn_use.v, pdp->apn_use.l);
 	vty_out(vty, " APN in use: %s%s", apn_name ? name_buf : "(NONE)", VTY_NEWLINE);
 
-	if ((peer = pdp_get_peer_ipv(pdp, false)))
+	if (peer4)
 		vty_out(vty, " End-User Address (IPv4): %s%s",
-			in46a_ntop(&peer->addr, name_buf, sizeof(name_buf)), VTY_NEWLINE);
-	if ((peer = pdp_get_peer_ipv(pdp, true)))
+			in46a_ntop(&peer4->addr, name_buf, sizeof(name_buf)), VTY_NEWLINE);
+	if (peer6)
 		vty_out(vty, " End-User Address (IPv6): %s%s",
-			in46a_ntop(&peer->addr, name_buf, sizeof(name_buf)), VTY_NEWLINE);
+			in46a_ntop(&peer6->addr, name_buf, sizeof(name_buf)), VTY_NEWLINE);
 	vty_out(vty, " Transmit GTP Sequence Number for G-PDU: %s%s",
 		pdp->tx_gpdu_seq ? "Yes" : "No", VTY_NEWLINE);
+}
+
+static void show_one_pdp(struct vty *vty, struct pdp_t *pdp)
+{
+	show_one_pdp_v4only(vty, pdp, false);
 }
 
 DEFUN(show_pdpctx_imsi, show_pdpctx_imsi_cmd,
@@ -853,7 +867,7 @@ DEFUN(show_pdpctx_ip, show_pdpctx_ip_cmd,
 }
 
 /* show all (active) PDP contexts within a pool */
-static void ippool_show_pdp_contexts(struct vty *vty, struct ippool_t *pool)
+static void ippool_show_pdp_contexts(struct vty *vty, struct ippool_t *pool, bool pdp_v4only)
 {
 	unsigned int i;
 
@@ -864,15 +878,15 @@ static void ippool_show_pdp_contexts(struct vty *vty, struct ippool_t *pool)
 		struct ippoolm_t *member = &pool->member[i];
 		if (member->inuse == 0)
 			continue;
-		show_one_pdp(vty, member->peer);
+		show_one_pdp_v4only(vty, member->peer, pdp_v4only);
 	}
 }
 
 /* show all (active) PDP contexts within an APN */
 static void apn_show_pdp_contexts(struct vty *vty, struct apn_ctx *apn)
 {
-	ippool_show_pdp_contexts(vty, apn->v4.pool);
-	ippool_show_pdp_contexts(vty, apn->v6.pool);
+	ippool_show_pdp_contexts(vty, apn->v4.pool, true);
+	ippool_show_pdp_contexts(vty, apn->v6.pool, false);
 }
 
 DEFUN(show_pdpctx, show_pdpctx_cmd,
