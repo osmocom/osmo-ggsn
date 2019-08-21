@@ -1380,6 +1380,18 @@
         <param name='default-apn' doc='Remove default-APN to be used if no other APN matches' />
       </params>
     </command>
+    <command id='show sgsn'>
+      <params>
+        <param name='show' doc='Negate a command or set its defaults' />
+        <param name='sgsn' doc='Gateway GPRS Support NODE (GGSN)' />
+      </params>
+    </command>
+    <command id='echo-interval &lt;0-36000&gt;'>
+      <params>
+        <param name='echo-interval' doc='Gateway GPRS Support NODE (GGSN)' />
+        <param name='&lt;0-36000&gt;' doc='GGSN Number' />
+      </params>
+    </command>
   </node>
   <node id='config-ggsn-apn'>
     <name>config-ggsn-apn</name>

@@ -40,6 +40,7 @@
 #include "../lib/util.h"
 
 #include "ggsn.h"
+#include "sgsn.h"
 
 #define PREFIX_STR	"Prefix (Network/Netmask)\n"
 #define IFCONFIG_STR	"GGSN-based interface configuration\n"
@@ -79,6 +80,7 @@ struct ggsn_ctx *ggsn_find_or_create(void *ctx, const char *name)
 	ggsn->cfg.state_dir = talloc_strdup(ggsn, "/tmp");
 	ggsn->cfg.shutdown = true;
 	INIT_LLIST_HEAD(&ggsn->apn_list);
+	INIT_LLIST_HEAD(&ggsn->sgsn_list);
 
 	llist_add_tail(&ggsn->list, &g_ggsn_list);
 	return ggsn;
@@ -324,6 +326,80 @@ DEFUN(cfg_ggsn_no_shutdown, cfg_ggsn_no_shutdown_cmd,
 		}
 		ggsn->cfg.shutdown = false;
 	}
+
+	return CMD_SUCCESS;
+}
+
+static void show_one_sgsn(struct vty *vty, const struct sgsn_peer *sgsn, const char* prefix)
+{
+	char buf[INET_ADDRSTRLEN];
+
+	inet_ntop(AF_INET, &sgsn->addr, buf, sizeof(buf));
+	vty_out(vty, "%s(S)GSN %s%s", prefix, buf, VTY_NEWLINE);
+	vty_out(vty, "%s Restart Counter: %d%s", prefix, sgsn->remote_restart_ctr, VTY_NEWLINE);
+	vty_out(vty, "%s PDP contexts: %d%s", prefix, llist_count(&sgsn->pdp_list), VTY_NEWLINE);
+	vty_out(vty, "%s Echo Requests in-flight: %u%s", prefix, sgsn->tx_msgs_queued, VTY_NEWLINE);
+}
+
+DEFUN(cfg_ggsn_show_sgsn, cfg_ggsn_show_sgsn_cmd,
+	"show sgsn",
+	NO_STR GGSN_STR "Remove the GGSN from administrative shut-down\n")
+{
+	struct ggsn_ctx *ggsn = (struct ggsn_ctx *) vty->index;
+	struct sgsn_peer *sgsn;
+
+	llist_for_each_entry(sgsn, &ggsn->sgsn_list, entry) {
+		show_one_sgsn(vty, sgsn, "");
+	}
+
+	return CMD_SUCCESS;
+}
+
+/* Seee 3GPP TS 29.060 section 7.2.1 */
+DEFUN(cfg_ggsn_echo_interval, cfg_ggsn_echo_interval_cmd,
+	"echo-interval <1-36000>",
+	GGSN_STR "GGSN Number\n"
+	"Send an echo request to this static GGSN every interval\n"
+	"Interval between echo requests in seconds\n")
+{
+	struct ggsn_ctx *ggsn = (struct ggsn_ctx *) vty->index;
+	int prev_interval = ggsn->cfg.echo_interval;
+	struct sgsn_peer *sgsn;
+
+	ggsn->cfg.echo_interval = atoi(argv[0]);
+
+	if (ggsn->cfg.echo_interval < 60)
+		vty_out(vty, "%% 3GPP TS 29.060 section states interval should " \
+			     "not be lower than 60 seconds, use this value for " \
+			     "testing purposes only!%s", VTY_NEWLINE);
+
+	if (prev_interval == ggsn->cfg.echo_interval)
+		return CMD_SUCCESS;
+
+	/* Re-enable echo timer for all sgsn */
+	llist_for_each_entry(sgsn, &ggsn->sgsn_list, entry)
+		sgsn_echo_timer_start(sgsn);
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_ggsn_no_echo_interval, cfg_ggsn_no_echo_interval_cmd,
+	"no echo-interval",
+	GGSN_STR "GGSN Number\n"
+	NO_STR "Send an echo request to this static GGSN every interval.\n")
+{
+	struct ggsn_ctx *ggsn = (struct ggsn_ctx *) vty->index;
+	int prev_interval = ggsn->cfg.echo_interval;
+	struct sgsn_peer *sgsn;
+
+	if (prev_interval == ggsn->cfg.echo_interval)
+		return CMD_SUCCESS;
+
+	ggsn->cfg.echo_interval = 0;
+
+	/* Disable echo timer for all sgsn */
+	llist_for_each_entry(sgsn, &ggsn->sgsn_list, entry)
+		sgsn_echo_timer_stop(sgsn);
 
 	return CMD_SUCCESS;
 }
@@ -716,6 +792,8 @@ static int config_write_ggsn(struct vty *vty)
 			config_write_apn(vty, apn);
 		if (ggsn->cfg.default_apn)
 			vty_out(vty, " default-apn %s%s", ggsn->cfg.default_apn->cfg.name, VTY_NEWLINE);
+		if (ggsn->cfg.echo_interval)
+			vty_out(vty, " echo-interval %u%s", ggsn->cfg.echo_interval, VTY_NEWLINE);
 		/* must be last */
 		vty_out(vty, " %sshutdown ggsn%s", ggsn->cfg.shutdown ? "" : "no ", VTY_NEWLINE);
 	}
@@ -964,12 +1042,15 @@ static void show_apn(struct vty *vty, struct apn_ctx *apn)
 static void show_one_ggsn(struct vty *vty, struct ggsn_ctx *ggsn)
 {
 	struct apn_ctx *apn;
+	struct sgsn_peer *sgsn;
 	vty_out(vty, "GGSN %s: Bound to %s%s", ggsn->cfg.name, in46a_ntoa(&ggsn->cfg.listen_addr),
 		VTY_NEWLINE);
 	/* FIXME */
 
 	llist_for_each_entry(apn, &ggsn->apn_list, list)
 		show_apn(vty, apn);
+	llist_for_each_entry(sgsn, &ggsn->sgsn_list, entry)
+		show_one_sgsn(vty, sgsn, " ");
 }
 
 DEFUN(show_ggsn, show_ggsn_cmd,
@@ -1016,6 +1097,9 @@ int ggsn_vty_init(void)
 	install_element(GGSN_NODE, &cfg_ggsn_no_apn_cmd);
 	install_element(GGSN_NODE, &cfg_ggsn_default_apn_cmd);
 	install_element(GGSN_NODE, &cfg_ggsn_no_default_apn_cmd);
+	install_element(GGSN_NODE, &cfg_ggsn_show_sgsn_cmd);
+	install_element(GGSN_NODE, &cfg_ggsn_echo_interval_cmd);
+	install_element(GGSN_NODE, &cfg_ggsn_no_echo_interval_cmd);
 
 	install_node(&apn_node, NULL);
 	install_element(APN_NODE, &cfg_description_cmd);

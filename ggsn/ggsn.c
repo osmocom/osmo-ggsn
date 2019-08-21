@@ -61,6 +61,17 @@
 static int ggsn_tun_fd_cb(struct osmo_fd *fd, unsigned int what);
 static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len);
 
+void ggsn_close_one_pdp(struct pdp_t *pdp)
+{
+	LOGPPDP(LOGL_DEBUG, pdp, "Sending DELETE PDP CTX due to shutdown\n");
+	gtp_delete_context_req2(pdp->gsn, pdp, NULL, 1);
+	/* We have nothing more to do with pdp ctx, free it. Upon cb_delete_context
+	   called during this call we'll clean up ggsn related stuff attached to this
+	   pdp context. After this call, ippool member is cleared so
+	   data is no longer valid and should not be accessed anymore. */
+	gtp_freepdp_teardown(pdp->gsn, pdp);
+}
+
 static void pool_close_all_pdp(struct ippool_t *pool)
 {
 	unsigned int i;
@@ -77,13 +88,7 @@ static void pool_close_all_pdp(struct ippool_t *pool)
 		pdp = member->peer;
 		if (!pdp)
 			continue;
-		LOGPPDP(LOGL_DEBUG, pdp, "Sending DELETE PDP CTX due to shutdown\n");
-		gtp_delete_context_req2(pdp->gsn, pdp, NULL, 1);
-		/* We have nothing more to do with pdp ctx, free it. Upon cb_delete_context
-		   called during this call we'll clean up ggsn related stuff attached to this
-		   pdp context. After this call, ippool member is cleared so
-		   data is no longer valid and should not be accessed anymore. */
-		gtp_freepdp_teardown(pdp->gsn, pdp);
+		ggsn_close_one_pdp(pdp);
 	}
 }
 
@@ -341,7 +346,8 @@ static bool send_trap(const struct gsn_t *gsn, const struct pdp_t *pdp, const st
 static int delete_context(struct pdp_t *pdp)
 {
 	struct gsn_t *gsn = pdp->gsn;
-	struct apn_ctx *apn = pdp->priv;
+	struct pdp_priv_t *pdp_priv = pdp->priv;
+	struct apn_ctx *apn;
 	struct ippoolm_t *member;
 	int i;
 
@@ -356,12 +362,23 @@ static int delete_context(struct pdp_t *pdp)
 			LOGPPDP(LOGL_ERROR, pdp, "Cannot find/free IP Pool member\n");
 	}
 
+	if (!pdp_priv) {
+		LOGPPDP(LOGL_NOTICE, pdp, "Deleting PDP context: without private structure!\n");
+		return 0;
+	}
+
+	/* Remove from SGSN */
+	sgsn_peer_remove_pdp_priv(pdp_priv);
+
+	apn = pdp_priv->apn;
 	if (apn && apn->cfg.gtpu_mode == APN_GTPU_MODE_KERNEL_GTP) {
 		if (gtp_kernel_tunnel_del(pdp, apn->tun.cfg.dev_name)) {
 			LOGPPDP(LOGL_ERROR, pdp, "Cannot delete tunnel from kernel:%s\n",
 				strerror(errno));
 		}
 	}
+
+	talloc_free(pdp_priv);
 
 	return 0;
 }
@@ -380,6 +397,36 @@ static bool apn_supports_ipv6(const struct apn_ctx *apn)
 	return false;
 }
 
+static struct sgsn_peer* ggsn_find_sgsn(struct ggsn_ctx *ggsn, struct in_addr *peer_addr)
+{
+	struct sgsn_peer *sgsn;
+
+	llist_for_each_entry(sgsn, &ggsn->sgsn_list, entry) {
+		if (memcmp(&sgsn->addr, peer_addr, sizeof(*peer_addr)) == 0)
+			return sgsn;
+	}
+	return NULL;
+}
+
+static struct sgsn_peer* ggsn_find_or_create_sgsn(struct ggsn_ctx *ggsn, struct pdp_t *pdp)
+{
+	struct sgsn_peer *sgsn;
+	struct in_addr ia;
+
+	if (gsna2in_addr(&ia, &pdp->gsnrc)) {
+		LOGPPDP(LOGL_ERROR, pdp, "Failed parsing gsnrc (len=%u) to discover SGSN\n",
+			pdp->gsnrc.l);
+		return NULL;
+	}
+
+	if ((sgsn = ggsn_find_sgsn(ggsn, &ia)))
+		return sgsn;
+
+	sgsn = sgsn_peer_allocate(ggsn, &ia, pdp->version);
+	llist_add(&sgsn->entry, &ggsn->sgsn_list);
+	return sgsn;
+}
+
 int create_context_ind(struct pdp_t *pdp)
 {
 	static char name_buf[256];
@@ -391,6 +438,8 @@ int create_context_ind(struct pdp_t *pdp)
 	struct apn_ctx *apn = NULL;
 	int rc, num_addr, i;
 	char *apn_name;
+	struct sgsn_peer *sgsn;
+	struct pdp_priv_t *pdp_priv;
 
 	apn_name = osmo_apn_to_str(name_buf, pdp->apn_req.v, pdp->apn_req.l);
 	LOGPPDP(LOGL_DEBUG, pdp, "Processing create PDP context request for APN '%s'\n",
@@ -492,7 +541,14 @@ int create_context_ind(struct pdp_t *pdp)
 	}
 
 	pdp->ipif = apn->tun.tun;	/* TODO */
-	pdp->priv = apn;
+
+	pdp_priv = talloc_zero(ggsn, struct pdp_priv_t);
+	pdp->priv = pdp_priv;
+	pdp_priv->lib = pdp;
+	/* Create sgsn and assign pdp to it */
+	sgsn = ggsn_find_or_create_sgsn(ggsn, pdp);
+	sgsn_peer_add_pdp_priv(sgsn, pdp_priv);
+	pdp_priv->apn = apn;
 
 	/* TODO: change trap to send 2 IPs */
 	if (!send_trap(gsn, pdp, member, "imsi-ass-ip")) { /* TRAP with IP assignment */
@@ -707,6 +763,7 @@ static void ggsn_gtp_tmr_cb(void *data)
 /* libgtp callback for confirmations */
 static int cb_conf(int type, int cause, struct pdp_t *pdp, void *cbp)
 {
+	struct sgsn_peer *sgsn;
 	int rc = 0;
 
 	if (cause == EOF)
@@ -725,10 +782,29 @@ static int cb_conf(int type, int cause, struct pdp_t *pdp, void *cbp)
 		   Rx path. This code is nevertheless left here in order to ease
 		   future developent and avoid possible future memleaks once more
 		   scenarios where GGSN sends a DeleteCtxRequest are introduced. */
-		   if (pdp)
+		if (pdp)
 			rc = pdp_freepdp(pdp);
+		break;
+	case GTP_ECHO_REQ:
+		sgsn = (struct sgsn_peer *)cbp;
+		sgsn_peer_echo_resp(sgsn, cause == EOF);
+		break;
 	}
 	return rc;
+}
+
+static int cb_recovery3(struct gsn_t *gsn, struct sockaddr_in *peer, struct pdp_t *pdp, uint8_t recovery)
+{
+	struct ggsn_ctx *ggsn = (struct ggsn_ctx *)gsn->priv;
+	struct sgsn_peer *sgsn;
+
+	sgsn = ggsn_find_sgsn(ggsn, &peer->sin_addr);
+	if (!sgsn) {
+		LOGPGGSN(LOGL_NOTICE, ggsn, "Received Recovery IE for unknown SGSN (no PDP contexts active)\n");
+		return -EINVAL;
+	}
+
+	return sgsn_peer_handle_recovery(sgsn, pdp, recovery);
 }
 
 /* Start a given GGSN */
@@ -778,6 +854,7 @@ int ggsn_start(struct ggsn_ctx *ggsn)
 	gtp_set_cb_delete_context(ggsn->gsn, delete_context);
 	gtp_set_cb_create_context_ind(ggsn->gsn, create_context_ind);
 	gtp_set_cb_conf(ggsn->gsn, cb_conf);
+	gtp_set_cb_recovery3(ggsn->gsn, cb_recovery3);
 
 	LOGPGGSN(LOGL_NOTICE, ggsn, "Successfully started\n");
 	ggsn->started = true;

@@ -14,6 +14,8 @@
 #include "../lib/in46_addr.h"
 #include "../gtp/gtp.h"
 
+#include "sgsn.h"
+
 #define APN_TYPE_IPv4	0x01	/* v4-only */
 #define APN_TYPE_IPv6	0x02	/* v6-only */
 #define APN_TYPE_IPv4v6	0x04	/* v4v6 dual-stack */
@@ -89,12 +91,23 @@ struct apn_ctx {
 	struct apn_ctx_ip v6;
 };
 
+struct pdp_priv_t {
+	struct pdp_t *lib; /* pointer to libgtp associated pdp_t instance */
+	struct sgsn_peer *sgsn;
+	struct apn_ctx *apn;
+	struct llist_head entry; /* to be included into sgsn_peer */
+	/* struct ggsn_ctx can be reached through lib->gsn->priv, or through sgsn->ggsn */
+};
+
 struct ggsn_ctx {
 	/* global list of GGSNs */
 	struct llist_head list;
 
 	/* list of APNs in this GGSN */
 	struct llist_head apn_list;
+
+	/* list of SGSN peers (struct sgsn_peer) in this GGSN. TODO: hash table with key <ip+port>? */
+	struct llist_head sgsn_list;
 
 	bool started;
 
@@ -112,6 +125,8 @@ struct ggsn_ctx {
 		struct in46_addr gtpu_addr;
 		/* directory for state file */
 		char *state_dir;
+		/* Time between Echo requests on each SGSN */
+		unsigned int echo_interval;
 		/* administratively shut-down (true) or not (false) */
 		bool shutdown;
 	} cfg;
@@ -145,6 +160,7 @@ extern int ggsn_start(struct ggsn_ctx *ggsn);
 extern int ggsn_stop(struct ggsn_ctx *ggsn);
 extern int apn_start(struct apn_ctx *apn);
 extern int apn_stop(struct apn_ctx *apn);
+void ggsn_close_one_pdp(struct pdp_t *pdp);
 
 #define LOGPAPN(level, apn, fmt, args...)			\
 	LOGP(DGGSN, level, "APN(%s): " fmt, (apn)->cfg.name, ## args)
