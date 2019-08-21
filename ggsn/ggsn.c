@@ -386,7 +386,7 @@ static int delete_context(struct pdp_t *pdp)
 			LOGPPDP(LOGL_ERROR, pdp, "Cannot find/free IP Pool member\n");
 	}
 
-	if (apn->cfg.gtpu_mode == APN_GTPU_MODE_KERNEL_GTP) {
+	if (apn && apn->cfg.gtpu_mode == APN_GTPU_MODE_KERNEL_GTP) {
 		if (gtp_kernel_tunnel_del(pdp, apn->tun.cfg.dev_name)) {
 			LOGPPDP(LOGL_ERROR, pdp, "Cannot delete tunnel from kernel:%s\n",
 				strerror(errno));

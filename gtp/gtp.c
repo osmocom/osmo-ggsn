@@ -1301,9 +1301,8 @@ int gtp_create_context_resp(struct gsn_t *gsn, struct pdp_t *pdp, int cause)
 	/* Now send off a reply to the peer */
 	gtp_create_pdp_resp(gsn, pdp->version, pdp, cause);
 
-	if (cause != GTPCAUSE_ACC_REQ) {
-		pdp_freepdp(pdp);
-	}
+	if (cause != GTPCAUSE_ACC_REQ)
+		gtp_freepdp(gsn, pdp);
 
 	return 0;
 }
