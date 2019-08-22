@@ -219,6 +219,8 @@ static void emit_cb_recovery(struct gsn_t *gsn, struct sockaddr_in * peer,
 		gsn->cb_recovery(peer, recovery);
 	if (gsn->cb_recovery2)
 		gsn->cb_recovery2(peer, pdp, recovery);
+	if (gsn->cb_recovery3)
+		gsn->cb_recovery3(gsn, peer, pdp, recovery);
 }
 
 int gtp_set_cb_recovery(struct gsn_t *gsn,
@@ -239,6 +241,21 @@ int gtp_set_cb_recovery2(struct gsn_t *gsn,
 			int (*cb_recovery2) (struct sockaddr_in * peer, struct pdp_t * pdp, uint8_t recovery))
 {
 	gsn->cb_recovery2 = cb_recovery2;
+	return 0;
+}
+
+/* cb_recovery()
+ * pdp may be NULL if Recovery IE was received from a message independent
+ * of any PDP ctx (such as Echo Response), or because pdp ctx is unknown to the
+ * local setup. In case pdp is known, caller may want to keep that pdp alive to
+ * handle subsequent msg cb as this specific pdp ctx is still valid according to
+ * specs.
+ */
+int gtp_set_cb_recovery3(struct gsn_t *gsn,
+			 int (*cb_recovery3) (struct gsn_t *gsn, struct sockaddr_in *peer,
+					      struct pdp_t *pdp, uint8_t recovery))
+{
+	gsn->cb_recovery3 = cb_recovery3;
 	return 0;
 }
 

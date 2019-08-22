@@ -277,6 +277,7 @@ struct gsn_t {
 	int (*cb_data_ind) (struct pdp_t * pdp, void *pack, unsigned len);
 	int (*cb_recovery) (struct sockaddr_in * peer, uint8_t recovery);
 	int (*cb_recovery2) (struct sockaddr_in * peer, struct pdp_t * pdp, uint8_t recovery);
+	int (*cb_recovery3) (struct gsn_t *gsn, struct sockaddr_in *peer, struct pdp_t *pdp, uint8_t recovery);
 
 	/* Counters */
 
@@ -372,6 +373,11 @@ int gtp_set_cb_recovery(struct gsn_t *gsn,
 	OSMO_DEPRECATED("Use gtp_set_cb_recovery2() instead, to obtain pdp ctx originating the recovery");
 int gtp_set_cb_recovery2(struct gsn_t *gsn,
 			int (*cb) (struct sockaddr_in * peer,
+				   struct pdp_t * pdp,
+				   uint8_t recovery))
+	OSMO_DEPRECATED("Use gtp_set_cb_recovery3() instead, to obtain gsn handling the recovery");;
+int gtp_set_cb_recovery3(struct gsn_t *gsn,
+			int (*cb) (struct gsn_t * gsn, struct sockaddr_in * peer,
 				   struct pdp_t * pdp,
 				   uint8_t recovery));
 
