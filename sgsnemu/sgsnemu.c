@@ -1801,7 +1801,8 @@ int main(int argc, char **argv)
 		FD_SET(gsn->fd1c, &fds);
 		FD_SET(gsn->fd1u, &fds);
 
-		gtp_retranstimeout(gsn, &idleTime);
+		idleTime.tv_sec = 10;
+		idleTime.tv_usec = 0;
 		ping_timeout(&idleTime);
 
 		if (options.debug)
@@ -1816,9 +1817,6 @@ int main(int argc, char **argv)
 			else
 				SYS_ERR(DSGSN, LOGL_ERROR, 0,
 					"Select returned -1");
-			break;
-		case 0:
-			gtp_retrans(gsn);	/* Only retransmit if nothing else */
 			break;
 		default:
 			break;

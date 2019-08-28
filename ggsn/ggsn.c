@@ -739,28 +739,6 @@ static int ggsn_gtp_fd_cb(struct osmo_fd *fd, unsigned int what)
 	return rc;
 }
 
-static void ggsn_gtp_tmr_start(struct ggsn_ctx *ggsn)
-{
-	struct timeval next;
-
-	/* Retrieve next retransmission as timeval */
-	gtp_retranstimeout(ggsn->gsn, &next);
-
-	/* re-schedule the timer */
-	osmo_timer_schedule(&ggsn->gtp_timer, next.tv_sec, next.tv_usec/1000);
-}
-
-/* timer callback for libgtp retransmission and ping */
-static void ggsn_gtp_tmr_cb(void *data)
-{
-	struct ggsn_ctx *ggsn = data;
-
-	/* do all the retransmissions as needed */
-	gtp_retrans(ggsn->gsn);
-
-	ggsn_gtp_tmr_start(ggsn);
-}
-
 /* libgtp callback for confirmations */
 static int cb_conf(int type, int cause, struct pdp_t *pdp, void *cbp)
 {
@@ -848,10 +826,6 @@ int ggsn_start(struct ggsn_ctx *ggsn)
 	rc = osmo_fd_register(&ggsn->gtp_fd1u);
 	OSMO_ASSERT(rc == 0);
 
-	/* Start GTP re-transmission timer */
-	osmo_timer_setup(&ggsn->gtp_timer, ggsn_gtp_tmr_cb, ggsn);
-	ggsn_gtp_tmr_start(ggsn);
-
 	gtp_set_cb_data_ind(ggsn->gsn, encaps_tun);
 	gtp_set_cb_delete_context(ggsn->gsn, delete_context);
 	gtp_set_cb_create_context_ind(ggsn->gsn, create_context_ind);
@@ -878,8 +852,6 @@ int ggsn_stop(struct ggsn_ctx *ggsn)
 	/* iterate over all APNs and stop them */
 	llist_for_each_entry(apn, &ggsn->apn_list, list)
 		apn_stop(apn);
-
-	osmo_timer_del(&ggsn->gtp_timer);
 
 	osmo_fd_unregister(&ggsn->gtp_fd1u);
 	osmo_fd_unregister(&ggsn->gtp_fd1c);
