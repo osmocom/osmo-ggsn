@@ -600,10 +600,14 @@ int gtp_retrans(struct gsn_t *gsn)
 	       (qmsg->timeout <= now)) {
 		/*printf("Retrans timeout found: %d\n", (int) time(NULL)); */
 		if (qmsg->retrans > N3_REQUESTS) {	/* To many retrans */
+			LOGP(DLGTP, LOGL_NOTICE, "Timeout of seq %" PRIu16 "\n",
+			     qmsg->seq);
 			if (gsn->cb_conf)
 				gsn->cb_conf(qmsg->type, EOF, NULL, qmsg->cbp);
 			queue_freemsg(gsn->queue_req, qmsg);
 		} else {
+			LOGP(DLGTP, LOGL_INFO, "Retransmit (%d) of seq %" PRIu16 "\n",
+			     qmsg->retrans, qmsg->seq);
 			if (sendto(qmsg->fd, &qmsg->p, qmsg->l, 0,
 				   (struct sockaddr *)&qmsg->peer,
 				   sizeof(struct sockaddr_in)) < 0) {
