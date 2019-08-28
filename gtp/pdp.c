@@ -109,7 +109,7 @@ static struct gsn_t *g_gsn;
 
 int pdp_init(struct gsn_t *gsn)
 {
-	if(!g_gsn) {
+	if (!g_gsn) {
 		g_gsn = gsn;
 	} else {
 		LOGP(DLGTP, LOGL_FATAL, "This interface is depreacted and doesn't support multiple GGSN!");

@@ -358,8 +358,9 @@ static int delete_context(struct pdp_t *pdp)
 			member = pdp->peer[i];
 			send_trap(gsn, pdp, member, "imsi-rem-ip"); /* TRAP with IP removal */
 			ippool_freeip(member->pool, member);
-		} else if(i == 0)
+		} else if (i == 0) {
 			LOGPPDP(LOGL_ERROR, pdp, "Cannot find/free IP Pool member\n");
+		}
 	}
 
 	if (!pdp_priv) {
