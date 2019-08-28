@@ -14,6 +14,7 @@
 
 #include <osmocom/core/utils.h>
 #include <osmocom/core/defs.h>
+#include <osmocom/core/timer.h>
 
 #include "pdp.h"
 
@@ -268,6 +269,8 @@ struct gsn_t {
 	struct pdp_t pdpa[PDP_MAX];	/* PDP storage */
 	struct pdp_t *hashtid[PDP_MAX];	/* Hash table for IMSI + NSAPI */
 
+	struct osmo_timer_list queue_timer; /* internal queue_{req,resp} timer */
+
 	/* Call back functions */
 	int (*cb_delete_context) (struct pdp_t *);
 	int (*cb_create_context_ind) (struct pdp_t *);
@@ -348,8 +351,8 @@ extern int gtp_fd(struct gsn_t *gsn);
 extern int gtp_decaps0(struct gsn_t *gsn);
 extern int gtp_decaps1c(struct gsn_t *gsn);
 extern int gtp_decaps1u(struct gsn_t *gsn);
-extern int gtp_retrans(struct gsn_t *gsn);
-extern int gtp_retranstimeout(struct gsn_t *gsn, struct timeval *timeout);
+extern int gtp_retrans(struct gsn_t *gsn) OSMO_DEPRECATED("This API is a no-op, libgtp already does the job internally");
+extern int gtp_retranstimeout(struct gsn_t *gsn, struct timeval *timeout) OSMO_DEPRECATED("This API is a no-op and will return a 1 day timeout");
 
 extern int gtp_set_cb_delete_context(struct gsn_t *gsn,
 				     int (*cb_delete_context) (struct pdp_t *

@@ -386,6 +386,109 @@ static uint32_t get_tei(void *pack)
 	}
 }
 
+static int queue_timer_retrans(struct gsn_t *gsn)
+{
+	/* Retransmit any outstanding packets */
+	/* Remove from queue if maxretrans exceeded */
+	time_t now;
+	struct qmsg_t *qmsg;
+	now = time(NULL);
+	/*printf("Retrans: New beginning %d\n", (int) now); */
+
+	/* get first element in queue, as long as the timeout of that
+	 * element has expired */
+	while ((!queue_getfirst(gsn->queue_req, &qmsg)) &&
+	       (qmsg->timeout <= now)) {
+		/*printf("Retrans timeout found: %d\n", (int) time(NULL)); */
+		if (qmsg->retrans > N3_REQUESTS) {	/* To many retrans */
+			LOGP(DLGTP, LOGL_NOTICE, "Timeout of seq %" PRIu16 "\n",
+			     qmsg->seq);
+			if (gsn->cb_conf)
+				gsn->cb_conf(qmsg->type, EOF, NULL, qmsg->cbp);
+			queue_freemsg(gsn->queue_req, qmsg);
+		} else {
+			LOGP(DLGTP, LOGL_INFO, "Retransmit (%d) of seq %" PRIu16 "\n",
+			     qmsg->retrans, qmsg->seq);
+			if (sendto(qmsg->fd, &qmsg->p, qmsg->l, 0,
+				   (struct sockaddr *)&qmsg->peer,
+				   sizeof(struct sockaddr_in)) < 0) {
+				gsn->err_sendto++;
+				LOGP(DLGTP, LOGL_ERROR,
+					"Sendto(fd0=%d, msg=%lx, len=%d) failed: Error = %s\n",
+					gsn->fd0, (unsigned long)&qmsg->p,
+					qmsg->l, strerror(errno));
+			}
+			queue_back(gsn->queue_req, qmsg);
+			qmsg->timeout = now + T3_REQUEST;
+			qmsg->retrans++;
+		}
+	}
+
+	/* Also clean up reply timeouts */
+	while ((!queue_getfirst(gsn->queue_resp, &qmsg)) &&
+	       (qmsg->timeout < now)) {
+		/*printf("Retrans (reply) timeout found: %d\n", (int) time(NULL)); */
+		queue_freemsg(gsn->queue_resp, qmsg);
+	}
+
+	return 0;
+}
+
+static int queue_timer_retranstimeout(struct gsn_t *gsn, struct timeval *timeout)
+{
+	time_t now, later, diff;
+	struct qmsg_t *qmsg;
+	timeout->tv_usec = 0;
+
+	if (queue_getfirst(gsn->queue_req, &qmsg)) {
+		timeout->tv_sec = 10;
+	} else {
+		now = time(NULL);
+		later = qmsg->timeout;
+		timeout->tv_sec = later - now;
+		if (timeout->tv_sec < 0)
+			timeout->tv_sec = 0;	/* No negative allowed */
+		if (timeout->tv_sec > 10)
+			timeout->tv_sec = 10;	/* Max sleep for 10 sec */
+	}
+
+	if (queue_getfirst(gsn->queue_resp, &qmsg)) {
+		/* already set by queue_req, do nothing */
+	} else { /* trigger faster if earlier timeout exists in queue_resp */
+		now = time(NULL);
+		later = qmsg->timeout;
+		diff = later - now;
+		if (diff < 0)
+			diff = 0;
+		if (diff < timeout->tv_sec)
+			timeout->tv_sec = diff;
+	}
+
+	return 0;
+}
+
+static void queue_timer_start(struct gsn_t *gsn)
+{
+	struct timeval next;
+
+	/* Retrieve next retransmission as timeval */
+	queue_timer_retranstimeout(gsn, &next);
+
+	/* re-schedule the timer */
+	osmo_timer_schedule(&gsn->queue_timer, next.tv_sec, next.tv_usec/1000);
+}
+
+/* timer callback for libgtp retransmission and ping */
+static void queue_timer_cb(void *data)
+{
+	struct gsn_t *gsn = data;
+
+	/* do all the retransmissions as needed */
+	queue_timer_retrans(gsn);
+
+	queue_timer_start(gsn);
+}
+
 /* ***********************************************************
  * Reliable delivery of signalling messages
  *
@@ -532,6 +635,10 @@ static int gtp_req(struct gsn_t *gsn, uint8_t version, struct pdp_t *pdp,
 		qmsg->fd = fd;
 		if (pdp) /* echo requests are not pdp-bound */
 			llist_add(&qmsg->entry, &pdp->qmsg_list_req);
+
+		/* Rearm timer: Retrans time for qmsg just queued may be required
+		   before an existing one (for instance a gtp echo req) */
+		queue_timer_start(gsn);
 	}
 	gsn->seq_next++;	/* Count up this time */
 	return 0;
@@ -587,82 +694,15 @@ static int gtp_conf(struct gsn_t *gsn, uint8_t version, struct sockaddr_in *peer
 
 int gtp_retrans(struct gsn_t *gsn)
 {
-	/* Retransmit any outstanding packets */
-	/* Remove from queue if maxretrans exceeded */
-	time_t now;
-	struct qmsg_t *qmsg;
-	now = time(NULL);
-	/*printf("Retrans: New beginning %d\n", (int) now); */
-
-	/* get first element in queue, as long as the timeout of that
-	 * element has expired */
-	while ((!queue_getfirst(gsn->queue_req, &qmsg)) &&
-	       (qmsg->timeout <= now)) {
-		/*printf("Retrans timeout found: %d\n", (int) time(NULL)); */
-		if (qmsg->retrans > N3_REQUESTS) {	/* To many retrans */
-			LOGP(DLGTP, LOGL_NOTICE, "Timeout of seq %" PRIu16 "\n",
-			     qmsg->seq);
-			if (gsn->cb_conf)
-				gsn->cb_conf(qmsg->type, EOF, NULL, qmsg->cbp);
-			queue_freemsg(gsn->queue_req, qmsg);
-		} else {
-			LOGP(DLGTP, LOGL_INFO, "Retransmit (%d) of seq %" PRIu16 "\n",
-			     qmsg->retrans, qmsg->seq);
-			if (sendto(qmsg->fd, &qmsg->p, qmsg->l, 0,
-				   (struct sockaddr *)&qmsg->peer,
-				   sizeof(struct sockaddr_in)) < 0) {
-				gsn->err_sendto++;
-				LOGP(DLGTP, LOGL_ERROR,
-					"Sendto(fd0=%d, msg=%lx, len=%d) failed: Error = %s\n",
-					gsn->fd0, (unsigned long)&qmsg->p,
-					qmsg->l, strerror(errno));
-			}
-			queue_back(gsn->queue_req, qmsg);
-			qmsg->timeout = now + T3_REQUEST;
-			qmsg->retrans++;
-		}
-	}
-
-	/* Also clean up reply timeouts */
-	while ((!queue_getfirst(gsn->queue_resp, &qmsg)) &&
-	       (qmsg->timeout < now)) {
-		/*printf("Retrans (reply) timeout found: %d\n", (int) time(NULL)); */
-		queue_freemsg(gsn->queue_resp, qmsg);
-	}
-
+	/* dummy API, deprecated. */
 	return 0;
 }
 
 int gtp_retranstimeout(struct gsn_t *gsn, struct timeval *timeout)
 {
-	time_t now, later, diff;
-	struct qmsg_t *qmsg;
+	timeout->tv_sec = 24*60*60;
 	timeout->tv_usec = 0;
-
-	if (queue_getfirst(gsn->queue_req, &qmsg)) {
-		timeout->tv_sec = 10;
-	} else {
-		now = time(NULL);
-		later = qmsg->timeout;
-		timeout->tv_sec = later - now;
-		if (timeout->tv_sec < 0)
-			timeout->tv_sec = 0;	/* No negative allowed */
-		if (timeout->tv_sec > 10)
-			timeout->tv_sec = 10;	/* Max sleep for 10 sec */
-	}
-
-	if (queue_getfirst(gsn->queue_resp, &qmsg)) {
-		/* already set by queue_req, do nothing */
-	} else { /* trigger faster if earlier timeout exists in queue_resp */
-		now = time(NULL);
-		later = qmsg->timeout;
-		diff = later - now;
-		if (diff < 0)
-			diff = 0;
-		if (diff < timeout->tv_sec)
-			timeout->tv_sec = diff;
-	}
-
+	/* dummy API, deprecated. Return a huge timer to do nothing */
 	return 0;
 }
 
@@ -723,6 +763,10 @@ static int gtp_resp(uint8_t version, struct gsn_t *gsn, struct pdp_t *pdp,
 		/* No need to add to pdp list here, because even on pdp ctx free
 		   we want to leave messages in queue_resp until timeout to
 		   detect duplicates */
+
+		/* Rearm timer: Retrans time for qmsg just queued may be required
+		   before an existing one (for instance a gtp echo req) */
+		queue_timer_start(gsn);
 	}
 	return 0;
 }
@@ -872,6 +916,9 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 	/* Initialise pdp table */
 	pdp_init(*gsn);
 
+	/* Initialize internal queue timer */
+	osmo_timer_setup(&(*gsn)->queue_timer, queue_timer_cb, *gsn);
+
 	/* Initialise call back functions */
 	(*gsn)->cb_create_context_ind = 0;
 	(*gsn)->cb_delete_context = 0;
@@ -959,11 +1006,17 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 		return -errno;
 	}
 
+	/* Start internal queue timer */
+	queue_timer_start(*gsn);
+
 	return 0;
 }
 
 int gtp_free(struct gsn_t *gsn)
 {
+
+	/* Cleanup internal queue timer */
+	osmo_timer_del(&gsn->queue_timer);
 
 	/* Clean up retransmit queues */
 	queue_free(gsn->queue_req);
