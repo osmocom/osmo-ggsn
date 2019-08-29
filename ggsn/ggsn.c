@@ -775,16 +775,17 @@ static int cb_conf(int type, int cause, struct pdp_t *pdp, void *cbp)
 	case GTP_DELETE_PDP_REQ:
 		/* Remark: We actually never reach this path nowadays because
 		   only place where we call gtp_delete_context_req2() is during
-		   apn_stop()->pool_close_all_pdp() path, and in that case we
-		   free all pdp contexts immediatelly without waiting for
-		   confirmation since we want to tear down the whole APN
-		   anyways. As a result, DeleteCtxResponse will never reach here
-		   since it will be dropped at some point in lower layers in the
-		   Rx path. This code is nevertheless left here in order to ease
-		   future developent and avoid possible future memleaks once more
-		   scenarios where GGSN sends a DeleteCtxRequest are introduced. */
+		   ggsn_close_one_pdp() path, and in that case we free all pdp
+		   contexts immediatelly without waiting for confirmation
+		   (through gtp_freepdp_teardown()) since we want to tear down
+		   the whole APN anyways. As a result, DeleteCtxResponse will
+		   never reach here since it will be dropped at some point in
+		   lower layers in the Rx path. This code is nevertheless left
+		   here in order to ease future developent and avoid possible
+		   future memleaks once more scenarios where GGSN sends a
+		   DeleteCtxRequest are introduced. */
 		if (pdp)
-			rc = pdp_freepdp(pdp);
+			rc = gtp_freepdp(pdp->gsn, pdp);
 		break;
 	case GTP_ECHO_REQ:
 		sgsn = (struct sgsn_peer *)cbp;
