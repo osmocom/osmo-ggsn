@@ -2427,8 +2427,9 @@ int gtp_delete_context_req(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 }
 
 /* API: Send Delete PDP Context Request. PDP CTX shall be free'd by user at any
-   point in time later than this function through a call to pdp_freepdp(pdp), but
-   it must be freed no later than during cb_conf(GTP_DELETE_PDP_REQ, pdp) */
+   point in time later than this function through a call to pdp_freepdp(pdp) (or
+   through gtp_freepdp() if willing to receive cb_delete_context() callback),
+   but it must be freed no later than during cb_conf(GTP_DELETE_PDP_REQ, pdp) */
 int gtp_delete_context_req2(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 			   int teardown)
 {
