@@ -1423,11 +1423,8 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 	pdp = &pdp_buf;
 	memset(pdp, 0, sizeof(struct pdp_t));
 
-	if (version == 0) {
-		uint64_t tid = be64toh(((union gtp_packet *)pack)->gtp0.h.tid);
-
-		pdp_set_imsi_nsapi(pdp, tid);
-	}
+	if (version == 0)
+		pdp_set_imsi_nsapi(pdp, get_tid(pack));
 
 	pdp->seq = seq;
 	pdp->sa_peer = *peer;
@@ -2712,7 +2709,7 @@ static int gtp_error_ind_conf(struct gsn_t *gsn, uint8_t version,
 
 	/* Find the context in question */
 	if (version == 0) {
-		if (gtp_pdp_tidget(gsn, &pdp, be64toh(((union gtp_packet *)pack)->gtp0.h.tid))) {
+		if (gtp_pdp_tidget(gsn, &pdp, get_tid(pack))) {
 			gsn->err_unknownpdp++;
 			GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 				    "Unknown PDP context\n");
