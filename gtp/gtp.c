@@ -2743,6 +2743,9 @@ static int gtp_error_ind_conf(struct gsn_t *gsn, uint8_t version,
 			GTP_LOGPKG(LOGL_ERROR, peer, pack, len, "Unknown PDP context\n");
 			return EOF;
 		}
+	} else {
+		LOGP(DLGTP, LOGL_ERROR, "Unknown version: %d\n", version);
+		return EOF;
 	}
 
 	GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
