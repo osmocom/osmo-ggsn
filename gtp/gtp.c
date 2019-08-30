@@ -2084,12 +2084,8 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 	/* For GTP1 we must use imsi and nsapi if imsi is present. Otherwise */
 	/* we have to use the tunnel endpoint identifier */
 	if (version == 0) {
-		uint64_t tid = be64toh(((union gtp_packet *)pack)->gtp0.h.tid);
-
-		pdp_set_imsi_nsapi(pdp, tid);
-
 		/* Find the context in question */
-		if (gtp_pdp_getimsi(gsn, &pdp, imsi, nsapi)) {
+		if (gtp_pdp_tidget(gsn, &pdp, get_tid(pack))) {
 			gsn->err_unknownpdp++;
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Unknown PDP context\n");
@@ -2097,6 +2093,9 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 						   len, NULL,
 						   GTPCAUSE_NON_EXIST);
 		}
+
+		/* Update IMSI and NSAPI */
+		pdp_set_imsi_nsapi(pdp, get_tid(pack));
 	} else if (version == 1) {
 		/* NSAPI (mandatory) */
 		if (gtpie_gettv1(ie, GTPIE_NSAPI, 0, &nsapi)) {
