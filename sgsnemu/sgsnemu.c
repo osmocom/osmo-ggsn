@@ -433,8 +433,7 @@ static int process_options(int argc, char **argv)
 		}
 	} else {
 		SYS_ERR(DSGSN, LOGL_ERROR, 0,
-			"Listening address must be specified: %s!",
-			args_info.listen_arg);
+			"Listening address must be specified!");
 		return -1;
 	}
 
