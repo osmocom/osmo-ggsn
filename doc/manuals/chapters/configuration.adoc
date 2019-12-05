@@ -299,7 +299,7 @@ Group=username <3>
 Name=apn0 <1>
 
 [Network]
-Address=192.168.7.1 <2>
+Address=192.168.7.1/24 <2>
 IPMasquerade=yes <3>
 ----
 <1> The netowrk device name, which must match the one in the apn0.netdev unit file above
