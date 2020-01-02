@@ -1,3 +1,47 @@
+osmo-ggsn (1.5.0) unstable; urgency=medium
+
+  [ Jan Engelhardt ]
+  * build: switch AC_CANONICAL_TARGET for AC_CANONICAL_HOST
+
+  [ Pau Espin Pedrol ]
+  * libgtp: Remove packets in tx queue belonging pdp being freed
+  * libgtp: announce pdp ctx deletion upon CreatePdpCtx being rejected
+  * Introduce in46a_is_v{4,6}() helpers
+  * ggsn: Move PCO handling code into its own file
+  * in46_addr: Improve in46a_ntop documentation
+  * ggsn_vty.c: Fix wrong use of in46a_from_eua, print IPv6 euas
+  * ggsn: Split application lifecycle related code into ggsn_main.c
+  * Move pdp_get_peer_ipv() to lib/util.*
+  * gtp-kernel.c: Fix wrong use of in46a_from_eua, print IPv6 euas
+  * Introduce LOGTUN log helper
+  * ggsn_vty.c: Avoid printing duplicates for pdp context with v4v6 EUAs
+  * pdp: constify param in pdp_count_secondary()
+  * ggsn_vty.c: Improve output of VTY show pdp-context
+  * doc: Update vty reference xml file
+  * libgtp: Introduce cb_recovery3
+  * ggsn: Implement echo req/resp and recovery
+  * cosmetic: fix formatting in if line
+  * gtp: Log msg retransmits and timeouts
+  * cosmetic: gtp: Drop commented out code calling pdp_freepdp()
+  * cosmetic: gtp: Improve documentation of gtp_delete_context_req2()
+  * ggsn: rx DeletePdpReq confirmation: Improve documentation and use gtp_freepdp()
+  * gtp: Manage queue timers internally
+  * ggsn, sgsnemu: Drop use of no-op deprecated gtp_retrans* APIs
+
+  [ Vadim Yanitskiy ]
+  * gtp_update_pdp_ind(): fix NULL-pointer dereference
+  * gtp_error_ind_conf(): fix: guard against an unknown GTP version
+  * gtp/gtp.c: cosmetic: use get_tid() where we need TID
+  * manuals/configuration.adoc: fix Network Address without prefix length
+  * manuals/configuration.adoc: fix IPv4 address mismatch in <<ggsn_no_root>>
+  * contrib/systemd: add systemd-networkd examples from manuals
+
+  [ Harald Welte ]
+  * sgsnemu: Fix null-pointer format string argument
+  * manual: Fix copy+paste error
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Thu, 02 Jan 2020 20:39:39 +0100
+
 osmo-ggsn (1.4.0) unstable; urgency=medium
 
   [ Max ]
