@@ -1323,19 +1323,29 @@ static int create_ping(void *gsn, struct pdp_t *pdp,
 
 static int delete_context(struct pdp_t *pdp)
 {
+	int rc;
+
 	if (tun && options.ipdown) {
 #if defined(__linux__)
 		sigset_t oldmask;
 
 		if ((options.netns)) {
-			switch_ns(netns, &oldmask);
+			if ((rc = switch_ns(netns, &oldmask)) < 0) {
+				SYS_ERR(DSGSN, LOGL_ERROR, 0,
+					"Failed to switch to netns %s: %s\n",
+					options.netns, strerror(-rc));
+			}
 		}
 #endif
 		tun_runscript(tun, options.ipdown);
 
 #if defined(__linux__)
 		if ((options.netns)) {
-			restore_ns(&oldmask);
+			if ((rc = restore_ns(&oldmask)) < 0) {
+				SYS_ERR(DSGSN, LOGL_ERROR, 0,
+					"Failed to switch to original netns: %s\n",
+					strerror(-rc));
+			}
 		}
 #endif
 	}
@@ -1399,6 +1409,7 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 
 static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 {
+	int rc;
 	struct in46_addr addr;
 #if defined(__linux__)
 	sigset_t oldmask;
@@ -1458,7 +1469,11 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 
 #if defined(__linux__)
 	if ((options.createif) && (options.netns)) {
-		switch_ns(netns, &oldmask);
+		if ((rc = switch_ns(netns, &oldmask)) < 0) {
+			SYS_ERR(DSGSN, LOGL_ERROR, 0,
+				"Failed to switch to netns %s: %s\n",
+				options.netns, strerror(-rc));
+		}
 	}
 #endif
 
@@ -1504,7 +1519,10 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 
 #if defined(__linux__)
 	if ((options.createif) && (options.netns)) {
-		restore_ns(&oldmask);
+		if ((rc = restore_ns(&oldmask)) < 0) {
+			SYS_ERR(DSGSN, LOGL_ERROR, 0, "Failed to switch to original netns: %s\n",
+				strerror(-rc));
+		}
 	}
 #endif
 
@@ -1572,7 +1590,7 @@ int main(int argc, char **argv)
 	fd_set fds;		/* For select() */
 	struct timeval idleTime;	/* How long to select() */
 	struct pdp_t *pdp;
-	int n;
+	int n, rc;
 	int starttime = time(NULL);	/* Time program was started */
 	int stoptime = 0;	/* Time to exit */
 	int pingtimeout = 0;	/* Time to print ping statistics */
@@ -1594,7 +1612,10 @@ int main(int argc, char **argv)
 	osmo_init_logging2(tall_sgsnemu_ctx, &log_info);
 
 #if defined(__linux__)
-	init_netns();
+	if ((rc = init_netns()) < 0) {
+		SYS_ERR(DSGSN, LOGL_ERROR, 0, "Failed to initialize netns: %s", strerror(-rc));
+		exit(1);
+	}
 #endif
 
 	/* Process options given in configuration file and command line */
@@ -1622,8 +1643,16 @@ int main(int argc, char **argv)
 
 #if defined(__linux__)
 	if ((options.createif) && (options.netns)) {
-		netns = get_nsfd(options.netns);
-		switch_ns(netns, &oldmask);
+		if ((netns = get_nsfd(options.netns)) < 0) {
+			SYS_ERR(DSGSN, LOGL_ERROR, 0, "Failed to obtain fd for netns %s: %s\n",
+				options.netns, strerror(-netns));
+			exit(1);
+		}
+		if ((rc = switch_ns(netns, &oldmask)) < 0) {
+			SYS_ERR(DSGSN, LOGL_ERROR, 0, "Failed to switch to netns %s: %s\n",
+				options.netns, strerror(-rc));
+			exit(1);
+		}
 	}
 #endif
 
@@ -1654,7 +1683,11 @@ int main(int argc, char **argv)
 
 #if defined(__linux__)
 	if ((options.createif) && (options.netns)) {
-		restore_ns(&oldmask);
+		if ((rc = restore_ns(&oldmask)) < 0) {
+			SYS_ERR(DSGSN, LOGL_ERROR, 0, "Failed to switch to original netns: %s\n",
+				strerror(-rc));
+			exit(1);
+		}
 	}
 #endif
 

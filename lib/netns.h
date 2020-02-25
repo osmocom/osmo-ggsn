@@ -21,10 +21,10 @@
 
 #if defined(__linux__)
 
-void init_netns(void);
+int init_netns(void);
 
 int switch_ns(int nsfd, sigset_t *oldmask);
-void restore_ns(sigset_t *oldmask);
+int restore_ns(sigset_t *oldmask);
 
 int open_ns(int nsfd, const char *pathname, int flags);
 int socket_ns(int nsfd, int domain, int type, int protocol);

@@ -49,99 +49,133 @@ static int default_nsfd;
 int switch_ns(int nsfd, sigset_t *oldmask)
 {
 	sigset_t intmask;
+	int rc;
 
-	sigfillset(&intmask);
-	sigprocmask(SIG_BLOCK, &intmask, oldmask);
+	if (sigfillset(&intmask) < 0)
+		return -errno;
+	if ((rc = sigprocmask(SIG_BLOCK, &intmask, oldmask)) != 0)
+		return -rc;
 
-	return setns(nsfd, CLONE_NEWNET);
+	if (setns(nsfd, CLONE_NEWNET) < 0)
+		return -errno;
+	return 0;
 }
 
-void restore_ns(sigset_t *oldmask)
+int restore_ns(sigset_t *oldmask)
 {
-	setns(default_nsfd, CLONE_NEWNET);
+	int rc;
+	if (setns(default_nsfd, CLONE_NEWNET) < 0)
+		return -errno;
 
-	sigprocmask(SIG_SETMASK, oldmask, NULL);
+	if ((rc = sigprocmask(SIG_SETMASK, oldmask, NULL)) != 0)
+		return -rc;
+	return 0;
 }
 
 int open_ns(int nsfd, const char *pathname, int flags)
 {
 	sigset_t intmask, oldmask;
 	int fd;
-	int errsv;
+	int rc;
 
-	sigfillset(&intmask);
-	sigprocmask(SIG_BLOCK, &intmask, &oldmask);
+	if (sigfillset(&intmask) < 0)
+		return -errno;
+	if ((rc = sigprocmask(SIG_BLOCK, &intmask, &oldmask)) != 0)
+		return -rc;
 
-	setns(nsfd, CLONE_NEWNET);
-	fd = open(pathname, flags);
-	errsv = errno;
-	setns(default_nsfd, CLONE_NEWNET);
+	if (setns(nsfd, CLONE_NEWNET) < 0)
+		return -errno;
+	if ((fd = open(pathname, flags)) < 0)
+		return -errno;
+	if (setns(default_nsfd, CLONE_NEWNET) < 0) {
+		close(fd);
+		return -errno;
+	}
+	if ((rc = sigprocmask(SIG_SETMASK, &oldmask, NULL)) != 0) {
+		close(fd);
+		return -rc;
+	}
 
-	sigprocmask(SIG_SETMASK, &oldmask, NULL);
-
-	errno = errsv;
-	return fd;
+	return 0;
 }
 
 int socket_ns(int nsfd, int domain, int type, int protocol)
 {
 	sigset_t intmask, oldmask;
 	int sk;
-	int errsv;
+	int rc;
 
-	sigfillset(&intmask);
-	sigprocmask(SIG_BLOCK, &intmask, &oldmask);
+	if (sigfillset(&intmask) < 0)
+		return -errno;
+	if ((rc = sigprocmask(SIG_BLOCK, &intmask, &oldmask)) != 0)
+		return -rc;
 
-	setns(nsfd, CLONE_NEWNET);
-	sk = socket(domain, type, protocol);
-	errsv = errno;
-	setns(default_nsfd, CLONE_NEWNET);
+	if (setns(nsfd, CLONE_NEWNET) < 0)
+		return -errno;
+	if ((sk = socket(domain, type, protocol)) < 0)
+		return -errno;
+	if (setns(default_nsfd, CLONE_NEWNET) < 0) {
+		close(sk);
+		return -errno;
+	}
 
-	sigprocmask(SIG_SETMASK, &oldmask, NULL);
-
-	errno = errsv;
+	if ((rc = sigprocmask(SIG_SETMASK, &oldmask, NULL)) != 0) {
+		close(sk);
+		return -rc;
+	}
 	return sk;
 }
 
-void init_netns()
+int init_netns()
 {
-	if ((default_nsfd = open("/proc/self/ns/net", O_RDONLY)) < 0) {
-		perror("init_netns");
-		exit(EXIT_FAILURE);
-	}
+	if ((default_nsfd = open("/proc/self/ns/net", O_RDONLY)) < 0)
+		return -errno;
+	return 0;
 }
 
 int get_nsfd(const char *name)
 {
-	int r;
+	int rc;
+	int fd;
 	sigset_t intmask, oldmask;
 	char path[MAXPATHLEN] = NETNS_PATH;
 
-	r = mkdir(path, S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH);
-	if (r < 0 && errno != EEXIST)
-		return r;
+	rc = mkdir(path, S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH);
+	if (rc < 0 && errno != EEXIST)
+		return rc;
 
 	snprintf(path, sizeof(path), "%s/%s", NETNS_PATH, name);
-	r = open(path, O_RDONLY|O_CREAT|O_EXCL, 0);
-	if (r < 0) {
-		if (errno == EEXIST)
-			return open(path, O_RDONLY);
-
-		return r;
+	fd = open(path, O_RDONLY|O_CREAT|O_EXCL, 0);
+	if (fd < 0) {
+		if (errno == EEXIST) {
+			if ((fd = open(path, O_RDONLY)) < 0)
+				return -errno;
+			return fd;
+		}
+		return -errno;
 	}
-	close(r);
+	if (close(fd) < 0)
+		return -errno;
 
-	sigfillset(&intmask);
-	sigprocmask(SIG_BLOCK, &intmask, &oldmask);
+	if (sigfillset(&intmask) < 0)
+		return -errno;
+	if ((rc = sigprocmask(SIG_BLOCK, &intmask, &oldmask)) != 0)
+		return -rc;
 
-	unshare(CLONE_NEWNET);
-	mount("/proc/self/ns/net", path, "none", MS_BIND, NULL);
+	if (unshare(CLONE_NEWNET) < 0)
+		return -errno;
+	if (mount("/proc/self/ns/net", path, "none", MS_BIND, NULL) < 0)
+		return -errno;
 
-	setns(default_nsfd, CLONE_NEWNET);
+	if (setns(default_nsfd, CLONE_NEWNET) < 0)
+		return -errno;
 
-	sigprocmask(SIG_SETMASK, &oldmask, NULL);
+	if ((rc = sigprocmask(SIG_SETMASK, &oldmask, NULL)) != 0)
+		return -rc;
 
-	return open(path, O_RDONLY);
+	if ((fd = open(path, O_RDONLY)) < 0)
+		return -errno;
+	return fd;
 }
 
 #endif
