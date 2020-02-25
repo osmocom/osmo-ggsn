@@ -1,7 +1,7 @@
 /* Minimal ICMPv6 code for generating router advertisements as required by
  * relevant 3GPP specs for a GGSN with IPv6 PDP contexts */
 
-/* (C) 2017 by Harald Welte <laforge@gnumonks.org> 
+/* (C) 2017 by Harald Welte <laforge@gnumonks.org>
  *
  * The contents of this file may be used under the terms of the GNU
  * General Public License Version 2, provided that the above copyright
@@ -95,7 +95,7 @@ struct icmpv6_opt_prefix {
 /*! construct a 3GPP 29.061 compliant router advertisement for a given prefix
  *  \param[in] saddr Source IPv6 address for router advertisement
  *  \param[in] daddr Destination IPv6 address for router advertisement IPv6 header
- *  \param[in] prefix The single prefix to be advertised (/64 implied!)i
+ *  \param[in] prefix The single prefix to be advertised (/64 implied!)
  *  \returns callee-allocated message buffer containing router advertisement */
 struct msgb *icmpv6_construct_ra(const struct in6_addr *saddr,
 				 const struct in6_addr *daddr,
