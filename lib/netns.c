@@ -96,7 +96,7 @@ int open_ns(int nsfd, const char *pathname, int flags)
 		return -rc;
 	}
 
-	return 0;
+	return fd;
 }
 
 int socket_ns(int nsfd, int domain, int type, int protocol)
