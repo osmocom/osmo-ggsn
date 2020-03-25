@@ -29,7 +29,7 @@ static const struct log_info_cat default_categories[] = {
 	[DICMP6] = {
 		.name = "DICMP6",
 		.description = "ICMPv6",
-		.enabled = 1, .loglevel = LOGL_DEBUG,
+		.enabled = 1, .loglevel = LOGL_NOTICE,
 	},
 };
 
