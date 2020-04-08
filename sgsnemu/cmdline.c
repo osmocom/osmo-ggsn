@@ -368,14 +368,6 @@ void cmdline_parser_params_init(struct cmdline_parser_params *params)
 	}
 }
 
-struct cmdline_parser_params *cmdline_parser_params_create(void)
-{
-	struct cmdline_parser_params *params = (struct cmdline_parser_params *)
-	    malloc(sizeof(struct cmdline_parser_params));
-	cmdline_parser_params_init(params);
-	return params;
-}
-
 static void free_string_field(char **s)
 {
 	if (*s) {

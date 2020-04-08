@@ -480,13 +480,6 @@ extern "C" {
 	void cmdline_parser_params_init(struct cmdline_parser_params *params);
 
 /**
- * Allocates dynamically a cmdline_parser_params structure and initializes
- * all its fields to their default values
- * @return the created and initialized cmdline_parser_params structure
- */
-	struct cmdline_parser_params *cmdline_parser_params_create(void);
-
-/**
  * Initializes the passed gengetopt_args_info structure's fields
  * (also set default values for options that have a default)
  * @param args_info the structure to initialize
