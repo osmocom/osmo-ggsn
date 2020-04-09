@@ -1568,7 +1568,7 @@ static int echo_conf(int recovery)
 	return 0;
 }
 
-static int conf(int type, int cause, struct pdp_t *pdp, void *cbp)
+static int _gtp_cb_conf(int type, int cause, struct pdp_t *pdp, void *cbp)
 {
 	/* if (cause < 0) return 0; Some error occurred. We don't care */
 	switch (type) {
@@ -1639,7 +1639,7 @@ int main(int argc, char **argv)
 		maxfd = gsn->fd1u;
 
 	gtp_set_cb_delete_context(gsn, delete_context);
-	gtp_set_cb_conf(gsn, conf);
+	gtp_set_cb_conf(gsn, _gtp_cb_conf);
 	if (options.createif)
 		gtp_set_cb_data_ind(gsn, encaps_tun);
 	else
