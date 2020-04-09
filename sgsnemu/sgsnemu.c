@@ -1409,8 +1409,8 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 
 static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 {
-	int rc;
-	struct in46_addr addr;
+	int rc, i, num_addr;
+	struct in46_addr addr[2];
 #if defined(__linux__)
 	sigset_t oldmask;
 #endif
@@ -1442,7 +1442,7 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 		return EOF;	/* Not what we expected */
 	}
 
-	if (in46a_from_eua(&pdp->eua, &addr) < 1) {
+	if ((num_addr = in46a_from_eua(&pdp->eua, addr)) < 1) {
 		printf
 		    ("Received create PDP context response. Cause value: %d\n",
 		     cause);
@@ -1452,20 +1452,7 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 		return EOF;	/* Not a valid IP address */
 	}
 
-	printf("Received create PDP context response. IP address: %s\n",
-	       in46a_ntoa(&addr));
-
-	switch (addr.len) {
-	case 16: /* IPv6 */
-		/* we have to enable the kernel to perform stateless autoconfiguration,
-		 * i.e. send a router solicitation using the lover 64bits of the allocated
-		 * EUA as interface identifier, as per 3GPP TS 29.061 Section 11.2.1.3.2 */
-		memcpy(addr.v6.s6_addr, ll_prefix, sizeof(ll_prefix));
-		printf("Derived IPv6 link-local address: %s\n", in46a_ntoa(&addr));
-		break;
-	case 4: /* IPv4 */
-		break;
-	}
+	printf("Received create PDP context response.\n");
 
 #if defined(__linux__)
 	if ((options.createif) && (options.netns)) {
@@ -1477,19 +1464,37 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 	}
 #endif
 
-	if ((options.createif) && (!options.net.len)) {
-		size_t prefixlen = 32;
-		if (addr.len == 16)
-			prefixlen = 64;
-		/* printf("Setting up interface and routing\n"); */
-		tun_addaddr(tun, &addr, &addr, prefixlen);
-		if (options.defaultroute) {
-			struct in_addr rm;
-			rm.s_addr = 0;
-			netdev_addroute(&rm, &addr.v4, &rm);
+	for (i = 0; i < num_addr; i++) {
+		printf("PDP ctx: received EUA with IP address: %s\n",  in46a_ntoa(&addr[i]));
+
+		switch (addr[i].len) {
+		case 16: /* IPv6 */
+			/* we have to enable the kernel to perform stateless autoconfiguration,
+			 * i.e. send a router solicitation using the lover 64bits of the allocated
+			 * EUA as interface identifier, as per 3GPP TS 29.061 Section 11.2.1.3.2 */
+			memcpy(addr[i].v6.s6_addr, ll_prefix, sizeof(ll_prefix));
+			printf("Derived IPv6 link-local address: %s\n", in46a_ntoa(&addr[i]));
+			break;
+		case 4: /* IPv4 */
+			break;
 		}
-		if (options.ipup)
-			tun_runscript(tun, options.ipup);
+
+		if ((options.createif) && (!options.net.len)) {
+			size_t prefixlen = 32;
+			if (addr[i].len == 16)
+				prefixlen = 64;
+			/* printf("Setting up interface and routing\n"); */
+			tun_addaddr(tun, &addr[i], &addr[i], prefixlen);
+			if (options.defaultroute) {
+				struct in_addr rm;
+				rm.s_addr = 0;
+				netdev_addroute(&rm, &addr[i].v4, &rm);
+			}
+			if (options.ipup)
+				tun_runscript(tun, options.ipup);
+		}
+
+		ipset(iph, &addr[i]);
 	}
 
 	/* now that ip-up has been executed, check if we are configured to
@@ -1526,7 +1531,6 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 	}
 #endif
 
-	ipset(iph, &addr);
 
 	state = 2;		/* Connected */
 
