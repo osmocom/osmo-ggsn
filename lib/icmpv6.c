@@ -25,8 +25,8 @@
 
 #include "../gtp/gtp.h"
 #include "../gtp/pdp.h"
-#include "../lib/ippool.h"
-#include "../lib/syserr.h"
+#include "ippool.h"
+#include "syserr.h"
 #include "config.h"
 
 /* 29.061 11.2.1.3.4 IPv6 Router Configuration Variables in GGSN */

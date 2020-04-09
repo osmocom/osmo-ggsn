@@ -54,7 +54,7 @@
 #include "../lib/util.h"
 #include "../gtp/pdp.h"
 #include "../gtp/gtp.h"
-#include "icmpv6.h"
+#include "../lib/icmpv6.h"
 #include "pco.h"
 #include "ggsn.h"
 
