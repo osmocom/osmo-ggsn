@@ -24,7 +24,7 @@ static const struct log_info_cat default_categories[] = {
 	[DSGSN] = {
 		.name = "DSGSN",
 		.description = "SGSN Emulator",
-		.enabled = 1, .loglevel = LOGL_NOTICE,
+		.enabled = 1, .loglevel = LOGL_INFO,
 	},
 	[DICMP6] = {
 		.name = "DICMP6",
