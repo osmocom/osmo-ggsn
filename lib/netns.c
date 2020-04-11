@@ -40,12 +40,14 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#include <osmocom/core/utils.h>
+
 #include "netns.h"
 
 #define NETNS_PATH "/var/run/netns"
 
 /*! default namespace of the GGSN process */
-static int default_nsfd;
+static int default_nsfd = -1;
 
 /*! switch to a (non-default) namespace, store existing signal mask in oldmask.
  *  \param[in] nsfd file descriptor representing the namespace to whch we shall switch
@@ -55,6 +57,8 @@ int switch_ns(int nsfd, sigset_t *oldmask)
 {
 	sigset_t intmask;
 	int rc;
+
+	OSMO_ASSERT(default_nsfd >= 0);
 
 	if (sigfillset(&intmask) < 0)
 		return -errno;
@@ -71,6 +75,8 @@ int switch_ns(int nsfd, sigset_t *oldmask)
  *  \returns 0 on successs; negative errno value in case of error */
 int restore_ns(sigset_t *oldmask)
 {
+	OSMO_ASSERT(default_nsfd >= 0);
+
 	int rc;
 	if (setns(default_nsfd, CLONE_NEWNET) < 0)
 		return -errno;
@@ -86,6 +92,8 @@ int open_ns(int nsfd, const char *pathname, int flags)
 	sigset_t intmask, oldmask;
 	int fd;
 	int rc;
+
+	OSMO_ASSERT(default_nsfd >= 0);
 
 	/* mask off all signals, store old signal mask */
 	if (sigfillset(&intmask) < 0)
@@ -126,6 +134,8 @@ int socket_ns(int nsfd, int domain, int type, int protocol)
 	sigset_t intmask, oldmask;
 	int sk;
 	int rc;
+
+	OSMO_ASSERT(default_nsfd >= 0);
 
 	/* mask off all signals, store old signal mask */
 	if (sigfillset(&intmask) < 0)
@@ -176,6 +186,8 @@ int get_nsfd(const char *name)
 	int fd;
 	sigset_t intmask, oldmask;
 	char path[MAXPATHLEN] = NETNS_PATH;
+
+	OSMO_ASSERT(default_nsfd >= 0);
 
 	/* create /var/run/netns, if it doesn't exist already */
 	rc = mkdir(path, S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH);
