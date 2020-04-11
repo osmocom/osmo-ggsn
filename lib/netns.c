@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2014-2017, Travelping GmbH <info@travelping.com>
+ * Copyright (C) 2020, Harald Welte <laforge@gnumonks.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -65,8 +66,11 @@ int switch_ns(int nsfd, sigset_t *oldmask)
 	if ((rc = sigprocmask(SIG_BLOCK, &intmask, oldmask)) != 0)
 		return -rc;
 
-	if (setns(nsfd, CLONE_NEWNET) < 0)
+	if (setns(nsfd, CLONE_NEWNET) < 0) {
+		/* restore old mask if we couldn't switch the netns */
+		sigprocmask(SIG_SETMASK, oldmask, NULL);
 		return -errno;
+	}
 	return 0;
 }
 
@@ -90,7 +94,8 @@ int restore_ns(sigset_t *oldmask)
 int open_ns(int nsfd, const char *pathname, int flags)
 {
 	sigset_t intmask, oldmask;
-	int fd;
+	int ret;
+	int fd = -1;
 	int rc;
 
 	OSMO_ASSERT(default_nsfd >= 0);
@@ -102,23 +107,34 @@ int open_ns(int nsfd, const char *pathname, int flags)
 		return -rc;
 
 	/* associate the calling thread with namespace file descriptor */
-	if (setns(nsfd, CLONE_NEWNET) < 0)
-		return -errno;
+	if (setns(nsfd, CLONE_NEWNET) < 0) {
+		ret = -errno;
+		goto restore_sigmask;
+	}
 	/* open the requested file/path */
-	if ((fd = open(pathname, flags)) < 0)
-		return -errno;
+	if ((fd = open(pathname, flags)) < 0) {
+		ret = -errno;
+		goto restore_defaultns;
+	}
+	ret = fd;
+
+restore_defaultns:
 	/* return back to default namespace */
 	if (setns(default_nsfd, CLONE_NEWNET) < 0) {
-		close(fd);
+		if (fd >= 0)
+			close(fd);
 		return -errno;
 	}
+
+restore_sigmask:
 	/* restore process mask */
 	if ((rc = sigprocmask(SIG_SETMASK, &oldmask, NULL)) != 0) {
-		close(fd);
+		if (fd >= 0)
+			close(fd);
 		return -rc;
 	}
 
-	return fd;
+	return ret;
 }
 
 /*! create a socket in another namespace.
@@ -132,7 +148,8 @@ int open_ns(int nsfd, const char *pathname, int flags)
 int socket_ns(int nsfd, int domain, int type, int protocol)
 {
 	sigset_t intmask, oldmask;
-	int sk;
+	int ret;
+	int sk = -1;
 	int rc;
 
 	OSMO_ASSERT(default_nsfd >= 0);
@@ -144,25 +161,34 @@ int socket_ns(int nsfd, int domain, int type, int protocol)
 		return -rc;
 
 	/* associate the calling thread with namespace file descriptor */
-	if (setns(nsfd, CLONE_NEWNET) < 0)
-		return -errno;
+	if (setns(nsfd, CLONE_NEWNET) < 0) {
+		ret = -errno;
+		goto restore_sigmask;
+	}
 
 	/* create socket of requested domain/type/proto */
-	if ((sk = socket(domain, type, protocol)) < 0)
-		return -errno;
+	if ((sk = socket(domain, type, protocol)) < 0) {
+		ret = -errno;
+		goto restore_defaultns;
+	}
+	ret = sk;
 
+restore_defaultns:
 	/* return back to default namespace */
 	if (setns(default_nsfd, CLONE_NEWNET) < 0) {
-		close(sk);
+		if (sk >= 0)
+			close(sk);
 		return -errno;
 	}
 
+restore_sigmask:
 	/* restore process mask */
 	if ((rc = sigprocmask(SIG_SETMASK, &oldmask, NULL)) != 0) {
-		close(sk);
+		if (sk >= 0)
+			close(sk);
 		return -rc;
 	}
-	return sk;
+	return ret;
 }
 
 /*! initialize this network namespace helper module.
@@ -182,6 +208,7 @@ int init_netns()
  *  \returns File descriptor of network namespace; negative errno in case of error */
 int get_nsfd(const char *name)
 {
+	int ret = 0;
 	int rc;
 	int fd;
 	sigset_t intmask, oldmask;
@@ -215,18 +242,25 @@ int get_nsfd(const char *name)
 		return -rc;
 
 	/* create a new network namespace */
-	if (unshare(CLONE_NEWNET) < 0)
-		return -errno;
+	if (unshare(CLONE_NEWNET) < 0) {
+		ret = -errno;
+		goto restore_sigmask;
+	}
 	if (mount("/proc/self/ns/net", path, "none", MS_BIND, NULL) < 0)
-		return -errno;
+		ret = -errno;
 
 	/* switch back to default namespace */
 	if (setns(default_nsfd, CLONE_NEWNET) < 0)
 		return -errno;
 
+restore_sigmask:
 	/* restore process mask */
 	if ((rc = sigprocmask(SIG_SETMASK, &oldmask, NULL)) != 0)
 		return -rc;
+
+	/* might have been set above in case mount fails */
+	if (ret < 0)
+		return ret;
 
 	/* finally, open the created namespace file descriptor from default ns */
 	if ((fd = open(path, O_RDONLY)) < 0)
