@@ -22,6 +22,13 @@ struct icmpv6_hdr {
 	uint16_t csum;
 } __attribute__ ((packed));
 
+struct icmpv6_echo_hdr {
+	struct icmpv6_hdr hdr;
+	uint16_t ident;		/* Identifier */
+	uint16_t seq;		/* Sequence number */
+	uint8_t data[0];	/* Data */
+} __attribute__ ((packed));
+
 /* RFC4861 Section 4.1 */
 struct icmpv6_rsol_hdr {
 	struct icmpv6_hdr hdr;
@@ -75,6 +82,9 @@ struct icmpv6_opt_prefix {
 	uint32_t res2;
 	uint8_t prefix[16];
 } __attribute__ ((packed));
+
+uint16_t icmpv6_prepend_ip6hdr(struct msgb *msg, const struct in6_addr *saddr,
+				  const struct in6_addr *daddr);
 
 struct msgb *icmpv6_construct_rs(const struct in6_addr *saddr);
 

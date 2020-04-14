@@ -42,7 +42,7 @@ const struct in6_addr all_router_mcast_addr = {
 };
 
 /* Prepends the ipv6 header and returns checksum content */
-static uint16_t icmpv6_prepend_ip6hdr(struct msgb *msg, const struct in6_addr *saddr,
+uint16_t icmpv6_prepend_ip6hdr(struct msgb *msg, const struct in6_addr *saddr,
 				  const struct in6_addr *daddr)
 {
 	uint32_t len;

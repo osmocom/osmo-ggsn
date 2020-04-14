@@ -104,7 +104,7 @@ struct {
 	size_t prefixlen;
 	char *ipup, *ipdown;	/* Filename of scripts */
 	int defaultroute;	/* Set up default route */
-	struct in_addr pinghost;	/* Remote ping host    */
+	struct in46_addr pinghost;	/* Remote ping host    */
 	int pingrate;
 	int pingsize;
 	int pingcount;
@@ -163,6 +163,11 @@ struct ip_ping {
 	uint16_t checksum;	/* Header checksum */
 	uint16_t ident;		/* Identifier */
 	uint16_t seq;		/* Sequence number */
+	uint8_t data[CREATEPING_MAX];	/* Data */
+} __attribute__ ((packed));
+
+struct ip6_ping {
+	struct icmpv6_echo_hdr hdr;
 	uint8_t data[CREATEPING_MAX];	/* Data */
 } __attribute__ ((packed));
 
@@ -916,20 +921,61 @@ static int process_options(int argc, char **argv)
 	/* defaultroute */
 	options.defaultroute = args_info.defaultroute_flag;
 
+	/* PDP Type */
+	if (!strcmp(args_info.pdp_type_arg, "v6"))
+		options.pdp_type = PDP_EUA_TYPE_v6;
+	else if (!strcmp(args_info.pdp_type_arg, "v4"))
+		options.pdp_type = PDP_EUA_TYPE_v4;
+	else {
+		SYS_ERR(DSGSN, LOGL_ERROR, 0, "Unsupported/unknown PDP Type '%s'\n",
+			args_info.pdp_type_arg);
+		return -1;
+	}
+
 	/* pinghost                                                     */
 	/* Store ping host as in_addr                                   */
 	if (args_info.pinghost_arg) {
-		if (!(host = gethostbyname(args_info.pinghost_arg))) {
+		struct addrinfo hints;
+		struct addrinfo *result;
+		memset(&hints, 0, sizeof(struct addrinfo));
+		switch (options.pdp_type) {
+		case PDP_EUA_TYPE_v4:
+			hints.ai_family = AF_INET;
+			break;
+		case PDP_EUA_TYPE_v6:
+			hints.ai_family = AF_INET6;
+			break;
+		default:
+			SYS_ERR(DSGSN, LOGL_ERROR, 0, "lookup(AF_UNSPEC) %d", options.pdp_type);
+			hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
+		}
+		hints.ai_socktype = SOCK_DGRAM;
+		hints.ai_flags = 0;
+		hints.ai_protocol = 0;
+		hints.ai_canonname = NULL;
+		hints.ai_addr = NULL;
+		hints.ai_next = NULL;
+		if ((i = getaddrinfo(args_info.pinghost_arg, NULL, &hints, &result)) != 0) {
 			SYS_ERR(DSGSN, LOGL_ERROR, 0,
-				"Invalid ping host: %s!",
-				args_info.pinghost_arg);
+				"Invalid ping host '%s': %s",
+				args_info.pinghost_arg, gai_strerror(i));
 			return -1;
 		} else {
-			memcpy(&options.pinghost.s_addr, host->h_addr,
-			       host->h_length);
+			switch (result->ai_family) {
+			case AF_INET:
+				options.pinghost.len = sizeof(struct in_addr);
+				options.pinghost.v4 = ((struct sockaddr_in*)result->ai_addr)->sin_addr;
+				SYS_ERR(DSGSN, LOGL_ERROR, 0, 	"AF_INET %d", options.pinghost.len);
+				break;
+			case AF_INET6:
+				options.pinghost.len = sizeof(struct in6_addr);
+				options.pinghost.v6 = ((struct sockaddr_in6*)result->ai_addr)->sin6_addr;
+				break;
+			}
 			printf("Using ping host:       %s (%s)\n",
 			       args_info.pinghost_arg,
-			       inet_ntoa(options.pinghost));
+			       in46a_ntoa(&options.pinghost));
+			freeaddrinfo(result);
 		}
 	}
 
@@ -946,22 +992,6 @@ static int process_options(int argc, char **argv)
 		options.tx_gpdu_seq = 0;
 	else
 		options.tx_gpdu_seq = 1;
-
-	/* PDP Type */
-	if (!strcmp(args_info.pdp_type_arg, "v6"))
-		options.pdp_type = PDP_EUA_TYPE_v6;
-	else if (!strcmp(args_info.pdp_type_arg, "v4"))
-		options.pdp_type = PDP_EUA_TYPE_v4;
-	else {
-		SYS_ERR(DSGSN, LOGL_ERROR, 0, "Unsupported/unknown PDP Type '%s'\n",
-			args_info.pdp_type_arg);
-		return -1;
-	}
-
-	if (options.pingcount && options.pdp_type != PDP_EUA_TYPE_v4) {
-		SYS_ERR(DSGSN, LOGL_ERROR, 0, "built-in ping only works with IPv4, use tun-device");
-		return -1;
-	}
 
 	return 0;
 
@@ -1118,7 +1148,7 @@ static int ping_timeout(struct timeval *tp)
 	struct timezone tz;
 	struct timeval tv;
 	int diff;
-	if ((options.pinghost.s_addr) && (2 == state) &&
+	if ((options.pinghost.len) && (2 == state) &&
 	    ((pingseq < options.pingcount) || (options.pingcount == 0))) {
 		gettimeofday(&tv, &tz);
 		diff = 1000000 / options.pingrate * pingseq - 1000000 * (tv.tv_sec - firstping.tv_sec) - (tv.tv_usec - firstping.tv_usec);	/* Microseconds safe up to 500 sec */
@@ -1143,7 +1173,7 @@ static int ping_finish()
 	gettimeofday(&tv, &tz);
 	elapsed = 1000000 * (tv.tv_sec - firstping.tv_sec) + (tv.tv_usec - firstping.tv_usec);	/* Microseconds */
 	printf("\n");
-	printf("\n----%s PING Statistics----\n", inet_ntoa(options.pinghost));
+	printf("\n----%s PING Statistics----\n", in46a_ntoa(&options.pinghost));
 	printf("%d packets transmitted in %.3f seconds, ", ntransmitted,
 	       elapsed / 1000000.0);
 	printf("%d packets received, ", nreceived);
@@ -1167,10 +1197,8 @@ static int ping_finish()
 	return 0;
 }
 
-/* Handle a received ping packet. Print out line and update statistics. */
-static int encaps_ping(struct pdp_t *pdp, void *pack, unsigned len)
+static int encaps_ping4(struct pdp_t *pdp, void *pack, unsigned len)
 {
-	struct timezone tz;
 	struct timeval tv;
 	struct timeval *tp;
 	struct ip_ping *pingpack = pack;
@@ -1179,17 +1207,12 @@ static int encaps_ping(struct pdp_t *pdp, void *pack, unsigned len)
 
 	src.s_addr = pingpack->src;
 
-	gettimeofday(&tv, &tz);
-	if (options.debug)
-		printf("%d.%6d ", (int)tv.tv_sec, (int)tv.tv_usec);
-
 	if (len < CREATEPING_IP + CREATEPING_ICMP) {
 		printf("packet too short (%d bytes) from %s\n", len,
 		       inet_ntoa(src));
 		return 0;
 	}
 
-	ntreceived++;
 	if (pingpack->protocol != 1) {
 		if (!options.pingquiet)
 			printf("%d bytes from %s: ip_protocol=%d (%s)\n",
@@ -1213,7 +1236,7 @@ static int encaps_ping(struct pdp_t *pdp, void *pack, unsigned len)
 		       inet_ntoa(src), ntohs(pingpack->seq));
 
 	if (len >= sizeof(struct timeval) + CREATEPING_IP + CREATEPING_ICMP) {
-		gettimeofday(&tv, &tz);
+		gettimeofday(&tv, NULL);
 		tp = (struct timeval *)pingpack->data;
 		if ((tv.tv_usec -= tp->tv_usec) < 0) {
 			tv.tv_sec--;
@@ -1236,15 +1259,106 @@ static int encaps_ping(struct pdp_t *pdp, void *pack, unsigned len)
 	return 0;
 }
 
-/* Create a new ping packet and send it off to peer. */
-static int create_ping(void *gsn, struct pdp_t *pdp,
-			struct in_addr *dst, int seq, unsigned int datasize)
+static int encaps_ping6(struct pdp_t *pdp, struct ip6_hdr *ip6h, unsigned len)
 {
+	const struct icmpv6_echo_hdr *ic6h = (struct icmpv6_echo_hdr *) ((uint8_t*)ip6h + sizeof(*ip6h));
+	struct timeval tv;
+	struct timeval tp;
+	int triptime;
+	char straddr[128];
 
+	if (len < sizeof(struct ip6_hdr)) {
+		SYS_ERR(DSGSN, LOGL_ERROR, 0, "Packet len too small to contain IPv6 header (%d)", len);
+		return 0;
+	}
+
+	if (ip6h->ip6_ctlun.ip6_un1.ip6_un1_nxt != IPPROTO_ICMPV6) {
+		if (!options.pingquiet)
+			printf("%d bytes from %s: ip6_protocol=%d (%s)\n", len,
+			       inet_ntop(AF_INET6, &ip6h->ip6_src, straddr, sizeof(straddr)),
+			       ip6h->ip6_ctlun.ip6_un1.ip6_un1_nxt,
+			       print_ipprot(ip6h->ip6_ctlun.ip6_un1.ip6_un1_nxt));
+		return 0;
+	}
+
+	if (len < sizeof(struct ip6_hdr) + sizeof(struct icmpv6_echo_hdr)) {
+		LOGP(DSGSN, LOGL_ERROR, "Packet len too small to contain ICMPv6 echo header (%d)\n", len);
+		return 0;
+	}
+
+	if (ic6h->hdr.type != 129 || ic6h->hdr.code != 0) {
+		if (!options.pingquiet)
+			printf
+			    ("%d bytes from %s: icmp_type=%d icmp_code=%d\n", len,
+			    inet_ntop(AF_INET6, &ip6h->ip6_src, straddr, sizeof(straddr)),
+			    ic6h->hdr.type, ic6h->hdr.code);
+		return 0;
+	}
+
+	nreceived++;
+	if (!options.pingquiet)
+		printf("%d bytes from %s: icmp_seq=%d", len,
+		       inet_ntop(AF_INET6, &ip6h->ip6_src, straddr, sizeof(straddr)),
+		       ntohs(ic6h->seq));
+
+	if (len >= sizeof(struct ip6_hdr) + sizeof(struct icmpv6_echo_hdr) + sizeof(struct timeval)) {
+		gettimeofday(&tv, NULL);
+		memcpy(&tp, ic6h->data, sizeof(struct timeval));
+		if ((tv.tv_usec -= tp.tv_usec) < 0) {
+			tv.tv_sec--;
+			tv.tv_usec += 1000000;
+		}
+		tv.tv_sec -= tp.tv_sec;
+
+		triptime = tv.tv_sec * 1000000 + (tv.tv_usec);
+		tsum += triptime;
+		if (triptime < tmin)
+			tmin = triptime;
+		if (triptime > tmax)
+			tmax = triptime;
+
+		if (!options.pingquiet)
+			printf(" time=%.3f ms\n", triptime / 1000.0);
+
+	} else if (!options.pingquiet)
+		printf("\n");
+	return 0;
+}
+
+/* Handle a received ping packet. Print out line and update statistics. */
+static int encaps_ping(struct pdp_t *pdp, void *pack, unsigned len)
+{
+	struct iphdr *iph = (struct iphdr *)pack;
+	struct timeval tv;
+
+
+	gettimeofday(&tv, NULL);
+	if (options.debug)
+		printf("%d.%6d ", (int)tv.tv_sec, (int)tv.tv_usec);
+
+	ntreceived++;
+
+	if (len < sizeof(struct iphdr)) {
+		SYS_ERR(DSGSN, LOGL_ERROR, 0, "Packet len too small to contain ip header (%d)", len);
+		return -1;
+	}
+	switch(iph->version) {
+	case 4:
+		return encaps_ping4(pdp, pack, len);
+	case 6:
+		return encaps_ping6(pdp, (struct ip6_hdr *)pack, len);
+	default:
+		SYS_ERR(DSGSN, LOGL_ERROR, 0, "Unknown ip header version %d", iph->version);
+		return -1;
+	}
+}
+
+static int create_ping4(void *gsn, struct pdp_t *pdp, struct in46_addr *src,
+			struct in46_addr *dst, int seq, unsigned int datasize)
+{
 	struct ip_ping pack;
 	uint16_t v16;
 	uint8_t *p8 = (uint8_t *) & pack;
-	struct in_addr src;
 	unsigned int n;
 	long int sum = 0;
 	int count = 0;
@@ -1252,14 +1366,6 @@ static int create_ping(void *gsn, struct pdp_t *pdp,
 	struct timezone tz;
 	struct timeval *tp =
 	    (struct timeval *)&p8[CREATEPING_IP + CREATEPING_ICMP];
-
-	if (datasize > CREATEPING_MAX) {
-		SYS_ERR(DSGSN, LOGL_ERROR, 0,
-			"Ping size to large: %d!", datasize);
-		return -1;
-	}
-
-	memcpy(&src, &(pdp->eua.v[2]), 4);	/* Copy a 4 byte address */
 
 	pack.ipver = 0x45;
 	pack.tos = 0x00;
@@ -1269,8 +1375,8 @@ static int create_ping(void *gsn, struct pdp_t *pdp,
 	pack.ttl = 0x40;
 	pack.protocol = 0x01;
 	pack.ipcheck = 0x0000;
-	pack.src = src.s_addr;
-	pack.dst = dst->s_addr;
+	pack.src = src->v4.s_addr;
+	pack.dst = dst->v4.s_addr;
 	pack.type = 0x08;
 	pack.code = 0x00;
 	pack.checksum = 0x0000;
@@ -1318,6 +1424,73 @@ static int create_ping(void *gsn, struct pdp_t *pdp,
 
 	ntransmitted++;
 	return gtp_data_req(gsn, pdp, &pack, 28 + datasize);
+}
+
+static int create_ping6(void *gsn, struct pdp_t *pdp, struct in46_addr *src,
+			struct in46_addr *dst, int seq, unsigned int datasize)
+{
+	struct ip6_ping *pack;
+	uint8_t *p8;
+	unsigned int n;
+	struct timezone tz;
+	struct timeval *tp;
+
+	struct msgb *msg = msgb_alloc_headroom(sizeof(struct ip6_ping) + 128,128, "ICMPv6 echo");
+	OSMO_ASSERT(msg);
+	pack = (struct ip6_ping *) msgb_put(msg, sizeof(struct icmpv6_echo_hdr) + datasize);
+	pack->hdr.hdr.type = 128;
+	pack->hdr.hdr.code = 0;
+	pack->hdr.hdr.csum = 0;  /* updated below */
+	pack->hdr.ident = 0x0000;
+	pack->hdr.seq = htons(seq);
+
+	p8 = pack->data;
+	for (n = 0; n < (datasize); n++)
+		p8[n] = n;
+
+	if (datasize >= sizeof(struct timeval)) {
+		tp = (struct timeval *)pack->data;
+		gettimeofday(tp, &tz);
+	}
+
+	pack->hdr.hdr.csum = icmpv6_prepend_ip6hdr(msg, &src->v6, &dst->v6);
+
+	ntransmitted++;
+	return gtp_data_req(gsn, pdp, msgb_data(msg), msgb_length(msg));
+}
+
+/* Create a new ping packet and send it off to peer. */
+static int create_ping(void *gsn, struct pdp_t *pdp,
+			struct in46_addr *dst, int seq, unsigned int datasize)
+{
+	int num_addr;
+	struct in46_addr addr[2];
+	struct in46_addr *src;
+
+	if (datasize > CREATEPING_MAX) {
+		SYS_ERR(DSGSN, LOGL_ERROR, 0,
+			"Ping size to large: %d!", datasize);
+		return -1;
+	}
+
+	if ((num_addr = in46a_from_eua(&pdp->eua, addr)) < 1) {
+		SYS_ERR(DSGSN, LOGL_ERROR, 0,
+			"in46a_from_eua() failed! %d", num_addr);
+		return -1;
+	}
+	if (dst->len == addr[0].len) {
+		src = &addr[0];
+	} else if (num_addr > 1 && dst->len == addr[1].len) {
+		src = &addr[1];
+	} else {
+		SYS_ERR(DSGSN, LOGL_ERROR, 0,
+			"Mismaching source and destination IP addr types (%d vs %d)", dst->len, addr[0].len);
+		return -1;
+	}
+	if (in46a_is_v4(dst))
+		return create_ping4(gsn, pdp, src, dst, seq, datasize);
+	else
+		return create_ping6(gsn, pdp, src, dst, seq, datasize);
 }
 
 static int delete_context(struct pdp_t *pdp)
@@ -1955,7 +2128,7 @@ int main(int argc, char **argv)
 				/* Delete context */
 				printf("Disconnecting PDP context #%d\n", n);
 				gtp_delete_context_req2(gsn, iparr[n].pdp, NULL, 1);
-				if ((options.pinghost.s_addr != 0)
+				if ((options.pinghost.len)
 				    && ntransmitted)
 					ping_finish();
 			}
@@ -1965,7 +2138,7 @@ int main(int argc, char **argv)
 		diff = 0;
 		while ((diff <= 0) &&
 		       /* Send off an ICMP ping packet */
-		       /*if ( */ (options.pinghost.s_addr) && (2 == state) &&
+		       /*if ( */ (options.pinghost.len) && (2 == state) &&
 		       ((pingseq < options.pingcount)
 			|| (options.pingcount == 0))) {
 			if (!pingseq)
