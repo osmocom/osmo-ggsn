@@ -433,7 +433,7 @@ int netdev_addaddr6(const char *devname, struct in6_addr *addr,
 	req.n.nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE;
 	req.n.nlmsg_type = RTM_NEWADDR;
 	req.i.ifa_family = AF_INET6;
-	req.i.ifa_prefixlen = 64;	/* 64 FOR IPv6 */
+	req.i.ifa_prefixlen = prefixlen;	/* 64 FOR IPv6 */
 	req.i.ifa_flags = 0;
 	req.i.ifa_scope = RT_SCOPE_HOST;	/* TODO or 0 */
 	req.i.ifa_index = if_nametoindex(devname);
