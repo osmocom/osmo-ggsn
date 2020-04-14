@@ -46,6 +46,10 @@
 #include <resolv.h>
 #include <time.h>
 
+#if defined(__linux__)
+#include <linux/if_link.h>
+#endif
+
 #include "config.h"
 #include "../lib/tun.h"
 #include "../lib/ippool.h"
@@ -999,6 +1003,37 @@ static char *proc_ipv6_conf_read(const char *dev, const char *file)
 	return proc_read(path);
 }
 
+/* write a single value to a /proc file */
+static int proc_write(const char *path, const char *value)
+{
+        int ret;
+        FILE *f;
+
+        f = fopen(path, "w");
+        if (!f) {
+                SYS_ERR(DSGSN, LOGL_ERROR, 0, "fopen(%s) failed!\n", path);
+                return -1;
+        }
+
+        if ((ret = fputs(value, f)) < 0) {
+                SYS_ERR(DSGSN, LOGL_ERROR, 0, "proc_write(%s, %s) failed!\n", path, value);
+        } else {
+                ret = 0;
+        }
+        fclose(f);
+        return ret;
+}
+
+/* Write value of to /proc/sys/net/ipv6/conf file for given device.
+ * Memory is dynamically allocated, caller must free it later. */
+static int proc_ipv6_conf_write(const char *dev, const char *file, const char *value)
+{
+        const char *fmt = "/proc/sys/net/ipv6/conf/%s/%s";
+        char path[strlen(fmt) + strlen(dev) + strlen(file)+1];
+        snprintf(path, sizeof(path), fmt, dev, file);
+        return proc_write(path, value);
+}
+
 static char *print_ipprot(int t)
 {
 	struct protoent *pe = getprotobynumber(t);
@@ -1604,6 +1639,7 @@ int main(int argc, char **argv)
 	struct timeval tv;
 	int diff;
 #if defined(__linux__)
+	char buf[10];
 	sigset_t oldmask;
 #endif
 
@@ -1668,6 +1704,17 @@ int main(int argc, char **argv)
 				"Failed to create tun");
 			exit(1);
 		}
+
+#if defined(__linux__)
+		/* Avoid tunnel setting its own link-local addr automatically, we don't need it. */
+		snprintf(buf, sizeof(buf), "%u", IN6_ADDR_GEN_MODE_NONE);
+		if (proc_ipv6_conf_write(options.tun_dev_name, "addr_gen_mode", buf) < 0) {
+			SYS_ERR(DSGSN, LOGL_ERROR, errno,
+				"Failed to disable addr_gen_mode on %s\n", options.tun_dev_name);
+			exit(1);
+		}
+#endif
+
 		tun_set_cb_ind(tun, cb_tun_ind);
 		if (tun->fd > maxfd)
 			maxfd = tun->fd;
