@@ -1516,9 +1516,11 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 			/* printf("Setting up interface and routing\n"); */
 			tun_addaddr(tun, &addr[i], NULL, prefixlen);
 			if (options.defaultroute) {
-				struct in_addr rm;
-				rm.s_addr = 0;
-				netdev_addroute(&rm, &addr[i].v4, &rm);
+				if (in46a_is_v4(&addr[i])) {
+					struct in_addr rm;
+					rm.s_addr = 0;
+					netdev_addroute4(&rm, &addr[i].v4, &rm);
+				}
 			}
 			if (options.ipup)
 				tun_runscript(tun, options.ipup);
@@ -1718,9 +1720,11 @@ int main(int argc, char **argv)
 	if ((options.createif) && (options.netaddr.len)) {
 		tun_addaddr(tun, &options.netaddr, NULL, options.prefixlen);
 		if (options.defaultroute) {
-			struct in_addr rm;
-			rm.s_addr = 0;
-			netdev_addroute(&rm, &options.netaddr.v4, &rm);
+			if (in46a_is_v4(&options.netaddr)) {
+				struct in_addr rm;
+				rm.s_addr = 0;
+				netdev_addroute4(&rm, &options.netaddr.v4, &rm);
+			}
 		}
 		if (options.ipup)
 			tun_runscript(tun, options.ipup);

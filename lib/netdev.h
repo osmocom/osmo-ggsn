@@ -65,8 +65,8 @@ extern int netdev_addaddr4(const char *devname, struct in_addr *addr,
 extern int netdev_addaddr6(const char *devname, struct in6_addr *addr,
 			   struct in6_addr *dstaddr, int prefixlen);
 
-extern int netdev_addroute(struct in_addr *dst, struct in_addr *gateway, struct in_addr *mask);
-extern int netdev_delroute(struct in_addr *dst, struct in_addr *gateway, struct in_addr *mask);
+extern int netdev_addroute4(struct in_addr *dst, struct in_addr *gateway, struct in_addr *mask);
+extern int netdev_delroute4(struct in_addr *dst, struct in_addr *gateway, struct in_addr *mask);
 
 extern int netdev_ip_local_get(const char *devname, struct in46_prefix *prefix_list,
 				size_t prefix_size, int flags);

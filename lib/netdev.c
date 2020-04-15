@@ -176,7 +176,7 @@ int netdev_setaddr4(const char *devname, struct in_addr *addr,
 	/* On linux the route to the interface is set automatically
 	   on FreeBSD we have to do this manually */
 #if defined(__FreeBSD__) || defined (__APPLE__)
-	netdev_addroute(dstaddr, addr, &this->netmask);
+	netdev_addroute4(dstaddr, addr, &this->netmask);
 #endif
 
 	return 0;
@@ -553,7 +553,7 @@ int netdev_addaddr6(const char *devname, struct in6_addr *addr,
 	return 0;
 }
 
-static int netdev_route(struct in_addr *dst, struct in_addr *gateway, struct in_addr *mask, int delete)
+static int netdev_route4(struct in_addr *dst, struct in_addr *gateway, struct in_addr *mask, int delete)
 {
 	int fd;
 #if defined(__linux__)
@@ -643,14 +643,14 @@ static int netdev_route(struct in_addr *dst, struct in_addr *gateway, struct in_
 	return 0;
 }
 
-int netdev_addroute(struct in_addr *dst, struct in_addr *gateway, struct in_addr *mask)
+int netdev_addroute4(struct in_addr *dst, struct in_addr *gateway, struct in_addr *mask)
 {
-	return netdev_route(dst, gateway, mask, 0);
+	return netdev_route4(dst, gateway, mask, 0);
 }
 
-int netdev_delroute(struct in_addr *dst, struct in_addr *gateway, struct in_addr *mask)
+int netdev_delroute4(struct in_addr *dst, struct in_addr *gateway, struct in_addr *mask)
 {
-	return netdev_route(dst, gateway, mask, 1);
+	return netdev_route4(dst, gateway, mask, 1);
 }
 
 #include <ifaddrs.h>

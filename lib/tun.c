@@ -276,7 +276,7 @@ int tun_free(struct tun_t *tun)
 {
 
 	if (tun->routes) {
-		netdev_delroute(&tun->dstaddr.v4, &tun->addr.v4, &tun->netmask);
+		netdev_delroute4(&tun->dstaddr.v4, &tun->addr.v4, &tun->netmask);
 	}
 
 	if (tun->fd >= 0) {
