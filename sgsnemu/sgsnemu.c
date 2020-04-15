@@ -67,14 +67,22 @@
 #define MAXCONTEXTS 1024	/* Max number of allowed contexts */
 
 /* HASH tables for IP address allocation */
+struct pdp_peer_sgsnemu_ctx;
 struct iphash_t {
 	uint8_t inuse;		/* 0=free. 1=used by somebody */
 	struct iphash_t *ipnext;
-	struct pdp_t *pdp;
+	struct pdp_peer_sgsnemu_ctx *ctx;
 	struct in46_addr addr;
 };
-struct iphash_t iparr[MAXCONTEXTS];
 struct iphash_t *iphash[MAXCONTEXTS];
+
+struct pdp_peer_sgsnemu_ctx {
+	struct iphash_t hash_v4;
+	struct iphash_t hash_v6_ll;
+	struct iphash_t hash_v6_global;
+	struct pdp_t *pdp;
+};
+struct pdp_peer_sgsnemu_ctx ctx_arr[MAXCONTEXTS];
 
 /* State variable used for ping  */
 /* 0: Idle                       */
@@ -192,6 +200,9 @@ static int ipset(struct iphash_t *ipaddr, struct in46_addr *addr)
 	int hash = ippool_hash(addr) % MAXCONTEXTS;
 	struct iphash_t *h;
 	struct iphash_t *prev = NULL;
+
+	printf("Adding IP to local pool: %s\n", in46a_ntoa(addr));
+
 	ipaddr->ipnext = NULL;
 	ipaddr->addr = *addr;
 	for (h = iphash[hash]; h; h = h->ipnext)
@@ -1550,19 +1561,8 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 		src.len = 4;
 		src.v4.s_addr = iph->saddr;
 	} else if (iph->version == 6) {
-		/* We only have a single entry in the hash table, and it consists of the link-local
-		 * address "fe80::prefix".  So we need to make sure to convert non-link-local source
-		 * addresses to that format before looking up the hash table via ippool_getip() */
 		src.len = 16;
-		if (!memcmp(ip6h->ip6_src.s6_addr, ll_prefix, sizeof(ll_prefix))) {
-			/* is a link-local address, we can do the hash lookup 1:1 */
-			src.v6 = ip6h->ip6_src;
-		} else {
-			/* it is not a link-local address, so we must convert from the /64 prefix
-			 * to the link-local format that's used in the hash table */
-			memcpy(&src.v6.s6_addr[0], ll_prefix, sizeof(ll_prefix));
-			memcpy(&src.v6.s6_addr[sizeof(ll_prefix)], ip6h->ip6_src.s6_addr, 16-sizeof(ll_prefix));
-		}
+		src.v6 = ip6h->ip6_src;
 	} else {
 		printf("Dropping packet with invalid IP version %u\n", iph->version);
 		return 0;
@@ -1574,8 +1574,8 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 		return 0;
 	}
 
-	if (ipm->pdp)		/* Check if a peer protocol is defined */
-		gtp_data_req(gsn, ipm->pdp, pack, len);
+	if (ipm->ctx->pdp)		/* Check if a peer protocol is defined */
+		gtp_data_req(gsn, ipm->ctx->pdp, pack, len);
 	return 0;
 }
 
@@ -1587,19 +1587,19 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 	sigset_t oldmask;
 #endif
 
-	struct iphash_t *iph = (struct iphash_t *)cbp;
+	struct pdp_peer_sgsnemu_ctx *ctx = (struct pdp_peer_sgsnemu_ctx *) cbp;
 
 	if (cause < 0) {
 		printf("Create PDP Context Request timed out\n");
-		if (iph->pdp->version == 1) {
+		if (ctx->pdp->version == 1) {
 			printf("Retrying with version 0\n");
-			iph->pdp->version = 0;
-			gtp_create_context_req(gsn, iph->pdp, iph);
+			ctx->pdp->version = 0;
+			gtp_create_context_req(gsn, ctx->pdp, ctx);
 			return 0;
 		} else {
 			state = 0;
-			pdp_freepdp(iph->pdp);
-			iph->pdp = NULL;
+			pdp_freepdp(ctx->pdp);
+			ctx->pdp = NULL;
 			return EOF;
 		}
 	}
@@ -1609,8 +1609,8 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 		    ("Received create PDP context response. Cause value: %d\n",
 		     cause);
 		state = 0;
-		pdp_freepdp(iph->pdp);
-		iph->pdp = NULL;
+		pdp_freepdp(ctx->pdp);
+		ctx->pdp = NULL;
 		return EOF;	/* Not what we expected */
 	}
 
@@ -1618,8 +1618,8 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 		printf
 		    ("Received create PDP context response. Cause value: %d\n",
 		     cause);
-		pdp_freepdp(iph->pdp);
-		iph->pdp = NULL;
+		pdp_freepdp(ctx->pdp);
+		ctx->pdp = NULL;
 		state = 0;
 		return EOF;	/* Not a valid IP address */
 	}
@@ -1641,13 +1641,18 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 
 		switch (addr[i].len) {
 		case 16: /* IPv6 */
-			/* we have to enable the kernel to perform stateless autoconfiguration,
-			 * i.e. send a router solicitation using the lover 64bits of the allocated
-			 * EUA as interface identifier, as per 3GPP TS 29.061 Section 11.2.1.3.2 */
+			/* Convert address to link local using the lower 64bits
+			   of the allocated EUA as Interface-Identifier to
+			   send router solicitation, as per 3GPP TS 29.061
+			   Section 11.2.1.3.2 */
 			memcpy(addr[i].v6.s6_addr, ll_prefix, sizeof(ll_prefix));
 			printf("Derived IPv6 link-local address: %s\n", in46a_ntoa(&addr[i]));
+			ctx->hash_v6_ll.inuse = 1;
+			ipset(&ctx->hash_v6_ll, &addr[i]);
 			break;
 		case 4: /* IPv4 */
+			ctx->hash_v4.inuse = 1;
+			ipset(&ctx->hash_v4, &addr[i]);
 			break;
 		}
 
@@ -1669,8 +1674,6 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 			if (options.ipup)
 				tun_runscript(tun, options.ipup);
 		}
-
-		ipset(iph, &addr[i]);
 	}
 
 	if (options.createif && options.pdp_type == PDP_EUA_TYPE_v6) {
@@ -1686,7 +1689,7 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 		}
 		SYS_ERR(DSGSN, LOGL_INFO, 0, "Sending ICMPv6 Router Soliciation to GGSN...");
 		msg = icmpv6_construct_rs(saddr6);
-		gtp_data_req(gsn, iph->pdp, msgb_data(msg), msgb_length(msg));
+		gtp_data_req(gsn, ctx->pdp, msgb_data(msg), msgb_length(msg));
 		msgb_free(msg);
 	}
 
@@ -1751,8 +1754,9 @@ static int _gtp_cb_conf(int type, int cause, struct pdp_t *pdp, void *cbp)
 	}
 }
 
-static void handle_router_adv(struct ip6_hdr *ip6h, struct icmpv6_radv_hdr *ra, size_t ra_len)
+static void handle_router_adv(struct pdp_t *pdp, struct ip6_hdr *ip6h, struct icmpv6_radv_hdr *ra, size_t ra_len)
 {
+	struct pdp_peer_sgsnemu_ctx* ctx = (struct pdp_peer_sgsnemu_ctx*)pdp->peer[0];
 	struct icmpv6_opt_hdr *opt_hdr;
 	struct icmpv6_opt_prefix *opt_prefix;
 	int rc;
@@ -1778,6 +1782,12 @@ static void handle_router_adv(struct ip6_hdr *ip6h, struct icmpv6_radv_hdr *ra, 
 				addr.v6.s6_addr[15] = 0x02;
 				SYS_ERR(DSGSN, LOGL_INFO, 0, "Adding addr %s to tun %s",
 					in46a_ntoa(&addr), tun->devname);
+				if (!ctx->hash_v6_global.inuse) {
+					ctx->hash_v6_global.inuse = 1;
+					ipset(&ctx->hash_v6_global, &addr);
+				} else {
+					SYS_ERR(DSGSN, LOGL_ERROR, 0, "First v6 global address in hash already in use!");
+				}
 
 #if defined(__linux__)
 				if ((options.netns)) {
@@ -1822,7 +1832,7 @@ static int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
 	case 6:
 		if ((ra = icmpv6_validate_router_adv(pack, len))) {
 			size_t ra_len = (uint8_t*)ra - (uint8_t*)pack;
-			handle_router_adv((struct ip6_hdr *)pack, ra, ra_len);
+			handle_router_adv(pdp, (struct ip6_hdr *)pack, ra, ra_len);
 			return 0;
 		}
 	break;
@@ -1966,7 +1976,7 @@ int main(int argc, char **argv)
 
 	/* Initialise hash tables */
 	memset(&iphash, 0, sizeof(iphash));
-	memset(&iparr, 0, sizeof(iparr));
+	memset(&ctx_arr, 0, sizeof(ctx_arr));
 
 	printf("Done initialising GTP library\n\n");
 
@@ -1978,7 +1988,6 @@ int main(int argc, char **argv)
 	for (n = 0; n < options.contexts; n++) {
 		uint64_t myimsi;
 		printf("Setting up PDP context #%d\n", n);
-		iparr[n].inuse = 1;	/* TODO */
 
 		imsi_add(options.imsi, &myimsi, n);
 
@@ -1987,9 +1996,12 @@ int main(int argc, char **argv)
 		/* Otherwise it is deallocated by gtplib */
 		gtp_pdp_newpdp(gsn, &pdp, myimsi, options.nsapi, NULL);
 
-		pdp->peer[0] = &iparr[n]; /* FIXME: support v4v6, have 2 peers */
+		pdp->peer[0] = &ctx_arr[n];
 		pdp->ipif = tun;	/* TODO */
-		iparr[n].pdp = pdp;
+		ctx_arr[n].pdp = pdp;
+		ctx_arr[n].hash_v4.ctx = &ctx_arr[n];
+		ctx_arr[n].hash_v6_ll.ctx = &ctx_arr[n];
+		ctx_arr[n].hash_v6_global.ctx = &ctx_arr[n];
 
 		if (options.gtpversion == 0) {
 			if (options.qos.l - 1 > sizeof(pdp->qos_req0)) {
@@ -2077,7 +2089,7 @@ int main(int argc, char **argv)
 
 		/* Create context */
 		/* We send this of once. Retransmissions are handled by gtplib */
-		gtp_create_context_req(gsn, pdp, &iparr[n]);
+		gtp_create_context_req(gsn, pdp, &ctx_arr[n]);
 	}
 
 	state = 1;		/* Enter wait_connection state */
@@ -2127,7 +2139,7 @@ int main(int argc, char **argv)
 			for (n = 0; n < options.contexts; n++) {
 				/* Delete context */
 				printf("Disconnecting PDP context #%d\n", n);
-				gtp_delete_context_req2(gsn, iparr[n].pdp, NULL, 1);
+				gtp_delete_context_req2(gsn, ctx_arr[n].pdp, NULL, 1);
 				if ((options.pinghost.len)
 				    && ntransmitted)
 					ping_finish();
@@ -2149,7 +2161,7 @@ int main(int argc, char **argv)
 				if (options.debug)
 					printf("Create_ping %d\n", diff);
 				create_ping(gsn,
-					    iparr[pingseq %
+					    ctx_arr[pingseq %
 						  options.contexts].pdp,
 					    &options.pinghost, pingseq,
 					    options.pingsize);
