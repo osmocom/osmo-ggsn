@@ -1514,7 +1514,7 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 			if (addr[i].len == 16)
 				prefixlen = 64;
 			/* printf("Setting up interface and routing\n"); */
-			tun_addaddr(tun, &addr[i], &addr[i], prefixlen);
+			tun_addaddr(tun, &addr[i], NULL, prefixlen);
 			if (options.defaultroute) {
 				struct in_addr rm;
 				rm.s_addr = 0;
