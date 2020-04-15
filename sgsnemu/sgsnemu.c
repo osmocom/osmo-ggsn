@@ -1197,7 +1197,7 @@ static int ping_finish()
 	if (nreceived && tsum)
 		printf("round-trip (ms)  min/avg/max = %.3f/%.3f/%.3f\n\n",
 		       tmin / 1000.0, tsum / 1000.0 / nreceived, tmax / 1000.0);
-	printf("%d packets transmitted \n", ntreceived);
+	printf("%d packets transmitted \n", ntransmitted);
 
 	ntransmitted = 0;
 	return 0;
