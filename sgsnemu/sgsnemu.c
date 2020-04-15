@@ -96,7 +96,7 @@ struct {
 	int createif;		/* Create local network interface */
 	char *tun_dev_name;
 	char *netns;
-	struct in46_addr netaddr, net;	/* Network interface  */
+	struct in46_addr netaddr;	/* Network interface  */
 	size_t prefixlen;
 	char *ipup, *ipdown;	/* Filename of scripts */
 	int defaultroute;	/* Set up default route */
@@ -889,16 +889,13 @@ static int process_options(int argc, char **argv)
 	/* Store net as in_addr net and mask                            */
 	if (args_info.net_arg) {
 		if (ippool_aton
-		    (&options.net, &options.prefixlen, args_info.net_arg, 0)) {
+		    (&options.netaddr, &options.prefixlen, args_info.net_arg, 0)) {
 			SYS_ERR(DSGSN, LOGL_ERROR, 0,
 				"Invalid network address: %s!",
 				args_info.net_arg);
 			exit(1);
 		}
-		options.netaddr = options.net;
-
 	} else {
-		memset(&options.net, 0, sizeof(options.net));
 		options.prefixlen = 0;
 		memset(&options.netaddr, 0, sizeof(options.netaddr));
 	}
@@ -1512,7 +1509,7 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 			break;
 		}
 
-		if ((options.createif) && (!options.net.len)) {
+		if ((options.createif) && (!options.netaddr.len)) {
 			size_t prefixlen = 32;
 			if (addr[i].len == 16)
 				prefixlen = 64;
@@ -1718,7 +1715,7 @@ int main(int argc, char **argv)
 			maxfd = tun->fd;
 	}
 
-	if ((options.createif) && (options.net.len)) {
+	if ((options.createif) && (options.netaddr.len)) {
 		tun_addaddr(tun, &options.netaddr, NULL, options.prefixlen);
 		if (options.defaultroute) {
 			struct in_addr rm;
