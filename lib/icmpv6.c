@@ -161,7 +161,7 @@ struct msgb *icmpv6_construct_ra(const struct in6_addr *saddr,
 	return msg;
 }
 
-/* Walidate an ICMPv6 router solicitation according to RFC4861 6.1.1 */
+/* Validate an ICMPv6 router solicitation according to RFC4861 6.1.1 */
 static bool icmpv6_validate_router_solicit(const uint8_t *pack, unsigned len)
 {
 	const struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
