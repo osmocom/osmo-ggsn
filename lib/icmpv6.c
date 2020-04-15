@@ -90,6 +90,30 @@ struct icmpv6_opt_prefix {
 	uint32_t res2;
 	uint8_t prefix[16];
 } __attribute__ ((packed));
+/* Prepends the ipv6 header and returns checksum content */
+static uint16_t icmpv6_prepend_ip6hdr(struct msgb *msg, const struct in6_addr *saddr,
+				  const struct in6_addr *daddr)
+{
+	uint32_t len;
+	uint16_t skb_csum;
+	struct ip6_hdr *i6h;
+
+	/* checksum */
+	skb_csum = csum_partial(msgb_data(msg), msgb_length(msg), 0);
+	len = msgb_length(msg);
+	skb_csum = csum_ipv6_magic(saddr, daddr, len, IPPROTO_ICMPV6, skb_csum);
+
+	/* Push IPv6 header in front of ICMPv6 packet */
+	i6h = (struct ip6_hdr *) msgb_push(msg, sizeof(*i6h));
+	/* 4 bits version, 8 bits TC, 20 bits flow-ID */
+	i6h->ip6_ctlun.ip6_un1.ip6_un1_flow = htonl(0x60000000);
+	i6h->ip6_ctlun.ip6_un1.ip6_un1_plen = htons(len);
+	i6h->ip6_ctlun.ip6_un1.ip6_un1_nxt = IPPROTO_ICMPV6;
+	i6h->ip6_ctlun.ip6_un1.ip6_un1_hlim = 255;
+	i6h->ip6_src = *saddr;
+	i6h->ip6_dst = *daddr;
+	return skb_csum;
+}
 
 
 /*! construct a 3GPP 29.061 compliant router advertisement for a given prefix
@@ -104,9 +128,6 @@ static struct msgb *icmpv6_construct_ra(const struct in6_addr *saddr,
 	struct msgb *msg = msgb_alloc_headroom(512,128, "IPv6 RA");
 	struct icmpv6_radv_hdr *ra;
 	struct icmpv6_opt_prefix *ra_opt_pref;
-	struct ip6_hdr *i6h;
-	uint32_t len;
-	uint16_t skb_csum;
 
 	OSMO_ASSERT(msg);
 
@@ -144,19 +165,7 @@ static struct msgb *icmpv6_construct_ra(const struct in6_addr *saddr,
 	memcpy(ra_opt_pref->prefix, prefix, sizeof(ra_opt_pref->prefix));
 
 	/* checksum */
-	skb_csum = csum_partial(msgb_data(msg), msgb_length(msg), 0);
-	len = msgb_length(msg);
-	ra->hdr.csum = csum_ipv6_magic(saddr, daddr, len, IPPROTO_ICMPV6, skb_csum);
-
-	/* Push IPv6 header in front of ICMPv6 packet */
-	i6h = (struct ip6_hdr *) msgb_push(msg, sizeof(*i6h));
-	/* 4 bits version, 8 bits TC, 20 bits flow-ID */
-	i6h->ip6_ctlun.ip6_un1.ip6_un1_flow = htonl(0x60000000);
-	i6h->ip6_ctlun.ip6_un1.ip6_un1_plen = htons(len);
-	i6h->ip6_ctlun.ip6_un1.ip6_un1_nxt = IPPROTO_ICMPV6;
-	i6h->ip6_ctlun.ip6_un1.ip6_un1_hlim = 255;
-	i6h->ip6_src = *saddr;
-	i6h->ip6_dst = *daddr;
+	ra->hdr.csum = icmpv6_prepend_ip6hdr(msg, saddr, daddr);
 
 	return msg;
 }
