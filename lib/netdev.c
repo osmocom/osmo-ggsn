@@ -643,6 +643,59 @@ static int netdev_route4(struct in_addr *dst, struct in_addr *gateway, struct in
 	return 0;
 }
 
+static int netdev_route6(struct in6_addr *dst, struct in6_addr *gateway, int prefixlen, const char *gw_iface, int delete)
+{
+	int fd;
+#if defined(__linux__)
+	struct in6_rtmsg r;
+	struct ifreq ifr;
+
+	memset(&r, 0, sizeof(r));
+	r.rtmsg_flags = RTF_UP | RTF_GATEWAY; /* RTF_HOST not set */
+	r.rtmsg_metric = 1;
+
+	/* Create a channel to the NET kernel. */
+	if ((fd = socket(AF_INET6, SOCK_DGRAM, 0)) < 0) {
+		SYS_ERR(DTUN, LOGL_ERROR, errno, "socket() failed");
+		return -1;
+	}
+
+	if (gw_iface) {
+		strncpy(ifr.ifr_name, gw_iface, IFNAMSIZ);
+		ifr.ifr_name[IFNAMSIZ - 1] = 0; /* Make sure to terminate */
+		if (ioctl(fd, SIOCGIFINDEX, &ifr) < 0) {
+			SYS_ERR(DTUN, LOGL_ERROR, errno,
+				"ioctl(SIOCGIFINDEX) failed");
+			close(fd);
+			return -1;
+		}
+		r.rtmsg_ifindex = ifr.ifr_ifindex;
+	}
+
+	memcpy(&r.rtmsg_dst, dst->s6_addr, sizeof(struct in6_addr));
+	memcpy(&r.rtmsg_gateway, gateway->s6_addr, sizeof(struct in6_addr));
+	r.rtmsg_dst_len = prefixlen;
+
+	if (delete) {
+		if (ioctl(fd, SIOCDELRT, (void *)&r) < 0) {
+			SYS_ERR(DTUN, LOGL_ERROR, errno,
+				"ioctl(SIOCDELRT) failed");
+			close(fd);
+			return -1;
+		}
+	} else {
+		if (ioctl(fd, SIOCADDRT, (void *)&r) < 0) {
+			SYS_ERR(DTUN, LOGL_ERROR, errno,
+				"ioctl(SIOCADDRT) failed");
+			close(fd);
+			return -1;
+		}
+	}
+	close(fd);
+#endif
+	return 0;
+}
+
 int netdev_addroute4(struct in_addr *dst, struct in_addr *gateway, struct in_addr *mask)
 {
 	return netdev_route4(dst, gateway, mask, 0);
@@ -652,6 +705,18 @@ int netdev_delroute4(struct in_addr *dst, struct in_addr *gateway, struct in_add
 {
 	return netdev_route4(dst, gateway, mask, 1);
 }
+
+int netdev_addroute6(struct in6_addr *dst, struct in6_addr *gateway, int prefixlen, const char *gw_iface)
+{
+	return netdev_route6(dst, gateway, prefixlen, gw_iface, 0);
+}
+
+int netdev_delroute6(struct in6_addr *dst, struct in6_addr *gateway, int prefixlen, const char *gw_iface)
+{
+	return netdev_route6(dst, gateway, prefixlen, gw_iface, 1);
+}
+
+
 
 #include <ifaddrs.h>
 

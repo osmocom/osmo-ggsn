@@ -27,6 +27,7 @@
 #include "../gtp/pdp.h"
 #include "ippool.h"
 #include "syserr.h"
+#include "icmpv6.h"
 #include "config.h"
 
 /* 29.061 11.2.1.3.4 IPv6 Router Configuration Variables in GGSN */
@@ -35,61 +36,11 @@
 #define GGSN_AdvValidLifetime	0xffffffff	/* infinite */
 #define GGSN_AdvPreferredLifetime 0xffffffff	/* infinite */
 
-struct icmpv6_hdr {
-	uint8_t type;
-	uint8_t code;
-	uint16_t csum;
-} __attribute__ ((packed));
+/* RFC3307 link-local scope multicast address */
+const struct in6_addr all_router_mcast_addr = {
+	.s6_addr = { 0xff,0x02,0,0,  0,0,0,0, 0,0,0,0,  0,0,0,2 }
+};
 
-/* RFC4861 Section 4.2 */
-struct icmpv6_radv_hdr {
-	struct icmpv6_hdr hdr;
-	uint8_t cur_ho_limit;
-#if BYTE_ORDER == LITTLE_ENDIAN
-	uint8_t res:6,
-		m:1,
-		o:1;
-#elif BYTE_ORDER == BIG_ENDIAN
-	uint8_t m:1,
-		o:1,
-		res:6;
-#else
-# error	"Please fix <bits/endian.h>"
-#endif
-	uint16_t router_lifetime;
-	uint32_t reachable_time;
-	uint32_t retrans_timer;
-	uint8_t options[0];
-} __attribute__ ((packed));
-
-/* RFC4861 Section 4.6 */
-struct icmpv6_opt_hdr {
-	uint8_t type;
-	/* length in units of 8 octets, including type+len! */
-	uint8_t len;
-	uint8_t data[0];
-} __attribute__ ((packed));
-
-/* RFC4861 Section 4.6.2 */
-struct icmpv6_opt_prefix {
-	struct icmpv6_opt_hdr hdr;
-	uint8_t prefix_len;
-#if BYTE_ORDER == LITTLE_ENDIAN
-	uint8_t res:6,
-		a:1,
-		l:1;
-#elif BYTE_ORDER == BIG_ENDIAN
-	uint8_t l:1,
-		a:1,
-		res:6;
-#else
-# error	"Please fix <bits/endian.h>"
-#endif
-	uint32_t valid_lifetime;
-	uint32_t preferred_lifetime;
-	uint32_t res2;
-	uint8_t prefix[16];
-} __attribute__ ((packed));
 /* Prepends the ipv6 header and returns checksum content */
 static uint16_t icmpv6_prepend_ip6hdr(struct msgb *msg, const struct in6_addr *saddr,
 				  const struct in6_addr *daddr)
@@ -115,7 +66,26 @@ static uint16_t icmpv6_prepend_ip6hdr(struct msgb *msg, const struct in6_addr *s
 	return skb_csum;
 }
 
+/*! construct a RFC4861 compliant ICMPv6 router soliciation
+ *  \param[in] saddr Source IPv6 address for router advertisement
+ *  \param[in] daddr Destination IPv6 address for router advertisement IPv6 header
+ *  \param[in] prefix The single prefix to be advertised (/64 implied!)
+ *  \returns callee-allocated message buffer containing router advertisement */
+struct msgb *icmpv6_construct_rs(const struct in6_addr *saddr)
+{
+	struct msgb *msg = msgb_alloc_headroom(512,128, "IPv6 RS");
+	struct icmpv6_rsol_hdr *rs;
+	OSMO_ASSERT(msg);
+	rs = (struct icmpv6_rsol_hdr *) msgb_put(msg, sizeof(*rs));
+	rs->hdr.type = 133;	/* see RFC4861 4.1 */
+	rs->hdr.code = 0;	/* see RFC4861 4.1 */
+	rs->hdr.csum = 0;	/* updated below */
+	rs->reserved = 0;	/* see RFC4861 4.1 */
 
+	rs->hdr.csum = icmpv6_prepend_ip6hdr(msg, saddr, &all_router_mcast_addr);
+
+	return msg;
+}
 /*! construct a 3GPP 29.061 compliant router advertisement for a given prefix
  *  \param[in] saddr Source IPv6 address for router advertisement
  *  \param[in] daddr Destination IPv6 address for router advertisement IPv6 header
@@ -186,6 +156,37 @@ static bool icmpv6_validate_router_solicit(const uint8_t *pack, unsigned len)
 	/* FIXME: All included options have a length > 0 */
 	/* FIXME: If IP source is unspecified, no source link-layer addr option */
 	return true;
+}
+
+/* Validate an ICMPv6 router advertisement according to RFC4861 6.1.2.
+   Returns pointer packet header on success, NULL otherwise. */
+struct icmpv6_radv_hdr *icmpv6_validate_router_adv(const uint8_t *pack, unsigned len)
+{
+	const struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
+	const struct icmpv6_hdr *ic6h = (struct icmpv6_hdr *) (pack + sizeof(*ip6h));
+
+	/* ICMP length (derived from IP length) is 16 or more octets */
+	if (len < sizeof(*ip6h) + 16)
+		return NULL;
+
+	if (ic6h->type != 134) /* router advertismenet type */
+		return NULL;
+
+	/*Routers must use their link-local address */
+	if (!IN6_IS_ADDR_LINKLOCAL(&ip6h->ip6_src))
+		return NULL;
+	/* Hop limit field must have 255 */
+	if (ip6h->ip6_ctlun.ip6_un1.ip6_un1_hlim != 255)
+		return NULL;
+	/* ICMP Code is 0 */
+	if (ic6h->code != 0)
+		return NULL;
+	/* ICMP length (derived from IP length) is 16 or more octets */
+	if (ip6h->ip6_ctlun.ip6_un1.ip6_un1_plen < 16)
+		return NULL;
+	/* FIXME: All included options have a length > 0 */
+	/* FIXME: If IP source is unspecified, no source link-layer addr option */
+	return (struct icmpv6_radv_hdr *)ic6h;
 }
 
 /* handle incoming packets to the all-routers multicast address */

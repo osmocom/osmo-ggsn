@@ -58,6 +58,7 @@
 #include "../lib/ippool.h"
 #include "../lib/syserr.h"
 #include "../lib/netns.h"
+#include "../lib/icmpv6.h"
 #include "../gtp/pdp.h"
 #include "../gtp/gtp.h"
 #include "cmdline.h"
@@ -966,41 +967,6 @@ static int process_options(int argc, char **argv)
 
 }
 
-/* read a single value from a /procc file, up to 255 bytes, callee-allocated */
-static char *proc_read(const char *path)
-{
-	char *ret = NULL;
-	FILE *f;
-
-	f = fopen(path, "r");
-	if (!f)
-		return NULL;
-
-	ret = malloc(256);
-	if (!ret)
-		goto out;
-
-	if (!fgets(ret, 256, f)) {
-		free(ret);
-		ret = NULL;
-		goto out;
-	}
-
-out:
-	fclose(f);
-	return ret;
-}
-
-/* Read value of a /proc/sys/net/ipv6/conf file for given device.
- * Memory is dynamically allocated, caller must free it later. */
-static char *proc_ipv6_conf_read(const char *dev, const char *file)
-{
-	const char *fmt = "/proc/sys/net/ipv6/conf/%s/%s";
-	char path[strlen(fmt) + strlen(dev) + strlen(file)+1];
-	snprintf(path, sizeof(path), fmt, dev, file);
-	return proc_read(path);
-}
-
 /* write a single value to a /proc file */
 static int proc_write(const char *path, const char *value)
 {
@@ -1522,8 +1488,10 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 				if (in46a_is_v4(&addr[i])) {
 					struct in_addr rm;
 					rm.s_addr = 0;
-					netdev_addroute4(&rm, &addr[i].v4, &rm);
-				}
+					if (netdev_addroute4(&rm, &addr[i].v4, &rm) < 0) {
+						SYS_ERR(DSGSN, LOGL_ERROR, 0, "Failed adding default route to %s", in46a_ntoa(&addr[i]));
+					}
+				} /* else: route will be set up once we have a global link address (Router Advertisement) */
 			}
 			if (options.ipup)
 				tun_runscript(tun, options.ipup);
@@ -1532,29 +1500,21 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 		ipset(iph, &addr[i]);
 	}
 
-	/* now that ip-up has been executed, check if we are configured to
-	 * accept router advertisements */
 	if (options.createif && options.pdp_type == PDP_EUA_TYPE_v6) {
-		char *accept_ra, *forwarding;
-
-		accept_ra = proc_ipv6_conf_read(tun->devname, "accept_ra");
-		forwarding = proc_ipv6_conf_read(tun->devname, "forwarding");
-		if (!accept_ra || !forwarding)
-			printf("Could not open proc file for %s ?!?\n", tun->devname);
-		else {
-			if (!strcmp(accept_ra, "0")) {
-				printf("accept_ra=0, i.e. your tun device is not configured to accept "
-					"router advertisements; SLAAC will not succeed, please "
-					"fix your setup!\n");
-			}
-			if (!strcmp(forwarding, "1") && !strcmp(accept_ra, "1")) {
-				printf("forwarding=1 and accept_ra=1, i.e. your tun device is not "
-					"configured to accept router advertisements; SLAAC will not "
-					"succeed, please fix your setup!\n");
-			}
+		struct in6_addr *saddr6;
+		struct msgb *msg;
+		if (in46a_is_v6(&addr[0])) {
+			saddr6 = &addr[0].v6;
+		} else if (num_addr > 1 && in46a_is_v6(&addr[1])) {
+			saddr6 = &addr[1].v6;
+		} else {
+			SYS_ERR(DSGSN, LOGL_ERROR, 0, "Failed to find IPv6 EUA on IPv6 APN");
+			return EOF;	/* Not a valid IP address */
 		}
-		free(accept_ra);
-		free(forwarding);
+		SYS_ERR(DSGSN, LOGL_INFO, 0, "Sending ICMPv6 Router Soliciation to GGSN...");
+		msg = icmpv6_construct_rs(saddr6);
+		gtp_data_req(gsn, iph->pdp, msgb_data(msg), msgb_length(msg));
+		msgb_free(msg);
 	}
 
 #if defined(__linux__)
@@ -1618,8 +1578,83 @@ static int _gtp_cb_conf(int type, int cause, struct pdp_t *pdp, void *cbp)
 	}
 }
 
+static void handle_router_adv(struct ip6_hdr *ip6h, struct icmpv6_radv_hdr *ra, size_t ra_len)
+{
+	struct icmpv6_opt_hdr *opt_hdr;
+	struct icmpv6_opt_prefix *opt_prefix;
+	int rc;
+	sigset_t oldmask;
+	struct in6_addr rm;
+	char ip6strbuf[200];
+	memset(&rm, 0, sizeof(rm));
+
+	SYS_ERR(DSGSN, LOGL_INFO, 0, "Received ICMPv6 Router Advertisement");
+
+	foreach_icmpv6_opt(ra, ra_len, opt_hdr) {
+		if (opt_hdr->type == ICMPv6_OPT_TYPE_PREFIX_INFO) {
+			opt_prefix = (struct icmpv6_opt_prefix *)opt_hdr;
+			size_t prefix_len_bytes = (opt_prefix->prefix_len + 7)/8;
+			SYS_ERR(DSGSN, LOGL_INFO, 0, "Parsing OPT Prefix info (prefix_len=%u): %s",
+				opt_prefix->prefix_len,
+				osmo_hexdump((const unsigned char *)opt_prefix->prefix, prefix_len_bytes));
+			if ((options.createif) && (!options.netaddr.len)) {
+				struct in46_addr addr;
+				addr.len = 16;
+				memcpy(addr.v6.s6_addr, opt_prefix->prefix, prefix_len_bytes);
+				memset(&addr.v6.s6_addr[prefix_len_bytes], 0, 16 - prefix_len_bytes);
+				addr.v6.s6_addr[15] = 0x02;
+				SYS_ERR(DSGSN, LOGL_INFO, 0, "Adding addr %s to tun %s",
+					in46a_ntoa(&addr), tun->devname);
+
+#if defined(__linux__)
+				if ((options.netns)) {
+					if ((rc = switch_ns(netns, &oldmask)) < 0) {
+						SYS_ERR(DSGSN, LOGL_ERROR, 0,
+							"Failed to switch to netns %s: %s",
+							options.netns, strerror(-rc));
+					}
+				}
+#endif
+				rc = tun_addaddr(tun, &addr, NULL, opt_prefix->prefix_len);
+				if (rc < 0) {
+					SYS_ERR(DSGSN, LOGL_ERROR, 0, "Failed to add addr %s to tun %s",
+						in46a_ntoa(&addr), tun->devname);
+				}
+
+				struct in6_addr rm;
+				memset(&rm, 0, sizeof(rm));
+				if (netdev_addroute6(&rm, &ip6h->ip6_src, 0, tun->devname) < 0) {
+					SYS_ERR(DSGSN, LOGL_ERROR, 0, "Failed adding default route to %s", inet_ntop(AF_INET6, &ip6h->ip6_src, ip6strbuf, sizeof(ip6strbuf)));
+				}
+
+#if defined(__linux__)
+				if ((options.netns)) {
+					if ((rc = restore_ns(&oldmask)) < 0) {
+						SYS_ERR(DSGSN, LOGL_ERROR, 0,
+							"Failed to switch to original netns: %s",
+							strerror(-rc));
+					}
+				}
+#endif
+			}
+		}
+	}
+}
+
 static int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
 {
+	struct iphdr *iph = (struct iphdr *)pack;
+	struct icmpv6_radv_hdr *ra;
+	switch (iph->version) {
+	case 6:
+		if ((ra = icmpv6_validate_router_adv(pack, len))) {
+			size_t ra_len = (uint8_t*)ra - (uint8_t*)pack;
+			handle_router_adv((struct ip6_hdr *)pack, ra, ra_len);
+			return 0;
+		}
+	break;
+	}
+
 	/*  printf("encaps_tun. Packet received: forwarding to tun\n"); */
 	return tun_encaps((struct tun_t *)pdp->ipif, pack, len);
 }
@@ -1721,6 +1756,12 @@ int main(int argc, char **argv)
 		tun_set_cb_ind(tun, cb_tun_ind);
 		if (tun->fd > maxfd)
 			maxfd = tun->fd;
+
+		if (proc_ipv6_conf_write(options.tun_dev_name, "accept_ra", "0") < 0) {
+			SYS_ERR(DSGSN, LOGL_ERROR, 0,
+				"Failed to disable IPv6 SLAAC on %s\n", options.tun_dev_name);
+			exit(1);
+		}
 	}
 
 	if ((options.createif) && (options.netaddr.len)) {
@@ -1730,6 +1771,10 @@ int main(int argc, char **argv)
 				struct in_addr rm;
 				rm.s_addr = 0;
 				netdev_addroute4(&rm, &options.netaddr.v4, &rm);
+			} else {
+				struct in6_addr rm;
+				memset(&rm, 0, sizeof(rm));
+				netdev_addroute6(&rm, &options.netaddr.v6, 0, tun->devname);
 			}
 		}
 		if (options.ipup)

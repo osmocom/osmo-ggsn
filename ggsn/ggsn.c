@@ -636,11 +636,6 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 	return 0;
 }
 
-/* RFC3307 link-local scope multicast address */
-static const struct in6_addr all_router_mcast_addr = {
-	.s6_addr = { 0xff,0x02,0,0,  0,0,0,0, 0,0,0,0,  0,0,0,2 }
-};
-
 /* MS-originated GTP1-U packet, needs to be sent via TUN device */
 static int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
 {
