@@ -96,7 +96,7 @@ struct {
 	int createif;		/* Create local network interface */
 	char *tun_dev_name;
 	char *netns;
-	struct in46_addr netaddr, destaddr, net;	/* Network interface  */
+	struct in46_addr netaddr, net;	/* Network interface  */
 	size_t prefixlen;
 	char *ipup, *ipdown;	/* Filename of scripts */
 	int defaultroute;	/* Set up default route */
@@ -896,13 +896,11 @@ static int process_options(int argc, char **argv)
 			exit(1);
 		}
 		options.netaddr = options.net;
-		options.destaddr = options.net;
 
 	} else {
 		memset(&options.net, 0, sizeof(options.net));
 		options.prefixlen = 0;
 		memset(&options.netaddr, 0, sizeof(options.netaddr));
-		memset(&options.destaddr, 0, sizeof(options.destaddr));
 	}
 
 	/* ipup */
@@ -1721,12 +1719,11 @@ int main(int argc, char **argv)
 	}
 
 	if ((options.createif) && (options.net.len)) {
-		/* printf("Setting up interface and routing\n"); */
-		tun_addaddr(tun, &options.netaddr, &options.destaddr, options.prefixlen);
+		tun_addaddr(tun, &options.netaddr, NULL, options.prefixlen);
 		if (options.defaultroute) {
 			struct in_addr rm;
 			rm.s_addr = 0;
-			netdev_addroute(&rm, &options.destaddr.v4, &rm);
+			netdev_addroute(&rm, &options.netaddr.v4, &rm);
 		}
 		if (options.ipup)
 			tun_runscript(tun, options.ipup);
