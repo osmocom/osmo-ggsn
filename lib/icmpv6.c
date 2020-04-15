@@ -97,7 +97,7 @@ struct icmpv6_opt_prefix {
  *  \param[in] daddr Destination IPv6 address for router advertisement IPv6 header
  *  \param[in] prefix The single prefix to be advertised (/64 implied!)
  *  \returns callee-allocated message buffer containing router advertisement */
-struct msgb *icmpv6_construct_ra(const struct in6_addr *saddr,
+static struct msgb *icmpv6_construct_ra(const struct in6_addr *saddr,
 				 const struct in6_addr *daddr,
 				 const struct in6_addr *prefix)
 {
