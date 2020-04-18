@@ -15,6 +15,8 @@
  *
  */
 
+#include "config.h"
+
 #ifdef __linux__
 #define _GNU_SOURCE 1		/* strdup() prototype, broken arpa/inet.h */
 #endif
@@ -47,10 +49,11 @@
 #include <time.h>
 
 #if defined(__linux__)
+#if defined(HAVE_IN6_ADDR_GEN_MODE_NONE)
 #include <linux/if_link.h>
+#endif // HAVE_IN6_ADDR_GEN_MODE_NONE
 #endif
 
-#include "config.h"
 #include "../lib/tun.h"
 #include "../lib/ippool.h"
 #include "../lib/syserr.h"
@@ -1702,13 +1705,16 @@ int main(int argc, char **argv)
 			exit(1);
 		}
 
-#if defined(__linux__)
-		/* Avoid tunnel setting its own link-local addr automatically, we don't need it. */
+#if defined(__linux__) && defined(HAVE_IN6_ADDR_GEN_MODE_NONE)
+		/* Avoid tunnel setting its own link-local addr automatically,
+		   we don't need it. Don't exit on error since this sysctl is
+		   only available starting with linux 4.11. */
 		snprintf(buf, sizeof(buf), "%u", IN6_ADDR_GEN_MODE_NONE);
 		if (proc_ipv6_conf_write(options.tun_dev_name, "addr_gen_mode", buf) < 0) {
 			SYS_ERR(DSGSN, LOGL_ERROR, errno,
-				"Failed to disable addr_gen_mode on %s\n", options.tun_dev_name);
-			exit(1);
+				"Failed to disable addr_gen_mode on %s, an extra link-local "
+				"ip address will appear on the tun device.\n",
+				options.tun_dev_name);
 		}
 #endif
 

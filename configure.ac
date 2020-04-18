@@ -131,6 +131,15 @@ AC_EGREP_HEADER(struct iphdr, netinet/ip.h,
  AC_DEFINE([HAVE_IPHDR])],
  AC_MSG_RESULT(no))
 
+# Address generation modes (enum) implemented in linux 3.17 (bc91b0f07ada5535427373a4e2050877bcc12218)
+# /proc/sys/net/ipv6/conf/${iface}/addr_gen_mode was added in linux 4.11 (d35a00b8e33dab7385f724e713ae71c8be0a49f4)
+AC_MSG_CHECKING(whether enum in6_addr_gen_mode.IN6_ADDR_GEN_MODE_NONE exists)
+AH_TEMPLATE(HAVE_IN6_ADDR_GEN_MODE_NONE)
+AC_EGREP_HEADER(IN6_ADDR_GEN_MODE_NONE, linux/if_link.h,
+[AC_MSG_RESULT(yes)
+ AC_DEFINE([HAVE_IN6_ADDR_GEN_MODE_NONE])],
+ AC_MSG_RESULT(no))
+
 # Checks for library functions.
 AC_PROG_GCC_TRADITIONAL
 # AC_FUNC_MALLOC
