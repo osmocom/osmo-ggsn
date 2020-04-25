@@ -446,16 +446,44 @@ int create_context_ind(struct pdp_t *pdp)
 	LOGPPDP(LOGL_DEBUG, pdp, "Processing create PDP context request for APN '%s'\n",
 		apn_name ? name_buf : "(NONE)");
 
+	/* FIXME: we manually force all context requests to dynamic here! */
+	if (pdp->eua.l > 2)
+		pdp->eua.l = 2;
+
+	memset(addr, 0, sizeof(addr));
+	if ((num_addr = in46a_from_eua(&pdp->eua, addr)) < 0) {
+		LOGPPDP(LOGL_ERROR, pdp, "Cannot decode EUA from MS/SGSN: %s\n",
+			osmo_hexdump(pdp->eua.v, pdp->eua.l));
+		gtp_create_context_resp(gsn, pdp, GTPCAUSE_UNKNOWN_PDP);
+		return 0;
+	}
+
 	/* First find an exact APN name match */
 	if (apn_name != NULL)
 		apn = ggsn_find_apn(ggsn, name_buf);
 	/* ignore if the APN has not been started */
 	if (apn && !apn->started)
 		apn = NULL;
-
 	/* then try default (if any) */
-	if (!apn)
-		apn = ggsn->cfg.default_apn;
+	if (!apn) {
+		switch (num_addr) {
+		case 2:
+			apn = ggsn->cfg.default_apn_v4v6;
+		break;
+		case 1:
+			if (in46a_is_v4(&addr[0])) {
+				apn = ggsn->cfg.default_apn_v4;
+			} else {
+				apn = ggsn->cfg.default_apn_v6;
+			}
+		break;
+		default:
+			/* in46a_from_eua() returned other than 1 or 2 ? */
+			OSMO_ASSERT(0);
+		break;
+		}
+	}
+
 	/* ignore if the APN has not been started */
 	if (apn && !apn->started)
 		apn = NULL;
@@ -467,22 +495,10 @@ int create_context_ind(struct pdp_t *pdp)
 		return 0;
 	}
 
-	/* FIXME: we manually force all context requests to dynamic here! */
-	if (pdp->eua.l > 2)
-		pdp->eua.l = 2;
-
 	memcpy(pdp->qos_neg0, pdp->qos_req0, sizeof(pdp->qos_req0));
 
 	memcpy(pdp->qos_neg.v, pdp->qos_req.v, pdp->qos_req.l);	/* TODO */
 	pdp->qos_neg.l = pdp->qos_req.l;
-
-	memset(addr, 0, sizeof(addr));
-	if ((num_addr = in46a_from_eua(&pdp->eua, addr)) < 0) {
-		LOGPPDP(LOGL_ERROR, pdp, "Cannot decode EUA from MS/SGSN: %s\n",
-			osmo_hexdump(pdp->eua.v, pdp->eua.l));
-		gtp_create_context_resp(gsn, pdp, GTPCAUSE_UNKNOWN_PDP);
-		return 0;
-	}
 
 	/* Store the actual APN for logging and the VTY */
 	rc = osmo_apn_from_str(pdp->apn_use.v, sizeof(pdp->apn_use.v), apn->cfg.name);

@@ -269,30 +269,55 @@ DEFUN(cfg_ggsn_no_apn, cfg_ggsn_no_apn_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_ggsn_default_apn, cfg_ggsn_default_apn_cmd,
-	"default-apn NAME",
+DEFUN(cfg_ggsn_default_apn_v4, cfg_ggsn_default_apn_v4_cmd,
+	"default-apn (v4|v6|v4v6) NAME",
 	"Set a default-APN to be used if no other APN matches\n"
+	"Set a default-APN to be used if no other APN v4 matches\n"
+	"Set a default-APN to be used if no other APN v6 matches\n"
+	"Set a default-APN to be used if no other APN v4v6 matches\n"
 	"APN Name\n")
 {
 	struct ggsn_ctx *ggsn = (struct ggsn_ctx *) vty->index;
 	struct apn_ctx *apn;
 
-	apn = ggsn_find_apn(ggsn, argv[0]);
+	/* backwards compatibility with 'default-apn NAME'.  */
+	const char *apn_name = (argc > 1) ? argv[1] : argv[0];
+	const char *apn_type = (argc > 1) ? argv[0] : "v4";
+
+	apn = ggsn_find_apn(ggsn, apn_name);
 	if (!apn) {
-		vty_out(vty, "%% No APN of name '%s' found%s", argv[0], VTY_NEWLINE);
+		vty_out(vty, "%% No APN of name '%s' found%s", apn_name, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
-	ggsn->cfg.default_apn = apn;
+	if (!strcmp(apn_type, "v4"))
+		ggsn->cfg.default_apn_v4 = apn;
+	if (!strcmp(apn_type, "v6"))
+		ggsn->cfg.default_apn_v6 = apn;
+	if (!strcmp(apn_type, "v4v6"))
+		ggsn->cfg.default_apn_v4v6 = apn;
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_ggsn_no_default_apn, cfg_ggsn_no_default_apn_cmd,
-	"no default-apn",
-	NO_STR "Remove default-APN to be used if no other APN matches\n")
+ALIAS_DEPRECATED(cfg_ggsn_default_apn_v4, cfg_ggsn_default_apn_cmd,
+	"default-apn NAME",
+	"Set a default-APN to be used if no other APN matches\n"
+	"APN Name\n")
+
+DEFUN(cfg_ggsn_no_default_apn_v4, cfg_ggsn_no_default_apn_v4_cmd,
+	"no default-apn (v4|v6|v4v6)",
+	NO_STR "Remove default-APN to be used if no other APN v4 matches\n"
+	"Remove default-APN to be used if no other APN v4 matches\n"
+	"Remove default-APN to be used if no other APN v6 matches\n"
+	"Remove default-APN to be used if no other APN v4v6 matches\n")
 {
 	struct ggsn_ctx *ggsn = (struct ggsn_ctx *) vty->index;
-	ggsn->cfg.default_apn = NULL;
+	if (!strcmp(argv[0], "v4"))
+		ggsn->cfg.default_apn_v4 = NULL;
+	if (!strcmp(argv[0], "v6"))
+		ggsn->cfg.default_apn_v6 = NULL;
+	if (!strcmp(argv[0], "v4v6"))
+		ggsn->cfg.default_apn_v4v6 = NULL;
 	return CMD_SUCCESS;
 }
 
@@ -790,8 +815,12 @@ static int config_write_ggsn(struct vty *vty)
 			vty_out(vty, " gtp user-ip %s%s", in46a_ntoa(&ggsn->cfg.gtpu_addr), VTY_NEWLINE);
 		llist_for_each_entry(apn, &ggsn->apn_list, list)
 			config_write_apn(vty, apn);
-		if (ggsn->cfg.default_apn)
-			vty_out(vty, " default-apn %s%s", ggsn->cfg.default_apn->cfg.name, VTY_NEWLINE);
+		if (ggsn->cfg.default_apn_v4)
+			vty_out(vty, " default-apn v4 %s%s", ggsn->cfg.default_apn_v4->cfg.name, VTY_NEWLINE);
+		if (ggsn->cfg.default_apn_v6)
+			vty_out(vty, " default-apn v6 %s%s", ggsn->cfg.default_apn_v6->cfg.name, VTY_NEWLINE);
+		if (ggsn->cfg.default_apn_v4v6)
+			vty_out(vty, " default-apn v4v6 %s%s", ggsn->cfg.default_apn_v4v6->cfg.name, VTY_NEWLINE);
 		if (ggsn->cfg.echo_interval)
 			vty_out(vty, " echo-interval %u%s", ggsn->cfg.echo_interval, VTY_NEWLINE);
 		/* must be last */
@@ -1096,7 +1125,8 @@ int ggsn_vty_init(void)
 	install_element(GGSN_NODE, &cfg_ggsn_apn_cmd);
 	install_element(GGSN_NODE, &cfg_ggsn_no_apn_cmd);
 	install_element(GGSN_NODE, &cfg_ggsn_default_apn_cmd);
-	install_element(GGSN_NODE, &cfg_ggsn_no_default_apn_cmd);
+	install_element(GGSN_NODE, &cfg_ggsn_default_apn_v4_cmd);
+	install_element(GGSN_NODE, &cfg_ggsn_no_default_apn_v4_cmd);
 	install_element(GGSN_NODE, &cfg_ggsn_show_sgsn_cmd);
 	install_element(GGSN_NODE, &cfg_ggsn_echo_interval_cmd);
 	install_element(GGSN_NODE, &cfg_ggsn_no_echo_interval_cmd);

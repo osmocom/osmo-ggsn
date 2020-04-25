@@ -115,8 +115,10 @@ struct ggsn_ctx {
 		char *name;
 		/* Description string */
 		char *description;
-		/* an APN that shall be used as default for any non-matching APN */
-		struct apn_ctx *default_apn;
+		/* APNs that shall be used as default for any non-matching APN */
+		struct apn_ctx *default_apn_v4;
+		struct apn_ctx *default_apn_v6;
+		struct apn_ctx *default_apn_v4v6;
 		/* ADdress to which we listen for GTP */
 		struct in46_addr listen_addr;
 		/* Local GTP-C address advertised in GTP */
