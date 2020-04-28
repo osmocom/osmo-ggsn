@@ -1928,11 +1928,11 @@ int main(int argc, char **argv)
 		   we don't need it. Don't exit on error since this sysctl is
 		   only available starting with linux 4.11. */
 		snprintf(buf, sizeof(buf), "%u", IN6_ADDR_GEN_MODE_NONE);
-		if (proc_ipv6_conf_write(options.tun_dev_name, "addr_gen_mode", buf) < 0) {
+		if (proc_ipv6_conf_write(tun->devname, "addr_gen_mode", buf) < 0) {
 			SYS_ERR(DSGSN, LOGL_ERROR, errno,
 				"Failed to disable addr_gen_mode on %s, an extra link-local "
 				"ip address will appear on the tun device.\n",
-				options.tun_dev_name);
+				tun->devname);
 		}
 #endif
 
@@ -1940,9 +1940,9 @@ int main(int argc, char **argv)
 		if (tun->fd > maxfd)
 			maxfd = tun->fd;
 
-		if (proc_ipv6_conf_write(options.tun_dev_name, "accept_ra", "0") < 0) {
+		if (proc_ipv6_conf_write(tun->devname, "accept_ra", "0") < 0) {
 			SYS_ERR(DSGSN, LOGL_ERROR, 0,
-				"Failed to disable IPv6 SLAAC on %s\n", options.tun_dev_name);
+				"Failed to disable IPv6 SLAAC on %s\n", tun->devname);
 			exit(1);
 		}
 	}
