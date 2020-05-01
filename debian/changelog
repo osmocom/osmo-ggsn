@@ -1,3 +1,9 @@
+osmo-ggsn (1.5.0-fw.1) unstable; urgency=medium
+
+  * relocated to master:db98f309a9e
+
+ -- Kirill Zakharenko <kirill.zakharenko@fairwaves.co>  Fri, 1 May 2020 18:23:29 +0300
+
 osmo-ggsn (1.5.0) unstable; urgency=medium
 
   [ Jan Engelhardt ]
