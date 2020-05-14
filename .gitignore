@@ -16,7 +16,7 @@ install-sh
 libtool
 ltmain.sh
 missing
-osmo-ggsn.spec
+/osmo-ggsn.spec
 stamp-h1
 INSTALL
 m4/
