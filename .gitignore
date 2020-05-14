@@ -79,3 +79,5 @@ doc/manuals/generated/
 doc/manuals/osmomsc-usermanual.xml
 doc/manuals/common
 doc/manuals/build
+
+contrib/osmo-ggsn.spec

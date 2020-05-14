@@ -12,25 +12,23 @@
 # license that conforms to the Open Source Definition (Version 1.9)
 # published by the Open Source Initiative.
 
-# Please submit bugfixes or comments via http://bugs.opensuse.org/
-#
-
 ## Disable LTO for now since it breaks compilation of the tests
 ## https://osmocom.org/issues/4114
 %define _lto_cflags %{nil}
 
-
 Name:           osmo-ggsn
-Version:        1.5.0.31
+Version:        @VERSION@
 Release:        0
 Summary:        GPRS Support Node
 License:        GPL-2.0-only AND LGPL-2.1-or-later
 Group:          Productivity/Telephony/Servers
-URL:            https://osmocom.org/projects/openggsn/wiki/OsmoGGSN
+URL:            https://osmocom.org/projects/openggsn
 Source:         %{name}-%{version}.tar.xz
 BuildRequires:  libtool >= 2
 BuildRequires:  pkgconfig >= 0.20
+%if 0%{?suse_version}
 BuildRequires:  systemd-rpm-macros
+%endif
 BuildRequires:  pkgconfig(libgtpnl) >= 1.0.0
 BuildRequires:  pkgconfig(libmnl) >= 1.0.3
 BuildRequires:  pkgconfig(libosmocore) >= 1.1.0
@@ -84,6 +82,7 @@ find %{buildroot} -type f -name "*.la" -delete -print
 %check
 make %{?_smp_mflags} check || (find . -name testsuite.log -exec cat {} +)
 
+%if 0%{?suse_version}
 %pre
 %service_add_pre %{name}.service
 
@@ -95,6 +94,7 @@ make %{?_smp_mflags} check || (find . -name testsuite.log -exec cat {} +)
 
 %postun
 %service_del_postun %{name}.service
+%endif
 
 %post   -n libgtp6 -p /sbin/ldconfig
 %postun -n libgtp6 -p /sbin/ldconfig
