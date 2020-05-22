@@ -10,7 +10,15 @@ $(top_srcdir)/.version:
 dist-hook:
 	echo $(VERSION) > $(distdir)/.tarball-version
 
-EXTRA_DIST = git-version-gen .version README.md README.FreeBSD README.MacOSX
+EXTRA_DIST = \
+	     .version \
+	     README.FreeBSD \
+	     README.MacOSX \
+	     README.md \
+	     contrib/osmo-ggsn.spec.in \
+	     debian \
+	     git-version-gen \
+	     $(NULL)
 
 AM_DISTCHECK_CONFIGURE_FLAGS = \
 	--with-systemdsystemunitdir=$$dc_install_base/$(systemdsystemunitdir)
