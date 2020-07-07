@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <inttypes.h>
 #include <arpa/inet.h>
 
 #include <osmocom/core/utils.h>
@@ -27,7 +28,7 @@ static void queue_print(struct queue_t *queue, char* str)
 			OSMO_ASSERT(memcmp(&qmsg_zero, &queue->qmsga[n], sizeof(qmsg_zero)) == 0);
 			continue;
 		}
-		printf("%d\t%d\t%d\t%d\t%d\t%d\t%u\t%ld\n",
+		printf("%d\t%d\t%d\t%d\t%d\t%d\t%u\t%" PRIuPTR "\n",
 		       n,
 		       queue->qmsga[n].seq,
 		       queue->qmsga[n].next,
@@ -35,7 +36,7 @@ static void queue_print(struct queue_t *queue, char* str)
 		       (int)queue->qmsga[n].timeout,
 		       queue->qmsga[n].retrans,
 		       queue->qmsga[n].type,
-		       ((uintptr_t)queue->qmsga[n].cbp & 0xFFFFFFFF)
+		       (uintptr_t)queue->qmsga[n].cbp
 		);
 	}
 	printf("======================================================\n");
