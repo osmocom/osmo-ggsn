@@ -45,6 +45,7 @@
 #include <osmocom/vty/ports.h>
 #include <osmocom/vty/command.h>
 #include <osmocom/vty/misc.h>
+#include <osmocom/vty/cpu_sched_vty.h>
 
 #include "ggsn.h"
 
@@ -158,6 +159,7 @@ int main(int argc, char **argv)
 	osmo_stats_vty_add_cmds();
 	ggsn_vty_init();
 	ctrl_vty_init(tall_ggsn_ctx);
+	osmo_cpu_sched_vty_init(tall_ggsn_ctx);
 
 	handle_options(argc, argv);
 
