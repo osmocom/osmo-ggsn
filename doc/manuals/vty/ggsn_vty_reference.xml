@@ -18,10 +18,11 @@
         <param name='terminal' doc='Write to terminal' />
       </params>
     </command>
-    <command id='write file'>
+    <command id='write file [PATH]'>
       <params>
         <param name='write' doc='Write running configuration to memory, network, or terminal' />
         <param name='file' doc='Write to configuration file' />
+        <param name='[PATH]' doc='Set file path to store the config, or replace if already exists' />
       </params>
     </command>
     <command id='write memory'>
@@ -763,6 +764,18 @@
         <param name='rate-counters' doc='Show all rate counters' />
       </params>
     </command>
+    <command id='stats report'>
+      <params>
+        <param name='stats' doc='Stats related commands' />
+        <param name='report' doc='Manurally trigger reporting of stats' />
+      </params>
+    </command>
+    <command id='stats reset'>
+      <params>
+        <param name='stats' doc='Stats related commands' />
+        <param name='reset' doc='Reset all stats' />
+      </params>
+    </command>
     <command id='show pdp-context ggsn NAME'>
       <params>
         <param name='show' doc='Show running system information' />
@@ -1033,11 +1046,11 @@
         <param name='log' doc='Report to the logger' />
       </params>
     </command>
-    <command id='stats interval &lt;1-65535&gt;'>
+    <command id='stats interval &lt;0-65535&gt;'>
       <params>
         <param name='stats' doc='Configure stats sub-system' />
         <param name='interval' doc='Set the reporting interval' />
-        <param name='&lt;1-65535&gt;' doc='Interval in seconds' />
+        <param name='&lt;0-65535&gt;' doc='Interval in seconds (0 disables the reporting interval)' />
       </params>
     </command>
     <command id='ggsn NAME'>
@@ -1269,6 +1282,12 @@
         <param name='disable' doc='Disable the reporter' />
       </params>
     </command>
+    <command id='flush-period &lt;0-65535&gt;'>
+      <params>
+        <param name='flush-period' doc='Configure stats sub-system' />
+        <param name='&lt;0-65535&gt;' doc='Send all stats even if they have not changed (i.e. force the flush)every N-th reporting interval. Set to 0 to disable regular flush (default).' />
+      </params>
+    </command>
   </node>
   <node id='config-line'>
     <name>config-line</name>
@@ -1386,10 +1405,16 @@
         <param name='sgsn' doc='Gateway GPRS Support NODE (GGSN)' />
       </params>
     </command>
-    <command id='echo-interval &lt;0-36000&gt;'>
+    <command id='echo-interval &lt;1-36000&gt;'>
       <params>
         <param name='echo-interval' doc='Gateway GPRS Support NODE (GGSN)' />
-        <param name='&lt;0-36000&gt;' doc='GGSN Number' />
+        <param name='&lt;1-36000&gt;' doc='GGSN Number' />
+      </params>
+    </command>
+    <command id='no echo-interval'>
+      <params>
+        <param name='no' doc='Gateway GPRS Support NODE (GGSN)' />
+        <param name='echo-interval' doc='GGSN Number' />
       </params>
     </command>
   </node>
