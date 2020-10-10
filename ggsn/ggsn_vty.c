@@ -894,7 +894,12 @@ DEFUN(show_pdpctx_imsi, show_pdpctx_imsi_cmd,
 		return CMD_WARNING;
 	}
 
-	imsi = strtoull(argv[1], NULL, 10);
+	if (strlen(argv[1]) < 6 || strlen(argv[1]) > 15) {
+		vty_out(vty, "%% Invalid IMSI '%s'%s", argv[1], VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	imsi = imsi_str2gtp(argv[1]);
 
 	if (argc > 2) {
 		nsapi = atoi(argv[2]);
