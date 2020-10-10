@@ -338,9 +338,7 @@ int pdp_getimsi(struct pdp_t **pdp, uint64_t imsi, uint8_t nsapi)
 
 int gtp_pdp_getimsi(struct gsn_t *gsn, struct pdp_t **pdp, uint64_t imsi, uint8_t nsapi)
 {
-	return gtp_pdp_tidget(gsn, pdp,
-			  (imsi & 0x0fffffffffffffffull) +
-			  ((uint64_t) nsapi << 60));
+	return gtp_pdp_tidget(gsn, pdp, pdp_gettid(imsi, nsapi));
 }
 
 
