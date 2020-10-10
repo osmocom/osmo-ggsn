@@ -903,7 +903,7 @@ DEFUN(show_pdpctx_imsi, show_pdpctx_imsi_cmd,
 
 	if (argc > 2) {
 		nsapi = atoi(argv[2]);
-		if (gtp_pdp_getimsi(ggsn->gsn, &pdp, imsi, nsapi)) {
+		if (!gtp_pdp_getimsi(ggsn->gsn, &pdp, imsi, nsapi)) {
 			show_one_pdp(vty, pdp);
 			num_found++;
 		}
