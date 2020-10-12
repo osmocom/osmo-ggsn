@@ -492,7 +492,7 @@ static int process_options(int argc, char **argv)
 	}
 
 	/* imsi                                                            */
-	if (strlen(args_info.imsi_arg) != 15) {
+	if (strlen(args_info.imsi_arg) < 6 || strlen(args_info.imsi_arg) > 15) {
 		printf("Invalid IMSI\n");
 		return -1;
 	}
