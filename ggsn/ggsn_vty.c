@@ -899,7 +899,7 @@ DEFUN(show_pdpctx_imsi, show_pdpctx_imsi_cmd,
 		return CMD_WARNING;
 	}
 
-	imsi = imsi_str2gtp(argv[1]);
+	imsi = gtp_imsi_str2gtp(argv[1]);
 
 	if (argc > 2) {
 		nsapi = atoi(argv[2]);

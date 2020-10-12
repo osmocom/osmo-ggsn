@@ -497,7 +497,7 @@ static int process_options(int argc, char **argv)
 		return -1;
 	}
 
-	options.imsi = imsi_str2gtp(args_info.imsi_arg);
+	options.imsi = gtp_imsi_str2gtp(args_info.imsi_arg);
 
 	printf("IMSI is:               %s (%#08llx)\n",
 	       args_info.imsi_arg, options.imsi);

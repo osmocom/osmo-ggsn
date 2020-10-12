@@ -3493,16 +3493,25 @@ const char *imsi_gtp2str(const uint64_t *imsi)
 	return buf;
 }
 
-/* Encode an IMSI with gtp encoding according to TS 29.060 - the
-   reverse of imsi_gtp2str(). The hash index used for context
-   lookups is generated from the IMSI in gtp format. User input
-   in the vty (for example) needs to be converted to match. */
-const uint64_t imsi_str2gtp(const char *imsi)
+/* Generate the GTP IMSI IE according to 09.60 Section 7.9.2 */
+uint64_t gtp_imsi_str2gtp(const char *str)
 {
-	uint64_t ret = 0xf000000000000000ull;
-	unsigned int i, imsi_length = strlen(imsi);
+	uint64_t imsi64 = 0;
+	unsigned int n;
+	unsigned int imsi_len = strlen(str);
 
-	for (i = 0; i < imsi_length; i++)
-		ret |= ((uint64_t) (imsi[i] - '0')) << (i * 4);
-	return ret;
+	if (imsi_len > 16) {
+		LOGP(DLGTP, LOGL_NOTICE, "IMSI length > 16 not supported!\n");
+		return 0;
+	}
+
+	for (n = 0; n < 16; n++) {
+		uint64_t val;
+		if (n < imsi_len)
+			val = (str[n]-'0') & 0xf;
+		else
+			val = 0xf;
+		imsi64 |= (val << (n*4));
+	}
+	return imsi64;
 }

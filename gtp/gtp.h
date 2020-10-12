@@ -441,6 +441,6 @@ extern int eua2ipv4(struct in_addr *dst, struct ul66_t *eua);
 extern int gsna2in_addr(struct in_addr *dst, struct ul16_t *gsna);
 extern int in_addr2gsna(struct ul16_t *gsna, struct in_addr *src);
 extern const char *imsi_gtp2str(const uint64_t *imsi);
-extern const uint64_t imsi_str2gtp(const char *imsi);
+extern uint64_t gtp_imsi_str2gtp(const char *str);
 
 #endif /* !_GTP_H */
