@@ -497,22 +497,7 @@ static int process_options(int argc, char **argv)
 		return -1;
 	}
 
-	options.imsi = 0xf000000000000000ull;
-	options.imsi |= ((uint64_t) (args_info.imsi_arg[0] - 48));
-	options.imsi |= ((uint64_t) (args_info.imsi_arg[1] - 48)) << 4;
-	options.imsi |= ((uint64_t) (args_info.imsi_arg[2] - 48)) << 8;
-	options.imsi |= ((uint64_t) (args_info.imsi_arg[3] - 48)) << 12;
-	options.imsi |= ((uint64_t) (args_info.imsi_arg[4] - 48)) << 16;
-	options.imsi |= ((uint64_t) (args_info.imsi_arg[5] - 48)) << 20;
-	options.imsi |= ((uint64_t) (args_info.imsi_arg[6] - 48)) << 24;
-	options.imsi |= ((uint64_t) (args_info.imsi_arg[7] - 48)) << 28;
-	options.imsi |= ((uint64_t) (args_info.imsi_arg[8] - 48)) << 32;
-	options.imsi |= ((uint64_t) (args_info.imsi_arg[9] - 48)) << 36;
-	options.imsi |= ((uint64_t) (args_info.imsi_arg[10] - 48)) << 40;
-	options.imsi |= ((uint64_t) (args_info.imsi_arg[11] - 48)) << 44;
-	options.imsi |= ((uint64_t) (args_info.imsi_arg[12] - 48)) << 48;
-	options.imsi |= ((uint64_t) (args_info.imsi_arg[13] - 48)) << 52;
-	options.imsi |= ((uint64_t) (args_info.imsi_arg[14] - 48)) << 56;
+	options.imsi = imsi_str2gtp(args_info.imsi_arg);
 
 	printf("IMSI is:               %s (%#08llx)\n",
 	       args_info.imsi_arg, options.imsi);
