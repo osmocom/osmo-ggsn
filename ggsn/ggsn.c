@@ -194,7 +194,7 @@ int apn_start(struct apn_ctx *apn)
 		LOGPAPN(LOGL_INFO, apn, "Opened TUN device %s\n", apn->tun.tun->devname);
 
 		/* Register with libosmcoore */
-		osmo_fd_setup(&apn->tun.fd, apn->tun.tun->fd, BSC_FD_READ, ggsn_tun_fd_cb, apn, 0);
+		osmo_fd_setup(&apn->tun.fd, apn->tun.tun->fd, OSMO_FD_READ, ggsn_tun_fd_cb, apn, 0);
 		osmo_fd_register(&apn->tun.fd);
 
 		/* Set TUN library callback */
@@ -704,7 +704,7 @@ static int ggsn_tun_fd_cb(struct osmo_fd *fd, unsigned int what)
 {
 	struct apn_ctx *apn = fd->data;
 
-	OSMO_ASSERT(what & BSC_FD_READ);
+	OSMO_ASSERT(what & OSMO_FD_READ);
 
 	return tun_decaps(apn->tun.tun);
 }
@@ -715,7 +715,7 @@ static int ggsn_gtp_fd_cb(struct osmo_fd *fd, unsigned int what)
 	struct ggsn_ctx *ggsn = fd->data;
 	int rc;
 
-	OSMO_ASSERT(what & BSC_FD_READ);
+	OSMO_ASSERT(what & OSMO_FD_READ);
 
 	switch (fd->priv_nr) {
 	case 0:
@@ -809,15 +809,15 @@ int ggsn_start(struct ggsn_ctx *ggsn)
 		ggsn->gsn->gsnu = ggsn->cfg.gtpu_addr.v4;
 
 	/* Register File Descriptors */
-	osmo_fd_setup(&ggsn->gtp_fd0, ggsn->gsn->fd0, BSC_FD_READ, ggsn_gtp_fd_cb, ggsn, 0);
+	osmo_fd_setup(&ggsn->gtp_fd0, ggsn->gsn->fd0, OSMO_FD_READ, ggsn_gtp_fd_cb, ggsn, 0);
 	rc = osmo_fd_register(&ggsn->gtp_fd0);
 	OSMO_ASSERT(rc == 0);
 
-	osmo_fd_setup(&ggsn->gtp_fd1c, ggsn->gsn->fd1c, BSC_FD_READ, ggsn_gtp_fd_cb, ggsn, 1);
+	osmo_fd_setup(&ggsn->gtp_fd1c, ggsn->gsn->fd1c, OSMO_FD_READ, ggsn_gtp_fd_cb, ggsn, 1);
 	rc = osmo_fd_register(&ggsn->gtp_fd1c);
 	OSMO_ASSERT(rc == 0);
 
-	osmo_fd_setup(&ggsn->gtp_fd1u, ggsn->gsn->fd1u, BSC_FD_READ, ggsn_gtp_fd_cb, ggsn, 2);
+	osmo_fd_setup(&ggsn->gtp_fd1u, ggsn->gsn->fd1u, OSMO_FD_READ, ggsn_gtp_fd_cb, ggsn, 2);
 	rc = osmo_fd_register(&ggsn->gtp_fd1u);
 	OSMO_ASSERT(rc == 0);
 
