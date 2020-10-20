@@ -40,6 +40,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
+#include <netinet/ip_icmp.h>
 #include <netinet/ip6.h>
 
 #include <osmocom/core/timer.h>
@@ -584,6 +585,64 @@ err_wrong_af:
 	return 0;
 }
 
+static uint16_t inet_checksum(void *data, int len) {
+
+	int nleft = len;
+	int sum = 0;
+	unsigned short *w = data;
+	unsigned short checksum = 0;
+
+	while (nleft > 1) {
+		sum += *w++;
+		nleft -= 2;
+	}
+	if (nleft == 1){
+		*(unsigned char *)(&checksum) = *(unsigned char *)w;
+		sum += checksum;
+	}
+
+	sum = (sum >> 16) + (sum & 0xffff);
+	sum += (sum >> 16);
+	checksum = ~sum;
+	return (checksum);
+}
+
+/* Generate and send an ICMP HOST UNREACHABLE Packet */
+static void ipv4_host_unreach(struct tun_t *tun, void *pack, unsigned len)
+{
+	char send_buf[sizeof(struct ip) + sizeof(struct icmp) + len];
+	len = len - 20;
+	struct iphdr *iph = (struct iphdr *)pack;
+
+	memset(send_buf, 0, sizeof(send_buf));
+
+	struct ip *ip = (struct ip *)send_buf;
+	struct icmp *icmp = (struct icmp *)(ip + 1);
+
+	ip->ip_v = 4;
+	ip->ip_hl = 5;
+	ip->ip_tos = 0;
+	ip->ip_len = htons(sizeof(send_buf));
+	ip->ip_id = rand();
+	ip->ip_off = 0;
+	ip->ip_ttl = 64;
+	ip->ip_sum = 0;
+	ip->ip_p = IPPROTO_ICMP;
+	ip->ip_src.s_addr = iph->daddr;
+	ip->ip_dst.s_addr = iph->saddr;
+	ip->ip_sum = inet_checksum(ip, sizeof(send_buf));
+
+	icmp->icmp_type = ICMP_DEST_UNREACH;
+	icmp->icmp_code = ICMP_HOST_UNREACH;
+	icmp->icmp_id = 0;
+	icmp->icmp_seq = 0;
+	icmp->icmp_cksum = 0;
+
+	memcpy(send_buf + sizeof(ip) + sizeof(icmp) + 12, pack, len);
+	icmp->icmp_cksum = inet_checksum(icmp, sizeof(icmp) + 12 + len);
+	tun_encaps(tun, send_buf, sizeof(send_buf));
+}
+
 /* Internet-originated IP packet, needs to be sent via GTP towards MS */
 static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 {
@@ -660,6 +719,10 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
  		       iph->version == 4 ?
  		         inet_ntop(AF_INET, &iph->saddr, straddr[1], sizeof(straddr[1])) :
  		         inet_ntop(AF_INET6, &ip6h->ip6_src, straddr[1], sizeof(straddr[1])));
+		/* TODO: Implement ipv6 */
+		if (iph->version != 4)
+			return 0;
+		ipv4_host_unreach(tun, pack, len);
 	}
 	return 0;
 }
