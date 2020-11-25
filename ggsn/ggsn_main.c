@@ -71,6 +71,17 @@ static void signal_handler(int s)
 		end = 1;
 		break;
 	case SIGABRT:
+		/* in case of abort, we want to obtain a talloc report and
+		 * then run default SIGABRT handler, who will generate coredump
+		 * and abort the process. abort() should do this for us after we
+		 * return, but program wouldn't exit if an external SIGABRT is
+		 * received.
+		 */
+		talloc_report(tall_vty_ctx, stderr);
+		talloc_report_full(tall_ggsn_ctx, stderr);
+		signal(SIGABRT, SIG_DFL);
+		raise(SIGABRT);
+		break;
 	case SIGUSR1:
 		talloc_report(tall_vty_ctx, stderr);
 		talloc_report_full(tall_ggsn_ctx, stderr);
