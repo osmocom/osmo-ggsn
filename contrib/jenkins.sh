@@ -38,7 +38,6 @@ export PATH="$inst/bin:$PATH"
 # Additional configure options and depends
 CONFIG=""
 if [ "$WITH_MANUALS" = "1" ]; then
-	osmo-build-dep.sh osmo-gsm-manuals
 	CONFIG="--enable-manuals"
 fi
 
