@@ -27,7 +27,7 @@ osmo-ggsn-*.tar*
 # debian
 debian/osmo-ggsn/
 debian/*.debhelper
-debian/libgtp1
+debian/libgtp*/
 debian/osmo-ggsn-dbg
 debian/*.log
 debian/autoreconf.*
