@@ -19,7 +19,10 @@ override_dh_strip:
 	dh_strip -plibgtp6 --dbg-package=libgtp-dbg
 
 override_dh_auto_configure:
-	dh_auto_configure -- --with-systemdsystemunitdir=/lib/systemd/system --enable-manuals
+	dh_auto_configure -- \
+		--enable-gtp-linux \
+		--with-systemdsystemunitdir=/lib/systemd/system \
+		--enable-manuals
 
 # Don't create .pdf.gz files (barely saves space and they can't be opened directly by most pdf readers)
 override_dh_compress:

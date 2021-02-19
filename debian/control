@@ -8,7 +8,8 @@ Build-Depends: debhelper (>= 9),
                libdpkg-perl, git,
                dh-autoreconf,
                libosmocore-dev (>= 1.4.0),
-               osmo-gsm-manuals-dev
+               osmo-gsm-manuals-dev,
+               libgtpnl-dev (>= 1.2.0)
 Standards-Version: 3.9.6
 Vcs-Browser: http://git.osmocom.org/osmo-ggsn/
 Vcs-Git: git://git.osmocom.org/osmo-ggsn
