@@ -223,7 +223,7 @@ int main(int argc, char **argv)
 	msgb_talloc_ctx_init(tall_ctx, 0);
 	osmo_init_logging2(tall_ctx, &log_info);
 	log_set_use_color(osmo_stderr_target, 0);
-	log_set_print_filename(osmo_stderr_target, 0);
+	log_set_print_filename2(osmo_stderr_target, LOG_FILENAME_NONE);
 
 	test_queue_empty();
 	test_queue_one();
