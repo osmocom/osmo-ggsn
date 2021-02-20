@@ -30,7 +30,6 @@ BuildRequires:  pkgconfig >= 0.20
 BuildRequires:  systemd-rpm-macros
 %endif
 BuildRequires:  pkgconfig(libgtpnl) >= 1.0.0
-BuildRequires:  pkgconfig(libmnl) >= 1.0.3
 BuildRequires:  pkgconfig(libosmocore) >= 1.1.0
 BuildRequires:  pkgconfig(libosmoctrl) >= 1.1.0
 BuildRequires:  pkgconfig(libosmovty) >= 1.1.0

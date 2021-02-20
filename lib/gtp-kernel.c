@@ -18,7 +18,6 @@
 
 #include <libgtpnl/gtp.h>
 #include <libgtpnl/gtpnl.h>
-#include <libmnl/libmnl.h>
 
 #include <errno.h>
 
