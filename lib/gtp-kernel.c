@@ -31,10 +31,6 @@
 #include "../gtp/pdp.h"
 #include "../gtp/gtp.h"
 
-#include <libgtpnl/gtp.h>
-#include <libgtpnl/gtpnl.h>
-#include <libmnl/libmnl.h>
-
 #include "gtp-kernel.h"
 
 static void pdp_debug(const char *prefix, const char *devname, struct pdp_t *pdp)
