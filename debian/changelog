@@ -1,3 +1,11 @@
+osmo-ggsn (1.7.1) unstable; urgency=medium
+
+  [ Harald Welte ]
+  * main: add --vty-ref-mode, use vty_dump_xml_ref_mode()
+  * manuals: generate vty reference xml at build time
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Tue, 23 Feb 2021 17:31:24 +0100
+
 osmo-ggsn (1.7.0) unstable; urgency=medium
 
   [ Vadim Yanitskiy ]
