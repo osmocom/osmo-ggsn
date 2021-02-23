@@ -29,11 +29,10 @@ BuildRequires:  pkgconfig >= 0.20
 %if 0%{?suse_version}
 BuildRequires:  systemd-rpm-macros
 %endif
-BuildRequires:  pkgconfig(libgtpnl) >= 1.0.0
-BuildRequires:  pkgconfig(libosmocore) >= 1.1.0
-BuildRequires:  pkgconfig(libosmoctrl) >= 1.1.0
-BuildRequires:  pkgconfig(libosmovty) >= 1.1.0
 BuildRequires:  pkgconfig(libgtpnl) >= 1.2.0
+BuildRequires:  pkgconfig(libosmocore) >= 1.5.0
+BuildRequires:  pkgconfig(libosmoctrl) >= 1.5.0
+BuildRequires:  pkgconfig(libosmovty) >= 1.5.0
 Obsoletes:      openggsn
 %{?systemd_requires}
 
