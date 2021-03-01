@@ -80,3 +80,47 @@ possible to pick differing ports on the same IP address), like:
 ggsn ggsn0
  gtp bind-ip 127.0.0.2
 ----
+
+=== GTP-U kernel module
+
+WARNING: As of writing, the kernel module does not support IPv6.
+
+OsmoGGSN has support to use the Linux kernel GTP-U tunnel driver to accelerate
+the data/user plane while still implementing the control plane (GTP-C) in
+userspace in OsmoGGSN. The kernel module is included in Linux 4.7.0 and higher.
+Notably the Debian GNU/Linux distribution has it enabled by default.
+
+In order to use this feature, make sure that your Linux kernel was configured
+to support it (`CONFIG_GTP=m` or `=y`). Furthermore, `osmo-ggsn` must have been
+built with `./configure` argument `--enable-gtp-linux` (which requires libgtpnl
+to be installed).
+
+Load the kernel module with:
+
+----
+$ sudo modprobe gtp
+----
+
+Then start OsmoGGSN with a configuration file that uses `gtpu-mode kernel-gtp`.
+
+A full example configuration is in `osmo-ggsn-kernel-gtp.cfg`.
+
+----
+$ sudo osmo-ggsn -c /usr/share/doc/osmo-ggsn/examples/osmo-ggsn-kernel-gtp.cfg
+----
+
+.Example: APN with kernel-gtp
+----
+ggsn ggsn0
+ gtp state-dir /tmp
+ gtp bind-ip 127.0.0.2
+ apn internet
+  gtpu-mode kernel-gtp
+  tun-device tun4
+  type-support v4
+  ip prefix dynamic 172.16.222.0/24
+  ip dns 0 8.8.8.8
+  ip dns 1 8.8.4.4
+  ip ifconfig 172.16.222.0/24
+  no shutdown
+----
