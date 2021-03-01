@@ -1,4 +1,5 @@
 OSMOCONF_FILES = \
+	osmo-ggsn-kernel-gtp.cfg \
 	osmo-ggsn.cfg \
 	sgsnemu.conf \
 	$(NULL)
