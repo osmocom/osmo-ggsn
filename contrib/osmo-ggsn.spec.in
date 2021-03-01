@@ -109,6 +109,7 @@ make %{?_smp_mflags} check || (find . -name testsuite.log -exec cat {} +)
 %{_unitdir}/%{name}.service
 %dir %{_docdir}/%{name}/examples
 %{_docdir}/%{name}/examples/osmo-ggsn.cfg
+%{_docdir}/%{name}/examples/sgsnemu.conf
 %dir %{_sysconfdir}/osmocom
 %config(noreplace) %{_sysconfdir}/osmocom/osmo-ggsn.cfg
 
