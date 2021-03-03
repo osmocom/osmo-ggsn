@@ -1,6 +1,5 @@
 OSMOCONF_FILES = \
 	osmo-ggsn.cfg \
-	sgsnemu.conf \
 	$(NULL)
 
 osmoconfdir = $(sysconfdir)/osmocom
