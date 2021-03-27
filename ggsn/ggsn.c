@@ -467,9 +467,13 @@ int create_context_ind(struct pdp_t *pdp)
 		return 0;
 	}
 
-	/* FIXME: we manually force all context requests to dynamic here! */
-	if (pdp->eua.l > 2)
-		pdp->eua.l = 2;
+	/* FIXME: implement context request for static IP addresses! */
+	if (pdp->eua.l > 2) {
+		LOGPPDP(LOGL_ERROR, pdp, "Static IP addresses not supported: %s\n",
+			osmo_hexdump(pdp->eua.v, pdp->eua.l));
+		gtp_create_context_resp(gsn, pdp, GTPCAUSE_NOT_SUPPORTED);
+		return 0;
+	}
 
 	memcpy(pdp->qos_neg0, pdp->qos_req0, sizeof(pdp->qos_req0));
 
