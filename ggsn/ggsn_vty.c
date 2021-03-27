@@ -533,9 +533,11 @@ DEFUN(cfg_apn_ip_prefix, cfg_apn_ip_prefix_cmd,
 	struct in46_prefix *pfx;
 
 	/* first update our parsed prefix */
-	if (!strcmp(argv[0], "static"))
+	if (!strcmp(argv[0], "static")) {
 		pfx = &apn->v4.cfg.static_prefix;
-	else
+		vty_out(vty, "%% static IP addresses currently not yet supported%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	} else
 		pfx = &apn->v4.cfg.dynamic_prefix;
 	str2prefix(pfx, argv[1]);
 
@@ -567,9 +569,11 @@ DEFUN(cfg_apn_ipv6_prefix, cfg_apn_ipv6_prefix_cmd,
 	struct apn_ctx *apn = (struct apn_ctx *) vty->index;
 	struct in46_prefix *pfx;
 
-	if (!strcmp(argv[0], "static"))
+	if (!strcmp(argv[0], "static")) {
 		pfx = &apn->v6.cfg.static_prefix;
-	else
+		vty_out(vty, "%% static IP addresses currently not yet supported%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	} else
 		pfx = &apn->v6.cfg.dynamic_prefix;
 	str2prefix(pfx, argv[1]);
 	return CMD_SUCCESS;
