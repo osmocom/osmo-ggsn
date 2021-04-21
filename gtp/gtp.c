@@ -1792,9 +1792,6 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 		return EOF;
 	}
 
-	/* Register that we have received a valid teic from GGSN */
-	pdp->teic_confirmed = 1;
-
 	/* Decode information elements */
 	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
 		gsn->invalid++;
@@ -1894,6 +1891,8 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 					gsn->cb_conf(type, EOF, pdp, cbp);
 				return EOF;
 			}
+			/* Register that we have received a valid teic from GGSN */
+			pdp->teic_confirmed = 1;
 		}
 
 		if (gtpie_gettv4(ie, GTPIE_CHARGING_ID, 0, &pdp->cid)) {
@@ -2345,9 +2344,6 @@ static int gtp_update_pdp_conf(struct gsn_t *gsn, uint8_t version,
 		goto err_out;
 	}
 
-	/* Register that we have received a valid teic from GGSN */
-	pdp->teic_confirmed = 1;
-
 	/* Decode information elements */
 	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
 		gsn->invalid++;
@@ -2393,6 +2389,8 @@ static int gtp_update_pdp_conf(struct gsn_t *gsn, uint8_t version,
 			if (gtpie_gettv4(ie, GTPIE_TEI_C, 0, &pdp->teic_gn)) {
 				goto err_missing;
 			}
+			/* Register that we have received a valid teic from GGSN */
+			pdp->teic_confirmed = 1;
 		}
 
 		if (gtpie_gettv4(ie, GTPIE_CHARGING_ID, 0, &pdp->cid)) {
