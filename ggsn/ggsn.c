@@ -593,7 +593,7 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 	struct iphdr *iph = (struct iphdr *)pack;
 	struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
 	struct ippool_t *pool;
-	char straddr[INET6_ADDRSTRLEN];
+	char straddr[2][INET6_ADDRSTRLEN];
 	uint8_t pref_offset;
 
 	switch (iph->version) {
@@ -626,17 +626,41 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 		return 0;
 
 	if (ippool_getip(pool, &ipm, &dst)) {
-		LOGTUN(LOGL_DEBUG, tun, "Received packet for APN(%s) with no PDP contex! (%s)\n",
-			apn->cfg.name,
-			iph->version == 4 ?
-			inet_ntop(AF_INET, &iph->saddr, straddr, sizeof(straddr)) :
-			inet_ntop(AF_INET6, &ip6h->ip6_src, straddr, sizeof(straddr)));
+		LOGTUN(LOGL_DEBUG, tun, "APN(%s) Rx DL data packet for IP address outside "
+		       "pool of managed addresses: %s <- %s\n",
+		       apn->cfg.name,
+		       iph->version == 4 ?
+		         inet_ntop(AF_INET, &iph->daddr, straddr[0], sizeof(straddr[0])) :
+		         inet_ntop(AF_INET6, &ip6h->ip6_dst, straddr[0], sizeof(straddr[0])),
+		       iph->version == 4 ?
+		         inet_ntop(AF_INET, &iph->saddr, straddr[1], sizeof(straddr[1])) :
+		         inet_ntop(AF_INET6, &ip6h->ip6_src, straddr[1], sizeof(straddr[1])));
 		return 0;
 	}
-	LOGTUN(LOGL_DEBUG, tun, "Received packet for APN(%s)\n", apn->cfg.name);
 
-	if (ipm->peer)		/* Check if a peer protocol is defined */
-		gtp_data_req(apn->ggsn->gsn, (struct pdp_t *)ipm->peer, pack, len);
+	if (ipm->peer)	{	/* Check if a peer protocol is defined */
+		struct pdp_t *pdp = (struct pdp_t *)ipm->peer;
+		LOGTUN(LOGL_DEBUG, tun, "APN(%s) Rx DL data packet for PDP(%s:%u): %s <- %s\n",
+		       apn->cfg.name,
+		       imsi_gtp2str(&(pdp)->imsi), (pdp)->nsapi,
+		       iph->version == 4 ?
+		         inet_ntop(AF_INET, &iph->daddr, straddr[0], sizeof(straddr[0])) :
+		         inet_ntop(AF_INET6, &ip6h->ip6_dst, straddr[0], sizeof(straddr[0])),
+		       iph->version == 4 ?
+		         inet_ntop(AF_INET, &iph->saddr, straddr[1], sizeof(straddr[1])) :
+		         inet_ntop(AF_INET6, &ip6h->ip6_src, straddr[1], sizeof(straddr[1])));
+		gtp_data_req(apn->ggsn->gsn, pdp, pack, len);
+	} else {
+		LOGTUN(LOGL_DEBUG, tun, "APN(%s) Rx DL data packet for IP address with no "
+		       "associated PDP Ctx: %s <- %s\n",
+		       apn->cfg.name,
+		       iph->version == 4 ?
+ 		         inet_ntop(AF_INET, &iph->daddr, straddr[0], sizeof(straddr[0])) :
+ 		         inet_ntop(AF_INET6, &ip6h->ip6_dst, straddr[0], sizeof(straddr[0])),
+ 		       iph->version == 4 ?
+ 		         inet_ntop(AF_INET, &iph->saddr, straddr[1], sizeof(straddr[1])) :
+ 		         inet_ntop(AF_INET6, &ip6h->ip6_src, straddr[1], sizeof(straddr[1])));
+	}
 	return 0;
 }
 
