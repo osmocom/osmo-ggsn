@@ -2324,25 +2324,19 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 static int gtp_update_pdp_conf(struct gsn_t *gsn, uint8_t version,
 			struct sockaddr_in *peer, void *pack, unsigned len)
 {
-	struct pdp_t *pdp;
+	struct pdp_t *pdp = NULL;
 	union gtpie_member *ie[GTPIE_SIZE];
-	uint8_t cause, recovery;
+	uint8_t cause = EOF;
+	uint8_t recovery;
+	int rc = 0;
 	void *cbp = NULL;
 	uint8_t type = 0;
+	bool trigger_recovery = false;
 	int hlen = get_hlen(pack);
 
 	/* Remove packet from queue */
 	if (gtp_conf(gsn, 0, peer, pack, len, &type, &cbp))
 		return EOF;
-
-	/* Find the context in question */
-	if (gtp_pdp_getgtp1(gsn, &pdp, get_tei(pack))) {
-		gsn->err_unknownpdp++;
-		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
-			    "Unknown PDP context: %u\n", get_tei(pack));
-		pdp = NULL;
-		goto err_out;
-	}
 
 	/* Decode information elements */
 	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
@@ -2352,19 +2346,34 @@ static int gtp_update_pdp_conf(struct gsn_t *gsn, uint8_t version,
 		goto err_out;
 	}
 
+	/* Extract recovery (optional) */
+	if (!gtpie_gettv1(ie, GTPIE_RECOVERY, 0, &recovery))
+		trigger_recovery = true;
+
 	/* Extract cause value (mandatory) */
 	if (gtpie_gettv1(ie, GTPIE_CAUSE, 0, &cause)) {
 		goto err_missing;
 	}
 
-	/* Extract recovery (optional) */
-	if (!gtpie_gettv1(ie, GTPIE_RECOVERY, 0, &recovery)) {
-		emit_cb_recovery(gsn, peer, pdp, recovery);
+	/*  3GPP TS 29.060 sec 8.2: "Receiving node shall send back to the source
+	 *  of the message, a response with the appropriate cause value (either
+	 *  "Non-existent" or "Context not found"). The Tunnel Endpoint
+	 *  Identifier used in the response message shall be set to all zeroes."
+	 *  Hence, TEID=0 in this scenario, it makes no sense to infer PDP ctx
+	 *  from it. User is responsible to infer it from cbp */
+	if (cause != GTPCAUSE_NON_EXIST && cause != GTPCAUSE_CONTEXT_NOT_FOUND) {
+		/* Find the context in question */
+		if (gtp_pdp_getgtp1(gsn, &pdp, get_tei(pack))) {
+			gsn->err_unknownpdp++;
+			GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
+				    "Unknown PDP context: %u\n", get_tei(pack));
+			goto err_out;
+		}
 	}
 
 	/* Check all conditional information elements */
 	/* TODO: This does not handle GGSN-initiated update responses */
-	if (GTPCAUSE_ACC_REQ == cause) {
+	if (cause == GTPCAUSE_ACC_REQ) {
 		if (version == 0) {
 			if (gtpie_gettv0(ie, GTPIE_QOS_PROFILE0, 0,
 					 &pdp->qos_neg0,
@@ -2416,18 +2425,20 @@ static int gtp_update_pdp_conf(struct gsn_t *gsn, uint8_t version,
 		}
 	}
 
+generic_ret:
+	if (trigger_recovery)
+		emit_cb_recovery(gsn, peer, pdp, recovery);
 	if (gsn->cb_conf)
 		gsn->cb_conf(type, cause, pdp, cbp);
-	return 0;	/* Succes */
+	return rc;	/* Succes */
 
 err_missing:
 	gsn->missing++;
 	GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 		    "Missing information field\n");
 err_out:
-	if (gsn->cb_conf)
-		gsn->cb_conf(type, EOF, pdp, cbp);
-	return EOF;
+	rc = EOF;
+	goto generic_ret;
 }
 
 /* API: Deprecated. Send Delete PDP Context Request And free pdp ctx. */
