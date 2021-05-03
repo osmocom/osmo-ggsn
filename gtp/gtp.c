@@ -196,6 +196,13 @@ int gtp_set_cb_extheader_ind(struct gsn_t *gsn,
 	return 0;
 }
 
+int gtp_set_cb_ran_info_relay_ind(struct gsn_t *gsn,
+			     int (*cb) (struct sockaddr_in * peer, union gtpie_member **ie))
+{
+	gsn->cb_ran_info_relay_ind = cb;
+	return 0;
+}
+
 /* API: Initialise delete context callback */
 /* Called whenever a pdp context is deleted for any reason */
 int gtp_set_cb_delete_context(struct gsn_t *gsn, int (*cb) (struct pdp_t * pdp))
@@ -1198,6 +1205,57 @@ static int gtp_extheader_ind(struct gsn_t *gsn, struct sockaddr_in *peer,
 		gsn->cb_extheader_ind(peer);
 
 	return 0;
+}
+
+/* Handle a RAN Information Relay message */
+static int gtp_ran_info_relay_ind(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
+		      void *pack, unsigned len)
+{
+	union gtpie_member *ie[GTPIE_SIZE];
+
+	if (version != 1) {
+		LOGP(DLGTP, LOGL_NOTICE,
+			"RAN Information Relay expected only on GTPCv1: %u\n", version);
+		return -EINVAL;
+	}
+
+	int hlen = get_hlen(pack);
+
+	/* Decode information elements */
+	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
+		gsn->invalid++;
+		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
+			    "Invalid message format (AN Information Relay)\n");
+		return -EINVAL;
+	}
+
+	if (gsn->cb_ran_info_relay_ind)
+		gsn->cb_ran_info_relay_ind(peer, ie);
+
+	return 0;
+}
+
+/* Send off a RAN Information Relay message */
+int gtp_ran_info_relay_req(struct gsn_t *gsn, const struct sockaddr_in *peer,
+			   const uint8_t *ran_container, size_t ran_container_len,
+			   const uint8_t *rim_route_addr, size_t rim_route_addr_len,
+			   uint8_t rim_route_addr_discr)
+{
+	union gtp_packet packet;
+
+	/* GTP 1 is the highest supported protocol */
+	unsigned int length = get_default_gtp(1, GTP_RAN_INFO_RELAY, &packet);
+
+	gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_RAN_T_CONTAIN, ran_container_len,
+		  ran_container);
+	if (rim_route_addr) {
+		gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_RIM_ROUT_ADDR,
+			  rim_route_addr_len, rim_route_addr);
+		gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_RIM_RA_DISCR, 1,
+			  &rim_route_addr_discr);
+	}
+
+	return gtp_notification(gsn, 1, &packet, length, peer, gsn->fd1c, 0);
 }
 
 /* ***********************************************************
@@ -3201,6 +3259,9 @@ int gtp_decaps1c(struct gsn_t *gsn)
 			break;
 		case GTP_ERROR:
 			gtp_error_ind_conf(gsn, version, &peer, buffer, status);
+			break;
+		case GTP_RAN_INFO_RELAY:
+			gtp_ran_info_relay_ind(gsn, version, &peer, buffer, status);
 			break;
 		default:
 			gsn->unknown++;

@@ -7,3 +7,4 @@
 # If any interfaces have been added since the last public release: c:r:a + 1.
 # If any interfaces have been removed or changed since the last public release: c:r:0.
 #library	what		description / commit summary line
+libgtp          ADD             gtp_ran_info_relay_req, gtp_set_cb_ran_info_relay_ind

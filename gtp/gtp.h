@@ -16,6 +16,7 @@
 #include <osmocom/core/defs.h>
 #include <osmocom/core/timer.h>
 
+#include "gtpie.h"
 #include "pdp.h"
 
 #define GTP_MODE_GGSN 1
@@ -85,6 +86,7 @@
 #define GTP_FWD_SRNS         58	/* Forward SRNS Context */
 #define GTP_FWD_RELOC_ACK    59	/* Forward Relocation Complete Acknowledge */
 #define GTP_FWD_SRNS_ACK     60	/* Forward SRNS Context Acknowledge */
+#define GTP_RAN_INFO_RELAY   70	/* RAN Information Relay */
 /* 61-239 For future use. */
 #define GTP_DATA_TRAN_REQ   240	/* Data Record Transfer Request */
 #define GTP_DATA_TRAN_RSP   241	/* Data Record Transfer Response */
@@ -276,6 +278,7 @@ struct gsn_t {
 	int (*cb_create_context_ind) (struct pdp_t *);
 	int (*cb_unsup_ind) (struct sockaddr_in * peer);
 	int (*cb_extheader_ind) (struct sockaddr_in * peer);
+	int (*cb_ran_info_relay_ind) (struct sockaddr_in *peer, union gtpie_member **ie);
 	int (*cb_conf) (int type, int cause, struct pdp_t * pdp, void *cbp);
 	int (*cb_data_ind) (struct pdp_t * pdp, void *pack, unsigned len);
 	int (*cb_recovery) (struct sockaddr_in * peer, uint8_t recovery);
@@ -343,6 +346,11 @@ extern int gtp_delete_context_req2(struct gsn_t *gsn, struct pdp_t *pdp,
 extern int gtp_data_req(struct gsn_t *gsn, struct pdp_t *pdp,
 			void *pack, unsigned len);
 
+extern int gtp_ran_info_relay_req(struct gsn_t *gsn, const struct sockaddr_in *peer,
+				  const uint8_t *ran_container, size_t ran_container_len,
+				  const uint8_t *rim_route_addr, size_t rim_route_addr_len,
+				  uint8_t rim_route_addr_discr);
+
 extern int gtp_set_cb_data_ind(struct gsn_t *gsn,
 			       int (*cb_data_ind) (struct pdp_t * pdp,
 						   void *pack, unsigned len));
@@ -365,6 +373,9 @@ extern int gtp_set_cb_unsup_ind(struct gsn_t *gsn,
 
 extern int gtp_set_cb_extheader_ind(struct gsn_t *gsn,
 				    int (*cb) (struct sockaddr_in * peer));
+
+extern int gtp_set_cb_ran_info_relay_ind(struct gsn_t *gsn,
+				    int (*cb) (struct sockaddr_in * peer, union gtpie_member **ie));
 
 extern int gtp_set_cb_conf(struct gsn_t *gsn,
 			   int (*cb) (int type, int cause, struct pdp_t * pdp,
