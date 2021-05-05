@@ -773,7 +773,7 @@ static int gtp_resp(uint8_t version, struct gsn_t *gsn, struct pdp_t *pdp,
 
 static int gtp_notification(struct gsn_t *gsn, uint8_t version,
 		     union gtp_packet *packet, int len,
-		     struct sockaddr_in *peer, int fd, uint16_t seq)
+		     const struct sockaddr_in *peer, int fd, uint16_t seq)
 {
 
 	uint8_t ver = GTPHDR_F_GET_VER(packet->flags);
