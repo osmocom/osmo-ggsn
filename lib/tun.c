@@ -318,7 +318,14 @@ int tun_decaps(struct tun_t *this)
 
 int tun_encaps(struct tun_t *tun, void *pack, unsigned len)
 {
-	return write(tun->fd, pack, len);
+	int rc;
+	rc = write(tun->fd, pack, len);
+	if (rc < 0) {
+		SYS_ERR(DTUN, LOGL_ERROR, errno, "TUN(%s): write() failed", tun->devname);
+	} else if (rc < len) {
+		LOGTUN(LOGL_ERROR, tun, "short write() %d < %u\n", rc, len);
+	}
+	return rc;
 }
 
 int tun_runscript(struct tun_t *tun, char *script)

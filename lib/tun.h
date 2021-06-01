@@ -59,4 +59,7 @@ extern int tun_runscript(struct tun_t *tun, char *script);
 int tun_ip_local_get(const struct tun_t *tun, struct in46_prefix *prefix_list,
 		     size_t prefix_size, int flags);
 
+#define LOGTUN(level, tun, fmt, args...) \
+	LOGP(DTUN, level, "TUN(%s): " fmt, (tun)->devname, ## args)
+
 #endif /* !_TUN_H */
