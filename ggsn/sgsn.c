@@ -116,6 +116,7 @@ static unsigned int sgsn_peer_drop_all_pdp_except(struct sgsn_peer *sgsn, struct
 {
 	unsigned int num = 0;
 	char buf[INET_ADDRSTRLEN];
+	unsigned int count = llist_count(&sgsn->pdp_list);
 
 	inet_ntop(AF_INET, &sgsn->addr, buf, sizeof(buf));
 
@@ -125,10 +126,17 @@ static unsigned int sgsn_peer_drop_all_pdp_except(struct sgsn_peer *sgsn, struct
 			continue;
 		ggsn_close_one_pdp(pdp->lib);
 		num++;
+		if (num == count) {
+			/* Note: if except is NULL, all pdp contexts are freed and sgsn
+			 * is most probably already freed at this point.
+			 * As a result, last access to sgsn->pdp_list before exiting
+			 * loop would access already freed memory. Avoid it by exiting
+			 * the loop without the last check, and make sure sgsn is not
+			 * accessed after this loop. */
+			 break;
+		}
 	}
 
-	/* Note: if except is NULL, all pdp contexts are freed and sgsn is
-	   already freed at this point */
 	LOGP(DGGSN, LOGL_INFO, "SGSN(%s) Dropped %u PDP contexts\n", buf, num);
 
 	return num;
