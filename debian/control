@@ -38,6 +38,12 @@ Description: library implementing the GTP protocol between SGSN and GGSN
  This library is part of OsmoGGSN and implements the GTP protocol between
  SGSN (Serving GPRS support node) and GGSN.
 
+Package: gtp-echo-responder
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends}
+Description: Small program answering GTP ECHO Request with GTP ECHO Response
+
 Package: libgtp-dev
 Architecture: any
 Multi-Arch: same
@@ -62,6 +68,15 @@ Description: Debug symbols for OsmoGGSN
  OsmoGGSN is a Gateway GPRS Support Node (GGSN). It is used by mobile
  operators as the interface between the Internet and the rest of the
  mobile network infrastructure.
+
+Package: gtp-echo-responder-dbg
+Section: debug
+Architecture: any
+Priority: extra
+Depends: ${shlibs:Depends}, ${misc:Depends}, gtp-echo-responder (= ${binary:Version})
+Multi-Arch: same
+Description: Debug symbols for gtp-echo-responder
+ Small program answering GTP ECHO Request with GTP ECHO Response.
 
 Package: libgtp-dbg
 Section: debug

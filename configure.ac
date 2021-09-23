@@ -257,6 +257,7 @@ AC_CONFIG_FILES([Makefile
                  lib/Makefile
                  intl/Makefile
                  po/Makefile
+                 utils/Makefile
                  sgsnemu/Makefile
                  doc/manuals/Makefile
                  contrib/Makefile

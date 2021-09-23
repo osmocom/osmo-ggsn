@@ -1,5 +1,5 @@
 ## Process this file with automake to produce Makefile.in
-SUBDIRS = lib gtp ggsn sgsnemu doc contrib tests
+SUBDIRS = lib gtp ggsn sgsnemu doc contrib utils tests
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libgtp.pc

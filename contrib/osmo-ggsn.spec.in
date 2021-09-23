@@ -61,6 +61,15 @@ libgtp implements the GPRS Tunneling Protocol between SGSN and GGSN.
 This subpackage contains libraries and header files for developing
 applications that want to make use of libgtp.
 
+%package -n gtp-echo-responder
+Summary:        Small program answering GTP ECHO Request with GTP ECHO Response
+License:        MIT
+Group:          System/Libraries
+
+%description -n gtp-echo-responder
+Small program answering GTP ECHO Request with GTP ECHO Response for both GTPCv1
+and GTPCv2.
+
 %prep
 %setup -q
 
@@ -121,5 +130,8 @@ make %{?_smp_mflags} check || (find . -name testsuite.log -exec cat {} +)
 %{_includedir}/%{name}/
 %{_libdir}/libgtp.so
 %{_libdir}/pkgconfig/libgtp.pc
+
+%files -n gtp-echo-responder
+%{_bindir}/gtp-echo-responder
 
 %changelog

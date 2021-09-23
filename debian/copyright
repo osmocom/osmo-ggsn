@@ -16,6 +16,11 @@ Files: lib/getopt.c
 Copyright: 1987-2001 Free Software Foundation, Inc.
 License: LGPL-2.1+
 
+Files: utils/gtp_echo_responder.c
+       utils/gtp_echo_responder_test.py
+Copyright: 2021 sysmocom - s.f.m.c. GmbH <info@sysmocom.de>
+License: MIT
+
 Files: debian/*
 Copyright: 2010-2017  Harald Welte <laforge@gnumonks.org>
            2016       Ruben Undheim <ruben.undheim@gmail.com>
