@@ -258,7 +258,7 @@ AC_CONFIG_FILES([Makefile
                  intl/Makefile
                  po/Makefile
                  sgsnemu/Makefile
-    doc/manuals/Makefile
+                 doc/manuals/Makefile
                  contrib/Makefile
                  contrib/systemd/Makefile
                  contrib/osmo-ggsn.spec
