@@ -125,7 +125,7 @@ static uint8_t parse_node_features_mask(const char *arg)
 
 	res = strtoul(arg, &end, 0);
 	if ((errno == ERANGE && res == ULONG_MAX) || (errno && !res) ||
-	    arg == end) {
+	    arg == end || *end != '\0') {
 		fprintf(stderr, "Failed parsing Node Features bitmask: '%s'\n", arg);
 		exit(1);
 	}
