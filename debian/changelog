@@ -1,3 +1,33 @@
+osmo-ggsn (1.8.0) unstable; urgency=medium
+
+  [ Oliver Smith ]
+  * doc/examples/Makefile.am: add sgsnemu.conf
+  * doc/examples/osmo-ggsn-kernel-gtp.cfg: new file
+  * doc/manuals: describe GTP-U kernel module
+  * gitignore: add ggsn_vty_reference.xml
+
+  [ Harald Welte ]
+  * Don't install osmo-ggsn-kernel-gtp.cfg to /etc/osmocom/
+  * Don't install sgsnemu.conf to /etc/osmocom/
+  * ggsn: Reject PDP CTX ACT for static IP addresses
+  * vty: Inform user that static IP addresses are not supported
+
+  [ Pau Espin Pedrol ]
+  * gtp: Update teic_confirmed only on resp success
+  * gtp: Rework parsing logic of UpdatePdpCtxResponse
+  * ggsn: Improve logging on incoming DL data packets
+  * gtp: Improve logging of failing pdp ctx resolution from TEI/TID
+  * cosmetic: gtpie.c: Fix trailing whitespace
+  * gtp: constify pointer arg
+  * gtp: Support tx/rx RAN Information Relay message
+  * ggsn: Log tun fd write errors
+  * ggsn: Fix heap-use-after-free during Recovery without associated PDP
+  * cosmetic: configure.ac: Fix tabulation in line
+  * Introduce program gtp-echo-responder
+  * gtp_echo_responder: report invalid chars present in node-feautres cmdline arg as error
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Tue, 16 Nov 2021 13:49:16 +0100
+
 osmo-ggsn (1.7.1) unstable; urgency=medium
 
   [ Harald Welte ]
