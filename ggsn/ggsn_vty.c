@@ -389,10 +389,9 @@ DEFUN(cfg_ggsn_no_echo_interval, cfg_ggsn_no_echo_interval_cmd,
 	NO_STR "Send an echo request to this static GGSN every interval.\n")
 {
 	struct ggsn_ctx *ggsn = (struct ggsn_ctx *) vty->index;
-	int prev_interval = ggsn->cfg.echo_interval;
 	struct sgsn_peer *sgsn;
 
-	if (prev_interval == ggsn->cfg.echo_interval)
+	if (ggsn->cfg.echo_interval == 0)
 		return CMD_SUCCESS;
 
 	ggsn->cfg.echo_interval = 0;
