@@ -1809,7 +1809,16 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 		}
 	}
 
-	gtp_pdp_newpdp(gsn, &pdp, pdp->imsi, pdp->nsapi, pdp);
+	rc = gtp_pdp_newpdp(gsn, &pdp, pdp->imsi, pdp->nsapi, pdp);
+	if (rc != 0) {
+		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
+			   "Failed creating a new PDP context, array full (%u)\n", PDP_MAX);
+		/* &pdp in gtp_pdp_newpdp is untouched if it failed: */
+		rc = gtp_create_pdp_resp(gsn, version, pdp, GTPCAUSE_NO_MEMORY);
+		/* Don't pass it to emit_cb_recovery, since allocation failed and it was already rejected: */
+		pdp = NULL;
+		goto recover_ret;
+	}
 
 	/* Callback function to validate login */
 	if (gsn->cb_create_context_ind != 0)
@@ -1820,6 +1829,8 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 		rc = gtp_create_pdp_resp(gsn, version, pdp,
 					   GTPCAUSE_NOT_SUPPORTED);
 	}
+
+recover_ret:
 	if (recovery_recvd)
 		emit_cb_recovery(gsn, peer, pdp, recovery);
 	return rc;
