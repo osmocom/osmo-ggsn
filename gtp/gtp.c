@@ -400,15 +400,13 @@ static int queue_timer_retrans(struct gsn_t *gsn)
 	time_t now;
 	struct qmsg_t *qmsg;
 	now = time(NULL);
-	/*printf("Retrans: New beginning %d\n", (int) now); */
 
 	/* get first element in queue, as long as the timeout of that
 	 * element has expired */
 	while ((!queue_getfirst(gsn->queue_req, &qmsg)) &&
 	       (qmsg->timeout <= now)) {
-		/*printf("Retrans timeout found: %d\n", (int) time(NULL)); */
 		if (qmsg->retrans > N3_REQUESTS) {	/* To many retrans */
-			LOGP(DLGTP, LOGL_NOTICE, "Timeout of seq %" PRIu16 "\n",
+			LOGP(DLGTP, LOGL_NOTICE, "Retransmit req queue timeout of seq %" PRIu16 "\n",
 			     qmsg->seq);
 			if (gsn->cb_conf)
 				gsn->cb_conf(qmsg->type, EOF, NULL, qmsg->cbp);
@@ -434,7 +432,8 @@ static int queue_timer_retrans(struct gsn_t *gsn)
 	/* Also clean up reply timeouts */
 	while ((!queue_getfirst(gsn->queue_resp, &qmsg)) &&
 	       (qmsg->timeout < now)) {
-		/*printf("Retrans (reply) timeout found: %d\n", (int) time(NULL)); */
+		LOGP(DLGTP, LOGL_DEBUG, "Retransmit resp queue seq %"
+		     PRIu16 " expired, removing from queue\n", qmsg->seq);
 		queue_freemsg(gsn->queue_resp, qmsg);
 	}
 
@@ -633,6 +632,8 @@ static int gtp_req(struct gsn_t *gsn, uint8_t version, struct pdp_t *pdp,
 		LOGP(DLGTP, LOGL_ERROR, "Retransmit req queue is full (seq=%" PRIu16 ")\n",
 		     gsn->seq_next);
 	} else {
+		LOGP(DLGTP, LOGL_DEBUG, "Registering seq=%" PRIu16
+		     " in restransmit req queue\n", gsn->seq_next);
 		memcpy(&qmsg->p, packet, sizeof(union gtp_packet));
 		qmsg->l = len;
 		qmsg->timeout = time(NULL) + T3_REQUEST; /* When to timeout */
@@ -660,6 +661,7 @@ void gtp_clear_queues(struct gsn_t *gsn)
 {
 	struct qmsg_t *qmsg;
 
+	LOGP(DLGTP, LOGL_INFO, "Clearing req & resp retransmit queues\n");
 	while (!queue_getfirst(gsn->queue_req, &qmsg)) {
 		queue_freemsg(gsn->queue_req, qmsg);
 	}
@@ -689,10 +691,14 @@ static int gtp_conf(struct gsn_t *gsn, uint8_t version, struct sockaddr_in *peer
 		return EOF;
 	}
 
+	GTP_LOGPKG(LOGL_DEBUG, peer, packet, len,
+		    "Freeing seq=%" PRIu16 " from retransmit req queue\n",
+		    seq);
 	if (queue_freemsg_seq(gsn->queue_req, peer, seq, type, cbp)) {
 		gsn->err_seq++;
 		GTP_LOGPKG(LOGL_ERROR, peer, packet, len,
-			    "Confirmation packet not found in queue\n");
+			    "Confirmation packet not found in retransmit req queue (seq=%"
+			    PRIu16 ")\n", seq);
 		return EOF;
 	}
 
@@ -761,6 +767,8 @@ static int gtp_resp(uint8_t version, struct gsn_t *gsn, struct pdp_t *pdp,
 		LOGP(DLGTP, LOGL_ERROR, "Retransmit resp queue is full (seq=%" PRIu16 ")\n",
 		     seq);
 	} else {
+		LOGP(DLGTP, LOGL_DEBUG, "Registering seq=%" PRIu16
+		     " in restransmit resp queue\n", seq);
 		memcpy(&qmsg->p, packet, sizeof(union gtp_packet));
 		qmsg->l = len;
 		qmsg->timeout = time(NULL) + 60;	/* When to timeout */
