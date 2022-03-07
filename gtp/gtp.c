@@ -1554,7 +1554,8 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 						   GTPCAUSE_INVALID_MESSAGE);
 	}
 
-	if (version == 1) {
+	switch (version) {
+	case 1:
 		/* Linked NSAPI (conditional) */
 		/* If included this is the Secondary PDP Context Activation Procedure */
 		/* In secondary activation IMSI is not included, so the context must be */
@@ -1646,9 +1647,9 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 		if (gtpie_gettlv(ie, GTPIE_TFT, 0, &pdp->tft.l,
 				 &pdp->tft.v, sizeof(pdp->tft.v))) {
 		}
-	}
-	/* if (version == 1) */
-	if (version == 0) {
+		break; /* version 1 */
+
+	case 0:
 		if (gtpie_gettv0(ie, GTPIE_QOS_PROFILE0, 0,
 				 pdp->qos_req0, sizeof(pdp->qos_req0))) {
 			gsn->missing++;
@@ -1671,6 +1672,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 			return gtp_create_pdp_resp(gsn, version, pdp,
 						   GTPCAUSE_MAN_IE_MISSING);
 		}
+		break;
 	}
 
 	/* SGSN address for signalling (mandatory) */
