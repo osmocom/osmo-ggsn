@@ -1754,8 +1754,6 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 	in_addr2gsna(&pdp->gsnlc, &gsn->gsnc);
 	in_addr2gsna(&pdp->gsnlu, &gsn->gsnu);
 
-	DEBUGP(DLGTP, "gtp_create_pdp_ind: Before gtp_pdp_tidget\n");
-
 	if (!gtp_pdp_getimsi(gsn, &pdp_old, pdp->imsi, pdp->nsapi)) {
 		/* Found old pdp with same tid. Now the voodoo begins! */
 		/* 09.60 / 29.060 allows create on existing context to "steal" */
@@ -1777,7 +1775,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 			 * QoS: MS will get originally negotiated QoS.
 			 * End user address (EUA). MS will get old EUA anyway.
 			 * Protocol configuration option (PCO): Only application can verify */
-			DEBUGP(DLGTP, "gtp_create_pdp_ind: Old context found\n");
+			DEBUGP(DLGTP, "gtp_create_pdp_ind: Reusing old context\n");
 
 			/* Copy remote flow label */
 			pdp_old->flru = pdp->flru;
