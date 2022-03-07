@@ -827,10 +827,17 @@ static int gtp_duplicate(struct gsn_t *gsn, uint8_t version,
 		  struct sockaddr_in *peer, uint16_t seq)
 {
 	struct qmsg_t *qmsg;
+	char buf[INET_ADDRSTRLEN];
 
 	if (queue_seqget(gsn->queue_resp, &qmsg, peer, seq)) {
 		return EOF;	/* Notfound */
 	}
+
+
+	buf[0] = '\0';
+	inet_ntop(AF_INET, &peer->sin_addr, buf, sizeof(buf));
+	LOGP(DLGTP, LOGL_INFO,
+		"Rx duplicate seq=%" PRIu16 " from %s, retrans resp\n", seq, buf);
 
 	if (fcntl(qmsg->fd, F_SETFL, 0)) {
 		LOGP(DLGTP, LOGL_ERROR, "fnctl()\n");
