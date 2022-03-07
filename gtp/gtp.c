@@ -405,7 +405,7 @@ static int queue_timer_retrans(struct gsn_t *gsn)
 	 * element has expired */
 	while ((!queue_getfirst(gsn->queue_req, &qmsg)) &&
 	       (qmsg->timeout <= now)) {
-		if (qmsg->retrans > N3_REQUESTS) {	/* To many retrans */
+		if (qmsg->retrans > N3_REQUESTS) {	/* Too many retrans */
 			LOGP(DLGTP, LOGL_NOTICE, "Retransmit req queue timeout of seq %" PRIu16 "\n",
 			     qmsg->seq);
 			if (gsn->cb_conf)
