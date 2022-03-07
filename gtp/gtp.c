@@ -630,8 +630,8 @@ static int gtp_req(struct gsn_t *gsn, uint8_t version, struct pdp_t *pdp,
 	/* Use new queue structure */
 	if (queue_newmsg(gsn->queue_req, &qmsg, &addr, gsn->seq_next)) {
 		gsn->err_queuefull++;
-		LOGP(DLGTP, LOGL_ERROR,
-			"Retransmit queue is full\n");
+		LOGP(DLGTP, LOGL_ERROR, "Retransmit req queue is full (seq=%" PRIu16 ")\n",
+		     gsn->seq_next);
 	} else {
 		memcpy(&qmsg->p, packet, sizeof(union gtp_packet));
 		qmsg->l = len;
@@ -758,7 +758,8 @@ static int gtp_resp(uint8_t version, struct gsn_t *gsn, struct pdp_t *pdp,
 	/* Use new queue structure */
 	if (queue_newmsg(gsn->queue_resp, &qmsg, peer, seq)) {
 		gsn->err_queuefull++;
-		LOGP(DLGTP, LOGL_ERROR, "Retransmit queue is full\n");
+		LOGP(DLGTP, LOGL_ERROR, "Retransmit resp queue is full (seq=%" PRIu16 ")\n",
+		     seq);
 	} else {
 		memcpy(&qmsg->p, packet, sizeof(union gtp_packet));
 		qmsg->l = len;
