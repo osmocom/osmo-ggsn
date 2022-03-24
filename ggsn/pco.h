@@ -4,7 +4,7 @@
 
 #include "../gtp/pdp.h"
 
-/* 3GPP TS 24.008 10.6.5.3 */
+/* 3GPP TS 24.008 10.5.6.3 */
 enum pco_protocols {
 	PCO_P_LCP		= 0xC021,
 	PCO_P_PAP		= 0xC023,
