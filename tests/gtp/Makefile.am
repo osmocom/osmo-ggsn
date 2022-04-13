@@ -5,7 +5,7 @@ EXTRA_DIST = \
 	queue_test.ok \
 	$(NULL)
 
-noinst_PROGRAMS = \
+check_PROGRAMS = \
 	gtpie_test \
 	queue_test \
 	$(NULL)
