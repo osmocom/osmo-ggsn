@@ -20,9 +20,9 @@ GIT Repository
 
 You can clone from the official osmo-ggsn.git repository using
 
-	git clone git://git.osmocom.org/osmo-ggsn.git
+	git clone https://gitea.osmocom.org/cellular-infrastructure/osmo-ggsn
 
-There is a cgit interface at http://git.osmocom.org/osmo-ggsn/
+There is a web interface at <https://gitea.osmocom.org/cellular-infrastructure/osmo-ggsn>
 
 Documentation
 -------------

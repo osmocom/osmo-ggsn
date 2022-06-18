@@ -11,8 +11,8 @@ Build-Depends: debhelper (>= 9),
                osmo-gsm-manuals-dev,
                libgtpnl-dev (>= 1.2.0)
 Standards-Version: 3.9.6
-Vcs-Browser: http://git.osmocom.org/osmo-ggsn/
-Vcs-Git: git://git.osmocom.org/osmo-ggsn
+Vcs-Browser: https://gitea.osmocom.org/cellular-infrastructure/osmo-ggsn
+Vcs-Git: https://gitea.osmocom.org/cellular-infrastructure/osmo-ggsn
 Homepage: https://projects.osmocom.org/projects/openggsn
 
 Package: osmo-ggsn
