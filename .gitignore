@@ -82,3 +82,7 @@ doc/manuals/build
 doc/manuals/vty/ggsn_vty_reference.xml
 
 contrib/osmo-ggsn.spec
+/debian/gtp-echo-responder-dbg/
+/debian/gtp-echo-responder/
+/debian/osmo-ggsn-doc/
+/utils/gtp-echo-responder
