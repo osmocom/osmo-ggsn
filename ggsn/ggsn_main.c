@@ -34,6 +34,7 @@
 #include <osmocom/core/stats.h>
 #include <osmocom/core/rate_ctr.h>
 #include <osmocom/core/timer.h>
+#include <osmocom/core/tdef.h>
 #include <osmocom/core/utils.h>
 #include <osmocom/ctrl/control_if.h>
 #include <osmocom/ctrl/control_cmd.h>
@@ -59,6 +60,11 @@ struct ul255_t qos;
 struct ul255_t apn;
 
 static char *config_file = "osmo-ggsn.cfg";
+
+struct osmo_tdef_group ggsn_tdef_group[] = {
+	{.name = "gtp", .tdefs = gtp_T_defs, .desc = "GTP (libgtp) timers" },
+	{ }
+};
 
 /* To exit gracefully. Used with GCC compilation flag -pg and gprof */
 static void signal_handler(int s)

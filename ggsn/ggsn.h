@@ -6,6 +6,7 @@
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/select.h>
 #include <osmocom/core/timer.h>
+#include <osmocom/core/tdef.h>
 #include <osmocom/ctrl/control_if.h>
 
 #include "../lib/tun.h"
@@ -152,6 +153,7 @@ struct apn_ctx *ggsn_find_or_create_apn(struct ggsn_ctx *ggsn, const char *name)
 /* ggsn_main.c */
 extern struct ctrl_handle *g_ctrlh;
 extern void *tall_ggsn_ctx;
+extern struct osmo_tdef_group ggsn_tdef_group[];
 
 /* ggsn.c */
 extern int ggsn_start(struct ggsn_ctx *ggsn);

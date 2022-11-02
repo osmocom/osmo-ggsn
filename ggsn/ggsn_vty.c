@@ -33,6 +33,7 @@
 #include <osmocom/vty/command.h>
 #include <osmocom/vty/vty.h>
 #include <osmocom/vty/misc.h>
+#include <osmocom/vty/tdef_vty.h>
 
 #include "../gtp/gtp.h"
 #include "../gtp/pdp.h"
@@ -795,6 +796,7 @@ static int config_write_ggsn(struct vty *vty)
 			vty_out(vty, " gtp control-ip %s%s", in46a_ntoa(&ggsn->cfg.gtpc_addr), VTY_NEWLINE);
 		if (ggsn->cfg.gtpu_addr.v4.s_addr)
 			vty_out(vty, " gtp user-ip %s%s", in46a_ntoa(&ggsn->cfg.gtpu_addr), VTY_NEWLINE);
+		osmo_tdef_vty_groups_write(vty, " ");
 		llist_for_each_entry(apn, &ggsn->apn_list, list)
 			config_write_apn(vty, apn);
 		if (ggsn->cfg.default_apn)
@@ -1112,6 +1114,8 @@ int ggsn_vty_init(void)
 	install_element(GGSN_NODE, &cfg_ggsn_show_sgsn_cmd);
 	install_element(GGSN_NODE, &cfg_ggsn_echo_interval_cmd);
 	install_element(GGSN_NODE, &cfg_ggsn_no_echo_interval_cmd);
+
+	osmo_tdef_vty_groups_init(GGSN_NODE, ggsn_tdef_group);
 
 	install_node(&apn_node, NULL);
 	install_element(APN_NODE, &cfg_description_cmd);

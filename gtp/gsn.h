@@ -15,6 +15,7 @@
 #include <osmocom/core/utils.h>
 #include <osmocom/core/defs.h>
 #include <osmocom/core/timer.h>
+#include <osmocom/core/tdef.h>
 #include <osmocom/core/rate_ctr.h>
 
 #include "pdp.h"
@@ -23,6 +24,8 @@
 #define GTP_MODE_SGSN 2
 
 #define RESTART_FILE "gsn_restart"
+
+extern struct osmo_tdef gtp_T_defs[];
 
 /* ***********************************************************
  * Information storage for each gsn instance
@@ -58,6 +61,12 @@ enum gsn_rate_ctr_keys {
 	GSN_CTR_PKT_MISSING,	/* Number of missing information field messages */
 	GSN_CTR_PKT_INCORRECT,	/* Number of incorrect information field messages */
 	GSN_CTR_PKT_INVALID,	/* Number of invalid message format messages */
+};
+
+/* 3GPP TS 29.006 14.1, 14,2 */
+enum gtp_gsn_timers {
+	GTP_GSN_TIMER_T3_RESPONSE = 3,
+	GTP_GSN_TIMER_N3_REQUESTS = 1003,
 };
 
 struct gsn_t {
@@ -100,6 +109,9 @@ struct gsn_t {
 
 	/* Counters */
 	struct rate_ctr_group *ctrg;
+
+	/* Timers: */
+	struct osmo_tdef *tdef;
 };
 
 /* External API functions */

@@ -62,11 +62,6 @@
 #include "gtpie.h"
 #include "queue.h"
 
-/* According to section 14.2 of 3GPP TS 29.006 version 6.9.0 */
-#define N3_REQUESTS	5
-
-#define T3_REQUEST	3
-
 /* Error reporting functions */
 
 #define LOGP_WITH_ADDR(ss, level, addr, fmt, args...)                    \
@@ -103,6 +98,18 @@ static const struct rate_ctr_group_desc gsn_ctrg_desc = {
 	gsn_ctr_description,
 };
 static unsigned int gsn_ctr_next_idx = 0;
+
+/* Global timer definitions for GTP operation, provided for convenience. To make these user configurable, it is convenient to add
+ * gtp_gsn_tdefs as one of your program's osmo_tdef_group entries and call osmo_tdef_vty_init(). */
+struct osmo_tdef gtp_T_defs[] = {
+	{ .T = GTP_GSN_TIMER_T3_RESPONSE, .default_val = 5, .unit = OSMO_TDEF_S,
+	  .desc = "Timer T3-RESPONSE holds the maximum wait time for a response of a request message"
+	},
+	{ .T = GTP_GSN_TIMER_N3_REQUESTS, .default_val = 3, .unit = OSMO_TDEF_CUSTOM,
+	  .desc = "Counter N3-REQUESTS holds the maximum number of attempts made by GTP to send a request message"
+	},
+	{}
+};
 
 
 /* API Functions */
@@ -241,13 +248,17 @@ static int queue_timer_retrans(struct gsn_t *gsn)
 	/* Remove from queue if maxretrans exceeded */
 	time_t now;
 	struct qmsg_t *qmsg;
+	unsigned int t3_response, n3_requests;
+
 	now = time(NULL);
+	t3_response = osmo_tdef_get(gsn->tdef, GTP_GSN_TIMER_T3_RESPONSE, OSMO_TDEF_S, -1);
+	n3_requests = osmo_tdef_get(gsn->tdef, GTP_GSN_TIMER_N3_REQUESTS, OSMO_TDEF_CUSTOM, -1);
 
 	/* get first element in queue, as long as the timeout of that
 	 * element has expired */
 	while ((!queue_getfirst(gsn->queue_req, &qmsg)) &&
 	       (qmsg->timeout <= now)) {
-		if (qmsg->retrans > N3_REQUESTS) {	/* Too many retrans */
+		if (qmsg->retrans > n3_requests) {	/* Too many retrans */
 			LOGP(DLGTP, LOGL_NOTICE, "Retransmit req queue timeout of seq %" PRIu16 "\n",
 			     qmsg->seq);
 			if (gsn->cb_conf)
@@ -266,7 +277,7 @@ static int queue_timer_retrans(struct gsn_t *gsn)
 					qmsg->l, strerror(errno));
 			}
 			queue_back(gsn->queue_req, qmsg);
-			qmsg->timeout = now + T3_REQUEST;
+			qmsg->timeout = now + t3_response;
 			qmsg->retrans++;
 		}
 	}
@@ -423,6 +434,14 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 
 	/* Initialise sequence number */
 	(*gsn)->seq_next = (*gsn)->restart_counter * 1024;
+
+	/* Initialize timers: */
+	(*gsn)->tdef = gtp_T_defs;
+	/* Small hack to properly reset tdef for old clients not using the tdef_group: */
+	osmo_static_assert(gtp_T_defs[0].default_val != 0, first_default_val_not_zero);
+	if (gtp_T_defs[0].val == 0)
+		osmo_tdefs_reset((*gsn)->tdef);
+
 
 	/* Initialise request retransmit queue */
 	queue_new(&(*gsn)->queue_req);

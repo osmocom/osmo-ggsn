@@ -60,11 +60,6 @@
 #include "gtpie.h"
 #include "queue.h"
 
-/* According to section 14.2 of 3GPP TS 29.006 version 6.9.0 */
-#define N3_REQUESTS	5
-
-#define T3_REQUEST	3
-
 /* Error reporting functions */
 
 #define GTP_LOGPKG(pri, peer, pack, len, fmt, args...)			\
@@ -400,11 +395,13 @@ static int gtp_req(struct gsn_t *gsn, uint8_t version, struct pdp_t *pdp,
 		LOGP(DLGTP, LOGL_ERROR, "Retransmit req queue is full (seq=%" PRIu16 ")\n",
 		     gsn->seq_next);
 	} else {
+		unsigned int t3_response;
 		LOGP(DLGTP, LOGL_DEBUG, "Registering seq=%" PRIu16
 		     " in restransmit req queue\n", gsn->seq_next);
+		t3_response = osmo_tdef_get(gsn->tdef, GTP_GSN_TIMER_T3_RESPONSE, OSMO_TDEF_S, -1);
 		memcpy(&qmsg->p, packet, sizeof(union gtp_packet));
 		qmsg->l = len;
-		qmsg->timeout = time(NULL) + T3_REQUEST; /* When to timeout */
+		qmsg->timeout = time(NULL) + t3_response; /* When to timeout */
 		qmsg->retrans = 0;	/* No retransmissions so far */
 		qmsg->cbp = cbp;
 		qmsg->type = ntoh8(packet->gtp0.h.type);
