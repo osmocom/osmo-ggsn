@@ -25,6 +25,8 @@
 
 #include <osmocom/core/logging.h>
 #include <osmocom/core/utils.h>
+#include <osmocom/core/stats.h>
+#include <osmocom/core/rate_ctr.h>
 
 #if defined(__FreeBSD__)
 #include <sys/endian.h>
@@ -71,6 +73,37 @@
 		LOGP(ss, level, "addr(%s:%d) " fmt,                      \
 		     inet_ntoa((addr).sin_addr), htons((addr).sin_port), \
 		     ##args);
+
+static const struct rate_ctr_desc gsn_ctr_description[] = {
+	[GSN_CTR_ERR_SOCKET] = { "err:socket", "Socket error" },
+	[GSN_CTR_ERR_READFROM] = { "err:readfrom", "readfrom() errors" },
+	[GSN_CTR_ERR_SENDTO] = { "err:sendto", "sendto() errors" },
+	[GSN_CTR_ERR_QUEUEFULL] = { "err:queuefull", "Failed to queue message because queue is full" },
+	[GSN_CTR_ERR_SEQ] = { "err:seq", "Sequence number out of range" },
+	[GSN_CTR_ERR_ADDRESS] = { "err:address", "GSN address conversion failed" },
+	[GSN_CTR_ERR_UNKNOWN_PDP] = { "err:unknown_pdp", "Failed looking up PDP context" },
+	[GSN_CTR_ERR_UNEXPECTED_CAUSE] = { "err:unexpected_cause", "Unexpected cause value received" },
+	[GSN_CTR_ERR_OUT_OF_PDP] = { "err:out_of_pdp", "Out of storage for PDP contexts" },
+	[GSN_CTR_PKT_EMPTY] = { "pkt:empty", "Empty packet received" },
+	[GSN_CTR_PKT_UNSUP] = { "pkt:unsupported", "Unsupported GTP version received" },
+	[GSN_CTR_PKT_TOOSHORT] = { "pkt:too_short", "Packet too short received" },
+	[GSN_CTR_PKT_UNKNOWN] = { "pkt:unknown", "Unknown packet type received" },
+	[GSN_CTR_PKT_UNEXPECT] = { "pkt:unexpected", "Unexpected packet type received" },
+	[GSN_CTR_PKT_DUPLICATE] = { "pkt:duplicate", "Duplicate or unsolicited packet received" },
+	[GSN_CTR_PKT_MISSING] = { "pkt:missing", "Missing IE in packet received" },
+	[GSN_CTR_PKT_INCORRECT] = { "pkt:incorrect", "Incorrect IE in packet received" },
+	[GSN_CTR_PKT_INVALID] = { "pkt:invalid", "Invalid format in packet received" },
+};
+
+static const struct rate_ctr_group_desc gsn_ctrg_desc = {
+	"gsn",
+	"GSN Statistics",
+	OSMO_STATS_CLASS_PEER,
+	ARRAY_SIZE(gsn_ctr_description),
+	gsn_ctr_description,
+};
+static unsigned int gsn_ctr_next_idx = 0;
+
 
 /* API Functions */
 
@@ -226,7 +259,7 @@ static int queue_timer_retrans(struct gsn_t *gsn)
 			if (sendto(qmsg->fd, &qmsg->p, qmsg->l, 0,
 				   (struct sockaddr *)&qmsg->peer,
 				   sizeof(struct sockaddr_in)) < 0) {
-				gsn->err_sendto++;
+				rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_SENDTO);
 				LOGP(DLGTP, LOGL_ERROR,
 					"Sendto(fd0=%d, msg=%lx, len=%d) failed: Error = %s\n",
 					gsn->fd0, (unsigned long)&qmsg->p,
@@ -401,6 +434,9 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 	/* Initialize internal queue timer */
 	osmo_timer_setup(&(*gsn)->queue_timer, queue_timer_cb, *gsn);
 
+	/* Initialize counter group: */
+	(*gsn)->ctrg = rate_ctr_group_alloc(NULL, &gsn_ctrg_desc, gsn_ctr_next_idx++);
+
 	/* Initialise call back functions */
 	(*gsn)->cb_create_context_ind = 0;
 	(*gsn)->cb_delete_context = 0;
@@ -415,7 +451,7 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 
 	/* Create GTP version 0 socket */
 	if (((*gsn)->fd0 = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-		(*gsn)->err_socket++;
+		rate_ctr_inc2((*gsn)->ctrg, GSN_CTR_ERR_SOCKET);
 		LOGP(DLGTP, LOGL_ERROR,
 		     "GTPv0 socket(domain=%d, type=%d, protocol=%d) failed: Error = %s\n",
 			AF_INET, SOCK_DGRAM, 0, strerror(errno));
@@ -431,7 +467,7 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 #endif
 
 	if (bind((*gsn)->fd0, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-		(*gsn)->err_socket++;
+		rate_ctr_inc2((*gsn)->ctrg, GSN_CTR_ERR_SOCKET);
 		LOGP_WITH_ADDR(DLGTP, LOGL_ERROR, addr,
 			       "bind(fd0=%d) failed: Error = %s\n",
 			       (*gsn)->fd0, strerror(errno));
@@ -440,7 +476,7 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 
 	/* Create GTP version 1 control plane socket */
 	if (((*gsn)->fd1c = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-		(*gsn)->err_socket++;
+		rate_ctr_inc2((*gsn)->ctrg, GSN_CTR_ERR_SOCKET);
 		LOGP(DLGTP, LOGL_ERROR,
 		     "GTPv1 control plane socket(domain=%d, type=%d, protocol=%d) failed: Error = %s\n",
 			AF_INET, SOCK_DGRAM, 0, strerror(errno));
@@ -456,7 +492,7 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 #endif
 
 	if (bind((*gsn)->fd1c, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-		(*gsn)->err_socket++;
+		rate_ctr_inc2((*gsn)->ctrg, GSN_CTR_ERR_SOCKET);
 		LOGP_WITH_ADDR(DLGTP, LOGL_ERROR, addr,
 				"bind(fd1c=%d) failed: Error = %s\n",
 				(*gsn)->fd1c, strerror(errno));
@@ -465,7 +501,7 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 
 	/* Create GTP version 1 user plane socket */
 	if (((*gsn)->fd1u = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-		(*gsn)->err_socket++;
+		rate_ctr_inc2((*gsn)->ctrg, GSN_CTR_ERR_SOCKET);
 		LOGP(DLGTP, LOGL_ERROR,
 		     "GTPv1 user plane socket(domain=%d, type=%d, protocol=%d) failed: Error = %s\n",
 			AF_INET, SOCK_DGRAM, 0, strerror(errno));
@@ -481,7 +517,7 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 #endif
 
 	if (bind((*gsn)->fd1u, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-		(*gsn)->err_socket++;
+		rate_ctr_inc2((*gsn)->ctrg, GSN_CTR_ERR_SOCKET);
 		LOGP_WITH_ADDR(DLGTP, LOGL_ERROR, addr,
 			"bind(fd1u=%d) failed: Error = %s\n",
 			(*gsn)->fd1u, strerror(errno));
@@ -507,6 +543,8 @@ int gtp_free(struct gsn_t *gsn)
 	close(gsn->fd0);
 	close(gsn->fd1c);
 	close(gsn->fd1u);
+
+	rate_ctr_group_free(gsn->ctrg);
 
 	free(gsn);
 	return 0;

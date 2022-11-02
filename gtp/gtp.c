@@ -388,7 +388,7 @@ static int gtp_req(struct gsn_t *gsn, uint8_t version, struct pdp_t *pdp,
 
 	if (sendto(fd, packet, len, 0,
 		   (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-		gsn->err_sendto++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_SENDTO);
 		LOGP(DLGTP, LOGL_ERROR, "Sendto(fd=%d, msg=%lx, len=%d, dst=%s) failed: Error = %s\n", fd,
 		     (unsigned long)&packet, len, inet_ntoa(addr.sin_addr), strerror(errno));
 		return -1;
@@ -396,7 +396,7 @@ static int gtp_req(struct gsn_t *gsn, uint8_t version, struct pdp_t *pdp,
 
 	/* Use new queue structure */
 	if (queue_newmsg(gsn->queue_req, &qmsg, &addr, gsn->seq_next)) {
-		gsn->err_queuefull++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_QUEUEFULL);
 		LOGP(DLGTP, LOGL_ERROR, "Retransmit req queue is full (seq=%" PRIu16 ")\n",
 		     gsn->seq_next);
 	} else {
@@ -444,7 +444,7 @@ static int gtp_conf(struct gsn_t *gsn, uint8_t version, struct sockaddr_in *peer
 		    "Freeing seq=%" PRIu16 " from retransmit req queue\n",
 		    seq);
 	if (queue_freemsg_seq(gsn->queue_req, peer, seq, type, cbp)) {
-		gsn->err_seq++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_SEQ);
 		GTP_LOGPKG(LOGL_ERROR, peer, packet, len,
 			    "Confirmation packet not found in retransmit req queue (seq=%"
 			    PRIu16 ")\n", seq);
@@ -489,7 +489,7 @@ static int gtp_resp(uint8_t version, struct gsn_t *gsn, struct pdp_t *pdp,
 
 	if (sendto(fd, packet, len, 0,
 		   (struct sockaddr *)peer, sizeof(struct sockaddr_in)) < 0) {
-		gsn->err_sendto++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_SENDTO);
 		LOGP(DLGTP, LOGL_ERROR,
 			"Sendto(fd=%d, msg=%lx, len=%d) failed: Error = %s\n", fd,
 			(unsigned long)&packet, len, strerror(errno));
@@ -498,7 +498,7 @@ static int gtp_resp(uint8_t version, struct gsn_t *gsn, struct pdp_t *pdp,
 
 	/* Use new queue structure */
 	if (queue_newmsg(gsn->queue_resp, &qmsg, peer, seq)) {
-		gsn->err_queuefull++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_QUEUEFULL);
 		LOGP(DLGTP, LOGL_ERROR, "Retransmit resp queue is full (seq=%" PRIu16 ")\n",
 		     seq);
 	} else {
@@ -558,7 +558,7 @@ static int gtp_notification(struct gsn_t *gsn, uint8_t version,
 
 	if (sendto(fd, packet, len, 0,
 		   (struct sockaddr *)&addr, sizeof(struct sockaddr_in)) < 0) {
-		gsn->err_sendto++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_SENDTO);
 		LOGP(DLGTP, LOGL_ERROR,
 			"Sendto(fd=%d, msg=%lx, len=%d) failed: Error = %s\n", fd,
 			(unsigned long)&packet, len, strerror(errno));
@@ -582,6 +582,7 @@ static int gtp_duplicate(struct gsn_t *gsn, uint8_t version,
 	inet_ntop(AF_INET, &peer->sin_addr, buf, sizeof(buf));
 	LOGP(DLGTP, LOGL_INFO,
 		"Rx duplicate seq=%" PRIu16 " from %s, retrans resp\n", seq, buf);
+	rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_DUPLICATE);
 
 	if (fcntl(qmsg->fd, F_SETFL, 0)) {
 		LOGP(DLGTP, LOGL_ERROR, "fnctl()\n");
@@ -590,7 +591,7 @@ static int gtp_duplicate(struct gsn_t *gsn, uint8_t version,
 
 	if (sendto(qmsg->fd, &qmsg->p, qmsg->l, 0,
 		   (struct sockaddr *)peer, sizeof(struct sockaddr_in)) < 0) {
-		gsn->err_sendto++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_SENDTO);
 		LOGP(DLGTP, LOGL_ERROR,
 			"Sendto(fd=%d, msg=%lx, len=%d) failed: Error = %s\n",
 			qmsg->fd, (unsigned long)&qmsg->p, qmsg->l,
@@ -678,7 +679,7 @@ int gtp_echo_conf(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
 
 	/* Extract information elements into a pointer array */
 	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
-		gsn->invalid++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_INVALID);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Invalid message format\n");
 		if (gsn->cb_conf)
@@ -687,7 +688,7 @@ int gtp_echo_conf(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
 	}
 
 	if (gtpie_gettv1(ie, GTPIE_RECOVERY, 0, &recovery)) {
-		gsn->missing++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Missing mandatory field\n");
 		if (gsn->cb_conf)
@@ -785,7 +786,7 @@ static int gtp_ran_info_relay_ind(struct gsn_t *gsn, int version, struct sockadd
 
 	/* Decode information elements */
 	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
-		gsn->invalid++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_INVALID);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Invalid message format (AN Information Relay)\n");
 		return -EINVAL;
@@ -1097,7 +1098,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 
 	/* Decode information elements */
 	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
-		gsn->invalid++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_INVALID);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Invalid message format\n");
 		if (0 == version)
@@ -1117,7 +1118,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 
 			/* Find the primary PDP context */
 			if (gtp_pdp_getgtp1(gsn, &linked_pdp, get_tei(pack))) {
-				gsn->incorrect++;
+				rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_INCORRECT);
 				GTP_LOGPKG(LOGL_ERROR, peer,
 					    pack, len,
 					    "Incorrect optional information field\n");
@@ -1127,7 +1128,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 
 			/* Check that the primary PDP context matches linked nsapi */
 			if (linked_pdp->nsapi != linked_nsapi) {
-				gsn->incorrect++;
+				rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_INCORRECT);
 				GTP_LOGPKG(LOGL_ERROR, peer,
 					    pack, len,
 					    "Incorrect optional information field\n");
@@ -1152,7 +1153,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 			   included in the message. */
 			if (gtpie_gettv0
 			    (ie, GTPIE_IMSI, 0, &pdp->imsi, sizeof(pdp->imsi))) {
-				gsn->missing++;
+				rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 				GTP_LOGPKG(LOGL_ERROR, peer, pack,
 					    len, "Missing IMSI not supported\n");
 				return gtp_create_pdp_resp(gsn, version, pdp,
@@ -1162,7 +1163,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 
 		/* TEID (mandatory) */
 		if (gtpie_gettv4(ie, GTPIE_TEI_DI, 0, &pdp->teid_gn)) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			return gtp_create_pdp_resp(gsn, version, pdp,
@@ -1171,7 +1172,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 		/* TEIC (conditional) */
 		if (!linked_pdp) {	/* Not Secondary PDP Context Activation Procedure */
 			if (gtpie_gettv4(ie, GTPIE_TEI_C, 0, &pdp->teic_gn)) {
-				gsn->missing++;
+				rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 				GTP_LOGPKG(LOGL_ERROR, peer,
 					    pack, len,
 					    "Missing mandatory information field\n");
@@ -1181,7 +1182,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 		}
 		/* NSAPI (mandatory) */
 		if (gtpie_gettv1(ie, GTPIE_NSAPI, 0, &pdp->nsapi)) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			return gtp_create_pdp_resp(gsn, version, pdp,
@@ -1190,7 +1191,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 		/* QoS (mandatory) */
 		if (gtpie_gettlv(ie, GTPIE_QOS_PROFILE, 0, &pdp->qos_req.l,
 				 &pdp->qos_req.v, sizeof(pdp->qos_req.v))) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			return gtp_create_pdp_resp(gsn, version, pdp,
@@ -1205,21 +1206,21 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 	case 0:
 		if (gtpie_gettv0(ie, GTPIE_QOS_PROFILE0, 0,
 				 pdp->qos_req0, sizeof(pdp->qos_req0))) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			return gtp_create_pdp_resp(gsn, version, pdp,
 						   GTPCAUSE_MAN_IE_MISSING);
 		}
 		if (gtpie_gettv2(ie, GTPIE_FL_DI, 0, &pdp->flru)) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			return gtp_create_pdp_resp(gsn, version, pdp,
 						   GTPCAUSE_MAN_IE_MISSING);
 		}
 		if (gtpie_gettv2(ie, GTPIE_FL_C, 0, &pdp->flrc)) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			return gtp_create_pdp_resp(gsn, version, pdp,
@@ -1231,7 +1232,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 	/* SGSN address for signalling (mandatory) */
 	if (gtpie_gettlv(ie, GTPIE_GSN_ADDR, 0, &pdp->gsnrc.l,
 			 &pdp->gsnrc.v, sizeof(pdp->gsnrc.v))) {
-		gsn->missing++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Missing mandatory information field\n");
 		return gtp_create_pdp_resp(gsn, version, pdp,
@@ -1241,7 +1242,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 	/* SGSN address for user traffic (mandatory) */
 	if (gtpie_gettlv(ie, GTPIE_GSN_ADDR, 1, &pdp->gsnru.l,
 			 &pdp->gsnru.v, sizeof(pdp->gsnru.v))) {
-		gsn->missing++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Missing mandatory information field\n");
 		return gtp_create_pdp_resp(gsn, version, pdp,
@@ -1257,7 +1258,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 		/* Selection mode (conditional) */
 		if (gtpie_gettv0(ie, GTPIE_SELECTION_MODE, 0,
 				 &pdp->selmode, sizeof(pdp->selmode))) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			return gtp_create_pdp_resp(gsn, version, pdp,
@@ -1266,7 +1267,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 		/* End User Address (conditional) */
 		if (gtpie_gettlv(ie, GTPIE_EUA, 0, &pdp->eua.l,
 				 &pdp->eua.v, sizeof(pdp->eua.v))) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			return gtp_create_pdp_resp(gsn, version, pdp,
@@ -1275,7 +1276,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 		/* APN */
 		if (gtpie_gettlv(ie, GTPIE_APN, 0, &pdp->apn_req.l,
 				 &pdp->apn_req.v, sizeof(pdp->apn_req.v))) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			return gtp_create_pdp_resp(gsn, version, pdp,
@@ -1288,7 +1289,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 		/* MSISDN (conditional) */
 		if (gtpie_gettlv(ie, GTPIE_MSISDN, 0, &pdp->msisdn.l,
 				 &pdp->msisdn.v, sizeof(pdp->msisdn.v))) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			return gtp_create_pdp_resp(gsn, version, pdp,
@@ -1406,7 +1407,7 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 
 	/* Find the context in question */
 	if (gtp_pdp_getgtp1(gsn, &pdp, get_tei(pack))) {
-		gsn->err_unknownpdp++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_UNKNOWN_PDP);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Unknown PDP context: %u\n", get_tei(pack));
 		if (gsn->cb_conf)
@@ -1416,7 +1417,7 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 
 	/* Decode information elements */
 	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
-		gsn->invalid++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_INVALID);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Invalid message format\n");
 		if (gsn->cb_conf)
@@ -1426,7 +1427,7 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 
 	/* Extract cause value (mandatory) */
 	if (gtpie_gettv1(ie, GTPIE_CAUSE, 0, &cause)) {
-		gsn->missing++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Missing mandatory information field\n");
 		if (gsn->cb_conf)
@@ -1451,7 +1452,7 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 			if (gtpie_gettv0(ie, GTPIE_QOS_PROFILE0, 0,
 					 &pdp->qos_neg0,
 					 sizeof(pdp->qos_neg0))) {
-				gsn->missing++;
+				rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 				GTP_LOGPKG(LOGL_ERROR, peer,
 					    pack, len,
 					    "Missing conditional information field\n");
@@ -1462,7 +1463,7 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 		}
 
 		if (gtpie_gettv1(ie, GTPIE_REORDER, 0, &pdp->reorder)) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len,
 				    "Missing conditional information field\n");
@@ -1473,7 +1474,7 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 
 		if (version == 0) {
 			if (gtpie_gettv2(ie, GTPIE_FL_DI, 0, &pdp->flru)) {
-				gsn->missing++;
+				rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 				GTP_LOGPKG(LOGL_ERROR, peer,
 					    pack, len,
 					    "Missing conditional information field\n");
@@ -1483,7 +1484,7 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 			}
 
 			if (gtpie_gettv2(ie, GTPIE_FL_C, 0, &pdp->flrc)) {
-				gsn->missing++;
+				rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 				GTP_LOGPKG(LOGL_ERROR, peer,
 					    pack, len,
 					    "Missing conditional information field\n");
@@ -1495,7 +1496,7 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 
 		if (version == 1) {
 			if (gtpie_gettv4(ie, GTPIE_TEI_DI, 0, &pdp->teid_gn)) {
-				gsn->missing++;
+				rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 				GTP_LOGPKG(LOGL_ERROR, peer,
 					    pack, len,
 					    "Missing conditional information field\n");
@@ -1505,7 +1506,7 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 			}
 
 			if (gtpie_gettv4(ie, GTPIE_TEI_C, 0, &pdp->teic_gn)) {
-				gsn->missing++;
+				rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 				GTP_LOGPKG(LOGL_ERROR, peer,
 					    pack, len,
 					    "Missing conditional information field\n");
@@ -1518,7 +1519,7 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 		}
 
 		if (gtpie_gettv4(ie, GTPIE_CHARGING_ID, 0, &pdp->cid)) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len,
 				    "Missing conditional information field\n");
@@ -1528,7 +1529,7 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 
 		if (gtpie_gettlv(ie, GTPIE_EUA, 0, &pdp->eua.l,
 				 &pdp->eua.v, sizeof(pdp->eua.v))) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len,
 				    "Missing conditional information field\n");
@@ -1539,7 +1540,7 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 
 		if (gtpie_gettlv(ie, GTPIE_GSN_ADDR, 0, &pdp->gsnrc.l,
 				 &pdp->gsnrc.v, sizeof(pdp->gsnrc.v))) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len,
 				    "Missing conditional information field\n");
@@ -1550,7 +1551,7 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 
 		if (gtpie_gettlv(ie, GTPIE_GSN_ADDR, 1, &pdp->gsnru.l,
 				 &pdp->gsnru.v, sizeof(pdp->gsnru.v))) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len,
 				    "Missing conditional information field\n");
@@ -1563,7 +1564,7 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 			if (gtpie_gettlv
 			    (ie, GTPIE_QOS_PROFILE, 0, &pdp->qos_neg.l,
 			     &pdp->qos_neg.v, sizeof(pdp->qos_neg.v))) {
-				gsn->missing++;
+				rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 				GTP_LOGPKG(LOGL_ERROR, peer,
 					    pack, len,
 					    "Missing conditional information field\n");
@@ -1739,7 +1740,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 
 	/* Decode information elements */
 	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
-		gsn->invalid++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_INVALID);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Invalid message format\n");
 		if (0 == version)
@@ -1757,7 +1758,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 	if (version == 0) {
 		/* Find the context in question */
 		if (gtp_pdp_tidget(gsn, &pdp, get_tid(pack))) {
-			gsn->err_unknownpdp++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_UNKNOWN_PDP);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 				   "Unknown PDP context: TID=0x%" PRIx64 "\n",
 				   get_tid(pack));
@@ -1771,7 +1772,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 	} else if (version == 1) {
 		/* NSAPI (mandatory) */
 		if (gtpie_gettv1(ie, GTPIE_NSAPI, 0, &nsapi)) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			return gtp_update_pdp_resp(gsn, version, peer, fd, pack,
@@ -1783,7 +1784,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 		if (gtpie_gettv0(ie, GTPIE_IMSI, 0, &imsi, sizeof(imsi))) {
 			/* Find the context in question */
 			if (gtp_pdp_getgtp1(gsn, &pdp, get_tei(pack))) {
-				gsn->err_unknownpdp++;
+				rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_UNKNOWN_PDP);
 				GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 					   "Unknown PDP context: TEI=0x%" PRIx32 "\n",
 					   get_tei(pack));
@@ -1794,7 +1795,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 		} else {
 			/* Find the context in question */
 			if (gtp_pdp_getimsi(gsn, &pdp, imsi, nsapi)) {
-				gsn->err_unknownpdp++;
+				rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_UNKNOWN_PDP);
 				GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 					   "Unknown PDP context: IMSI=0x%" PRIx64
 					   " NSAPI=%" PRIu8 "\n", imsi, nsapi);
@@ -1814,7 +1815,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 	if (version == 0) {
 		if (gtpie_gettv0(ie, GTPIE_QOS_PROFILE0, 0,
 				 pdp->qos_req0, sizeof(pdp->qos_req0))) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			memcpy(pdp, &pdp_backup, sizeof(pdp_backup));
@@ -1831,7 +1832,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 
 	if (version == 0) {
 		if (gtpie_gettv2(ie, GTPIE_FL_DI, 0, &pdp->flru)) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			memcpy(pdp, &pdp_backup, sizeof(pdp_backup));
@@ -1841,7 +1842,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 		}
 
 		if (gtpie_gettv2(ie, GTPIE_FL_C, 0, &pdp->flrc)) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			memcpy(pdp, &pdp_backup, sizeof(pdp_backup));
@@ -1854,7 +1855,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 	if (version == 1) {
 		/* TEID (mandatory) */
 		if (gtpie_gettv4(ie, GTPIE_TEI_DI, 0, &pdp->teid_gn)) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			memcpy(pdp, &pdp_backup, sizeof(pdp_backup));
@@ -1871,7 +1872,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 
 		/* NSAPI (mandatory) */
 		if (gtpie_gettv1(ie, GTPIE_NSAPI, 0, &pdp->nsapi)) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			memcpy(pdp, &pdp_backup, sizeof(pdp_backup));
@@ -1887,7 +1888,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 	/* End User Address (conditional) TODO: GGSN Initiated
 	   if (gtpie_gettlv(ie, GTPIE_EUA, 0, &pdp->eua.l,
 	   &pdp->eua.v, sizeof(pdp->eua.v))) {
-	   gsn->missing++;
+	   rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 	   GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 	   "Missing mandatory information field");
 	   memcpy(pdp, &pdp_backup, sizeof(pdp_backup));
@@ -1899,7 +1900,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 	/* It is weird that this is mandatory when TEIC is conditional */
 	if (gtpie_gettlv(ie, GTPIE_GSN_ADDR, 0, &pdp->gsnrc.l,
 			 &pdp->gsnrc.v, sizeof(pdp->gsnrc.v))) {
-		gsn->missing++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Missing mandatory information field\n");
 		memcpy(pdp, &pdp_backup, sizeof(pdp_backup));
@@ -1910,7 +1911,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 	/* SGSN address for user traffic (mandatory) */
 	if (gtpie_gettlv(ie, GTPIE_GSN_ADDR, 1, &pdp->gsnru.l,
 			 &pdp->gsnru.v, sizeof(pdp->gsnru.v))) {
-		gsn->missing++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Missing mandatory information field\n");
 		memcpy(pdp, &pdp_backup, sizeof(pdp_backup));
@@ -1922,7 +1923,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 		/* QoS (mandatory) */
 		if (gtpie_gettlv(ie, GTPIE_QOS_PROFILE, 0, &pdp->qos_req.l,
 				 &pdp->qos_req.v, sizeof(pdp->qos_req.v))) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			memcpy(pdp, &pdp_backup, sizeof(pdp_backup));
@@ -1964,7 +1965,7 @@ static int gtp_update_pdp_conf(struct gsn_t *gsn, uint8_t version,
 
 	/* Decode information elements */
 	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
-		gsn->invalid++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_INVALID);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Invalid message format\n");
 		goto err_out;
@@ -1988,7 +1989,7 @@ static int gtp_update_pdp_conf(struct gsn_t *gsn, uint8_t version,
 	if (cause != GTPCAUSE_NON_EXIST && cause != GTPCAUSE_CONTEXT_NOT_FOUND) {
 		/* Find the context in question */
 		if (gtp_pdp_getgtp1(gsn, &pdp, get_tei(pack))) {
-			gsn->err_unknownpdp++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_UNKNOWN_PDP);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 				   "Unknown PDP context: TEI=0x%" PRIx32 "\n", get_tei(pack));
 			goto err_out;
@@ -2057,7 +2058,7 @@ generic_ret:
 	return rc;	/* Succes */
 
 err_missing:
-	gsn->missing++;
+	rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 	GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 		    "Missing information field\n");
 err_out:
@@ -2123,7 +2124,7 @@ int gtp_delete_context_req2(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 	int count;
 
 	if (gsna2in_addr(&addr, &pdp->gsnrc)) {
-		gsn->err_address++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_ADDRESS);
 		LOGP(DLGTP, LOGL_ERROR, "GSN address (len=%u) conversion failed\n", pdp->gsnrc.l);
 		return EOF;
 	}
@@ -2225,7 +2226,7 @@ int gtp_delete_pdp_ind(struct gsn_t *gsn, int version,
 
 	/* Find the linked context in question */
 	if (gtp_pdp_getgtp1(gsn, &linked_pdp, get_tei(pack))) {
-		gsn->err_unknownpdp++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_UNKNOWN_PDP);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			   "Unknown PDP context: TEI=0x%" PRIx32 "\n", get_tei(pack));
 		return gtp_delete_pdp_resp(gsn, version, peer, fd, pack, len,
@@ -2239,7 +2240,7 @@ int gtp_delete_pdp_ind(struct gsn_t *gsn, int version,
 
 	/* Decode information elements */
 	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
-		gsn->invalid++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_INVALID);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Invalid message format\n");
 		if (0 == version)
@@ -2254,7 +2255,7 @@ int gtp_delete_pdp_ind(struct gsn_t *gsn, int version,
 	if (version == 1) {
 		/* NSAPI (mandatory) */
 		if (gtpie_gettv1(ie, GTPIE_NSAPI, 0, &nsapi)) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				   len, "Missing mandatory information field\n");
 			return gtp_delete_pdp_resp(gsn, version, peer, fd, pack,
@@ -2265,7 +2266,7 @@ int gtp_delete_pdp_ind(struct gsn_t *gsn, int version,
 
 		/* Find the context in question */
 		if (gtp_pdp_getgtp1(gsn, &pdp, linked_pdp->secondary_tei[nsapi & 0x0f])) {
-			gsn->err_unknownpdp++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_UNKNOWN_PDP);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 				   "Unknown PDP context: Secondary TEI=0x%" PRIx32 "\n",
 				   linked_pdp->secondary_tei[nsapi & 0x0f]);
@@ -2319,7 +2320,7 @@ int gtp_delete_pdp_conf(struct gsn_t *gsn, int version,
 	/* Find the context in question. It may not be available if gtp_delete_context_req
 	 * was used and as a result the PDP ctx was already freed */
 	if (gtp_pdp_getgtp1(gsn, &pdp, get_tei(pack))) {
-		gsn->err_unknownpdp++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_UNKNOWN_PDP);
 		GTP_LOGPKG(LOGL_NOTICE, peer, pack, len,
 			   "Unknown PDP context: TEI=0x%" PRIx32 " (expected if "
 			   "gtp_delete_context_req is used or pdp ctx was freed "
@@ -2331,7 +2332,7 @@ int gtp_delete_pdp_conf(struct gsn_t *gsn, int version,
 
 	/* Decode information elements */
 	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
-		gsn->invalid++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_INVALID);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Invalid message format\n");
 		if (gsn->cb_conf)
@@ -2341,7 +2342,7 @@ int gtp_delete_pdp_conf(struct gsn_t *gsn, int version,
 
 	/* Extract cause value (mandatory) */
 	if (gtpie_gettv1(ie, GTPIE_CAUSE, 0, &cause)) {
-		gsn->missing++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Missing mandatory information field\n");
 		if (gsn->cb_conf)
@@ -2351,7 +2352,7 @@ int gtp_delete_pdp_conf(struct gsn_t *gsn, int version,
 
 	/* Check the cause value (again) */
 	if ((GTPCAUSE_ACC_REQ != cause) && (GTPCAUSE_NON_EXIST != cause)) {
-		gsn->err_cause++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_UNEXPECTED_CAUSE);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Unexpected cause value received: %d\n", cause);
 		if (gsn->cb_conf)
@@ -2398,7 +2399,7 @@ static int gtp_error_ind_conf(struct gsn_t *gsn, uint8_t version,
 	/* Find the context in question */
 	if (version == 0) {
 		if (gtp_pdp_tidget(gsn, &pdp, get_tid(pack))) {
-			gsn->err_unknownpdp++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_UNKNOWN_PDP);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 				   "Unknown PDP context: TID=0x%" PRIx64 "\n",
 				   get_tid(pack));
@@ -2411,21 +2412,21 @@ static int gtp_error_ind_conf(struct gsn_t *gsn, uint8_t version,
 
 		/* Decode information elements */
 		if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
-			gsn->invalid++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_INVALID);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 				    "Invalid message format\n");
 			return EOF;
 		}
 
 		if (gtpie_gettv4(ie, GTPIE_TEI_DI, 0, &teid_gn)) {
-			gsn->missing++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 				    "Missing mandatory information field\n");
 			return EOF;
 		}
 
 		if (gtp_pdp_getgtp1_peer_d(gsn, &pdp, peer, teid_gn)) {
-			gsn->err_unknownpdp++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_UNKNOWN_PDP);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 				   "Unknown PDP context: Peer TEID=0x%" PRIx32 "\n",
 				   teid_gn);
@@ -2460,7 +2461,7 @@ static int gtp_gpdu_ind(struct gsn_t *gsn, uint8_t version,
 	switch (version) {
 	case 0:
 		if (gtp_pdp_getgtp0(gsn, &pdp, get_tei(pack))) {
-			gsn->err_unknownpdp++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_UNKNOWN_PDP);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 				   "Unknown PDP context: TEI=0x%" PRIx32 "\n",
 				   get_tei(pack));
@@ -2471,7 +2472,7 @@ static int gtp_gpdu_ind(struct gsn_t *gsn, uint8_t version,
 		break;
 	case 1:
 		if (gtp_pdp_getgtp1(gsn, &pdp, get_tei(pack))) {
-			gsn->err_unknownpdp++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_UNKNOWN_PDP);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 				   "Unknown PDP context: TEI=0x%" PRIx32 "\n",
 				   get_tei(pack));
@@ -2493,7 +2494,7 @@ static int gtp_gpdu_ind(struct gsn_t *gsn, uint8_t version,
 
 	/* If the GPDU was not from the peer GSN tell him to delete context */
 	if (memcmp(&peer->sin_addr, pdp->gsnru.v, pdp->gsnru.l)) {	/* TODO Range? */
-		gsn->err_unknownpdp++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_UNKNOWN_PDP);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len, "Unknown GSN peer %s\n", inet_ntoa(peer->sin_addr));
 		return gtp_error_ind_resp(gsn, version, peer, fd, pack, len);
 	}
@@ -2535,7 +2536,7 @@ int gtp_decaps0(struct gsn_t *gsn)
 			      (struct sockaddr *)&peer, &peerlen)) < 0) {
 			if (errno == EAGAIN)
 				return 0;
-			gsn->err_readfrom++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_READFROM);
 			LOGP(DLGTP, LOGL_ERROR,
 				"recvfrom(fd0=%d, buffer=%lx, len=%zu) failed: status = %d error = %s\n",
 				gsn->fd0, (unsigned long)buffer, sizeof(buffer),
@@ -2545,7 +2546,7 @@ int gtp_decaps0(struct gsn_t *gsn)
 
 		/* Need at least 1 byte in order to check version */
 		if (status < (1)) {
-			gsn->empty++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_EMPTY);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status, "Discarding packet - too small\n");
 			continue;
@@ -2561,7 +2562,7 @@ int gtp_decaps0(struct gsn_t *gsn)
 		/* only support version 0, implying that this is the only version */
 		/* supported on this port */
 		if (version > 0) {
-			gsn->unsup++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_UNSUP);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer, status,
 				"Unsupported GTP version %"PRIu8"\n", version);
 			gtp_unsup_req(gsn, 0, &peer, gsn->fd0, buffer, status);	/* 29.60: 11.1.1 */
@@ -2570,7 +2571,7 @@ int gtp_decaps0(struct gsn_t *gsn)
 
 		/* Check length of gtp0 packet */
 		if (status < GTP0_HEADER_SIZE) {
-			gsn->tooshort++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_TOOSHORT);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status, "GTP0 packet too short\n");
 			continue;	/* Silently discard 29.60: 11.1.2 */
@@ -2578,7 +2579,7 @@ int gtp_decaps0(struct gsn_t *gsn)
 
 		/* Check packet length field versus length of packet */
 		if (status != (ntoh16(pheader->length) + GTP0_HEADER_SIZE)) {
-			gsn->tooshort++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_TOOSHORT);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status,
 				    "GTP packet length field does not match actual length\n");
@@ -2588,7 +2589,7 @@ int gtp_decaps0(struct gsn_t *gsn)
 		if ((gsn->mode == GTP_MODE_GGSN) &&
 		    ((pheader->type == GTP_CREATE_PDP_RSP) ||
 		     (pheader->type == GTP_UPDATE_PDP_RSP))) {
-			gsn->unexpect++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_UNEXPECT);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status,
 				    "Unexpected GTPv0 Signalling Message '%s'\n",
@@ -2599,7 +2600,7 @@ int gtp_decaps0(struct gsn_t *gsn)
 		if ((gsn->mode == GTP_MODE_SGSN) &&
 		    ((pheader->type == GTP_CREATE_PDP_REQ) ||
 		     (pheader->type == GTP_UPDATE_PDP_REQ))) {
-			gsn->unexpect++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_UNEXPECT);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status,
 				    "Unexpected GTPv0 Signalling Message '%s'\n",
@@ -2648,7 +2649,7 @@ int gtp_decaps0(struct gsn_t *gsn)
 			gtp_gpdu_ind(gsn, version, &peer, fd, buffer, status);
 			break;
 		default:
-			gsn->unknown++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_UNKNOWN);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer, status,
 				"Unknown GTP message type received: %d\n",
 				pheader->type);
@@ -2682,7 +2683,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 			      (struct sockaddr *)&peer, &peerlen)) < 0) {
 			if (errno == EAGAIN)
 				return 0;
-			gsn->err_readfrom++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_READFROM);
 			LOGP(DLGTP, LOGL_ERROR,
 				"recvfrom(fd=%d, buffer=%lx, len=%zu) failed: status = %d error = %s\n",
 				fd, (unsigned long)buffer, sizeof(buffer),
@@ -2692,7 +2693,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 
 		/* Need at least 1 byte in order to check version */
 		if (status < (1)) {
-			gsn->empty++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_EMPTY);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status, "Discarding packet - too small\n");
 			continue;
@@ -2704,7 +2705,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 
 		/* Version must be no larger than GTP 1 */
 		if (version > 1) {
-			gsn->unsup++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_UNSUP);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer, status,
 				"Unsupported GTP version %"PRIu8"\n", version);
 			gtp_unsup_req(gsn, version, &peer, fd, buffer, status);
@@ -2717,7 +2718,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 		/* GTP 1 messages. If GTP 0 message is received we silently discard */
 		/* the message */
 		if (version < 1) {
-			gsn->unsup++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_UNSUP);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer, status,
 				"Unsupported GTP version %"PRIu8"\n", version);
 			continue;
@@ -2725,7 +2726,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 
 		/* Check packet flag field */
 		if (((pheader->flags & 0xf7) != 0x32)) {
-			gsn->unsup++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_UNSUP);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status, "Unsupported packet flags: 0x%02x\n", pheader->flags);
 			continue;
@@ -2733,7 +2734,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 
 		/* Check length of packet */
 		if (status < GTP1_HEADER_SIZE_LONG) {
-			gsn->tooshort++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_TOOSHORT);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status, "GTP packet too short\n");
 			continue;	/* Silently discard 29.60: 11.1.2 */
@@ -2742,7 +2743,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 		/* Check packet length field versus length of packet */
 		if (status !=
 		    (ntoh16(pheader->length) + GTP1_HEADER_SIZE_SHORT)) {
-			gsn->tooshort++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_TOOSHORT);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status,
 				    "GTP packet length field does not match actual length\n");
@@ -2753,7 +2754,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 		/* TODO: We really should cycle through the headers and determine */
 		/* if any have the comprehension required flag set */
 		if (((pheader->flags & GTP1HDR_F_EXT) != 0x00)) {
-			gsn->unsup++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_UNSUP);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status, "Unsupported extension header\n");
 			gtp_extheader_req(gsn, version, &peer, fd, buffer,
@@ -2765,7 +2766,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 		if ((gsn->mode == GTP_MODE_GGSN) &&
 		    ((pheader->type == GTP_CREATE_PDP_RSP) ||
 		     (pheader->type == GTP_UPDATE_PDP_RSP))) {
-			gsn->unexpect++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_UNEXPECT);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status,
 				    "Unexpected GTPv1 Signalling Message '%s'\n",
@@ -2776,7 +2777,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 		if ((gsn->mode == GTP_MODE_SGSN) &&
 		    ((pheader->type == GTP_CREATE_PDP_REQ) ||
 		     (pheader->type == GTP_UPDATE_PDP_REQ))) {
-			gsn->unexpect++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_UNEXPECT);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status,
 				    "Unexpected GTPv1 Signalling Message '%s'\n",
@@ -2828,7 +2829,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 			gtp_ran_info_relay_ind(gsn, version, &peer, buffer, status);
 			break;
 		default:
-			gsn->unknown++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_UNKNOWN);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer, status,
 				"Unknown GTP message type received: %u\n",
 				pheader->type);
@@ -2862,7 +2863,7 @@ int gtp_decaps1u(struct gsn_t *gsn)
 			      (struct sockaddr *)&peer, &peerlen)) < 0) {
 			if (errno == EAGAIN)
 				return 0;
-			gsn->err_readfrom++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_READFROM);
 			LOGP(DLGTP, LOGL_ERROR,
 				"recvfrom(fd1u=%d, buffer=%lx, len=%zu) failed: status = %d error = %s\n",
 				gsn->fd1u, (unsigned long)buffer,
@@ -2873,7 +2874,7 @@ int gtp_decaps1u(struct gsn_t *gsn)
 
 		/* Need at least 1 byte in order to check version */
 		if (status < (1)) {
-			gsn->empty++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_EMPTY);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status, "Discarding packet - too small\n");
 			continue;
@@ -2885,7 +2886,7 @@ int gtp_decaps1u(struct gsn_t *gsn)
 
 		/* Version must be no larger than GTP 1 */
 		if (version > 1) {
-			gsn->unsup++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_UNSUP);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer, status,
 				"Unsupported GTP version %"PRIu8"\n", version);
 			gtp_unsup_req(gsn, 1, &peer, gsn->fd1c, buffer, status);	/*29.60: 11.1.1 */
@@ -2897,7 +2898,7 @@ int gtp_decaps1u(struct gsn_t *gsn)
 		/* GTP 1 messages. If GTP 0 message is received we silently discard */
 		/* the message */
 		if (version < 1) {
-			gsn->unsup++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_UNSUP);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer, status,
 				"Unsupported GTP version %"PRIu8"\n", version);
 			continue;
@@ -2905,7 +2906,7 @@ int gtp_decaps1u(struct gsn_t *gsn)
 
 		/* Check packet flag field (allow both with and without sequence number) */
 		if (((pheader->flags & 0xf5) != 0x30)) {
-			gsn->unsup++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_UNSUP);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status, "Unsupported packet flags 0x%02x\n", pheader->flags);
 			continue;
@@ -2913,7 +2914,7 @@ int gtp_decaps1u(struct gsn_t *gsn)
 
 		/* Check length of packet */
 		if (status < GTP1_HEADER_SIZE_SHORT) {
-			gsn->tooshort++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_TOOSHORT);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status, "GTP packet too short\n");
 			continue;	/* Silently discard 29.60: 11.1.2 */
@@ -2922,7 +2923,7 @@ int gtp_decaps1u(struct gsn_t *gsn)
 		/* Check packet length field versus length of packet */
 		if (status !=
 		    (ntoh16(pheader->length) + GTP1_HEADER_SIZE_SHORT)) {
-			gsn->tooshort++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_TOOSHORT);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status,
 				    "GTP packet length field does not match actual length\n");
@@ -2933,7 +2934,7 @@ int gtp_decaps1u(struct gsn_t *gsn)
 		/* TODO: We really should cycle through the headers and determine */
 		/* if any have the comprehension required flag set */
 		if (((pheader->flags & GTP1HDR_F_EXT) != 0x00)) {
-			gsn->unsup++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_UNSUP);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status, "Unsupported extension header\n");
 			gtp_extheader_req(gsn, version, &peer, fd, buffer,
@@ -2960,7 +2961,7 @@ int gtp_decaps1u(struct gsn_t *gsn)
 			gtp_gpdu_ind(gsn, version, &peer, fd, buffer, status);
 			break;
 		default:
-			gsn->unknown++;
+			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_UNKNOWN);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer, status,
 				"Unknown GTP message type received: %u\n",
 				pheader->type);
@@ -3041,7 +3042,7 @@ int gtp_data_req(struct gsn_t *gsn, struct pdp_t *pdp, void *pack, unsigned len)
 	}
 
 	if (sendmsg(fd, &msgh, 0) < 0) {
-		gsn->err_sendto++;
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_SENDTO);
 		LOGP(DLGTP, LOGL_ERROR,
 			"sendmsg(fd=%d, msg=%lx, len=%d) failed: Error = %s\n", fd,
 			(unsigned long)&packet, GTP0_HEADER_SIZE + len,

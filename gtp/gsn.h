@@ -15,6 +15,7 @@
 #include <osmocom/core/utils.h>
 #include <osmocom/core/defs.h>
 #include <osmocom/core/timer.h>
+#include <osmocom/core/rate_ctr.h>
 
 #include "pdp.h"
 
@@ -37,6 +38,27 @@
  * Note that this does not include information storage for '
  * each pdp context. This is stored in another struct.
  *************************************************************/
+
+enum gsn_rate_ctr_keys {
+	GSN_CTR_ERR_SOCKET,
+	GSN_CTR_ERR_READFROM,	/* Number of readfrom errors */
+	GSN_CTR_ERR_SENDTO,	/* Number of sendto errors */
+	GSN_CTR_ERR_QUEUEFULL,	/* Number of times queue was full */
+	GSN_CTR_ERR_SEQ,	/* Number of seq out of range */
+	GSN_CTR_ERR_ADDRESS,	/* GSN address conversion failed */
+	GSN_CTR_ERR_UNKNOWN_PDP,	/* GSN address conversion failed */
+	GSN_CTR_ERR_UNEXPECTED_CAUSE,	/* Unexpected cause value received */
+	GSN_CTR_ERR_OUT_OF_PDP,	/* Out of storage for PDP contexts */
+	GSN_CTR_PKT_EMPTY,		/* Number of empty packets */
+	GSN_CTR_PKT_UNSUP,		/* Number of unsupported version 29.60 11.1.1 */
+	GSN_CTR_PKT_TOOSHORT,	/* Number of too short headers 29.60 11.1.2 */
+	GSN_CTR_PKT_UNKNOWN,	/* Number of unknown messages 29.60 11.1.3 */
+	GSN_CTR_PKT_UNEXPECT,	/* Number of unexpected messages 29.60 11.1.4 */
+	GSN_CTR_PKT_DUPLICATE,	/* Number of duplicate or unsolicited replies */
+	GSN_CTR_PKT_MISSING,	/* Number of missing information field messages */
+	GSN_CTR_PKT_INCORRECT,	/* Number of incorrect information field messages */
+	GSN_CTR_PKT_INVALID,	/* Number of invalid message format messages */
+};
 
 struct gsn_t {
 	/* Parameters related to the network interface */
@@ -77,28 +99,7 @@ struct gsn_t {
 	int (*cb_recovery3) (struct gsn_t *gsn, struct sockaddr_in *peer, struct pdp_t *pdp, uint8_t recovery);
 
 	/* Counters */
-
-	uint64_t err_socket;	/* Number of socket errors */
-	uint64_t err_readfrom;	/* Number of readfrom errors */
-	uint64_t err_sendto;	/* Number of sendto errors */
-	uint64_t err_memcpy;	/* Number of memcpy */
-	uint64_t err_queuefull;	/* Number of times queue was full */
-	uint64_t err_seq;	/* Number of seq out of range */
-	uint64_t err_address;	/* GSN address conversion failed */
-	uint64_t err_unknownpdp;	/* GSN address conversion failed */
-	uint64_t err_unknowntid;	/* Application supplied unknown imsi+nsapi */
-	uint64_t err_cause;	/* Unexpected cause value received */
-	uint64_t err_outofpdp;	/* Out of storage for PDP contexts */
-
-	uint64_t empty;		/* Number of empty packets */
-	uint64_t unsup;		/* Number of unsupported version 29.60 11.1.1 */
-	uint64_t tooshort;	/* Number of too short headers 29.60 11.1.2 */
-	uint64_t unknown;	/* Number of unknown messages 29.60 11.1.3 */
-	uint64_t unexpect;	/* Number of unexpected messages 29.60 11.1.4 */
-	uint64_t duplicate;	/* Number of duplicate or unsolicited replies */
-	uint64_t missing;	/* Number of missing information field messages */
-	uint64_t incorrect;	/* Number of incorrect information field messages */
-	uint64_t invalid;	/* Number of invalid message format messages */
+	struct rate_ctr_group *ctrg;
 };
 
 /* External API functions */
