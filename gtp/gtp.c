@@ -543,7 +543,7 @@ static void queue_timer_cb(void *data)
  *
  * The correct solution will be to make a queue containing response messages.
  * This queue should be checked whenever a request is received. If the
- * response is allready in the queue that response should be transmitted.
+ * response is already in the queue that response should be transmitted.
  * It should be possible to find messages in this queue on the basis of
  * the sequence number and peer GSN IP address (The sequense number is unique
  * within each path). This need to be implemented by a hash table. Furthermore
