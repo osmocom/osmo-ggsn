@@ -67,6 +67,7 @@ enum gsn_rate_ctr_keys {
 enum gtp_gsn_timers {
 	GTP_GSN_TIMER_T3_RESPONSE = 3,
 	GTP_GSN_TIMER_N3_REQUESTS = 1003,
+	GTP_GSN_TIMER_T3_HOLD_RESPONSE = -3,
 };
 
 struct gsn_t {

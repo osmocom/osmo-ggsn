@@ -108,6 +108,9 @@ struct osmo_tdef gtp_T_defs[] = {
 	{ .T = GTP_GSN_TIMER_N3_REQUESTS, .default_val = 3, .unit = OSMO_TDEF_CUSTOM,
 	  .desc = "Counter N3-REQUESTS holds the maximum number of attempts made by GTP to send a request message"
 	},
+	{ .T = GTP_GSN_TIMER_T3_HOLD_RESPONSE, .default_val = 5 * 3 /* (GTP_GSN_TIMER_T3_RESPONSE * GTP_GSN_TIMER_N3_REQUESTS) */, .unit = OSMO_TDEF_S,
+	  .desc = "Time a GTP respoonse message is kept cached to re-transmit it when a duplicate request is received. Value is generally equal to (T3-RESPONSE * N3-REQUESTS) set at the peer"
+	},
 	{}
 };
 

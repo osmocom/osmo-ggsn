@@ -499,11 +499,13 @@ static int gtp_resp(uint8_t version, struct gsn_t *gsn, struct pdp_t *pdp,
 		LOGP(DLGTP, LOGL_ERROR, "Retransmit resp queue is full (seq=%" PRIu16 ")\n",
 		     seq);
 	} else {
+		unsigned int t3_hold_resp;
 		LOGP(DLGTP, LOGL_DEBUG, "Registering seq=%" PRIu16
 		     " in restransmit resp queue\n", seq);
+		t3_hold_resp = osmo_tdef_get(gsn->tdef, GTP_GSN_TIMER_T3_HOLD_RESPONSE, OSMO_TDEF_S, -1);
 		memcpy(&qmsg->p, packet, sizeof(union gtp_packet));
 		qmsg->l = len;
-		qmsg->timeout = time(NULL) + 60;	/* When to timeout */
+		qmsg->timeout = time(NULL) + t3_hold_resp; /* When to timeout */
 		qmsg->retrans = 0;	/* No retransmissions so far */
 		qmsg->cbp = NULL;
 		qmsg->type = 0;
