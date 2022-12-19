@@ -223,7 +223,7 @@ int main(int argc, char **argv)
 		exit(2);
 	}
 
-	rc = telnet_init_dynif(tall_ggsn_ctx, NULL, vty_get_bind_addr(), OSMO_VTY_PORT_GGSN);
+	rc = telnet_init_default(tall_ggsn_ctx, NULL, OSMO_VTY_PORT_GGSN);
 	if (rc < 0)
 		exit(1);
 
