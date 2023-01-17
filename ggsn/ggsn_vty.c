@@ -299,7 +299,7 @@ DEFUN(cfg_ggsn_no_default_apn, cfg_ggsn_no_default_apn_cmd,
 
 DEFUN(cfg_ggsn_shutdown, cfg_ggsn_shutdown_cmd,
 	"shutdown ggsn",
-	"Put the GGSN in administrative shut-down\n" GGSN_STR)
+	"Put the GGSN in administrative shutdown\n" GGSN_STR)
 {
 	struct ggsn_ctx *ggsn = (struct ggsn_ctx *) vty->index;
 
@@ -316,7 +316,7 @@ DEFUN(cfg_ggsn_shutdown, cfg_ggsn_shutdown_cmd,
 
 DEFUN(cfg_ggsn_no_shutdown, cfg_ggsn_no_shutdown_cmd,
 	"no shutdown ggsn",
-	NO_STR GGSN_STR "Remove the GGSN from administrative shut-down\n")
+	NO_STR GGSN_STR "Remove the GGSN from administrative shutdown\n")
 {
 	struct ggsn_ctx *ggsn = (struct ggsn_ctx *) vty->index;
 
@@ -344,7 +344,7 @@ static void show_one_sgsn(struct vty *vty, const struct sgsn_peer *sgsn, const c
 
 DEFUN(cfg_ggsn_show_sgsn, cfg_ggsn_show_sgsn_cmd,
 	"show sgsn",
-	NO_STR GGSN_STR "Remove the GGSN from administrative shut-down\n")
+	NO_STR GGSN_STR "Remove the GGSN from administrative shutdown\n")
 {
 	struct ggsn_ctx *ggsn = (struct ggsn_ctx *) vty->index;
 	struct sgsn_peer *sgsn;
@@ -681,7 +681,7 @@ DEFUN(cfg_apn_no_gpdu_seq, cfg_apn_no_gpdu_seq_cmd,
 
 DEFUN(cfg_apn_shutdown, cfg_apn_shutdown_cmd,
 	"shutdown",
-	"Put the APN in administrative shut-down\n")
+	"Put the APN in administrative shutdown\n")
 {
 	struct apn_ctx *apn = (struct apn_ctx *) vty->index;
 
@@ -698,7 +698,7 @@ DEFUN(cfg_apn_shutdown, cfg_apn_shutdown_cmd,
 
 DEFUN(cfg_apn_no_shutdown, cfg_apn_no_shutdown_cmd,
 	"no shutdown",
-	NO_STR "Remove the APN from administrative shut-down\n")
+	NO_STR "Remove the APN from administrative shutdown\n")
 {
 	struct apn_ctx *apn = (struct apn_ctx *) vty->index;
 

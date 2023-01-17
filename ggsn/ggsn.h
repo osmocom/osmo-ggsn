@@ -66,9 +66,9 @@ struct apn_ctx {
 		uint32_t apn_type_mask;
 		/* GTP-U via TUN device or in Linux kernel */
 		enum apn_gtpu_mode gtpu_mode;
-		/* administratively shut-down (true) or not (false) */
+		/* administratively shut down (true) or not (false) */
 		bool shutdown;
-		/* transmit G-PDU sequeence numbers (true) or not (false) */
+		/* transmit G-PDU sequence numbers (true) or not (false) */
 		bool tx_gpdu_seq;
 	} cfg;
 
@@ -128,7 +128,7 @@ struct ggsn_ctx {
 		char *state_dir;
 		/* Time between Echo requests on each SGSN */
 		unsigned int echo_interval;
-		/* administratively shut-down (true) or not (false) */
+		/* administratively shut down (true) or not (false) */
 		bool shutdown;
 	} cfg;
 
