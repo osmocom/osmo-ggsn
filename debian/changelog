@@ -1,3 +1,23 @@
+osmo-ggsn (1.10.0) unstable; urgency=medium
+
+  [ Max ]
+  * Set working directory in systemd service file
+  * Ignore .deb build byproducts
+  * ctrl: take both address and port from vty config
+
+  [ Pau Espin Pedrol ]
+  * cosmetic: gtp: Fix typo in comment
+  * Split gsn_t related APIs out of gtp.{c,h}
+  * Use rate_ctr for gsn_t available_counters
+  * ggsn: Introduce tdef and make it configurable over VTY
+  * gtp: Introduce VTY configurable GTP timer X3
+  * Fix typos in comments and VTY descriptions
+
+  [ arehbein ]
+  * osmo-ggsn: Transition to use of 'telnet_init_default'
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Tue, 07 Feb 2023 14:29:48 +0100
+
 osmo-ggsn (1.9.0) unstable; urgency=medium
 
   [ Pau Espin Pedrol ]
