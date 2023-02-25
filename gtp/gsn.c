@@ -441,7 +441,7 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 	/* Initialize timers: */
 	(*gsn)->tdef = gtp_T_defs;
 	/* Small hack to properly reset tdef for old clients not using the tdef_group: */
-	osmo_static_assert(gtp_T_defs[0].default_val != 0, first_default_val_not_zero);
+	OSMO_ASSERT(gtp_T_defs[0].default_val != 0);
 	if (gtp_T_defs[0].val == 0)
 		osmo_tdefs_reset((*gsn)->tdef);
 
