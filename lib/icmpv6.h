@@ -44,10 +44,9 @@ struct icmpv6_radv_hdr {
 	uint8_t res:6,
 		m:1,
 		o:1;
-#else
-	uint8_t m:1,
-		o:1,
-		res:6;
+#elif OSMO_IS_BIG_ENDIAN
+/* auto-generated from the little endian part above (libosmocore/contrib/struct_endianness.py) */
+	uint8_t o:1, m:1, res:6;
 #endif
 	uint16_t router_lifetime;
 	uint32_t reachable_time;
@@ -72,10 +71,9 @@ struct icmpv6_opt_prefix {
 	uint8_t res:6,
 		a:1,
 		l:1;
-#else
-	uint8_t l:1,
-		a:1,
-		res:6;
+#elif OSMO_IS_BIG_ENDIAN
+/* auto-generated from the little endian part above (libosmocore/contrib/struct_endianness.py) */
+	uint8_t l:1, a:1, res:6;
 #endif
 	uint32_t valid_lifetime;
 	uint32_t preferred_lifetime;
