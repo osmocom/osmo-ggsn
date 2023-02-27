@@ -1,3 +1,15 @@
+osmo-ggsn (1.10.1) unstable; urgency=medium
+
+  [ Oliver Smith ]
+  * debian/libgtp6.shlibs: new file
+
+  [ Vadim Yanitskiy ]
+  * lib/icmpv6.h: fix struct icmpv6_{radv_hdr,opt_prefix}
+  * gtp/gsn.c: fix 'No newline at end of file'
+  * gtp: use OSMO_ASSERT() in gtp_new()
+
+ -- Vadim Yanitskiy <vyanitskiy@sysmocom.de>  Mon, 27 Feb 2023 22:35:47 +0700
+
 osmo-ggsn (1.10.0) unstable; urgency=medium
 
   [ Max ]
