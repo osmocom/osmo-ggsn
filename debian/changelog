@@ -1,3 +1,9 @@
+osmo-ggsn (1.9.1) unstable; urgency=medium
+
+  * lib/icmpv6.h: fix struct icmpv6_{radv_hdr,opt_prefix}
+
+ -- Vadim Yanitskiy <vyanitskiy@sysmocom.de>  Mon, 27 Feb 2023 22:14:59 +0700
+
 osmo-ggsn (1.9.0) unstable; urgency=medium
 
   [ Pau Espin Pedrol ]
