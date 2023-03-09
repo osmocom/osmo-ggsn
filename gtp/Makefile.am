@@ -8,7 +8,7 @@ lib_LTLIBRARIES = libgtp.la
 
 include_HEADERS = gtp.h gsn.h pdp.h gtpie.h
 
-AM_CFLAGS = -O2 -fno-builtin -Wall -DSBINDIR='"$(sbindir)"' -ggdb $(LIBOSMOCORE_CFLAGS)
+AM_CFLAGS = -fno-builtin -Wall -DSBINDIR='"$(sbindir)"' $(LIBOSMOCORE_CFLAGS)
 
 libgtp_la_SOURCES = gtp.c gtp.h gsn.c gsn.h gtpie.c gtpie.h pdp.c pdp.h lookupa.c lookupa.h queue.c queue.h
 libgtp_la_LDFLAGS = -version-info $(LIBVERSION) -no-undefined

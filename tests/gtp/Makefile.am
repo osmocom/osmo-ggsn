@@ -1,4 +1,4 @@
-AM_CFLAGS = -Wall -I$(top_srcdir)/include $(LIBOSMOCORE_CFLAGS) -g
+AM_CFLAGS = -Wall -I$(top_srcdir)/include $(LIBOSMOCORE_CFLAGS)
 
 EXTRA_DIST = \
 	gtpie_test.ok \
