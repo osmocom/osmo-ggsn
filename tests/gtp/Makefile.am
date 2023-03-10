@@ -1,4 +1,5 @@
 AM_CFLAGS = -Wall -I$(top_srcdir)/include $(LIBOSMOCORE_CFLAGS)
+AM_LDFLAGS = -no-install
 
 EXTRA_DIST = \
 	gtpie_test.ok \

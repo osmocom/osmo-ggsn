@@ -1,4 +1,5 @@
 AM_CFLAGS = -Wall -I$(top_srcdir)/include $(LIBOSMOCORE_CFLAGS)
+AM_LDFLAGS = -no-install
 
 EXTRA_DIST = ippool_test.ok \
 	     ippool_test.err \
