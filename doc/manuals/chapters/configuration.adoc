@@ -302,7 +302,7 @@ Name=apn0 <1>
 Address=192.168.7.1/24 <2>
 IPMasquerade=yes <3>
 ----
-<1> The netowrk device name, which must match the one in the apn0.netdev unit file above
+<1> The network device name, which must match the one in the apn0.netdev unit file above
 <2> The local IP address configured on the device
 <3> Requesting systemd to configure IP masquerading for this interface.  Depending on your needs,
     You may not want this if you have proper end-to-end routing set up, and want to have transparent
