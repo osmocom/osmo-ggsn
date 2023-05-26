@@ -1,6 +1,7 @@
 [Unit]
 Description=OsmoGGSN
-After=networking.service
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
