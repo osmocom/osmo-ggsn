@@ -8,6 +8,7 @@
 #include <osmocom/core/timer.h>
 #include <osmocom/core/tdef.h>
 #include <osmocom/ctrl/control_if.h>
+#include <osmocom/gsm/protocol/gsm_23_003.h>
 
 #include "../lib/tun.h"
 #include "../lib/ippool.h"
@@ -35,6 +36,9 @@ struct apn_ctx_ip {
 
 	/* v4 address pool */
 	struct ippool_t *pool;
+	/* Static IMSI to IPv4 reserved address mappings. */
+	struct llist_head imsi_ip_map;
+
 };
 
 struct apn_name {
@@ -45,6 +49,15 @@ struct apn_name {
 enum apn_gtpu_mode {
 	APN_GTPU_MODE_TUN = 0,		/* default */
 	APN_GTPU_MODE_KERNEL_GTP,
+};
+
+/*
+ * IMSI to static IP map handling
+ */
+struct imsi_map_entry {
+	struct llist_head list;
+	char imsi[OSMO_IMSI_BUF_SIZE];
+	struct in46_addr addr;
 };
 
 struct apn_ctx {
@@ -161,6 +174,9 @@ extern int ggsn_stop(struct ggsn_ctx *ggsn);
 extern int apn_start(struct apn_ctx *apn);
 extern int apn_stop(struct apn_ctx *apn);
 void ggsn_close_one_pdp(struct pdp_t *pdp);
+bool apn_supports_ipv4(const struct apn_ctx *apn);
+int apn_imsi_ip_map_add(const char *imsi, const char *ip, struct apn_ctx_ip *ctx);
+int apn_imsi_ip_map_del(const char *imsi, const char *ip, struct apn_ctx_ip *ctx);
 
 #define LOGPAPN(level, apn, fmt, args...)			\
 	LOGP(DGGSN, level, "APN(%s): " fmt, (apn)->cfg.name, ## args)

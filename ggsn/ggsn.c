@@ -328,6 +328,74 @@ int apn_start(struct apn_ctx *apn)
 	return 0;
 }
 
+static struct imsi_map_entry *apn_imsi_map_lookup_by_imsi(const char *imsi, const struct apn_ctx_ip *ctx)
+{
+	struct imsi_map_entry *map;
+	llist_for_each_entry(map, &ctx->imsi_ip_map, list) {
+		if (!strcmp(imsi, map->imsi))
+			return map;
+	}
+	return NULL;
+}
+
+static struct imsi_map_entry *apn_imsi_map_lookup_by_ip(const struct in46_addr *addr, const struct apn_ctx_ip *ctx)
+{
+	struct imsi_map_entry *map;
+	if (!addr)
+		return NULL;
+	llist_for_each_entry(map, &ctx->imsi_ip_map, list) {
+		if (in46a_equal(addr, &map->addr))
+			return map;
+	}
+	return NULL;
+}
+
+int apn_imsi_ip_map_add(const char *imsi, const char *ip, struct apn_ctx_ip *ctx)
+{
+	struct imsi_map_entry *map;
+	struct in46_addr addr = { 0 };
+	size_t t;
+
+	if (ippool_aton(&addr, &t, ip, 0))
+		return -EINVAL;
+	if (apn_imsi_map_lookup_by_imsi(imsi, ctx) || apn_imsi_map_lookup_by_ip(&addr, ctx))
+		return -EEXIST;
+
+	map = talloc_zero(NULL, struct imsi_map_entry);
+	if (!map)
+		return -ENOMEM;
+	if (ippool_aton(&map->addr, &t, ip, 0)) {
+		talloc_free(map);
+		return -EINVAL;
+	}
+
+	osmo_strlcpy(map->imsi, imsi, sizeof(map->imsi));
+	llist_add(&map->list, &ctx->imsi_ip_map);
+
+	return 0;
+}
+
+int apn_imsi_ip_map_del(const char *imsi, const char *ip, struct apn_ctx_ip *ctx)
+{
+	struct imsi_map_entry *map;
+
+	map = apn_imsi_map_lookup_by_imsi(imsi, ctx);
+	if (!map)
+		return -ENODEV;
+
+	llist_del(&map->list);
+	talloc_free(map);
+
+	return 0;
+}
+
+static struct imsi_map_entry *imsi_has_reserved_ip(const char *imsi, struct apn_ctx_ip *ctx)
+{
+	if (llist_empty(&ctx->imsi_ip_map))
+		return NULL;
+	return apn_imsi_map_lookup_by_imsi(imsi, ctx);
+}
+
 static bool send_trap(const struct gsn_t *gsn, const struct pdp_t *pdp, const struct ippoolm_t *member, const char *var)
 {
 	char addrbuf[256];
@@ -385,7 +453,7 @@ static int delete_context(struct pdp_t *pdp)
 	return 0;
 }
 
-static bool apn_supports_ipv4(const struct apn_ctx *apn)
+bool apn_supports_ipv4(const struct apn_ctx *apn)
 {
 	if (apn->v4.cfg.static_prefix.addr.len  || apn->v4.cfg.dynamic_prefix.addr.len)
 		return true;
@@ -442,6 +510,7 @@ int create_context_ind(struct pdp_t *pdp)
 	char *apn_name;
 	struct sgsn_peer *sgsn;
 	struct pdp_priv_t *pdp_priv;
+	struct imsi_map_entry *imsi_map;
 
 	apn_name = osmo_apn_to_str(name_buf, pdp->apn_req.v, pdp->apn_req.l);
 	LOGPPDP(LOGL_DEBUG, pdp, "Processing create PDP context request for APN '%s'\n",
@@ -495,6 +564,17 @@ int create_context_ind(struct pdp_t *pdp)
 		LOGPPDP(LOGL_ERROR, pdp, "Failed to store APN '%s'\n", apn->cfg.name);
 	pdp->apn_use.l = rc;
 
+	/* Check if we have a entry in the reserved IP map for this IMSI */
+	imsi_map = imsi_has_reserved_ip(imsi_gtp2str(&pdp->imsi), &apn->v4);
+	if (imsi_map) {
+		/* Override (prefill) any requested (dynamic|static) IP
+		 * in the EUA with the one from the configuration map. */
+		addr[0].len = 4;
+		memcpy(&addr[0].v4.s_addr, &imsi_map->addr.v4, 4);
+		LOGPPDP(LOGL_INFO, pdp, "IMSI[%s] has an entry[%s] in reserved IP map\n",
+			imsi_gtp2str(&pdp->imsi), in46a_ntoa(&imsi_map->addr));
+	}
+
 	/* Allocate dynamic addresses from the pool */
 	for (i = 0; i < num_addr; i++) {
 		if (in46a_is_v4(&addr[i])) {
@@ -503,6 +583,18 @@ int create_context_ind(struct pdp_t *pdp)
 				goto err_wrong_af;
 
 			rc = ippool_newip(apn->v4.pool, &member, &addr[i], 0);
+
+			if (!imsi_map) {
+				/* This IMSI does not have a reserved IP, check that we did not assign one */
+				while (apn_imsi_map_lookup_by_ip(&member->addr, &apn->v4)) {
+					LOGPPDP(LOGL_INFO, pdp, "Returned IP[%s] is reserved, trying again.\n",
+						in46a_ntoa(&member->addr));
+					ippool_freeip(member->pool, member);
+					rc = ippool_newip(apn->v4.pool, &member, &addr[i], 0);
+				}
+
+			}
+			LOGPPDP(LOGL_INFO, pdp, "Got IP[%s] from the pool.\n", in46a_ntoa(&member->addr));
 			if (rc < 0)
 				goto err_pool_full;
 			/* copy back */

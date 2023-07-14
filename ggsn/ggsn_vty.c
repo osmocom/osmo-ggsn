@@ -112,6 +112,7 @@ struct apn_ctx *ggsn_find_or_create_apn(struct ggsn_ctx *ggsn, const char *name)
 	apn->cfg.shutdown = true;
 	apn->cfg.tx_gpdu_seq = true;
 	INIT_LLIST_HEAD(&apn->cfg.name_list);
+	INIT_LLIST_HEAD(&apn->v4.imsi_ip_map);
 
 	llist_add_tail(&apn->list, &ggsn->apn_list);
 	return apn;
@@ -562,6 +563,58 @@ DEFUN(cfg_apn_no_ip_ifconfig, cfg_apn_no_ip_ifconfig_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN(cfg_apn_imsi_ip_map, cfg_apn_imsi_ip_map_cmd,
+	"imsi-ip-map (add|del) IMSI [A.B.C.D]",
+	"List of IMSI to RESERVED ip4 mappings\n"
+	"Add IMSI/IP pair to mappings\n"
+	"Remove IMSI/IP pair from mappings\n"
+	"IMSI of the subscriber\n"
+	"IP for the subscriber\n")
+{
+	char imsi_sanitized[GSM23003_IMSI_MAX_DIGITS + 1];
+	const char *op = argv[0];
+	const char *imsi = imsi_sanitized;
+	size_t len = strnlen(argv[1], GSM23003_IMSI_MAX_DIGITS + 1);
+	const char *ip = argv[2];
+	int rc;
+
+	struct apn_ctx *apn = (struct apn_ctx *) vty->index;
+
+	if (!apn_supports_ipv4(apn)) {
+		vty_out(vty, "%% APN does not support ipv4 addresses%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	memset(imsi_sanitized, '0', GSM23003_IMSI_MAX_DIGITS);
+	imsi_sanitized[GSM23003_IMSI_MAX_DIGITS] = '\0';
+
+	/* Sanitize IMSI */
+	if (len > GSM23003_IMSI_MAX_DIGITS) {
+		vty_out(vty, "%% IMSI (%s) too long (max %u digits) -- ignored!%s",
+			argv[1], GSM23003_IMSI_MAX_DIGITS, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	osmo_strlcpy(imsi_sanitized + GSM23003_IMSI_MAX_DIGITS - len, argv[1],
+		     sizeof(imsi_sanitized) - (GSM23003_IMSI_MAX_DIGITS - len));
+
+	if (!strcmp(op, "add")) {
+		if (!ip) {
+			vty_out(vty, "%% unable to %s IMSI without IP address%s", op, VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+		rc = apn_imsi_ip_map_add(imsi, ip, &apn->v4);
+	} else {
+		rc = apn_imsi_ip_map_del(imsi, ip, &apn->v4);
+	}
+	if (rc < 0) {
+		vty_out(vty, "%% unable to %s IMSI%s", op, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	return CMD_SUCCESS;
+}
+
 DEFUN(cfg_apn_ipv6_prefix, cfg_apn_ipv6_prefix_cmd,
 	"ipv6 prefix (static|dynamic) X:X::X:X/M",
 	IP6_STR PREFIX_STR "IPv6 Address/Prefix-Length\n")
@@ -726,6 +779,7 @@ static void vty_dump_prefix(struct vty *vty, const char *pre, const struct in46_
 static void config_write_apn(struct vty *vty, struct apn_ctx *apn)
 {
 	unsigned int i;
+	struct imsi_map_entry *map;
 
 	vty_out(vty, " apn %s%s", apn->cfg.name, VTY_NEWLINE);
 	if (apn->cfg.description)
@@ -761,6 +815,9 @@ static void config_write_apn(struct vty *vty, struct apn_ctx *apn)
 	}
 	if (apn->v4.cfg.ifconfig_prefix.addr.len)
 		vty_dump_prefix(vty, "  ip ifconfig", &apn->v4.cfg.ifconfig_prefix);
+
+	llist_for_each_entry(map, &apn->v4.imsi_ip_map, list)
+		vty_out(vty, "  imsi-ip-map add %s %s%s", map->imsi, in46a_ntoa(&map->addr), VTY_NEWLINE);
 
 	/* IPv6 prefixes + DNS */
 	if (apn->v6.cfg.static_prefix.addr.len)
@@ -1128,6 +1185,7 @@ int ggsn_vty_init(void)
 	install_element(APN_NODE, &cfg_apn_ipdown_script_cmd);
 	install_element(APN_NODE, &cfg_apn_no_ipdown_script_cmd);
 	install_element(APN_NODE, &cfg_apn_ip_prefix_cmd);
+	install_element(APN_NODE, &cfg_apn_imsi_ip_map_cmd);
 	install_element(APN_NODE, &cfg_apn_ipv6_prefix_cmd);
 	install_element(APN_NODE, &cfg_apn_ip_dns_cmd);
 	install_element(APN_NODE, &cfg_apn_ipv6_dns_cmd);
