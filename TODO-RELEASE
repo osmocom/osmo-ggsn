@@ -8,3 +8,4 @@
 # If any interfaces have been removed or changed since the last public release: c:r:0.
 #library	what		description / commit summary line
 libgtp		REMOVE		remove GTP cause defines of reserved values
+libgtpnl > 1.2.5		gtp_tunnel_set_family()

@@ -104,61 +104,93 @@ void gtp_kernel_stop(const char *devname)
 
 int gtp_kernel_tunnel_add(struct pdp_t *pdp, const char *devname)
 {
-	struct in_addr ms, sgsn;
+	int ms_addr_count;
+	struct in46_addr ms[2];
+	struct in46_addr sgsn;
 	struct gtp_tunnel *t;
 	int ret;
 
 	pdp_debug(__func__, devname, pdp);
 
-	t = gtp_tunnel_alloc();
-	if (t == NULL)
-		return -1;
+	in46a_from_gsna(&pdp->gsnrc, &sgsn);
 
-	memcpy(&ms, &pdp->eua.v[2], sizeof(struct in_addr));
-	memcpy(&sgsn, &pdp->gsnrc.v[0], sizeof(struct in_addr));
+	ms_addr_count = in46a_from_eua(&pdp->eua, ms);
 
-	gtp_tunnel_set_ifidx(t, if_nametoindex(devname));
-	gtp_tunnel_set_version(t, pdp->version);
-	gtp_tunnel_set_ms_ip4(t, &ms);
-	gtp_tunnel_set_sgsn_ip4(t, &sgsn);
-	if (pdp->version == 0) {
-		gtp_tunnel_set_tid(t, pdp_gettid(pdp->imsi, pdp->nsapi));
-		gtp_tunnel_set_flowid(t, pdp->flru);
-	} else {
-		gtp_tunnel_set_i_tei(t, pdp->teid_own);
-		/* use the TEI advertised by SGSN when sending packets
-		 * towards the SGSN */
-		gtp_tunnel_set_o_tei(t, pdp->teid_gn);
+	for (int i = 0; i < ms_addr_count; i++) {
+		t = gtp_tunnel_alloc();
+		if (t == NULL)
+			return -1;
+
+		gtp_tunnel_set_ifidx(t, if_nametoindex(devname));
+		gtp_tunnel_set_version(t, pdp->version);
+
+		if (in46a_to_af(&ms[i]) == AF_INET)
+			gtp_tunnel_set_ms_ip4(t, &ms[i].v4);
+		else {
+			/* In IPv6, EUA doesn't contain the actual IP
+			 * addr/prefix. Set higher bits to 0 to get the 64 bit
+			 * netmask. */
+			memset(((void *)&ms[i].v6) + 8, 0, 8);
+			gtp_tunnel_set_ms_ip6(t, &ms[i].v6);
+		}
+
+		if (in46a_to_af(&sgsn) == AF_INET)
+			gtp_tunnel_set_sgsn_ip4(t, &sgsn.v4);
+		else
+			gtp_tunnel_set_sgsn_ip6(t, &sgsn.v6);
+
+		if (pdp->version == 0) {
+			gtp_tunnel_set_tid(t, pdp_gettid(pdp->imsi, pdp->nsapi));
+			gtp_tunnel_set_flowid(t, pdp->flru);
+		} else {
+			gtp_tunnel_set_i_tei(t, pdp->teid_own);
+			/* use the TEI advertised by SGSN when sending packets
+			 * towards the SGSN */
+			gtp_tunnel_set_o_tei(t, pdp->teid_gn);
+		}
+
+		ret = gtp_add_tunnel(gtp_nl.genl_id, gtp_nl.nl, t);
+		gtp_tunnel_free(t);
+
+		if (ret != 0)
+			break;
 	}
-
-	ret = gtp_add_tunnel(gtp_nl.genl_id, gtp_nl.nl, t);
-	gtp_tunnel_free(t);
 
 	return ret;
 }
 
 int gtp_kernel_tunnel_del(struct pdp_t *pdp, const char *devname)
 {
+	int ms_addr_count;
+	struct in46_addr ms[2];
 	struct gtp_tunnel *t;
 	int ret;
 
 	pdp_debug(__func__, devname, pdp);
 
-	t = gtp_tunnel_alloc();
-	if (t == NULL)
-		return -1;
+	ms_addr_count = in46a_from_eua(&pdp->eua, ms);
 
-	gtp_tunnel_set_ifidx(t, if_nametoindex(devname));
-	gtp_tunnel_set_version(t, pdp->version);
-	if (pdp->version == 0) {
-		gtp_tunnel_set_tid(t, pdp_gettid(pdp->imsi, pdp->nsapi));
-		gtp_tunnel_set_flowid(t, pdp->flru);
-	} else {
-		gtp_tunnel_set_i_tei(t, pdp->teid_own);
+	for (int i = 0; i < ms_addr_count; i++) {
+		t = gtp_tunnel_alloc();
+		if (t == NULL)
+			return -1;
+
+		gtp_tunnel_set_ifidx(t, if_nametoindex(devname));
+		gtp_tunnel_set_family(t, in46a_to_af(&ms[i]));
+		gtp_tunnel_set_version(t, pdp->version);
+		if (pdp->version == 0) {
+			gtp_tunnel_set_tid(t, pdp_gettid(pdp->imsi, pdp->nsapi));
+			gtp_tunnel_set_flowid(t, pdp->flru);
+		} else {
+			gtp_tunnel_set_i_tei(t, pdp->teid_own);
+		}
+
+		ret = gtp_del_tunnel(gtp_nl.genl_id, gtp_nl.nl, t);
+		gtp_tunnel_free(t);
+
+		if (ret != 0)
+			break;
 	}
-
-	ret = gtp_del_tunnel(gtp_nl.genl_id, gtp_nl.nl, t);
-	gtp_tunnel_free(t);
 
 	return ret;
 }

@@ -202,11 +202,6 @@ int apn_start(struct apn_ctx *apn)
 		break;
 	case APN_GTPU_MODE_KERNEL_GTP:
 		LOGPAPN(LOGL_INFO, apn, "Opening Kernel GTP device %s\n", apn->tun.cfg.dev_name);
-		if (apn->cfg.apn_type_mask & (APN_TYPE_IPv6|APN_TYPE_IPv4v6)) {
-			LOGPAPN(LOGL_ERROR, apn, "Kernel GTP currently supports only IPv4\n");
-			apn_stop(apn);
-			return -1;
-		}
 		if (gsn == NULL) {
 			/* skip bringing up the APN now if the GSN is not initialized yet.
 			 * This happens during initial load of the config file, as the
@@ -536,8 +531,7 @@ int create_context_ind(struct pdp_t *pdp)
 
 	in46a_to_eua(addr, num_addr, &pdp->eua);
 
-	if (apn->cfg.gtpu_mode == APN_GTPU_MODE_KERNEL_GTP && apn_supports_ipv4(apn)) {
-		/* TODO: In IPv6, EUA doesn't contain the actual IP addr/prefix! */
+	if (apn->cfg.gtpu_mode == APN_GTPU_MODE_KERNEL_GTP) {
 		if (gtp_kernel_tunnel_add(pdp, apn->tun.cfg.dev_name) < 0) {
 			LOGPPDP(LOGL_ERROR, pdp, "Cannot add tunnel to kernel: %s\n", strerror(errno));
 			gtp_create_context_resp(gsn, pdp, GTPCAUSE_SYS_FAIL);
