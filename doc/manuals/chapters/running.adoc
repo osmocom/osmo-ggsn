@@ -83,7 +83,12 @@ ggsn ggsn0
 
 === GTP-U kernel module
 
-WARNING: As of writing, the kernel module does not support IPv6.
+WARNING: As of writing, IPv6 support for the kernel module has not been
+         upstreamed yet (OS#1952).
+
+WARNING: As of writing, it is not possible to configure multiple APNs with
+         gtpu-mode kernel-gpt. This is a limitation in OsmoGGSN, not in the
+         kernel module (OS#6106).
 
 OsmoGGSN has support to use the Linux kernel GTP-U tunnel driver to accelerate
 the data/user plane while still implementing the control plane (GTP-C) in
