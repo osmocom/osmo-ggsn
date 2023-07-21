@@ -27,9 +27,10 @@ There is a web interface at <https://gitea.osmocom.org/cellular-infrastructure/o
 Documentation
 -------------
 
-There currently is no other documentation other than the wiki on the
-homepage.  It would be great if somebody would work towards a user
-manual that can become part of the osmo-gsm-manuals project.
+The user manual and VTY reference are optionally built in PDF form
+as part of the build process. Find pre-rendered versions here:
+
+https://ftp.osmocom.org/docs/osmo-ggsn/master/
 
 Mailing List
 ------------
