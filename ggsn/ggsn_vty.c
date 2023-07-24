@@ -814,10 +814,7 @@ static const char *print_gsnaddr(const struct ul16_t *in)
 {
 	struct in46_addr in46;
 
-	in46.len = in->l;
-	OSMO_ASSERT(in->l <= sizeof(in46.v6));
-	memcpy(&in46.v6, in->v, in->l);
-
+	in46a_from_gsna(in, &in46);
 	return in46a_ntoa(&in46);
 }
 

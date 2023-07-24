@@ -375,3 +375,10 @@ default_to_dyn_v4:
 	dst->v4.s_addr = 0;
 	return 1;
 }
+
+void in46a_from_gsna(const struct ul16_t *in, struct in46_addr *dst)
+{
+	dst->len = in->l;
+	OSMO_ASSERT(in->l <= sizeof(dst->v6));
+	memcpy(&dst->v6, in->v, in->l);
+}
