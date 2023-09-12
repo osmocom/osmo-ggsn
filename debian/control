@@ -7,7 +7,7 @@ Build-Depends: debhelper (>= 10),
                pkg-config,
                libdpkg-perl, git,
                dh-autoreconf,
-               libosmocore-dev (>= 1.8.0),
+               libosmocore-dev (>= 1.9.0),
                osmo-gsm-manuals-dev,
                libgtpnl-dev (>= 1.2.0)
 Standards-Version: 3.9.6

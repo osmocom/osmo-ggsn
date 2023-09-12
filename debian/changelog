@@ -1,3 +1,19 @@
+osmo-ggsn (1.10.2) unstable; urgency=medium
+
+  [ Vadim Yanitskiy ]
+  * Do not hard-code -g and -O2 in CFLAGS
+  * tests: use -no-install libtool flag to avoid ./lt-* scripts
+
+  [ Oliver Smith ]
+  * doc/manuals/chapters/configuration: fix typo
+  * debian: set compat level to 10
+  * systemd: depend on networking-online.target
+  * README: update documentation section
+  * doc: running: update kernel-gtp limitations
+  * lib/in46_addr: add in46a_from_gsna
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Tue, 12 Sep 2023 14:36:10 +0200
+
 osmo-ggsn (1.10.1) unstable; urgency=medium
 
   [ Oliver Smith ]
