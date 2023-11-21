@@ -103,7 +103,9 @@ static inline const char *gtp_type_name(uint8_t val)
 #define GTPCAUSE_049                       49	/* Cause values reserved for GPRS charging protocol use (See GTP' in GSM 12.15) 49-63 */
 #define GTPCAUSE_064                       64	/* For future use 64-127 */
 #define GTPCAUSE_ACC_REQ                  128	/* Request accepted */
-#define GTPCAUSE_129                      129	/* For future use 129-176 */
+#define GTPCAUSE_NEW_PDP_NET_PREF         129	/* New PDP type due to network preference */
+#define GTPCAUSE_NEW_PDP_ADDR_BEAR        130	/* New PDP type due to single address bearer only */
+#define GTPCAUSE_131                      131	/* For future use 131-176 */
 #define GTPCAUSE_177                      177	/* Cause values reserved for GPRS charging protocol use (See GTP' In GSM 12.15) 177-191 */
 #define GTPCAUSE_NON_EXIST                192	/* Non-existent */
 #define GTPCAUSE_INVALID_MESSAGE          193	/* Invalid message format */
@@ -136,6 +138,13 @@ static inline const char *gtp_type_name(uint8_t val)
 #define GTPCAUSE_UNKNOWN_PDP              220	/* Unknown PDP address or PDP type */
 #define GTPCAUSE_221                      221	/* For Future Use 221-240 */
 #define GTPCAUSE_241                      241	/* Cause Values Reserved For Gprs Charging Protocol Use (See Gtp' In Gsm 12.15) 241-255 */
+
+static inline bool gtp_cause_successful(uint8_t cause)
+{
+	return cause == GTPCAUSE_ACC_REQ ||
+		cause == GTPCAUSE_NEW_PDP_NET_PREF ||
+		cause == GTPCAUSE_NEW_PDP_ADDR_BEAR;
+}
 
 struct ul66_t;
 struct ul16_t;
