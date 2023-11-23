@@ -995,7 +995,7 @@ int gtp_create_context_resp(struct gsn_t *gsn, struct pdp_t *pdp, int cause)
 	/* Now send off a reply to the peer */
 	gtp_create_pdp_resp(gsn, pdp->version, pdp, cause);
 
-	if (cause != GTPCAUSE_ACC_REQ)
+	if (!gtp_cause_successful(cause))
 		gtp_freepdp(gsn, pdp);
 
 	return 0;
@@ -1011,7 +1011,7 @@ int gtp_create_pdp_resp(struct gsn_t *gsn, int version, struct pdp_t *pdp,
 
 	gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_CAUSE, cause);
 
-	if (cause == GTPCAUSE_ACC_REQ) {
+	if (gtp_cause_successful(cause)) {
 
 		if (version == 0)
 			gtpie_tv0(&packet, &length, GTP_MAX, GTPIE_QOS_PROFILE0,
@@ -1445,7 +1445,7 @@ int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
 	}
 
 	/* Check all conditional information elements */
-	if (GTPCAUSE_ACC_REQ == cause) {
+	if (gtp_cause_successful(cause)) {
 
 		if (version == 0) {
 			if (gtpie_gettv0(ie, GTPIE_QOS_PROFILE0, 0,
@@ -1667,7 +1667,7 @@ static int gtp_update_pdp_resp(struct gsn_t *gsn, uint8_t version,
 
 	gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_CAUSE, cause);
 
-	if (cause == GTPCAUSE_ACC_REQ) {
+	if (gtp_cause_successful(cause)) {
 
 		if (version == 0)
 			gtpie_tv0(&packet, &length, GTP_MAX, GTPIE_QOS_PROFILE0,
@@ -1997,7 +1997,7 @@ static int gtp_update_pdp_conf(struct gsn_t *gsn, uint8_t version,
 
 	/* Check all conditional information elements */
 	/* TODO: This does not handle GGSN-initiated update responses */
-	if (cause == GTPCAUSE_ACC_REQ) {
+	if (gtp_cause_successful(cause)) {
 		if (version == 0) {
 			if (gtpie_gettv0(ie, GTPIE_QOS_PROFILE0, 0,
 					 &pdp->qos_neg0,
@@ -2172,7 +2172,7 @@ int gtp_delete_pdp_resp(struct gsn_t *gsn, int version,
 	gtp_resp(version, gsn, pdp, &packet, length, peer, fd,
 		 get_seq(pack), get_tid(pack));
 
-	if (cause == GTPCAUSE_ACC_REQ) {
+	if (gtp_cause_successful(cause)) {
 		if ((teardown) || (version == 0)) {	/* Remove all contexts */
 			gtp_freepdp_teardown(gsn, linked_pdp);
 		} else {
@@ -2198,7 +2198,6 @@ int gtp_delete_pdp_resp(struct gsn_t *gsn, int version,
 			}
 		}
 	}
-	/* if (cause == GTPCAUSE_ACC_REQ) */
 	return 0;
 }
 
@@ -2350,7 +2349,7 @@ int gtp_delete_pdp_conf(struct gsn_t *gsn, int version,
 	}
 
 	/* Check the cause value (again) */
-	if ((GTPCAUSE_ACC_REQ != cause) && (GTPCAUSE_NON_EXIST != cause)) {
+	if (!gtp_cause_successful(cause) && (GTPCAUSE_NON_EXIST != cause)) {
 		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_UNEXPECTED_CAUSE);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Unexpected cause value received: %d\n", cause);
