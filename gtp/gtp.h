@@ -53,7 +53,7 @@
 #define GTP_UPDATE_PDP_RSP   19	/* Update PDP Context Response */
 #define GTP_DELETE_PDP_REQ   20	/* Delete PDP Context Request */
 #define GTP_DELETE_PDP_RSP   21	/* Delete PDP Context Response */
-						       /* 22-25 For future use. *//* In version GTP 1 anonomous PDP context */
+/* 22-25 For future use. *//* In version GTP 1 anonomous PDP context */
 #define GTP_ERROR            26	/* Error Indication */
 #define GTP_PDU_NOT_REQ      27	/* PDU Notification Request */
 #define GTP_PDU_NOT_RSP      28	/* PDU Notification Response */
@@ -99,21 +99,21 @@ static inline const char *gtp_type_name(uint8_t val)
 #define GTPCAUSE_NO_ID_NEEDED               3	/* No identity needed */
 #define GTPCAUSE_MS_REFUSES_X               4	/* MS refuses */
 #define GTPCAUSE_MS_NOT_RESP_X              5	/* MS is not GPRS responding */
-#define GTPCAUSE_006                        6	/* For future use 6-48 */
-#define GTPCAUSE_049                       49	/* Cause values reserved for GPRS charging protocol use (See GTP' in GSM 12.15) 49-63 */
-#define GTPCAUSE_064                       64	/* For future use 64-127 */
+/* 6-48 For future use */
+/* 49-63 Cause values reserved for GPRS charging protocol use (See GTP' in GSM 12.15) */
+/* 64-127 For future use */
 #define GTPCAUSE_ACC_REQ                  128	/* Request accepted */
 #define GTPCAUSE_NEW_PDP_NET_PREF         129	/* New PDP type due to network preference */
 #define GTPCAUSE_NEW_PDP_ADDR_BEAR        130	/* New PDP type due to single address bearer only */
-#define GTPCAUSE_131                      131	/* For future use 131-176 */
-#define GTPCAUSE_177                      177	/* Cause values reserved for GPRS charging protocol use (See GTP' In GSM 12.15) 177-191 */
+/* 131-176 For future use */
+/* 177-191 Cause values reserved for GPRS charging protocol use (See GTP' In GSM 12.15) */
 #define GTPCAUSE_NON_EXIST                192	/* Non-existent */
 #define GTPCAUSE_INVALID_MESSAGE          193	/* Invalid message format */
 #define GTPCAUSE_IMSI_NOT_KNOWN           194	/* IMSI not known */
 #define GTPCAUSE_MS_DETACHED              195	/* MS is GPRS detached */
 #define GTPCAUSE_MS_NOT_RESP              196	/* MS is not GPRS responding */
 #define GTPCAUSE_MS_REFUSES               197	/* MS refuses */
-#define GTPCAUSE_198                      198	/* For future use */
+/* 198 For future use */
 #define GTPCAUSE_NO_RESOURCES             199	/* No resources available */
 #define GTPCAUSE_NOT_SUPPORTED            200	/* Service not supported */
 #define GTPCAUSE_MAN_IE_INCORRECT         201	/* Mandatory IE incorrect */
@@ -136,8 +136,8 @@ static inline const char *gtp_type_name(uint8_t val)
 #define GTPCAUSE_SYN_ERR_FILTER           218	/* Syntactic errors in packet filter(s) */
 #define GTPCAUSE_MISSING_APN              219	/* Missing or unknown APN */
 #define GTPCAUSE_UNKNOWN_PDP              220	/* Unknown PDP address or PDP type */
-#define GTPCAUSE_221                      221	/* For Future Use 221-240 */
-#define GTPCAUSE_241                      241	/* Cause Values Reserved For Gprs Charging Protocol Use (See Gtp' In Gsm 12.15) 241-255 */
+/* 221-240 For future use */
+/* 241-255 Cause Values Reserved For Gprs Charging Protocol Use (See Gtp' In Gsm 12.15) */
 
 static inline bool gtp_cause_successful(uint8_t cause)
 {
