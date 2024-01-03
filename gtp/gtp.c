@@ -338,7 +338,7 @@ static uint32_t get_tei(void *pack)
 
 static int gtp_req(struct gsn_t *gsn, uint8_t version, struct pdp_t *pdp,
 	    union gtp_packet *packet, int len,
-	    struct in_addr *inetaddr, void *cbp)
+	    const struct in_addr *inetaddr, void *cbp)
 {
 	uint8_t ver = GTPHDR_F_GET_VER(packet->flags);
 	struct sockaddr_in addr;
@@ -485,7 +485,7 @@ static int gtp_resp(uint8_t version, struct gsn_t *gsn, struct pdp_t *pdp,
 	}
 
 	if (sendto(fd, packet, len, 0,
-		   (struct sockaddr *)peer, sizeof(struct sockaddr_in)) < 0) {
+		   (const struct sockaddr *)peer, sizeof(struct sockaddr_in)) < 0) {
 		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_SENDTO);
 		LOGP(DLGTP, LOGL_ERROR,
 			"Sendto(fd=%d, msg=%lx, len=%d) failed: Error = %s\n", fd,
