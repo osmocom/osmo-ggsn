@@ -110,6 +110,7 @@ ret_broken:
 		osmo_hexdump_nospc((const uint8_t *)pco_in, pco_in->length));
 }
 
+/* Handle IP Control Protocol, RFC 1332, extensions in RFC 1877 */
 static void process_pco_element_ipcp(const struct pco_element *pco_elem, struct msgb *resp,
 				     const struct apn_ctx *apn, struct pdp_t *pdp)
 {

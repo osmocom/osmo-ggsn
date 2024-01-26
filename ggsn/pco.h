@@ -42,12 +42,11 @@ struct pco_element {
 	uint8_t data[0];
 } __attribute__((packed));
 
-
-/* RFC 1332 */
+/* RFC 1332 IP Control Protocol options, extensions in RFC 1877 */
 enum ipcp_options {
-	IPCP_OPT_IPADDR = 3,
-	IPCP_OPT_PRIMARY_DNS = 129,
-	IPCP_OPT_SECONDARY_DNS = 131,
+	IPCP_OPT_IPADDR = 3, /* RFC 1332 3.3 */
+	IPCP_OPT_PRIMARY_DNS = 129, /* RFC 1877 1.1 */
+	IPCP_OPT_SECONDARY_DNS = 131,  /* RFC 1877 1.2 */
 };
 
 struct ipcp_option_hdr {
