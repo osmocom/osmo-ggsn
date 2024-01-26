@@ -25,6 +25,8 @@
 
 #include <osmocom/core/logging.h>
 #include <osmocom/core/utils.h>
+#include <osmocom/gsm/gsm48.h>
+#include <osmocom/gsm/gsm23003.h>
 
 #if defined(__FreeBSD__)
 #include <sys/endian.h>
@@ -834,6 +836,385 @@ int gtp_ran_info_relay_req(struct gsn_t *gsn, const struct sockaddr_in *peer,
 	}
 
 	return gtp_notification(gsn, 1, &packet, length, peer, gsn->fd1c, 0);
+}
+
+#define GSM_MI_TYPE_TLLI 0x05
+
+int gtp_sgsn_context_req(struct gsn_t *gsn, const struct in_addr *peer,
+			 const struct osmo_mobile_identity *mi, uint32_t teic,
+			 const struct ul16_t *sgsn_addr, const struct ul255_t *rai, void *cbp)
+{
+	union gtp_packet packet;
+
+	/* GTP 1 is the highest supported protocol */
+	unsigned int length = get_default_gtp(1, GTP_SGSN_CONTEXT_REQ, &packet);
+
+	gtpie_tv0(&packet, &length, GTP_MAX, GTPIE_RAI, rai->l, rai->v);
+	gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_TEI_C, teic);
+	gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_GSN_ADDR, sgsn_addr->l, sgsn_addr->v);
+
+	switch (mi->type) {
+	case GSM_MI_TYPE_IMSI:
+		gtpie_tv8(&packet, &length, GTP_MAX, GTPIE_IMSI, *(uint64_t *)mi->imsi); /* FIXME: proper decoding*/
+		break;
+	case GSM_MI_TYPE_TLLI:
+		gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_TLLI, mi->tmsi);
+		break;
+	case GSM_MI_TYPE_TMSI:
+		gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_P_TMSI, mi->tmsi);
+		break;
+	default:
+		/* TODO: Error */
+		break;
+	}
+
+	return gtp_req(gsn, 1, NULL, &packet, length, peer, cbp);
+}
+
+/* Handle an SGSN Context Request */
+static int gtp_sgsn_context_ind(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
+			void *pack, unsigned len)
+{
+	/* Check if we have a context with TLLI/P-TMSI/IMSI in the RAI */
+	struct osmo_mobile_identity mi = {0};
+	uint64_t imsi;
+
+	union gtpie_member *ie[GTPIE_SIZE];
+	uint32_t teic;
+	uint8_t seq = get_seq(pack);
+	struct ul16_t sgsn_addr;
+	struct ul255_t rai = { .l = 6 };
+	struct osmo_routing_area_id rai_parsed;
+
+	if (version != 1) {
+		LOGP(DLGTP, LOGL_NOTICE,
+			"SGSN Context Request expected only on GTPCv1: %u\n", version);
+		return -EINVAL;
+	}
+
+	int hlen = get_hlen(pack);
+
+	/* Decode information elements */
+	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_INVALID);
+		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
+			    "Invalid message format\n");
+		return -EINVAL;
+	}
+
+	/* RAI */
+	if (gtpie_gettv0(ie, GTPIE_RAI, 0, &rai.v, 6)) {
+		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
+		    "Missing RAI\n");
+		goto missing_ie;
+	}
+	if (osmo_routing_area_id_decode(&rai_parsed, rai.v, 6) < 0) {
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_INVALID);
+		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
+			    "Invalid RAI\n");
+	}
+
+	/* TEI-C */
+	if (gtpie_gettv4(ie, GTPIE_TEI_C, 0, &teic)) {
+		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
+		    "Missing TEI-C\n");
+		goto missing_ie;
+	}
+
+	/* SGSN address for signalling (mandatory) */
+	if (gtpie_gettlv(ie, GTPIE_GSN_ADDR, 0, &sgsn_addr.l,
+			 &sgsn_addr.v, sizeof(sgsn_addr.v))) {
+		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
+		    "Missing GSN Addr\n");
+		goto missing_ie;
+	}
+
+	/* Get PTMSI, TLLI or IMSI - only one IE allowed */
+	if (!gtpie_gettv4(ie, GTPIE_TLLI, 0, &mi.tmsi)) {
+		mi.type = GSM_MI_TYPE_TLLI;
+		goto done;
+	}
+
+	if (!gtpie_gettv4(ie, GTPIE_P_TMSI, 0, &mi.tmsi)) {
+		mi.type = GSM_MI_TYPE_TMSI;
+		goto done;
+	}
+
+	if (!gtpie_gettv8(ie, GTPIE_IMSI, 0, &imsi)) {
+		imsi = ntoh64(imsi);
+		mi.type = GSM_MI_TYPE_IMSI;
+		const char *imsi_str = imsi_gtp2str(&imsi);
+		memcpy(mi.imsi, imsi_str, sizeof(mi.imsi));
+	} else {
+		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
+		    "Missing Identity information\n");
+		goto missing_ie;
+	}
+
+done:
+	if (gsn->cb_sgsn_context_request_ind)
+		gsn->cb_sgsn_context_request_ind(gsn, peer, &rai_parsed, teic, &mi, ie);
+
+	return 0;
+
+missing_ie:
+	rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
+	GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
+		    "Missing mandatory IE\n");
+	/* TODO: Send response with cause */
+	return -EINVAL;
+}
+
+static bool is_ext_ua(const struct pdp_t *pdp)
+{
+	return pdp->eua.l > 0 && pdp->eua.v[0] == PDP_EUA_TYPE_v4v6;
+}
+
+static int gtp_pdp_ctx(uint8_t *buf, unsigned int size, const struct pdp_t *pdp, uint16_t sapi)
+{
+	uint32_t tmp32;
+	uint16_t tmp16;
+	uint8_t *ptr = buf;
+#define CHECK_SPACE_ERR(bytes) \
+	if ((ptr - buf) + (bytes) > size) { \
+		printf("Failed size check: %lu + %lu > %lu\n", (ptr- buf), bytes, size); \
+		return -1; \
+	}
+#define MEMCPY_CHK(dst, src, len) \
+	CHECK_SPACE_ERR((len)) \
+	memcpy((dst), (uint8_t *)(src), (len)); \
+	(dst) += (len);
+
+	// Flags - FIXME: No ASI
+	*ptr++ = (is_ext_ua(pdp) << 7) | ((!!pdp->vplmn_allow) << 6) | ((!!pdp->reorder) << 4) | (pdp->nsapi & 0x0f);
+	// SAPI
+	*ptr++ = sapi & 0x0f;
+
+	// QoS Sub
+	if (pdp->qos_sub.l < 4) {
+		/* Work around qos_sub never being set */
+		*ptr++ = 4;
+		*ptr++ = 0;
+		*ptr++ = 0x23;
+		*ptr++ = 0x02;
+		*ptr++ = 0x00;
+	} else {
+		*ptr++ = pdp->qos_sub.l;
+		MEMCPY_CHK(ptr, pdp->qos_sub.v, pdp->qos_sub.l);
+	}
+	// QoS Req
+	*ptr++ = pdp->qos_req.l;
+	MEMCPY_CHK(ptr, pdp->qos_req.v, pdp->qos_req.l);
+	// QoS Neg
+	*ptr++ = pdp->qos_neg.l;
+	MEMCPY_CHK(ptr, pdp->qos_neg.v, pdp->qos_neg.l);
+
+	// SND
+	tmp16 = osmo_htons(pdp->pdcpsndd);
+	MEMCPY_CHK(ptr, &tmp16, sizeof(tmp16));
+	// SNU
+	tmp16 = osmo_htons(pdp->pdcpsndu);
+	MEMCPY_CHK(ptr, &tmp16, sizeof(tmp16));
+	// Send N-PDU
+	*ptr++ = pdp->gtpsntx;
+	// Recv N-PDU
+	*ptr++ = pdp->gtpsnrx;
+	// Uplink TEIC
+	tmp32 = osmo_htonl(pdp->teic_gn);
+	MEMCPY_CHK(ptr, &tmp32, sizeof(tmp32));
+	// Uplink TEIDI
+	tmp32 = osmo_htonl(pdp->teid_gn);
+	MEMCPY_CHK(ptr, &tmp32, sizeof(tmp32));
+	// PDP Ctx Id
+	*ptr++ = pdp->pdp_id;
+	// PDP Type Org
+	*ptr++ = PDP_EUA_ORG_IETF;
+	// PDP Type No.
+	// PDP Address
+
+	switch (pdp->eua.v[1]) {
+	case PDP_EUA_TYPE_v4:
+	case PDP_EUA_TYPE_v4v6:
+		/* v4v6 expects an IPv4 addr first followed by an IPv6 addr*/
+		*ptr++ = PDP_EUA_TYPE_v4;
+		if (pdp->eua.l < 6)
+			return -1;
+		*ptr++ = 4;
+		MEMCPY_CHK(ptr, &pdp->eua.v[2], 4);
+		break;
+	case PDP_EUA_TYPE_v6:
+		*ptr++ = PDP_EUA_TYPE_v6;
+		if (pdp->eua.l < 18)
+			return -1;
+		*ptr++ = 16;
+		MEMCPY_CHK(ptr, &pdp->eua.v[2], 16);
+		break;
+	default:
+		return -EINVAL;
+		//Panic
+	}
+	// GGSN Address Ctrl
+	*ptr++ = pdp->gsnrc.l;
+	MEMCPY_CHK(ptr, pdp->gsnrc.v, pdp->gsnrc.l);
+	// GGSN Address User
+	*ptr++ = pdp->gsnru.l;
+	MEMCPY_CHK(ptr, pdp->gsnru.v, pdp->gsnru.l);
+	// APN
+	*ptr++ = pdp->apn_use.l;
+	MEMCPY_CHK(ptr, pdp->apn_use.v, pdp->apn_use.l);
+	// TransId
+	*ptr++ = (pdp->ti >> 8) & 0x0f;
+	*ptr++ = pdp->ti & 0xff;
+
+	if (is_ext_ua(pdp)) {
+		*ptr++ = PDP_EUA_TYPE_v6;
+		if (pdp->eua.l < 22)
+			return -1;
+		*ptr++ = 16;
+		MEMCPY_CHK(ptr, &pdp->eua.v[6], 16);
+	}
+	return ptr - buf;
+#undef CHECK_SPACE_ERR
+#undef MEMCPY_CHK
+}
+
+int gtp_sgsn_context_conf(struct gsn_t *gsn, struct sockaddr_in *peer, uint16_t seq,
+			 uint32_t teic, uint8_t cause, const struct in_addr *sgsn_addr, struct pdp_t *pdpctx, uint16_t sapi, struct ul255_t *mmctx, void *cbp)
+{
+	union gtp_packet packet;
+	struct ul255_t pdp;
+
+	/* GTP 1 is the highest supported protocol */
+	unsigned int length = get_default_gtp(1, GTP_SGSN_CONTEXT_RSP, &packet);
+
+	// Cause - TV1
+	gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_CAUSE, cause);
+	// IMSI - TV8
+	//gtpie_tv8(&packet, &length, GTP_MAX, GTPIE_IMSI, imsi);
+
+	// TEIC - TV4
+	gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_TEI_C, pdpctx->teic_own);
+
+	// MM Ctx - TLV
+	gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_MM_CONTEXT, mmctx->l, mmctx->v);
+
+	// PDP Ctx - TLV
+	if (pdpctx) {
+		int rc = gtp_pdp_ctx(pdp.v, 255, pdpctx, sapi);
+		if (rc > 0)
+			gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_PDP_CONTEXT, rc, pdp.v);
+	}
+
+	// SGSN Addr Ctrl - TLV
+	gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_GSN_ADDR, 4, &sgsn_addr->s_addr);
+
+	// Alt GGSN Addr Ctrl (per PDP Ctx)
+	// Alt GGSN Addr User (per PDP Ctx)
+	/* The encoding for this is a bit insane */
+
+	return gtp_resp2(gsn, &packet, length, peer, gsn->fd1c, seq, 0, 0, teic);
+}
+
+/* Handle an SGSN Context Response */
+static int gtp_sgsn_context_conf_ind(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
+			void *pack, unsigned len)
+{
+	/** If cause is "Request accepted": Send ACK,
+	    else: Log and handle error */
+
+	/* Check if we have a context with TLLI/P-TMSI/IMSI in the RAI */
+
+	void *cbp = NULL;
+	uint8_t type = 0;
+	uint8_t cause;
+	union gtpie_member *ie[GTPIE_SIZE];
+	struct pdp_t *pdp = NULL;
+	uint64_t imsi;
+	uint32_t teic;
+	struct ul16_t sgsn_addr;
+
+	if (version != 1) {
+		LOGP(DLGTP, LOGL_NOTICE,
+			"SGSN Context Request expected only on GTPCv1: %u\n", version);
+		return -EINVAL;
+	}
+
+	int hlen = get_hlen(pack);
+
+	/* Remove packet from queue */
+	if (gtp_conf(gsn, version, peer, pack, len, &type, &cbp))
+		return EOF;
+
+	/* Extract information elements into a pointer array */
+	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_INVALID);
+		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
+			    "Invalid message format\n");
+		if (gsn->cb_conf)
+			gsn->cb_conf(type, EOF, NULL, cbp);
+		return EOF;
+	}
+
+	/* Extract cause value (mandatory) */
+	if (gtpie_gettv1(ie, GTPIE_CAUSE, 0, &cause)) {
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
+		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
+			    "Missing mandatory information field\n");
+		if (gsn->cb_conf)
+			gsn->cb_conf(type, EOF, NULL, cbp);
+		return EOF;
+	}
+
+	/* Check all conditional information elements */
+	if (!gtp_cause_successful(cause)) {
+		GTP_LOGPKG(LOGL_NOTICE, peer, pack, len,
+			    "SGSN Context response with cause (%u)\n", cause);
+		if (gsn->cb_conf)
+			gsn->cb_conf(type, cause, NULL, cbp);
+	}
+
+	/* Gather UE context and PDP data, create pdp context */
+	//gtp_pdp_newpdp(gsn, &pdp, imsi, nsapi, NULL)
+	if (gsn->cb_conf)
+		gsn->cb_conf(type, cause, pdp, cbp);
+
+	return 0;
+}
+
+/* Handle an SGSN Context Acknowledge */
+static int gtp_sgsn_context_ack(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
+			void *pack, unsigned len)
+{
+	/* If cause is != Request accepted, log error */
+	return -ENOTSUP;
+}
+
+/* Handle an SGSN Context request */
+int gtp_context_request(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
+			void *pack, unsigned len)
+{
+	union gtpie_member *ie[GTPIE_SIZE];
+
+	if (version != 1) {
+		LOGP(DLGTP, LOGL_NOTICE,
+			"SGSN Context Request expected only on GTPCv1: %u\n", version);
+		return -EINVAL;
+	}
+
+	int hlen = get_hlen(pack);
+
+	/* Decode information elements */
+	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_INVALID);
+		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
+			    "Invalid message format (AN Information Relay)\n");
+		return -EINVAL;
+	}
+
+	if (gsn->cb_ran_info_relay_ind)
+		gsn->cb_ran_info_relay_ind(peer, ie);
+
+	return 0;
 }
 
 /* ***********************************************************
@@ -2841,6 +3222,15 @@ int gtp_decaps1c(struct gsn_t *gsn)
 			break;
 		case GTP_RAN_INFO_RELAY:
 			gtp_ran_info_relay_ind(gsn, version, &peer, buffer, status);
+			break;
+		case GTP_SGSN_CONTEXT_REQ:
+			gtp_sgsn_context_ind(gsn, version, &peer, buffer, status);
+			break;
+		case GTP_SGSN_CONTEXT_RSP:
+			gtp_sgsn_context_conf_ind(gsn, version, &peer, buffer, status);
+			break;
+		case GTP_SGSN_CONTEXT_ACK:
+			gtp_sgsn_context_ack(gsn, version, &peer, buffer, status);
 			break;
 		default:
 			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_UNKNOWN);

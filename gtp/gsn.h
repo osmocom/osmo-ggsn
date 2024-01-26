@@ -17,6 +17,8 @@
 #include <osmocom/core/timer.h>
 #include <osmocom/core/tdef.h>
 #include <osmocom/core/rate_ctr.h>
+#include <osmocom/gsm/gsm23003.h>
+#include <osmocom/gsm/gsm48.h>
 
 #include "pdp.h"
 
@@ -107,6 +109,7 @@ struct gsn_t {
 	int (*cb_recovery) (struct sockaddr_in * peer, uint8_t recovery);
 	int (*cb_recovery2) (struct sockaddr_in * peer, struct pdp_t * pdp, uint8_t recovery);
 	int (*cb_recovery3) (struct gsn_t *gsn, struct sockaddr_in *peer, struct pdp_t *pdp, uint8_t recovery);
+	int (*cb_sgsn_context_request_ind) (struct gsn_t *gsn, struct sockaddr_in *peer, const struct osmo_routing_area_id *rai, uint32_t teic, struct osmo_mobile_identity *mi, union gtpie_member **ie); /* Pass RAI and TLLI/TMSI/IMSI directly */
 
 	/* Counters */
 	struct rate_ctr_group *ctrg;
@@ -130,6 +133,8 @@ extern int gtp_freepdp_teardown(struct gsn_t *gsn, struct pdp_t *pdp);
 extern int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
 				  void *cbp);
 
+extern int gtp_create_sgsn_context_req(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp);
+
 extern int gtp_set_cb_create_context_ind(struct gsn_t *gsn,
 					 int (*cb_create_context_ind) (struct
 								       pdp_t *
@@ -151,6 +156,9 @@ extern int gtp_set_cb_extheader_ind(struct gsn_t *gsn,
 
 extern int gtp_set_cb_ran_info_relay_ind(struct gsn_t *gsn,
 				    int (*cb) (struct sockaddr_in * peer, union gtpie_member **ie));
+
+extern int gtp_set_cb_sgsn_context_request_ind(struct gsn_t *gsn,
+			     int (*cb) (struct gsn_t *gsn, struct sockaddr_in *peer, const struct osmo_routing_area_id *rai, uint32_t teic, struct osmo_mobile_identity *mi, union gtpie_member **ie));
 
 extern int gtp_set_cb_conf(struct gsn_t *gsn,
 			   int (*cb) (int type, int cause, struct pdp_t * pdp,

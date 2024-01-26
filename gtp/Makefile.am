@@ -13,6 +13,7 @@ AM_CFLAGS = \
 	    -Wall \
 	    -DSBINDIR='"$(sbindir)"' \
 	    $(LIBOSMOCORE_CFLAGS) \
+		$(LIBOSMOGSM_CFLAGS) \
 	    $(NULL)
 
 libgtp_la_SOURCES = \
@@ -31,4 +32,4 @@ libgtp_la_SOURCES = \
 		    $(NULL)
 
 libgtp_la_LDFLAGS = -version-info $(LIBVERSION) -no-undefined
-libgtp_la_LIBADD = $(LIBOSMOCORE_LIBS)
+libgtp_la_LIBADD = $(LIBOSMOCORE_LIBS) $(LIBOSMOGSM_LIBS)
