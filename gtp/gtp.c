@@ -451,9 +451,7 @@ static int gtp_conf(struct gsn_t *gsn, uint8_t version, struct sockaddr_in *peer
 	return 0;
 }
 
-static int gtp_resp(uint8_t version, struct gsn_t *gsn, struct pdp_t *pdp,
-	     union gtp_packet *packet, int len,
-	     struct sockaddr_in *peer, int fd, uint16_t seq, uint64_t tid)
+static int gtp_resp2(struct gsn_t *gsn, union gtp_packet *packet, int len, struct sockaddr_in *peer, int fd, uint16_t seq, uint64_t tid, uint16_t flow, uint32_t tei)
 {
 	uint8_t ver = GTPHDR_F_GET_VER(packet->flags);
 	struct qmsg_t *qmsg;
@@ -462,18 +460,11 @@ static int gtp_resp(uint8_t version, struct gsn_t *gsn, struct pdp_t *pdp,
 		packet->gtp0.h.length = hton16(len - GTP0_HEADER_SIZE);
 		packet->gtp0.h.seq = hton16(seq);
 		packet->gtp0.h.tid = htobe64(tid);
-		if (pdp && ((packet->gtp0.h.type == GTP_GPDU) ||
-			    (packet->gtp0.h.type == GTP_ERROR)))
-			packet->gtp0.h.flow = hton16(pdp->flru);
-		else if (pdp)
-			packet->gtp0.h.flow = hton16(pdp->flrc);
+		packet->gtp0.h.flow = hton16(flow);
 	} else if (ver == 1 && (packet->flags & GTP1HDR_F_SEQ)) {	/* Version 1 with seq */
 		packet->gtp1l.h.length = hton16(len - GTP1_HEADER_SIZE_SHORT);
 		packet->gtp1l.h.seq = hton16(seq);
-		if (pdp && (fd == gsn->fd1u))
-			packet->gtp1l.h.tei = hton32(pdp->teid_gn);
-		else if (pdp)
-			packet->gtp1l.h.tei = hton32(pdp->teic_gn);
+		packet->gtp1l.h.tei = hton32(tei);
 	} else {
 		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flags: 0x%02x\n", packet->flags);
 		return -1;
@@ -521,6 +512,31 @@ static int gtp_resp(uint8_t version, struct gsn_t *gsn, struct pdp_t *pdp,
 	return 0;
 }
 
+static int gtp_resp(uint8_t version, struct gsn_t *gsn, struct pdp_t *pdp,
+	     union gtp_packet *packet, int len,
+	     struct sockaddr_in *peer, int fd, uint16_t seq, uint64_t tid)
+{
+	uint8_t ver = GTPHDR_F_GET_VER(packet->flags);
+	uint16_t flow = 0, tei = 0;
+
+	if (ver == 0) {	/* Version 0 */
+		if (pdp && ((packet->gtp0.h.type == GTP_GPDU) ||
+			    (packet->gtp0.h.type == GTP_ERROR)))
+			flow = pdp->flru;
+		else if (pdp)
+			flow = pdp->flrc;
+	} else if (ver == 1 && (packet->flags & GTP1HDR_F_SEQ)) {	/* Version 1 with seq */
+		if (pdp && (fd == gsn->fd1u))
+			tei = pdp->teid_gn;
+		else if (pdp)
+			tei = pdp->teic_gn;
+	} else {
+		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flags: 0x%02x\n", packet->flags);
+		return -1;
+	}
+
+	gtp_resp2(gsn, packet, len, peer, fd, seq, tid, flow, tei);
+}
 static int gtp_notification(struct gsn_t *gsn, uint8_t version,
 		     union gtp_packet *packet, int len,
 		     const struct sockaddr_in *peer, int fd, uint16_t seq)
