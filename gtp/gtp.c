@@ -131,8 +131,6 @@ const struct value_string gtp_type_names[] = {
 	{ 0, NULL }
 };
 
-
-
 static void emit_cb_recovery(struct gsn_t *gsn, struct sockaddr_in * peer,
 			     struct pdp_t * pdp, uint8_t recovery)
 {
@@ -456,9 +454,9 @@ static int gtp_conf(struct gsn_t *gsn, uint8_t version, struct sockaddr_in *peer
 	return 0;
 }
 
-static int gtp_resp(uint8_t version, struct gsn_t *gsn, struct pdp_t *pdp,
-	     union gtp_packet *packet, int len,
-	     struct sockaddr_in *peer, int fd, uint16_t seq, uint64_t tid)
+/* Send a GTP Response (generic call) */
+static int gtp_resp(struct gsn_t *gsn, union gtp_packet *packet, int len, struct sockaddr_in *peer, int fd,
+		     uint16_t seq, uint64_t tid, uint16_t flow, uint32_t teidc)
 {
 	uint8_t ver = GTPHDR_F_GET_VER(packet->flags);
 	struct qmsg_t *qmsg;
@@ -467,18 +465,11 @@ static int gtp_resp(uint8_t version, struct gsn_t *gsn, struct pdp_t *pdp,
 		packet->gtp0.h.length = hton16(len - GTP0_HEADER_SIZE);
 		packet->gtp0.h.seq = hton16(seq);
 		packet->gtp0.h.tid = htobe64(tid);
-		if (pdp && ((packet->gtp0.h.type == GTP_GPDU) ||
-			    (packet->gtp0.h.type == GTP_ERROR)))
-			packet->gtp0.h.flow = hton16(pdp->flru);
-		else if (pdp)
-			packet->gtp0.h.flow = hton16(pdp->flrc);
+		packet->gtp0.h.flow = hton16(flow);
 	} else if (ver == 1 && (packet->flags & GTP1HDR_F_SEQ)) {	/* Version 1 with seq */
 		packet->gtp1l.h.length = hton16(len - GTP1_HEADER_SIZE_SHORT);
 		packet->gtp1l.h.seq = hton16(seq);
-		if (pdp && (fd == gsn->fd1u))
-			packet->gtp1l.h.tei = hton32(pdp->teid_gn);
-		else if (pdp)
-			packet->gtp1l.h.tei = hton32(pdp->teic_gn);
+		packet->gtp1l.h.tei = hton32(teidc);
 	} else {
 		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flags: 0x%02x\n", packet->flags);
 		return -1;
@@ -524,6 +515,34 @@ static int gtp_resp(uint8_t version, struct gsn_t *gsn, struct pdp_t *pdp,
 		gtp_queue_timer_start(gsn);
 	}
 	return 0;
+}
+
+/* Send a GTP Response which relates to a PDP Context. See gtp_resp for a more generic function */
+static int gtp_resp_pdp(uint8_t version, struct gsn_t *gsn, struct pdp_t *pdp,
+	     union gtp_packet *packet, int len,
+	     struct sockaddr_in *peer, int fd, uint16_t seq, uint64_t tid)
+{
+	uint8_t ver = GTPHDR_F_GET_VER(packet->flags);
+	uint16_t flow = 0;
+	uint32_t tei = 0;
+
+	if (ver == 0) {	/* Version 0 */
+		if (pdp && ((packet->gtp0.h.type == GTP_GPDU) ||
+			    (packet->gtp0.h.type == GTP_ERROR)))
+			flow = pdp->flru;
+		else if (pdp)
+			flow = pdp->flrc;
+	} else if (ver == 1 && (packet->flags & GTP1HDR_F_SEQ)) {	/* Version 1 with seq */
+		if (pdp && (fd == gsn->fd1u))
+			tei = pdp->teid_gn;
+		else if (pdp)
+			tei = pdp->teic_gn;
+	} else {
+		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flags: 0x%02x\n", packet->flags);
+		return -1;
+	}
+
+	return gtp_resp(gsn, packet, len, peer, fd, seq, tid, flow, tei);
 }
 
 static int gtp_notification(struct gsn_t *gsn, uint8_t version,
@@ -650,7 +669,7 @@ static int gtp_echo_resp(struct gsn_t *gsn, int version,
 	unsigned int length = get_default_gtp(version, GTP_ECHO_RSP, &packet);
 	gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_RECOVERY,
 		  gsn->restart_counter);
-	return gtp_resp(version, gsn, NULL, &packet, length, peer, fd,
+	return gtp_resp_pdp(version, gsn, NULL, &packet, length, peer, fd,
 			get_seq(pack), get_tid(pack));
 }
 
@@ -1086,7 +1105,7 @@ static int gtp_create_pdp_resp(struct gsn_t *gsn, int version, struct pdp_t *pdp
 		/* TODO: Charging gateway address */
 	}
 
-	return gtp_resp(version, gsn, pdp, &packet, length, &pdp->sa_peer,
+	return gtp_resp_pdp(version, gsn, pdp, &packet, length, &pdp->sa_peer,
 			pdp->fd, pdp->seq, pdp->tid);
 }
 
@@ -1762,7 +1781,7 @@ static int gtp_update_pdp_resp(struct gsn_t *gsn, uint8_t version,
 				pdp->dir_tun_flags.l, pdp->dir_tun_flags.v);
 	}
 
-	return gtp_resp(version, gsn, pdp, &packet, length, peer,
+	return gtp_resp_pdp(version, gsn, pdp, &packet, length, peer,
 			fd, seq, tid);
 }
 
@@ -2263,7 +2282,7 @@ static int gtp_delete_pdp_resp(struct gsn_t *gsn, int version,
 
 	gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_CAUSE, cause);
 
-	gtp_resp(version, gsn, pdp, &packet, length, peer, fd,
+	gtp_resp_pdp(version, gsn, pdp, &packet, length, peer, fd,
 		 get_seq(pack), get_tid(pack));
 
 	if (gtp_cause_successful(cause)) {
@@ -2477,7 +2496,7 @@ static int gtp_error_ind_resp(struct gsn_t *gsn, uint8_t version,
 			  sizeof(gsn->gsnu), &gsn->gsnu);
 	}
 
-	return gtp_resp(version, gsn, NULL, &packet, length, peer, fd,
+	return gtp_resp_pdp(version, gsn, NULL, &packet, length, peer, fd,
 			get_seq(pack), get_tid(pack));
 }
 
