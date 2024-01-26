@@ -262,6 +262,12 @@ extern int gtp_ran_info_relay_req(struct gsn_t *gsn, const struct sockaddr_in *p
 				  const uint8_t *rim_route_addr, size_t rim_route_addr_len,
 				  uint8_t rim_route_addr_discr);
 
+extern int gtp_sgsn_context_req(struct gsn_t *gsn, const struct in_addr *peer,
+			 const struct osmo_mobile_identity *mi, uint32_t teic,
+			 const struct ul16_t *sgsn_addr, const struct ul255_t *rai, void *cbp);
+extern int gtp_sgsn_context_conf(struct gsn_t *gsn, struct sockaddr_in *peer, uint16_t seq,
+			 uint32_t teic, uint8_t cause, const struct in_addr *sgsn_addr, struct pdp_t *pdpctx, uint16_t sapi, struct ul255_t *mmctx, void *cbp);
+
 extern int gtp_decaps0(struct gsn_t *gsn);
 extern int gtp_decaps1c(struct gsn_t *gsn);
 extern int gtp_decaps1u(struct gsn_t *gsn);

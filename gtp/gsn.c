@@ -244,6 +244,12 @@ int gtp_set_cb_data_ind(struct gsn_t *gsn,
 	gsn->cb_data_ind = cb_data_ind;
 	return 0;
 }
+int gtp_set_cb_sgsn_context_request_ind(struct gsn_t *gsn,
+			     int (*cb) (struct gsn_t *gsn, struct sockaddr_in *peer, const struct osmo_routing_area_id *rai, uint32_t teic, struct osmo_mobile_identity *mi, union gtpie_member **ie))
+{
+	gsn->cb_sgsn_context_request_ind = cb;
+	return 0;
+}
 
 static int queue_timer_retrans(struct gsn_t *gsn)
 {
