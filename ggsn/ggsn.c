@@ -193,7 +193,7 @@ int apn_start(struct apn_ctx *apn)
 		}
 		LOGPAPN(LOGL_INFO, apn, "Opened TUN device %s\n", apn->tun.tun->devname);
 
-		/* Register with libosmcoore */
+		/* Register with libosmocore */
 		osmo_fd_setup(&apn->tun.fd, apn->tun.tun->fd, OSMO_FD_READ, ggsn_tun_fd_cb, apn, 0);
 		osmo_fd_register(&apn->tun.fd);
 
