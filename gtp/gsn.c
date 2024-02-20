@@ -423,11 +423,45 @@ free_filename:
 	talloc_free(filename);
 }
 
+static int create_and_bind_socket(const char *name, struct gsn_t *gsn, int *fd, int domain,
+				  const struct in_addr *listen, int port)
+{
+	struct sockaddr_in addr;
+	int type = SOCK_DGRAM;
+	int protocol = 0;
+
+	*fd = socket(domain, type, protocol);
+
+	if (*fd < 0) {
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_SOCKET);
+		LOGP(DLGTP, LOGL_ERROR,
+		     "%s socket(domain=%d, type=%d, protocol=%d) failed: Error = %s\n",
+		     name, domain, type, protocol, strerror(errno));
+		return -errno;
+	}
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = domain;
+	addr.sin_addr = *listen;
+	addr.sin_port = htons(port);
+#if defined(__FreeBSD__) || defined(__APPLE__)
+	addr.sin_len = sizeof(addr);
+#endif
+
+	if (bind(*fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_SOCKET);
+		LOGP_WITH_ADDR(DLGTP, LOGL_ERROR, addr,
+			       "%s bind(fd=%d) failed: Error = %s\n",
+			       name, *fd, strerror(errno));
+		return -errno;
+	}
+
+	return 0;
+}
+
 int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 	    int mode)
 {
-	struct sockaddr_in addr;
-
 	LOGP(DLGTP, LOGL_NOTICE, "GTP: gtp_newgsn() started at %s\n", inet_ntoa(*listen));
 
 	*gsn = calloc(sizeof(struct gsn_t), 1);	/* TODO */
@@ -467,89 +501,35 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 	(*gsn)->cb_data_ind = 0;
 
 	/* Store function parameters */
+	/* Same IP for user traffic and signalling */
 	(*gsn)->gsnc = *listen;
 	(*gsn)->gsnu = *listen;
 	(*gsn)->mode = mode;
 
+	(*gsn)->fd0 = -1;
+	(*gsn)->fd1c = -1;
+	(*gsn)->fd1u = -1;
+
 	/* Create GTP version 0 socket */
-	if (((*gsn)->fd0 = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-		rate_ctr_inc2((*gsn)->ctrg, GSN_CTR_ERR_SOCKET);
-		LOGP(DLGTP, LOGL_ERROR,
-		     "GTPv0 socket(domain=%d, type=%d, protocol=%d) failed: Error = %s\n",
-			AF_INET, SOCK_DGRAM, 0, strerror(errno));
-		return -errno;
-	}
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_addr = *listen;	/* Same IP for user traffic and signalling */
-	addr.sin_port = htons(GTP0_PORT);
-#if defined(__FreeBSD__) || defined(__APPLE__)
-	addr.sin_len = sizeof(addr);
-#endif
-
-	if (bind((*gsn)->fd0, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-		rate_ctr_inc2((*gsn)->ctrg, GSN_CTR_ERR_SOCKET);
-		LOGP_WITH_ADDR(DLGTP, LOGL_ERROR, addr,
-			       "bind(fd0=%d) failed: Error = %s\n",
-			       (*gsn)->fd0, strerror(errno));
-		return -errno;
-	}
+	if (create_and_bind_socket("GTPv0", *gsn, &(*gsn)->fd0, AF_INET, listen, GTP0_PORT) < 0)
+		goto error;
 
 	/* Create GTP version 1 control plane socket */
-	if (((*gsn)->fd1c = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-		rate_ctr_inc2((*gsn)->ctrg, GSN_CTR_ERR_SOCKET);
-		LOGP(DLGTP, LOGL_ERROR,
-		     "GTPv1 control plane socket(domain=%d, type=%d, protocol=%d) failed: Error = %s\n",
-			AF_INET, SOCK_DGRAM, 0, strerror(errno));
-		return -errno;
-	}
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_addr = *listen;	/* Same IP for user traffic and signalling */
-	addr.sin_port = htons(GTP1C_PORT);
-#if defined(__FreeBSD__) || defined(__APPLE__)
-	addr.sin_len = sizeof(addr);
-#endif
-
-	if (bind((*gsn)->fd1c, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-		rate_ctr_inc2((*gsn)->ctrg, GSN_CTR_ERR_SOCKET);
-		LOGP_WITH_ADDR(DLGTP, LOGL_ERROR, addr,
-				"bind(fd1c=%d) failed: Error = %s\n",
-				(*gsn)->fd1c, strerror(errno));
-		return -errno;
-	}
+	if (create_and_bind_socket("GTPv1 control plane", *gsn, &(*gsn)->fd1c, AF_INET, listen, GTP1C_PORT) < 0)
+		goto error;
 
 	/* Create GTP version 1 user plane socket */
-	if (((*gsn)->fd1u = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-		rate_ctr_inc2((*gsn)->ctrg, GSN_CTR_ERR_SOCKET);
-		LOGP(DLGTP, LOGL_ERROR,
-		     "GTPv1 user plane socket(domain=%d, type=%d, protocol=%d) failed: Error = %s\n",
-			AF_INET, SOCK_DGRAM, 0, strerror(errno));
-		return -errno;
-	}
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_addr = *listen;	/* Same IP for user traffic and signalling */
-	addr.sin_port = htons(GTP1U_PORT);
-#if defined(__FreeBSD__) || defined(__APPLE__)
-	addr.sin_len = sizeof(addr);
-#endif
-
-	if (bind((*gsn)->fd1u, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-		rate_ctr_inc2((*gsn)->ctrg, GSN_CTR_ERR_SOCKET);
-		LOGP_WITH_ADDR(DLGTP, LOGL_ERROR, addr,
-			"bind(fd1u=%d) failed: Error = %s\n",
-			(*gsn)->fd1u, strerror(errno));
-		return -errno;
-	}
+	if (create_and_bind_socket("GTPv1 user plane", *gsn, &(*gsn)->fd1u, AF_INET, listen, GTP1U_PORT) < 0)
+		goto error;
 
 	/* Start internal queue timer */
 	gtp_queue_timer_start(*gsn);
 
 	return 0;
+error:
+	gtp_free(*gsn);
+	*gsn = NULL;
+	return -1;
 }
 
 int gtp_free(struct gsn_t *gsn)
