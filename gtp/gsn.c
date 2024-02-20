@@ -64,11 +64,6 @@
 
 /* Error reporting functions */
 
-#define LOGP_WITH_ADDR(ss, level, addr, fmt, args...)                    \
-		LOGP(ss, level, "addr(%s:%d) " fmt,                      \
-		     inet_ntoa((addr).sin_addr), htons((addr).sin_port), \
-		     ##args);
-
 static const struct rate_ctr_desc gsn_ctr_description[] = {
 	[GSN_CTR_ERR_SOCKET] = { "err:socket", "Socket error" },
 	[GSN_CTR_ERR_READFROM] = { "err:readfrom", "readfrom() errors" },
@@ -423,46 +418,62 @@ free_filename:
 	talloc_free(filename);
 }
 
-static int create_and_bind_socket(const char *name, struct gsn_t *gsn, int *fd, int domain,
-				  const struct in_addr *listen, int port)
+static int create_and_bind_socket(const char *name, struct gsn_t *gsn, int *fd, const struct in46_addr *listen,
+				  int port)
 {
-	struct sockaddr_in addr;
+	int family = in46a_to_af(listen);
 	int type = SOCK_DGRAM;
 	int protocol = 0;
+	struct sockaddr addr = {0};
+	struct sockaddr_in *addr4 = (struct sockaddr_in *)&addr;
+	struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)&addr;
 
-	*fd = socket(domain, type, protocol);
+	*fd = socket(family, type, protocol);
 
 	if (*fd < 0) {
 		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_SOCKET);
 		LOGP(DLGTP, LOGL_ERROR,
 		     "%s socket(domain=%d, type=%d, protocol=%d) failed: Error = %s\n",
-		     name, domain, type, protocol, strerror(errno));
+		     name, family, type, protocol, strerror(errno));
 		return -errno;
 	}
 
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = domain;
-	addr.sin_addr = *listen;
-	addr.sin_port = htons(port);
+	switch (family) {
+	case AF_INET:
+		addr4->sin_family = AF_INET;
+		addr4->sin_addr = listen->v4;
+		addr4->sin_port = htons(port);
 #if defined(__FreeBSD__) || defined(__APPLE__)
-	addr.sin_len = sizeof(addr);
+		addr4->sin_len = sizeof(struct addr);
 #endif
+		break;
+	case AF_INET6:
+		addr6->sin6_family = AF_INET6;
+		addr6->sin6_addr = listen->v6;
+		addr6->sin6_port = htons(port);
+#if defined(__FreeBSD__) || defined(__APPLE__)
+		addr6->sin6_len = sizeof(struct addr);
+#endif
+		break;
+	default:
+		OSMO_ASSERT(false);
+		break;
+	}
 
-	if (bind(*fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+	if (bind(*fd, &addr, sizeof(addr)) < 0) {
 		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_SOCKET);
-		LOGP_WITH_ADDR(DLGTP, LOGL_ERROR, addr,
-			       "%s bind(fd=%d) failed: Error = %s\n",
-			       name, *fd, strerror(errno));
+		LOGP(DLGTP, LOGL_ERROR,
+		     "%s bind(fd=%d, addr=(%s:%d)) failed: Error = %s\n",
+		     name, *fd, in46a_ntoa(listen), port, strerror(errno));
 		return -errno;
 	}
 
 	return 0;
 }
 
-int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
-	    int mode)
+int gtp_new(struct gsn_t **gsn, char *statedir, struct in46_addr *listen, int mode)
 {
-	LOGP(DLGTP, LOGL_NOTICE, "GTP: gtp_newgsn() started at %s\n", inet_ntoa(*listen));
+	LOGP(DLGTP, LOGL_NOTICE, "GTP: gtp_newgsn() started at %s\n", in46a_ntoa(listen));
 
 	*gsn = calloc(sizeof(struct gsn_t), 1);	/* TODO */
 
@@ -511,15 +522,15 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 	(*gsn)->fd1u = -1;
 
 	/* Create GTP version 0 socket */
-	if (create_and_bind_socket("GTPv0", *gsn, &(*gsn)->fd0, AF_INET, listen, GTP0_PORT) < 0)
+	if (create_and_bind_socket("GTPv0", *gsn, &(*gsn)->fd0, listen, GTP0_PORT) < 0)
 		goto error;
 
 	/* Create GTP version 1 control plane socket */
-	if (create_and_bind_socket("GTPv1 control plane", *gsn, &(*gsn)->fd1c, AF_INET, listen, GTP1C_PORT) < 0)
+	if (create_and_bind_socket("GTPv1 control plane", *gsn, &(*gsn)->fd1c, listen, GTP1C_PORT) < 0)
 		goto error;
 
 	/* Create GTP version 1 user plane socket */
-	if (create_and_bind_socket("GTPv1 user plane", *gsn, &(*gsn)->fd1u, AF_INET, listen, GTP1U_PORT) < 0)
+	if (create_and_bind_socket("GTPv1 user plane", *gsn, &(*gsn)->fd1u, listen, GTP1U_PORT) < 0)
 		goto error;
 
 	/* Start internal queue timer */

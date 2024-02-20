@@ -40,4 +40,5 @@ static inline bool in46a_is_v4(const struct in46_addr *addr) {
 	return addr->len == sizeof(struct in_addr);
 }
 
+void in46a_to_gsna(struct ul16_t *gsna, const struct in46_addr *src);
 void in46a_from_gsna(const struct ul16_t *in, struct in46_addr *dst);

@@ -22,11 +22,13 @@ queue_test_SOURCES = \
 gtpie_test_LDADD = \
 	$(top_builddir)/lib/debug.o \
 	$(top_builddir)/gtp/libgtp.la \
+	$(top_builddir)/lib/libmisc.a \
 	$(LIBOSMOCORE_LIBS) \
 	$(NULL)
 
 queue_test_LDADD = \
 	$(top_builddir)/lib/debug.o \
 	$(top_builddir)/gtp/libgtp.la \
+	$(top_builddir)/lib/libmisc.a \
 	$(LIBOSMOCORE_LIBS) \
 	$(NULL)

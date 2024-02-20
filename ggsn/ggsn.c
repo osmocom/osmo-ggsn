@@ -822,7 +822,7 @@ int ggsn_start(struct ggsn_ctx *ggsn)
 	LOGPGGSN(LOGL_INFO, ggsn, "Starting GGSN\n");
 
 	/* Start libgtp listener */
-	if (gtp_new(&ggsn->gsn, ggsn->cfg.state_dir, &ggsn->cfg.listen_addr.v4, GTP_MODE_GGSN)) {
+	if (gtp_new(&ggsn->gsn, ggsn->cfg.state_dir, &ggsn->cfg.listen_addr, GTP_MODE_GGSN)) {
 		LOGPGGSN(LOGL_ERROR, ggsn, "Failed to create GTP: %s\n", strerror(errno));
 		return -1;
 	}
@@ -830,11 +830,9 @@ int ggsn_start(struct ggsn_ctx *ggsn)
 
 	/* patch in different addresses to use (in case we're behind NAT, the listen
 	 * address is different from what we advertise externally) */
-	if (ggsn->cfg.gtpc_addr.v4.s_addr)
-		ggsn->gsn->gsnc = ggsn->cfg.gtpc_addr.v4;
+	ggsn->gsn->gsnc = ggsn->cfg.gtpc_addr;
 
-	if (ggsn->cfg.gtpu_addr.v4.s_addr)
-		ggsn->gsn->gsnu = ggsn->cfg.gtpu_addr.v4;
+	ggsn->gsn->gsnu = ggsn->cfg.gtpu_addr;
 
 	/* Register File Descriptors */
 	osmo_fd_setup(&ggsn->gtp_fd0, ggsn->gsn->fd0, OSMO_FD_READ, ggsn_gtp_fd_cb, ggsn, 0);
