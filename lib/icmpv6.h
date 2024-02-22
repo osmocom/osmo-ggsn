@@ -5,8 +5,8 @@
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/endian.h>
 
-#include "../gtp/gtp.h"
-#include "../gtp/pdp.h"
+#include <osmocom/gtp/gtp.h>
+#include <osmocom/gtp/pdp.h>
 
 #define ICMPv6_OPT_TYPE_PREFIX_INFO 0x03
 

@@ -7,6 +7,7 @@ AM_CFLAGS = \
 	    -fno-builtin \
 	    -Wall \
 	    -DSBINDIR='"$(sbindir)"' \
+	    -I$(top_srcdir)/include \
 	    $(LIBOSMOCORE_CFLAGS) \
 	    $(LIBOSMOCTRL_CFLAGS) \
 	    $(LIBOSMOVTY_CFLAGS) \

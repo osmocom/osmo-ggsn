@@ -21,10 +21,11 @@
 
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/utils.h>
-#include "checksum.h"
 
-#include "../gtp/gtp.h"
-#include "../gtp/pdp.h"
+#include <osmocom/gtp/gtp.h>
+#include <osmocom/gtp/pdp.h>
+
+#include "checksum.h"
 #include "ippool.h"
 #include "syserr.h"
 #include "icmpv6.h"

@@ -6,12 +6,11 @@ LIBVERSION=9:1:3
 
 lib_LTLIBRARIES = libgtp.la
 
-include_HEADERS = gtp.h gsn.h pdp.h gtpie.h
-
 AM_CFLAGS = \
 	    -fno-builtin \
 	    -Wall \
 	    -DSBINDIR='"$(sbindir)"' \
+	    -I$(top_srcdir)/include \
 	    $(LIBOSMOCORE_CFLAGS) \
 	    $(NULL)
 

@@ -35,8 +35,8 @@
 #include <osmocom/vty/misc.h>
 #include <osmocom/vty/tdef_vty.h>
 
-#include "../gtp/gtp.h"
-#include "../gtp/pdp.h"
+#include <osmocom/gtp/gtp.h>
+#include <osmocom/gtp/pdp.h>
 
 #include "../lib/util.h"
 

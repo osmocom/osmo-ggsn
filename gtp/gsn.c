@@ -57,9 +57,10 @@
 
 /* #include <stdint.h>  ISO C99 types */
 
-#include "pdp.h"
-#include "gtp.h"
-#include "gtpie.h"
+#include <osmocom/gtp/pdp.h>
+#include <osmocom/gtp/gtp.h>
+#include <osmocom/gtp/gtpie.h>
+
 #include "queue.h"
 
 /* Error reporting functions */

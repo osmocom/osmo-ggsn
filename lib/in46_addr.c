@@ -10,7 +10,7 @@
  */
 
 #include "../lib/in46_addr.h"
-#include "../gtp/pdp.h"
+#include <osmocom/gtp/pdp.h>
 
 #include <osmocom/core/utils.h>
 

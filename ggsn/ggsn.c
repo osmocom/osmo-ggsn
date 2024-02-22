@@ -46,14 +46,15 @@
 #include <osmocom/ctrl/control_if.h>
 #include <osmocom/gsm/apn.h>
 
+#include <osmocom/gtp/pdp.h>
+#include <osmocom/gtp/gtp.h>
+
 #include "../lib/tun.h"
 #include "../lib/ippool.h"
 #include "../lib/syserr.h"
 #include "../lib/in46_addr.h"
 #include "../lib/gtp-kernel.h"
 #include "../lib/util.h"
-#include "../gtp/pdp.h"
-#include "../gtp/gtp.h"
 #include "../lib/icmpv6.h"
 #include "pco.h"
 #include "ggsn.h"
