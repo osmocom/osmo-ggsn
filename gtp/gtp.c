@@ -1297,8 +1297,8 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 	}
 
 	/* Initialize our own IP addresses */
-	in46a_to_gsna(&pdp->gsnlc, &gsn->gsnc);
-	in46a_to_gsna(&pdp->gsnlu, &gsn->gsnu);
+	in_addr2gsna(&pdp->gsnlc, &gsn->gsnc);
+	in_addr2gsna(&pdp->gsnlu, &gsn->gsnu);
 
 	if (!gtp_pdp_getimsi(gsn, &pdp_old, pdp->imsi, pdp->nsapi)) {
 		/* Found old pdp with same tid. Now the voodoo begins! */

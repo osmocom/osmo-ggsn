@@ -376,14 +376,6 @@ default_to_dyn_v4:
 	return 1;
 }
 
-void in46a_to_gsna(struct ul16_t *gsna, const struct in46_addr *src)
-{
-	memset(gsna, 0, sizeof(struct ul16_t));
-	gsna->l = src->len;
-	OSMO_ASSERT(gsna->l <= sizeof(gsna->v));
-	memcpy(gsna->v, &src->v6, gsna->l);
-}
-
 void in46a_from_gsna(const struct ul16_t *in, struct in46_addr *dst)
 {
 	dst->len = in->l;

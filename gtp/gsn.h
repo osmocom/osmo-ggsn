@@ -18,7 +18,6 @@
 #include <osmocom/core/tdef.h>
 #include <osmocom/core/rate_ctr.h>
 
-#include "../lib/in46_addr.h"
 #include "pdp.h"
 
 #define GTP_MODE_GGSN 1
@@ -78,8 +77,8 @@ struct gsn_t {
 	int fd1c;		/* GTP1 control plane file descriptor */
 	int fd1u;		/* GTP0 user plane file descriptor */
 	int mode;		/* Mode of operation: GGSN or SGSN */
-	struct in46_addr gsnc;	/* IP address of this gsn for signalling */
-	struct in46_addr gsnu;	/* IP address of this gsn for user traffic */
+	struct in_addr gsnc;	/* IP address of this gsn for signalling */
+	struct in_addr gsnu;	/* IP address of this gsn for user traffic */
 
 	/* Parameters related to signalling messages */
 	uint16_t seq_next;	/* Next sequence number to use */
@@ -118,7 +117,8 @@ struct gsn_t {
 
 /* External API functions */
 
-extern int gtp_new(struct gsn_t **gsn, char *statedir, struct in46_addr *listen, int mode);
+extern int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
+		   int mode);
 
 extern int gtp_free(struct gsn_t *gsn);
 

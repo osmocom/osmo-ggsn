@@ -59,7 +59,6 @@
 #include "../lib/syserr.h"
 #include "../lib/netns.h"
 #include "../lib/icmpv6.h"
-#include "../lib/in46_addr.h"
 #include "../gtp/pdp.h"
 #include "../gtp/gtp.h"
 #include "cmdline.h"
@@ -118,7 +117,7 @@ struct {
 	int pingsize;
 	int pingcount;
 	int pingquiet;
-	struct in46_addr listen;
+	struct in_addr listen;
 	struct in_addr remote;
 	struct in_addr dns;
 	int contexts;		/* Number of contexts to create */
@@ -460,10 +459,10 @@ static int process_options(int argc, char **argv)
 				args_info.listen_arg);
 			return -1;
 		} else {
-			options.listen.len = host->h_length;
-			memcpy(&options.listen.v6, host->h_addr, host->h_length);
+			memcpy(&options.listen.s_addr, host->h_addr,
+			       host->h_length);
 			printf("Local IP address is:   %s (%s)\n",
-			       args_info.listen_arg, in46a_ntoa(&options.listen));
+			       args_info.listen_arg, inet_ntoa(options.listen));
 		}
 	} else {
 		SYS_ERR(DSGSN, LOGL_ERROR, 0,
