@@ -54,13 +54,14 @@
 #endif // HAVE_IN6_ADDR_GEN_MODE_NONE
 #endif
 
+#include <osmocom/gtp/pdp.h>
+#include <osmocom/gtp/gtp.h>
+
 #include "../lib/tun.h"
 #include "../lib/ippool.h"
 #include "../lib/syserr.h"
 #include "../lib/netns.h"
 #include "../lib/icmpv6.h"
-#include "../gtp/pdp.h"
-#include "../gtp/gtp.h"
 #include "cmdline.h"
 
 #define IPADDRLEN 256		/* Character length of addresses */

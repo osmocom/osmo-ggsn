@@ -9,7 +9,7 @@
  *
  */
 
-#include "../gtp/pdp.h"
+#include <osmocom/gtp/pdp.h>
 
 #include "ippool.h"
 #include "in46_addr.h"

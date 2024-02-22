@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <netinet/in.h>
 
-#include "../gtp/pdp.h"
+#include <osmocom/gtp/pdp.h>
 
 /* a simple wrapper around an in6_addr to also contain the length of the address,
  * thereby implicitly indicating the address family of the address */

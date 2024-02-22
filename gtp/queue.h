@@ -19,7 +19,7 @@
 
 #include <osmocom/core/linuxlist.h>
 
-#include "gtp.h"
+#include <osmocom/gtp/gtp.h>
 
 #define QUEUE_DEBUG 0		/* Print debug information */
 

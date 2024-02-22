@@ -10,8 +10,9 @@
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/bits.h>
 
+#include <osmocom/gtp/gtpie.h>
+
 #include "../../lib/syserr.h"
-#include "../../gtp/gtpie.h"
 
 static const uint8_t in[] = { 1,2,3,4,5,6 };
 static uint8_t buf[256];

@@ -23,12 +23,13 @@
 
 #include <time.h>
 
+#include <osmocom/gtp/pdp.h>
+#include <osmocom/gtp/gtp.h>
+
 #include "../lib/tun.h"
 #include "../lib/syserr.h"
 #include "../lib/util.h"
 #include "../lib/ippool.h"
-#include "../gtp/pdp.h"
-#include "../gtp/gtp.h"
 
 #include "gtp-kernel.h"
 

@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-#include "../gtp/pdp.h"
+#include <osmocom/gtp/pdp.h>
 
 /* 3GPP TS 24.008 10.5.6.3 */
 enum pco_protocols {

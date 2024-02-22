@@ -7,5 +7,8 @@ Name: OsmoGGSN GTP Library
 Description: C Utility Library
 Version: @VERSION@
 Libs: -L${libdir} -lgtp
-Cflags: -I${includedir}/
 
+# Add two include paths to support:
+# * #include <osmocom/gtp/gtp.h> (like other Osmocom headers)
+# * #include <gtp.h> (legacy compat)
+Cflags: -I${includedir}/osmocom/gtp/ -I${includedir}/
