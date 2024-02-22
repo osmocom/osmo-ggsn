@@ -15,6 +15,20 @@ AM_CFLAGS = \
 	    $(LIBOSMOCORE_CFLAGS) \
 	    $(NULL)
 
-libgtp_la_SOURCES = gtp.c gtp.h gsn.c gsn.h gtpie.c gtpie.h pdp.c pdp.h lookupa.c lookupa.h queue.c queue.h
+libgtp_la_SOURCES = \
+		    gsn.c \
+		    gsn.h \
+		    gtp.c \
+		    gtp.h \
+		    gtpie.c \
+		    gtpie.h \
+		    lookupa.c \
+		    lookupa.h \
+		    pdp.c \
+		    pdp.h \
+		    queue.c \
+		    queue.h \
+		    $(NULL)
+
 libgtp_la_LDFLAGS = -version-info $(LIBVERSION) -no-undefined
 libgtp_la_LIBADD = $(LIBOSMOCORE_LIBS)
