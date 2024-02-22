@@ -6,26 +6,21 @@ LIBVERSION=9:1:3
 
 lib_LTLIBRARIES = libgtp.la
 
-include_HEADERS = gtp.h gsn.h pdp.h gtpie.h
-
 AM_CFLAGS = \
 	    -fno-builtin \
 	    -Wall \
 	    -DSBINDIR='"$(sbindir)"' \
+	    -I$(top_srcdir)/include \
 	    $(LIBOSMOCORE_CFLAGS) \
 	    $(NULL)
 
 libgtp_la_SOURCES = \
 		    gsn.c \
-		    gsn.h \
 		    gtp.c \
-		    gtp.h \
 		    gtpie.c \
-		    gtpie.h \
 		    lookupa.c \
 		    lookupa.h \
 		    pdp.c \
-		    pdp.h \
 		    queue.c \
 		    queue.h \
 		    $(NULL)

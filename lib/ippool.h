@@ -13,7 +13,7 @@
 #define _IPPOOL_H
 
 #include "../lib/in46_addr.h"
-#include "../gtp/gtp.h"
+#include <osmocom/gtp/gtp.h>
 
 /* Assuming that the address space is fragmented we need a hash table
    in order to return the addresses.

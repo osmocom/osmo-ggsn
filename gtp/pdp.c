@@ -28,8 +28,10 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <inttypes.h>
-#include "pdp.h"
-#include "gtp.h"
+
+#include <osmocom/gtp/pdp.h>
+#include <osmocom/gtp/gtp.h>
+
 #include "lookupa.h"
 #include "queue.h"
 

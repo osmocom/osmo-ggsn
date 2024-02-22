@@ -8,7 +8,7 @@
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/timer.h>
 
-#include "../gtp/pdp.h"
+#include <osmocom/gtp/pdp.h>
 
 struct ggsn_ctx;
 struct pdp_priv_t;

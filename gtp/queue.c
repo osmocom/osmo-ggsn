@@ -27,8 +27,10 @@
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <string.h>
-#include "pdp.h"
-#include "gtp.h"
+
+#include <osmocom/gtp/pdp.h>
+#include <osmocom/gtp/gtp.h>
+
 #include "queue.h"
 
 /*! \brief dump a queue_t to stdout */

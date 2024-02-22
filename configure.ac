@@ -266,6 +266,9 @@ AC_CONFIG_FILES([Makefile
                  tests/Makefile
                  tests/lib/Makefile
                  tests/gtp/Makefile
+                 include/Makefile
+                 include/osmocom/Makefile
+                 include/osmocom/gtp/Makefile
                  libgtp.pc])
 AC_OUTPUT
 

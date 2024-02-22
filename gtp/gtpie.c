@@ -37,7 +37,7 @@
 #include <netinet/in.h>
 #include <string.h>
 
-#include "gtpie.h"
+#include <osmocom/gtp/gtpie.h>
 
 /*! Encode a TLV type Information Element.
  *  \param[inout] p Pointer to output packet to which IE is appended
