@@ -16,6 +16,7 @@ AM_CFLAGS = \
 
 libgtp_la_SOURCES = \
 		    gsn.c \
+		    gsn_internal.h \
 		    gtp.c \
 		    gtpie.c \
 		    lookupa.c \

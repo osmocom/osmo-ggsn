@@ -62,6 +62,7 @@
 #include <osmocom/gtp/gtpie.h>
 
 #include "queue.h"
+#include "gsn_internal.h"
 
 /* Error reporting functions */
 
