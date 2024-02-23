@@ -116,6 +116,12 @@ struct osmo_tdef gtp_T_defs[] = {
 	{}
 };
 
+static void *gsn_ctx = NULL;
+
+static __attribute__((constructor)) void on_dso_load_init_ctx(void)
+{
+	gsn_ctx = talloc_named_const(NULL, 1, "libgtp gsn.c");
+}
 
 /* API Functions */
 
@@ -466,7 +472,7 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 {
 	LOGP(DLGTP, LOGL_NOTICE, "GTP: gtp_newgsn() started at %s\n", inet_ntoa(*listen));
 
-	*gsn = calloc(sizeof(struct gsn_t), 1);	/* TODO */
+	*gsn = talloc_zero(gsn_ctx, struct gsn_t);
 
 	(*gsn)->statedir = statedir;
 	log_restart(*gsn);
@@ -550,7 +556,7 @@ int gtp_free(struct gsn_t *gsn)
 
 	rate_ctr_group_free(gsn->ctrg);
 
-	free(gsn);
+	talloc_free(gsn);
 	return 0;
 }
 
