@@ -7,13 +7,13 @@
 #include <osmocom/core/select.h>
 #include <osmocom/core/timer.h>
 #include <osmocom/core/tdef.h>
+#include <osmocom/core/in46_addr.h>
 #include <osmocom/ctrl/control_if.h>
 #include <osmocom/gtp/gtp.h>
 
 #include "../lib/tun.h"
 #include "../lib/ippool.h"
 #include "../lib/syserr.h"
-#include "../lib/in46_addr.h"
 
 #include "sgsn.h"
 

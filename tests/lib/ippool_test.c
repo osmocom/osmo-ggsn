@@ -8,8 +8,8 @@
 #include <osmocom/core/application.h>
 #include <osmocom/core/logging.h>
 #include <osmocom/core/msgb.h>
+#include <osmocom/core/in46_addr.h>
 
-#include "../../lib/in46_addr.h"
 #include "../../lib/ippool.h"
 #include "../../lib/syserr.h"
 

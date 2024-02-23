@@ -9,10 +9,10 @@
  *
  */
 
+#include <osmocom/core/in46_addr.h>
 #include <osmocom/gtp/pdp.h>
 
 #include "ippool.h"
-#include "in46_addr.h"
 
 /*! Get the peer of pdp based on IP version used.
 *  \param[in] pdp PDP context to select the peer from.

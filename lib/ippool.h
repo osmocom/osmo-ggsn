@@ -12,7 +12,7 @@
 #ifndef _IPPOOL_H
 #define _IPPOOL_H
 
-#include "../lib/in46_addr.h"
+#include <osmocom/core/in46_addr.h>
 #include <osmocom/gtp/gtp.h>
 
 /* Assuming that the address space is fragmented we need a hash table

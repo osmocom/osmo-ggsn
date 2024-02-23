@@ -16,7 +16,7 @@
 #include <stdbool.h>
 #include <net/if.h>
 
-#include "../lib/in46_addr.h"
+#include <osmocom/core/in46_addr.h>
 
 #define PACKET_MAX      8196	/* Maximum packet size we receive */
 #define TUN_SCRIPTSIZE   256

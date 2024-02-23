@@ -9,3 +9,4 @@
 #library	what		description / commit summary line
 libgtp		REMOVE		remove GTP cause defines of reserved values
 libgtpnl > 1.2.5		gtp_tunnel_set_family()
+libosmocore > 1.9.0		moved in46_addr code to libosmocore

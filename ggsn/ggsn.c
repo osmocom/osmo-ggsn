@@ -43,6 +43,7 @@
 #include <netinet/ip6.h>
 
 #include <osmocom/core/timer.h>
+#include <osmocom/core/in46_addr.h>
 #include <osmocom/ctrl/control_if.h>
 #include <osmocom/gsm/apn.h>
 
@@ -52,7 +53,6 @@
 #include "../lib/tun.h"
 #include "../lib/ippool.h"
 #include "../lib/syserr.h"
-#include "../lib/in46_addr.h"
 #include "../lib/gtp-kernel.h"
 #include "../lib/util.h"
 #include "../lib/icmpv6.h"

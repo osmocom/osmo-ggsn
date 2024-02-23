@@ -13,7 +13,7 @@
 
 #include <net/if.h>
 
-#include "../lib/in46_addr.h"
+#include <osmocom/core/in46_addr.h>
 
 #define TUN_NLBUFSIZE   1024
 
