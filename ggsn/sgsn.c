@@ -1,6 +1,6 @@
 #include "sgsn.h"
 #include "ggsn.h"
-
+#include "../gtp/gtp_internal.h"
 
 static bool sgsn_peer_attempt_free(struct sgsn_peer *sgsn)
 {

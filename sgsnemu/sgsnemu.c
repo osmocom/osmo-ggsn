@@ -62,6 +62,7 @@
 #include "../lib/syserr.h"
 #include "../lib/netns.h"
 #include "../lib/icmpv6.h"
+#include "../gtp/gtp_internal.h"
 #include "cmdline.h"
 
 #define IPADDRLEN 256		/* Character length of addresses */
