@@ -175,7 +175,4 @@ extern int gtp_fd(struct gsn_t *gsn);
 extern int gtp_retrans(struct gsn_t *gsn) OSMO_DEPRECATED("This API is a no-op, libgtp already does the job internally");
 extern int gtp_retranstimeout(struct gsn_t *gsn, struct timeval *timeout) OSMO_DEPRECATED("This API is a no-op and will return a 1 day timeout");
 
-/* Internal APIs: */
-void gtp_queue_timer_start(struct gsn_t *gsn);
-
 #endif /* !_GSN_H */

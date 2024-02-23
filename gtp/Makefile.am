@@ -17,6 +17,7 @@ AM_CFLAGS = \
 libgtp_la_SOURCES = \
 		    gsn.c \
 		    gsn.h \
+		    gsn_internal.h \
 		    gtp.c \
 		    gtp.h \
 		    gtpie.c \
