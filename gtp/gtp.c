@@ -61,6 +61,7 @@
 
 #include "queue.h"
 #include "gsn_internal.h"
+#include "gtp_internal.h"
 
 /* Error reporting functions */
 
