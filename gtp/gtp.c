@@ -61,6 +61,7 @@
 
 #include "queue.h"
 #include "gsn_internal.h"
+#include "gtp_internal.h"
 
 /* Error reporting functions */
 
@@ -640,8 +641,8 @@ int gtp_echo_req(struct gsn_t *gsn, int version, void *cbp,
 }
 
 /* Send off an echo reply */
-int gtp_echo_resp(struct gsn_t *gsn, int version,
-		  struct sockaddr_in *peer, int fd, void *pack, unsigned len)
+static int gtp_echo_resp(struct gsn_t *gsn, int version,
+			 struct sockaddr_in *peer, int fd, void *pack, unsigned len)
 {
 	union gtp_packet packet;
 	unsigned int length = get_default_gtp(version, GTP_ECHO_RSP, &packet);
@@ -652,8 +653,8 @@ int gtp_echo_resp(struct gsn_t *gsn, int version,
 }
 
 /* Handle a received echo request */
-int gtp_echo_ind(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
-		 int fd, void *pack, unsigned len)
+static int gtp_echo_ind(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
+			int fd, void *pack, unsigned len)
 {
 
 	/* Check if it was a duplicate request */
@@ -665,8 +666,8 @@ int gtp_echo_ind(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
 }
 
 /* Handle a received echo reply */
-int gtp_echo_conf(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
-		  void *pack, unsigned len)
+static int gtp_echo_conf(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
+			 void *pack, unsigned len)
 {
 	union gtpie_member *ie[GTPIE_SIZE];
 	unsigned char recovery;
@@ -718,8 +719,8 @@ int gtp_echo_conf(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
  * only listen to the GTP0 port, and therefore will never receive
  * anything else than GTP0 */
 
-int gtp_unsup_req(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
-		  int fd, void *pack, unsigned len)
+static int gtp_unsup_req(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
+			 int fd, void *pack, unsigned len)
 {
 	union gtp_packet packet;
 
@@ -729,8 +730,8 @@ int gtp_unsup_req(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
 }
 
 /* Handle a Version Not Supported message */
-int gtp_unsup_ind(struct gsn_t *gsn, struct sockaddr_in *peer,
-		  void *pack, unsigned len)
+static int gtp_unsup_ind(struct gsn_t *gsn, struct sockaddr_in *peer,
+			 void *pack, unsigned len)
 {
 
 	if (gsn->cb_unsup_ind)
@@ -848,7 +849,7 @@ int gsna2in_addr(struct in_addr *dst, struct ul16_t *gsna)
 	return 0;
 }
 
-int in_addr2gsna(struct ul16_t *gsna, struct in_addr *src)
+static int in_addr2gsna(struct ul16_t *gsna, struct in_addr *src)
 {
 	memset(gsna, 0, sizeof(struct ul16_t));
 	gsna->l = 4;
@@ -1025,8 +1026,8 @@ int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
 }
 
 /* Send Create PDP Context Response */
-int gtp_create_pdp_resp(struct gsn_t *gsn, int version, struct pdp_t *pdp,
-			uint8_t cause)
+static int gtp_create_pdp_resp(struct gsn_t *gsn, int version, struct pdp_t *pdp,
+			       uint8_t cause)
 {
 	union gtp_packet packet;
 	unsigned int length =
@@ -1101,9 +1102,9 @@ int gtp_create_context_resp(struct gsn_t *gsn, struct pdp_t *pdp, int cause)
 }
 
 /* Handle Create PDP Context Request */
-int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
-		       struct sockaddr_in *peer, int fd,
-		       void *pack, unsigned len)
+static int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
+			      struct sockaddr_in *peer, int fd,
+			      void *pack, unsigned len)
 {
 	struct pdp_t *pdp, *pdp_old;
 	struct pdp_t pdp_buf;
@@ -1426,8 +1427,8 @@ recover_ret:
 }
 
 /* Handle Create PDP Context Response */
-int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
-			struct sockaddr_in *peer, void *pack, unsigned len)
+static int gtp_create_pdp_conf(struct gsn_t *gsn, int version,
+			       struct sockaddr_in *peer, void *pack, unsigned len)
 {
 	struct pdp_t *pdp;
 	union gtpie_member *ie[GTPIE_SIZE];
@@ -2193,11 +2194,11 @@ int gtp_delete_context_req2(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 }
 
 /* Send Delete PDP Context Response */
-int gtp_delete_pdp_resp(struct gsn_t *gsn, int version,
-			struct sockaddr_in *peer, int fd,
-			void *pack, unsigned len,
-			struct pdp_t *pdp, struct pdp_t *linked_pdp,
-			uint8_t cause, int teardown)
+static int gtp_delete_pdp_resp(struct gsn_t *gsn, int version,
+			       struct sockaddr_in *peer, int fd,
+			       void *pack, unsigned len,
+			       struct pdp_t *pdp, struct pdp_t *linked_pdp,
+			       uint8_t cause, int teardown)
 {
 	union gtp_packet packet;
 	unsigned int length =
@@ -2238,9 +2239,9 @@ int gtp_delete_pdp_resp(struct gsn_t *gsn, int version,
 }
 
 /* Handle Delete PDP Context Request */
-int gtp_delete_pdp_ind(struct gsn_t *gsn, int version,
-		       struct sockaddr_in *peer, int fd,
-		       void *pack, unsigned len)
+static int gtp_delete_pdp_ind(struct gsn_t *gsn, int version,
+			      struct sockaddr_in *peer, int fd,
+			      void *pack, unsigned len)
 {
 	struct pdp_t *pdp = NULL;
 	struct pdp_t *linked_pdp = NULL;
@@ -2337,8 +2338,8 @@ int gtp_delete_pdp_ind(struct gsn_t *gsn, int version,
 }
 
 /* Handle Delete PDP Context Response */
-int gtp_delete_pdp_conf(struct gsn_t *gsn, int version,
-			struct sockaddr_in *peer, void *pack, unsigned len)
+static int gtp_delete_pdp_conf(struct gsn_t *gsn, int version,
+			       struct sockaddr_in *peer, void *pack, unsigned len)
 {
 	union gtpie_member *ie[GTPIE_SIZE];
 	uint8_t cause;

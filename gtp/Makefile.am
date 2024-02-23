@@ -18,6 +18,7 @@ libgtp_la_SOURCES = \
 		    gsn.c \
 		    gsn_internal.h \
 		    gtp.c \
+		    gtp_internal.h \
 		    gtpie.c \
 		    lookupa.c \
 		    lookupa.h \

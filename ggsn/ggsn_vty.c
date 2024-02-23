@@ -42,6 +42,7 @@
 
 #include "ggsn.h"
 #include "sgsn.h"
+#include "../gtp/gtp_internal.h"
 
 #define PREFIX_STR	"Prefix (Network/Netmask)\n"
 #define IFCONFIG_STR	"GGSN-based interface configuration\n"
