@@ -101,7 +101,7 @@ OsmoGGSN(config-ggsn)# no shutdown ggsn <4>
 ----
 <1> Change into privileged mode
 <2> Enter the interactive configuration mode
-<3> Enter the config ndoe of the GGSN instance `ggsn0`
+<3> Enter the config node of the GGSN instance `ggsn0`
 <4> Take the GGSN instance out of shutdown
 
 
@@ -121,7 +121,7 @@ OsmoGGSN(config-ggsn)# shutdown ggsn <4>
 ----
 <1> Change into privileged mode
 <2> Enter the interactive configuration mode
-<3> Enter the config ndoe of the GGSN instance `ggsn0`
+<3> Enter the config node of the GGSN instance `ggsn0`
 <4> Shut down the GGSN instance
 
 
@@ -215,8 +215,8 @@ OsmoGGSN(config-ggsn-apn)# no shutdown <5>
 ----
 <1> Change into privileged mode
 <2> Enter the interactive configuration mode
-<3> Enter the config ndoe of the GGSN instance `ggsn0`
-<4> Enter the config ndoe of the APN `internet`
+<3> Enter the config node of the GGSN instance `ggsn0`
+<4> Enter the config node of the APN `internet`
 <5> Take the APN out of shutdown
 
 
@@ -237,8 +237,8 @@ OsmoGGSN(config-ggsn-apn)# shutdown <5>
 ----
 <1> Change into privileged mode
 <2> Enter the interactive configuration mode
-<3> Enter the config ndoe of the GGSN instance `ggsn0`
-<4> Enter the config ndoe of the APN `internet`
+<3> Enter the config node of the GGSN instance `ggsn0`
+<4> Enter the config node of the APN `internet`
 <5> Shut down the APN
 
 [[ggsn_no_root]]
