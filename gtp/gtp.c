@@ -1067,6 +1067,14 @@ int gtp_create_pdp_resp(struct gsn_t *gsn, int version, struct pdp_t *pdp,
 			pdp->fd, pdp->seq, pdp->tid);
 }
 
+static void in46a_to_gsna(struct ul16_t *gsna, const struct in46_addr *src)
+{
+	memset(gsna, 0, sizeof(struct ul16_t));
+	gsna->l = src->len;
+	OSMO_ASSERT(gsna->l <= sizeof(gsna->v));
+	memcpy(gsna->v, &src->v6, gsna->l);
+}
+
 /* Handle Create PDP Context Request */
 int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 		       struct sockaddr_in *peer, int fd,
@@ -1083,6 +1091,7 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 	int hlen = get_hlen(pack);
 	uint8_t linked_nsapi = 0;
 	struct pdp_t *linked_pdp = NULL;
+	struct in46_addr addr;
 
 	if (!gtp_duplicate(gsn, version, peer, seq))
 		return 0;
@@ -1300,8 +1309,11 @@ int gtp_create_pdp_ind(struct gsn_t *gsn, int version,
 	}
 
 	/* Initialize our own IP addresses */
-	in_addr2gsna(&pdp->gsnlc, &gsn->gsnc);
-	in_addr2gsna(&pdp->gsnlu, &gsn->gsnu);
+	gtp_get_gsnc(gsn, &addr);
+	in46a_to_gsna(&pdp->gsnlc, &addr);
+
+	gtp_get_gsnu(gsn, &addr);
+	in46a_to_gsna(&pdp->gsnlu, &addr);
 
 	if (!gtp_pdp_getimsi(gsn, &pdp_old, pdp->imsi, pdp->nsapi)) {
 		/* Found old pdp with same tid. Now the voodoo begins! */

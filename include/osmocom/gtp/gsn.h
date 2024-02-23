@@ -17,6 +17,7 @@
 #include <osmocom/core/timer.h>
 #include <osmocom/core/tdef.h>
 #include <osmocom/core/rate_ctr.h>
+#include <osmocom/core/in46_addr.h>
 
 #include "pdp.h"
 
@@ -77,6 +78,9 @@ struct gsn_t {
 	int fd1c;		/* GTP1 control plane file descriptor */
 	int fd1u;		/* GTP0 user plane file descriptor */
 	int mode;		/* Mode of operation: GGSN or SGSN */
+
+	/* If you access gsnc and gsnu directly, only IPv4 is supported. Use
+	 * gtp_new2(), gtp_get_gsnc(), gtp_get_gsnu() to support IPv6 too. */
 	struct in_addr gsnc;	/* IP address of this gsn for signalling */
 	struct in_addr gsnu;	/* IP address of this gsn for user traffic */
 
@@ -113,12 +117,19 @@ struct gsn_t {
 
 	/* Timers: */
 	struct osmo_tdef *tdef;
+
+	void *internal;
 };
 
 /* External API functions */
 
-extern int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
-		   int mode);
+extern int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen, int mode);
+extern int gtp_new2(struct gsn_t **gsn, char *statedir, struct in46_addr *listen, int mode);
+
+extern void gtp_get_gsnc(const struct gsn_t *gsn, struct in46_addr *dest);
+extern void gtp_get_gsnu(const struct gsn_t *gsn, struct in46_addr *dest);
+extern void gtp_set_gsnu(struct gsn_t *gsn, const struct in46_addr *addr);
+extern void gtp_set_gsnc(struct gsn_t *gsn, const struct in46_addr *addr);
 
 extern int gtp_free(struct gsn_t *gsn);
 
