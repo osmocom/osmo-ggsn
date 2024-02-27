@@ -115,6 +115,8 @@ int gtp_kernel_tunnel_add(struct pdp_t *pdp, const char *devname)
 	in46a_from_gsna(&pdp->gsnrc, &sgsn);
 
 	ms_addr_count = in46a_from_eua(&pdp->eua, ms);
+	if (ms_addr_count < 0)
+		return -1;
 
 	for (int i = 0; i < ms_addr_count; i++) {
 		t = gtp_tunnel_alloc();
@@ -169,6 +171,8 @@ int gtp_kernel_tunnel_del(struct pdp_t *pdp, const char *devname)
 	pdp_debug(__func__, devname, pdp);
 
 	ms_addr_count = in46a_from_eua(&pdp->eua, ms);
+	if (ms_addr_count < 0)
+		return -1;
 
 	for (int i = 0; i < ms_addr_count; i++) {
 		t = gtp_tunnel_alloc();
