@@ -108,7 +108,7 @@ int gtp_kernel_tunnel_add(struct pdp_t *pdp, const char *devname)
 	struct in46_addr ms[2];
 	struct in46_addr sgsn;
 	struct gtp_tunnel *t;
-	int ret;
+	int ret = 0;
 
 	pdp_debug(__func__, devname, pdp);
 
@@ -164,7 +164,7 @@ int gtp_kernel_tunnel_del(struct pdp_t *pdp, const char *devname)
 	int ms_addr_count;
 	struct in46_addr ms[2];
 	struct gtp_tunnel *t;
-	int ret;
+	int ret = 0;
 
 	pdp_debug(__func__, devname, pdp);
 
