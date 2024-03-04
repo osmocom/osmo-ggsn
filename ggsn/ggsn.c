@@ -534,6 +534,8 @@ int create_context_ind(struct pdp_t *pdp)
 	if (apn->cfg.gtpu_mode == APN_GTPU_MODE_KERNEL_GTP) {
 		if (gtp_kernel_tunnel_add(pdp, apn->tun.cfg.dev_name) < 0) {
 			LOGPPDP(LOGL_ERROR, pdp, "Cannot add tunnel to kernel: %s\n", strerror(errno));
+			if (addrv6 && errno == EINVAL)
+				LOGPPDP(LOGL_ERROR, pdp, "Maybe your kernel does not support GTP-U with IPv6 yet?\n");
 			gtp_create_context_resp(gsn, pdp, GTPCAUSE_SYS_FAIL);
 			return 0;
 		}
