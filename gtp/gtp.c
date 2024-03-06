@@ -537,8 +537,9 @@ static int gtp_resp(uint8_t version, struct gsn_t *gsn, struct pdp_t *pdp,
 		return -1;
 	}
 
-	gtp_resp2(gsn, packet, len, peer, fd, seq, tid, flow, tei);
+	return gtp_resp2(gsn, packet, len, peer, fd, seq, tid, flow, tei);
 }
+
 static int gtp_notification(struct gsn_t *gsn, uint8_t version,
 		     union gtp_packet *packet, int len,
 		     const struct sockaddr_in *peer, int fd, uint16_t seq)
@@ -840,8 +841,9 @@ int gtp_ran_info_relay_req(struct gsn_t *gsn, const struct sockaddr_in *peer,
 
 #define GSM_MI_TYPE_TLLI 0x05
 
+/* Send an SGSN Context Request for an MI */
 int gtp_sgsn_context_req(struct gsn_t *gsn, const struct in_addr *peer,
-			 const struct osmo_mobile_identity *mi, uint32_t teic,
+			 const struct osmo_mobile_identity *mi, uint16_t tlli, uint32_t teic,
 			 const struct ul16_t *sgsn_addr, const struct ul255_t *rai, void *cbp)
 {
 	union gtp_packet packet;
@@ -855,8 +857,12 @@ int gtp_sgsn_context_req(struct gsn_t *gsn, const struct in_addr *peer,
 
 	switch (mi->type) {
 	case GSM_MI_TYPE_IMSI:
-		gtpie_tv8(&packet, &length, GTP_MAX, GTPIE_IMSI, *(uint64_t *)mi->imsi); /* FIXME: proper decoding*/
+	{
+		uint64_t imsi = gtp_imsi_str2gtp(mi->imsi);
+		imsi = ntoh64(imsi);
+		gtpie_tv8(&packet, &length, GTP_MAX, GTPIE_IMSI, imsi);
 		break;
+	}
 	case GSM_MI_TYPE_TLLI:
 		gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_TLLI, mi->tmsi);
 		break;
@@ -864,6 +870,7 @@ int gtp_sgsn_context_req(struct gsn_t *gsn, const struct in_addr *peer,
 		gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_P_TMSI, mi->tmsi);
 		break;
 	default:
+		return -1;
 		/* TODO: Error */
 		break;
 	}
@@ -941,8 +948,9 @@ static int gtp_sgsn_context_ind(struct gsn_t *gsn, int version, struct sockaddr_
 	}
 
 	if (!gtpie_gettv8(ie, GTPIE_IMSI, 0, &imsi)) {
-		imsi = ntoh64(imsi);
 		mi.type = GSM_MI_TYPE_IMSI;
+		/* NOTE: gtpie_gettv8 already converts to host byte order, but imsi_gtp2str seems to prefer big endian */
+		imsi = ntoh64(imsi);
 		const char *imsi_str = imsi_gtp2str(&imsi);
 		memcpy(mi.imsi, imsi_str, sizeof(mi.imsi));
 	} else {
@@ -953,7 +961,7 @@ static int gtp_sgsn_context_ind(struct gsn_t *gsn, int version, struct sockaddr_
 
 done:
 	if (gsn->cb_sgsn_context_request_ind)
-		gsn->cb_sgsn_context_request_ind(gsn, peer, &rai_parsed, teic, &mi, ie);
+		gsn->cb_sgsn_context_request_ind(gsn, peer, seq, &rai_parsed, teic, &mi, ie);
 
 	return 0;
 
@@ -1029,9 +1037,9 @@ static int gtp_pdp_ctx(uint8_t *buf, unsigned int size, const struct pdp_t *pdp,
 	*ptr++ = pdp->pdp_id;
 	// PDP Type Org
 	*ptr++ = PDP_EUA_ORG_IETF;
+
 	// PDP Type No.
 	// PDP Address
-
 	switch (pdp->eua.v[1]) {
 	case PDP_EUA_TYPE_v4:
 	case PDP_EUA_TYPE_v4v6:
@@ -1079,7 +1087,7 @@ static int gtp_pdp_ctx(uint8_t *buf, unsigned int size, const struct pdp_t *pdp,
 }
 
 int gtp_sgsn_context_conf(struct gsn_t *gsn, struct sockaddr_in *peer, uint16_t seq,
-			 uint32_t teic, uint8_t cause, const struct in_addr *sgsn_addr, struct pdp_t *pdpctx, uint16_t sapi, struct ul255_t *mmctx, void *cbp)
+			 uint32_t teic, uint8_t cause, uint64_t imsi, const struct in_addr *sgsn_addr, struct pdp_t *pdpctx, uint16_t sapi, uint8_t *mmctx, int mm_len, void *cbp)
 {
 	union gtp_packet packet;
 	struct ul255_t pdp;
@@ -1089,14 +1097,18 @@ int gtp_sgsn_context_conf(struct gsn_t *gsn, struct sockaddr_in *peer, uint16_t 
 
 	// Cause - TV1
 	gtpie_tv1(&packet, &length, GTP_MAX, GTPIE_CAUSE, cause);
+
+	if (cause != GTPCAUSE_ACC_REQ)
+		return gtp_resp2(gsn, &packet, length, peer, gsn->fd1c, seq, 0, 0, teic);
+
 	// IMSI - TV8
-	//gtpie_tv8(&packet, &length, GTP_MAX, GTPIE_IMSI, imsi);
+	gtpie_tv8(&packet, &length, GTP_MAX, GTPIE_IMSI, imsi);
 
 	// TEIC - TV4
 	gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_TEI_C, pdpctx->teic_own);
 
 	// MM Ctx - TLV
-	gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_MM_CONTEXT, mmctx->l, mmctx->v);
+	gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_MM_CONTEXT, mm_len, mmctx);
 
 	// PDP Ctx - TLV
 	if (pdpctx) {
@@ -1129,7 +1141,6 @@ static int gtp_sgsn_context_conf_ind(struct gsn_t *gsn, int version, struct sock
 	uint8_t cause;
 	union gtpie_member *ie[GTPIE_SIZE];
 	struct pdp_t *pdp = NULL;
-	uint64_t imsi;
 	uint32_t teic;
 	struct ul16_t sgsn_addr;
 

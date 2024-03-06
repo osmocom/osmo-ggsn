@@ -109,7 +109,7 @@ struct gsn_t {
 	int (*cb_recovery) (struct sockaddr_in * peer, uint8_t recovery);
 	int (*cb_recovery2) (struct sockaddr_in * peer, struct pdp_t * pdp, uint8_t recovery);
 	int (*cb_recovery3) (struct gsn_t *gsn, struct sockaddr_in *peer, struct pdp_t *pdp, uint8_t recovery);
-	int (*cb_sgsn_context_request_ind) (struct gsn_t *gsn, struct sockaddr_in *peer, const struct osmo_routing_area_id *rai, uint32_t teic, struct osmo_mobile_identity *mi, union gtpie_member **ie); /* Pass RAI and TLLI/TMSI/IMSI directly */
+	int (*cb_sgsn_context_request_ind) (struct gsn_t *gsn, struct sockaddr_in *peer, uint16_t seq, const struct osmo_routing_area_id *rai, uint32_t teic, struct osmo_mobile_identity *mi, union gtpie_member **ie); /* Pass RAI and TLLI/TMSI/IMSI directly */
 
 	/* Counters */
 	struct rate_ctr_group *ctrg;
@@ -158,7 +158,7 @@ extern int gtp_set_cb_ran_info_relay_ind(struct gsn_t *gsn,
 				    int (*cb) (struct sockaddr_in * peer, union gtpie_member **ie));
 
 extern int gtp_set_cb_sgsn_context_request_ind(struct gsn_t *gsn,
-			     int (*cb) (struct gsn_t *gsn, struct sockaddr_in *peer, const struct osmo_routing_area_id *rai, uint32_t teic, struct osmo_mobile_identity *mi, union gtpie_member **ie));
+			     int (*cb) (struct gsn_t *gsn, struct sockaddr_in *peer, uint16_t seq, const struct osmo_routing_area_id *rai, uint32_t teic, struct osmo_mobile_identity *mi, union gtpie_member **ie));
 
 extern int gtp_set_cb_conf(struct gsn_t *gsn,
 			   int (*cb) (int type, int cause, struct pdp_t * pdp,
