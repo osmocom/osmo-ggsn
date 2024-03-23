@@ -6,8 +6,8 @@ GPRS Support Node), a core network element of ETSI/3GPP cellular
 networks such as GPRS, EDGE, UMTS or HSPA.
 
 **OsmoGGSN** is part of the [Osmocom](https://osmocom.org/) Open Source
-Mobile Communications projects and the successor to OpenGGSN.
-OpenGGSN was developed until 2004 by Mondru AB.
+Mobile Communications projects and the successor to OpenGGSN (which was
+developed until 2004 by Mondru AB).
 
 Homepage
 --------
@@ -89,59 +89,31 @@ The tun driver is required for proper operation of openggsn. For Linux
 kernels later than 2.4.7 the driver is typically included, but might
 need to be configured for automatic loading:
 
-1. Add the following line to /etc/modules.conf: alias char-major-10-200 tun 
-2. depmod -a
+1. Add the following line to `/etc/modules.conf`: `alias char-major-10-200 tun`
+2. `depmod -a`
 
 
 Installation from binary
 ------------------------
 
-OsmoGGSN is built for common versions of Debian and Ubuntu as part of
+OsmoGGSN is built for common versions of Debian, Ubuntu and other distributions part of
 the [Osmocom Nightly Builds](https://osmocom.org/projects/cellular-infrastructure/wiki/Nightly_Builds)
-project.  If you don't want to do development, it is suggested to simply
-use those binary packages, rather than building yourself from source.
+and [Osmocom Latest Builds](https://osmocom.org/projects/cellular-infrastructure/wiki/Latest_Builds).
+If you don't want to do development, it is suggested to simply use those binary packages, rather than building
+yourself from source.
 
 
 Installation from source
 ------------------------
 
-1. ./configure
-2. make
-3. make install
+```
+./configure
+make
+make install
+```
 
 You need to be root in order to install the package, but not in order
 to compile.
-
-
-Running
--------
-
-*sgsnemu*
-Start the emulator as root using the command:
-
-  sgsnemu -l 10.0.0.50 -r 10.0.0.40 --createif --defaultroute
-
-This will cause the sgsn emulator to bind to local address 10.0.0.50
-and connect to the ggsn found at 10.0.0.40. It will first send off an
-ECHO_REQUEST message. After this it will attempt to establish a pdp
-context. If successful it will create a local interface and set up
-routing. Now you should be able to ping through the connection. Use a
-network analysator such as ethereal to monitor the traffic.
-
-sgsnemu -h will show a list of available options. 
-
-sgsnemu -c sgsnemu.conf will use sgsnemu.conf as a configuration
-file. A sample file is provided in examples/sgsnemu.conf.
-
-*ggsn*
-Edit the configuration file ggsn.conf found under openggsn/examples.
-Start the ggsn as root using the command:
-
-ggsn --fg -c examples/ggsn.conf -l 10.0.0.40 --statedir ./
-
-This will run the ggsn in foreground using the local interface
-10.0.0.40. If you don't have a GSM network available for testing you
-can use sgsnemu to test the GGSN.
 
 
 Support
@@ -158,9 +130,10 @@ OsmoGGSN is an open source implementation of GPRS Support Nodes
 version 1.
 
 OsmoGGSN provides 3 components:
- * gtplib
- * osmo-ggsn
- * sgsnemu
+
+ * *libgtp*, a shared library for the GTPv1C protocol
+ * *osmo-ggsn*, the GGSN itself
+ * *sgsnemu*, a SGSN emulator
 
 *gtplib*
 This library contains all functionality relating to the GTP
@@ -196,10 +169,10 @@ Both osmo-ggsn and sgsnemu uses the tun package. You need at least tun
 version 1.1. With Linux tun is normally included from kernel version
 2.4.7. To configure automatic loading:
 
-1. Add the following line to /etc/modules.conf: alias char-major-10-200 tun 
-2. depmod -a
+1. Add the following line to `/etc/modules.conf`: `alias char-major-10-200 tun`
+2. `depmod -a`
 
-Alternatively you can execute "modprobe tun" on the commandline.
+Alternatively you can execute `modprobe tun` on the commandline.
 
 Gengetopt
 ---------
@@ -209,11 +182,13 @@ cmdline.ggo source file. You need at least gengetopt version 2.8. If
 you are just going to compile the programs you don't need gengetopt.
 
 To use gengetopt for the sgsnemu do the following:
+```
 cd sgsnemu
 gengetopt < cmdline.ggo --conf-parser
+```
 
 For more information about gengetopt see
-http://www.gnu.org/software/gengetopt/gengetopt.html
+<http://www.gnu.org/software/gengetopt/gengetopt.html>
 
 
 Compilation and Installation
@@ -227,27 +202,21 @@ Running osmo-ggsn
 
 Use osmo-ggsn -h for a list of available options. All options available on
 the command line can also be given in a configuration file. See
-examples/osmo-ggsn.cfg for the format of this file.
+`doc/examples/osmo-ggsn.cfg` for the format of this file.
 
 Start osmo-ggsn as root using the command:
 
-osmo-ggsn -c examples/osmo-ggsn.cfg
+`osmo-ggsn -c doc/examples/osmo-ggsn.cfg`
 
-First a tun network interface will be created. In the above example
-the network interface address is 192.168.0.0 and the mask is
-255.255.255.0. You can check that this interface is up by using
-ifconfig.
+First, a tun network interface will be created for each configured apn.
 
 After tun has been successfully established the ggsn will wait for GTP
-create PDP context requests on the local interface
-10.0.0.40. Currently all requests are accepted, and no password,
-username or APN validation is performed.
+create PDP context requests on the configured `gtp bind-ip` address.
+Currently all requests are accepted, and no password, username validation is performed.
 
-When receiving a create PDP context request a dynamic IP address will
-be allocated from the address pool determined by --dynip. In the above
-example the first allocated address will be 192.168.0.1, followed by
-192.168.0.2 and so on. The request is confirmed by sending a create
-PDP context response message to the peer (SGSN).
+When receiving a create PDP context request for a given APN, a dynamic IP address will
+be allocated from the address pool defined in the config file section for that apn.
+The request is confirmed by sending a create PDP context response message to the peer (SGSN).
 
 Now IP packets will be forwarded between the tun network interface and
 the established GTP tunnel. In order to allow users to access the
@@ -255,22 +224,22 @@ external network routing needs to be set up. If private addresses are
 used you need to configure network address translation. See the Linux
 Networking HOWTO for details.
 
-Remember to enable routing: 
+Remember to enable routing:
 
-echo 1 > /proc/sys/net/ipv4/ip_forward
+`echo 1 > /proc/sys/net/ipv4/ip_forward`
 
-If you installed using a binary RPM package it is possible to start
-osmo-ggsn by using the Sys 5 script:
+If you're using systemd and did `make install` or installed from a bianry package,
+you can start osmo-ggsn by using the included systemd service/unit file:
 
-/etc/init.d/osmo-ggsn start
+`systemctl start osmo-ggsn`
 
 
 Running sgsnemu
 ===============
 
-Use sgsnemu -h for a list of available options. All options available
+Use `sgsnemu -h` for a list of available options. All options available
 on the command line can also be given in a configuration file. See
-examples/sgsnemu.conf for the format of this file.
+`doc/examples/sgsnemu.conf` for the format of this file.
 
 If you want to test a GRX roaming connection you will need to do the
 following:
@@ -283,11 +252,11 @@ subnet mask and default route. See the Linux Networking HOWTO for
 details.
 4. Launch sgsnemu with something like:
 
-sgsnemu --listen 10.0.0.50 --remote 10.0.0.40 --dns 10.20.38.51 --timelimit 10 --contexts 0 
+`sgsnemu --listen 10.0.0.50 --remote 10.0.0.40 --dns 10.20.38.51 --timelimit 10 --contexts 0`
 
 sgsnemu will print something like the following on the screen:
 
-
+```
   Using DNS server:      10.20.38.51 (10.20.38.51)
   Local IP address is:   10.0.0.50 (10.0.0.50)
   Remote IP address is:  10.0.0.40 (10.0.0.40)
@@ -303,6 +272,7 @@ sgsnemu will print something like the following on the screen:
   Waiting for response from ggsn........
 
   Received echo response. Cause value: 0
+```
 
 This is quite good. It means that you managed to send off an echo
 request to a remote GGSN, and it was friendly enough to answer you. If
@@ -320,10 +290,11 @@ testing. Also note that you are establishing a connection to the Gi
 network, so please be carefull not to route internet traffic onto the
 GPRS core network! Assuming you know what you are doing:
 
-sgsnemu --listen 10.0.0.50 --remote 10.0.0.40 --dns 10.20.38.51 --timelimit 10 --contexts 1 --apn internet --imsi 240011234567890 --msisdn 46702123456 --createif --defaultroute
+`sgsnemu --listen 10.0.0.50 --remote 10.0.0.40 --dns 10.20.38.51 --timelimit 10 --contexts 1 --apn internet --imsi 240011234567890 --msisdn 46702123456 --createif --defaultroute`
 
 sgsnemu will print something like the following on the screen:
 
+```
   Using DNS server:      10.20.38.51 (10.20.38.51)
   Local IP address is:   10.0.0.50 (10.0.0.50)
   Remote IP address is:  10.0.0.40 (10.0.0.40)
@@ -344,7 +315,7 @@ sgsnemu will print something like the following on the screen:
   Setting up interface and routing
   /sbin/ifconfig tun0 192.168.0.1
   /sbin/route add -net 192.168.0.0 netmask 255.255.255.0 gw 192.168.0.1
-
+```
 
 Now a context is established to the remote GGSN. The IP address of the
 context is 192.168.0.1. You should be able to ping a known address on
@@ -358,13 +329,13 @@ do this is to use policy routing. Also note that you are effectively
 connecting the same computer to both the Gn and Gi network, so please
 be carefull not to route internet traffic onto the GPRS core network
 and please protect yourself against hackers! For this reason it is
-advised to always use --contexts 0 when testing a live network.
+advised to always use `--contexts 0` when testing a live network.
 
-After --timelimit seconds the PDP context is disconnected with the
+After `--timelimit seconds` the PDP context is disconnected with the
 following messages from sgsnemu:
 
-
+```
   Disconnecting PDP context #0
   Received delete PDP context response. Cause value: 128
   Deleting tun interface
-
+```
