@@ -5,15 +5,14 @@ This repository contains a C-language implementation of a GGSN (Gateway
 GPRS Support Node), a core network element of ETSI/3GPP cellular
 networks such as GPRS, EDGE, UMTS or HSPA.
 
-OsmoGGSN is part of the [Osmocom](https://osmocom.org/) Open Source
+**OsmoGGSN** is part of the [Osmocom](https://osmocom.org/) Open Source
 Mobile Communications projects and the successor to OpenGGSN.
 OpenGGSN was developed until 2004 by Mondru AB.
 
 Homepage
 --------
 
-The official homepage of the project is
-https://osmocom.org/projects/openggsn/wiki
+The official homepage of the project is <https://osmocom.org/projects/openggsn/wiki>.
 
 GIT Repository
 --------------
@@ -28,35 +27,35 @@ Documentation
 -------------
 
 The user manual and VTY reference are optionally built in PDF form
-as part of the build process. Find pre-rendered versions here:
+as part of the build process. Pre-rendered versions are available here:
 
-https://ftp.osmocom.org/docs/osmo-ggsn/master/
+* [osmo-ggsn user manual](https://ftp.osmocom.org/docs/osmo-ggsn/master/osmoggsn-usermanual.pdf)
+* [osmo-ggsn VTY reference](https://ftp.osmocom.org/docs/osmo-ggsn/master/osmoggsn-vty-reference.pdf)
 
 Mailing List
 ------------
 
 Discussions related to OsmoGGSN are happening on the
 osmocom-net-gprs@lists.osmocom.org mailing list, please see
-https://lists.osmocom.org/mailman/listinfo/osmocom-net-gprs for
+<https://lists.osmocom.org/mailman/listinfo/osmocom-net-gprs> for
 subscription options and the list archive.
 
-Please observe the [Osmocom Mailing List
-Rules](https://osmocom.org/projects/cellular-infrastructure/wiki/Mailing_List_Rules)
+Please observe the [Osmocom Mailing List Rules](https://osmocom.org/projects/cellular-infrastructure/wiki/Mailing_List_Rules)
 when posting.
 
 Contributing
 ------------
 
 Our coding standards are described at
-https://osmocom.org/projects/cellular-infrastructure/wiki/Coding_standards
+<https://osmocom.org/projects/cellular-infrastructure/wiki/Coding_standards>
 
 We us a gerrit based patch submission/review process for managing
 contributions.  Please see
-https://osmocom.org/projects/cellular-infrastructure/wiki/Gerrit for
+<https://osmocom.org/projects/cellular-infrastructure/wiki/Gerrit> for
 more details
 
 The current patch queue for OsmoGGSN can be seen at
-https://gerrit.osmocom.org/#/q/project:osmo-ggsn+status:open
+<https://gerrit.osmocom.org/#/q/project:osmo-ggsn+status:open>
 
 
 QuickStart
