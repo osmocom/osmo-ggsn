@@ -32,6 +32,13 @@ as part of the build process. Pre-rendered versions are available here:
 * [osmo-ggsn user manual](https://ftp.osmocom.org/docs/osmo-ggsn/master/osmoggsn-usermanual.pdf)
 * [osmo-ggsn VTY reference](https://ftp.osmocom.org/docs/osmo-ggsn/master/osmoggsn-vty-reference.pdf)
 
+Forum
+-----
+
+We welcome any pySim related discussions in the
+[Cellular Network Infrastructure -> 2G/3G Core Network](https://discourse.osmocom.org/c/cni/2g-3g-cn/)
+section of the osmocom discourse (web based Forum).
+
 Mailing List
 ------------
 
@@ -42,6 +49,13 @@ subscription options and the list archive.
 
 Please observe the [Osmocom Mailing List Rules](https://osmocom.org/projects/cellular-infrastructure/wiki/Mailing_List_Rules)
 when posting.
+
+Issue Tracker
+-------------
+
+We use the [issue tracker of the osmo-ggsn project on osmocom.org](https://osmocom.org/projects/openggsn/issues) for
+tracking the state of bug reports and feature requests.  Feel free to submit any issues you may find, or help
+us out by resolving existing issues.
 
 Contributing
 ------------
