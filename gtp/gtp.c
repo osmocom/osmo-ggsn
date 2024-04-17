@@ -1105,7 +1105,8 @@ int gtp_sgsn_context_conf(struct gsn_t *gsn, struct sockaddr_in *peer, uint16_t 
 	gtpie_tv8(&packet, &length, GTP_MAX, GTPIE_IMSI, imsi);
 
 	// TEIC - TV4
-	gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_TEI_C, pdpctx->teic_own);
+	if (pdpctx != NULL)
+		gtpie_tv4(&packet, &length, GTP_MAX, GTPIE_TEI_C, pdpctx->teic_own);
 
 	// MM Ctx - TLV
 	gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_MM_CONTEXT, mm_len, mmctx);
