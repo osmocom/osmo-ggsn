@@ -879,75 +879,64 @@ int gtp_sgsn_context_req(struct gsn_t *gsn, const struct in_addr *peer,
 }
 
 /* Handle an SGSN Context Request */
-static int gtp_sgsn_context_ind(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
-			void *pack, unsigned len)
+static int gtp_sgsn_context_ind(struct gsn_t *gsn, int version,
+				struct sockaddr_in *peer,
+				void *pack, unsigned len)
 {
 	/* Check if we have a context with TLLI/P-TMSI/IMSI in the RAI */
 	struct osmo_mobile_identity mi = {0};
-	uint64_t imsi;
-
 	union gtpie_member *ie[GTPIE_SIZE];
+	const uint8_t seq = get_seq(pack);
+	const int hlen = get_hlen(pack);
+	uint64_t imsi;
 	uint32_t teic;
-	uint8_t seq = get_seq(pack);
 	struct ul16_t sgsn_addr;
 	struct ul255_t rai = { .l = 6 };
 	struct osmo_routing_area_id rai_parsed;
 
 	if (version != 1) {
 		LOGP(DLGTP, LOGL_NOTICE,
-			"SGSN Context Request expected only on GTPCv1: %u\n", version);
+		     "SGSN Context Request expected only on GTPCv1: %u\n", version);
 		return -EINVAL;
 	}
-
-	int hlen = get_hlen(pack);
 
 	/* Decode information elements */
 	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
 		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_INVALID);
-		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
-			    "Invalid message format\n");
+		GTP_LOGPKG(LOGL_ERROR, peer, pack, len, "Invalid message format\n");
 		return -EINVAL;
 	}
 
 	/* RAI */
 	if (gtpie_gettv0(ie, GTPIE_RAI, 0, &rai.v, 6)) {
-		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
-		    "Missing RAI\n");
+		GTP_LOGPKG(LOGL_ERROR, peer, pack, len, "Missing RAI\n");
 		goto missing_ie;
 	}
 	if (osmo_routing_area_id_decode(&rai_parsed, rai.v, 6) < 0) {
 		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_INVALID);
-		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
-			    "Invalid RAI\n");
+		GTP_LOGPKG(LOGL_ERROR, peer, pack, len, "Invalid RAI\n");
+		return -EINVAL;
 	}
 
 	/* TEI-C */
 	if (gtpie_gettv4(ie, GTPIE_TEI_C, 0, &teic)) {
-		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
-		    "Missing TEI-C\n");
+		GTP_LOGPKG(LOGL_ERROR, peer, pack, len, "Missing TEI-C\n");
 		goto missing_ie;
 	}
 
 	/* SGSN address for signalling (mandatory) */
 	if (gtpie_gettlv(ie, GTPIE_GSN_ADDR, 0, &sgsn_addr.l,
 			 &sgsn_addr.v, sizeof(sgsn_addr.v))) {
-		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
-		    "Missing GSN Addr\n");
+		GTP_LOGPKG(LOGL_ERROR, peer, pack, len, "Missing GSN Addr\n");
 		goto missing_ie;
 	}
 
 	/* Get PTMSI, TLLI or IMSI - only one IE allowed */
-	if (!gtpie_gettv4(ie, GTPIE_TLLI, 0, &mi.tmsi)) {
+	if (!gtpie_gettv4(ie, GTPIE_TLLI, 0, &mi.tmsi))
 		mi.type = GSM_MI_TYPE_TLLI;
-		goto done;
-	}
-
-	if (!gtpie_gettv4(ie, GTPIE_P_TMSI, 0, &mi.tmsi)) {
+	else if (!gtpie_gettv4(ie, GTPIE_P_TMSI, 0, &mi.tmsi))
 		mi.type = GSM_MI_TYPE_TMSI;
-		goto done;
-	}
-
-	if (!gtpie_gettv8(ie, GTPIE_IMSI, 0, &imsi)) {
+	else if (!gtpie_gettv8(ie, GTPIE_IMSI, 0, &imsi)) {
 		mi.type = GSM_MI_TYPE_IMSI;
 		/* NOTE: gtpie_gettv8 already converts to host byte order, but imsi_gtp2str seems to prefer big endian */
 		imsi = ntoh64(imsi);
@@ -959,7 +948,6 @@ static int gtp_sgsn_context_ind(struct gsn_t *gsn, int version, struct sockaddr_
 		goto missing_ie;
 	}
 
-done:
 	if (gsn->cb_sgsn_context_request_ind)
 		gsn->cb_sgsn_context_request_ind(gsn, peer, seq, &rai_parsed, teic, &mi, ie);
 
@@ -967,8 +955,7 @@ done:
 
 missing_ie:
 	rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
-	GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
-		    "Missing mandatory IE\n");
+	GTP_LOGPKG(LOGL_ERROR, peer, pack, len, "Missing mandatory IE\n");
 	/* TODO: Send response with cause */
 	return -EINVAL;
 }
@@ -1087,7 +1074,9 @@ static int gtp_pdp_ctx(uint8_t *buf, unsigned int size, const struct pdp_t *pdp,
 }
 
 int gtp_sgsn_context_conf(struct gsn_t *gsn, struct sockaddr_in *peer, uint16_t seq,
-			 uint32_t teic, uint8_t cause, uint64_t imsi, const struct in_addr *sgsn_addr, struct pdp_t *pdpctx, uint16_t sapi, uint8_t *mmctx, int mm_len, void *cbp)
+			  uint32_t teic, uint8_t cause, uint64_t imsi,
+			  const struct in_addr *sgsn_addr, struct pdp_t *pdpctx,
+			  uint16_t sapi, uint8_t *mmctx, int mm_len, void *cbp)
 {
 	union gtp_packet packet;
 	struct ul255_t pdp;
@@ -1129,8 +1118,9 @@ int gtp_sgsn_context_conf(struct gsn_t *gsn, struct sockaddr_in *peer, uint16_t 
 }
 
 /* Handle an SGSN Context Response */
-static int gtp_sgsn_context_conf_ind(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
-			void *pack, unsigned len)
+static int gtp_sgsn_context_conf_ind(struct gsn_t *gsn, int version,
+				     struct sockaddr_in *peer,
+				     void *pack, unsigned len)
 {
 	/** If cause is "Request accepted": Send ACK,
 	    else: Log and handle error */
@@ -1147,11 +1137,11 @@ static int gtp_sgsn_context_conf_ind(struct gsn_t *gsn, int version, struct sock
 
 	if (version != 1) {
 		LOGP(DLGTP, LOGL_NOTICE,
-			"SGSN Context Request expected only on GTPCv1: %u\n", version);
+		     "SGSN Context Request expected only on GTPCv1: %u\n", version);
 		return -EINVAL;
 	}
 
-	int hlen = get_hlen(pack);
+	const int hlen = get_hlen(pack);
 
 	/* Remove packet from queue */
 	if (gtp_conf(gsn, version, peer, pack, len, &type, &cbp))
@@ -1160,8 +1150,7 @@ static int gtp_sgsn_context_conf_ind(struct gsn_t *gsn, int version, struct sock
 	/* Extract information elements into a pointer array */
 	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
 		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_INVALID);
-		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
-			    "Invalid message format\n");
+		GTP_LOGPKG(LOGL_ERROR, peer, pack, len, "Invalid message format\n");
 		if (gsn->cb_conf)
 			gsn->cb_conf(type, EOF, NULL, cbp);
 		return EOF;
@@ -1171,7 +1160,7 @@ static int gtp_sgsn_context_conf_ind(struct gsn_t *gsn, int version, struct sock
 	if (gtpie_gettv1(ie, GTPIE_CAUSE, 0, &cause)) {
 		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
-			    "Missing mandatory information field\n");
+			   "Missing mandatory information field\n");
 		if (gsn->cb_conf)
 			gsn->cb_conf(type, EOF, NULL, cbp);
 		return EOF;
@@ -1180,7 +1169,7 @@ static int gtp_sgsn_context_conf_ind(struct gsn_t *gsn, int version, struct sock
 	/* Check all conditional information elements */
 	if (!gtp_cause_successful(cause)) {
 		GTP_LOGPKG(LOGL_NOTICE, peer, pack, len,
-			    "SGSN Context response with cause (%u)\n", cause);
+			   "SGSN Context response with cause (%u)\n", cause);
 		if (gsn->cb_conf)
 			gsn->cb_conf(type, cause, NULL, cbp);
 	}
