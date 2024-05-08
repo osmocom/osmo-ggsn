@@ -262,7 +262,6 @@ AC_CONFIG_FILES([Makefile
                  doc/manuals/Makefile
                  contrib/Makefile
                  contrib/systemd/Makefile
-                 contrib/osmo-ggsn.spec
                  tests/Makefile
                  tests/lib/Makefile
                  tests/gtp/Makefile

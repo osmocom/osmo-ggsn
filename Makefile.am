@@ -24,7 +24,6 @@ EXTRA_DIST = \
 	     README.FreeBSD \
 	     README.MacOSX \
 	     README.md \
-	     contrib/osmo-ggsn.spec.in \
 	     debian \
 	     git-version-gen \
 	     $(NULL)
