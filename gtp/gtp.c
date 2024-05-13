@@ -990,19 +990,6 @@ int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
 	return 0;
 }
 
-/* API: Application response to context indication */
-int gtp_create_context_resp(struct gsn_t *gsn, struct pdp_t *pdp, int cause)
-{
-
-	/* Now send off a reply to the peer */
-	gtp_create_pdp_resp(gsn, pdp->version, pdp, cause);
-
-	if (!gtp_cause_successful(cause))
-		gtp_freepdp(gsn, pdp);
-
-	return 0;
-}
-
 /* Send Create PDP Context Response */
 int gtp_create_pdp_resp(struct gsn_t *gsn, int version, struct pdp_t *pdp,
 			uint8_t cause)
@@ -1064,6 +1051,19 @@ int gtp_create_pdp_resp(struct gsn_t *gsn, int version, struct pdp_t *pdp,
 
 	return gtp_resp(version, gsn, pdp, &packet, length, &pdp->sa_peer,
 			pdp->fd, pdp->seq, pdp->tid);
+}
+
+/* API: Application response to context indication */
+int gtp_create_context_resp(struct gsn_t *gsn, struct pdp_t *pdp, int cause)
+{
+
+	/* Now send off a reply to the peer */
+	gtp_create_pdp_resp(gsn, pdp->version, pdp, cause);
+
+	if (!gtp_cause_successful(cause))
+		gtp_freepdp(gsn, pdp);
+
+	return 0;
 }
 
 /* Handle Create PDP Context Request */
