@@ -823,6 +823,40 @@ int gtp_ran_info_relay_req(struct gsn_t *gsn, const struct sockaddr_in *peer,
 }
 
 /* ***********************************************************
+ * Conversion functions
+ *************************************************************/
+
+/* ***********************************************************
+ * IP address conversion functions
+ * There exist several types of address representations:
+ * - eua: End User Address. (29.060, 7.7.27, message type 128)
+ *   Used for signalling address to mobile station. Supports IPv4
+ *   IPv6 x.25 etc. etc.
+ * - gsna: GSN Address. (29.060, 7.7.32, message type 133): IP address
+ *   of GSN. If length is 4 it is IPv4. If length is 16 it is IPv6.
+ * - in_addr: IPv4 address struct.
+ * - sockaddr_in: Socket API representation of IP address and
+ *   port number.
+ *************************************************************/
+
+int gsna2in_addr(struct in_addr *dst, struct ul16_t *gsna)
+{
+	memset(dst, 0, sizeof(struct in_addr));
+	if (gsna->l != 4)
+		return EOF;	/* Return if not IPv4 */
+	memcpy(dst, gsna->v, gsna->l);
+	return 0;
+}
+
+int in_addr2gsna(struct ul16_t *gsna, struct in_addr *src)
+{
+	memset(gsna, 0, sizeof(struct ul16_t));
+	gsna->l = 4;
+	memcpy(gsna->v, src, gsna->l);
+	return 0;
+}
+
+/* ***********************************************************
  * Session management messages
  * Messages: create, update and delete PDP context
  *
@@ -3049,40 +3083,6 @@ int gtp_data_req(struct gsn_t *gsn, struct pdp_t *pdp, void *pack, unsigned len)
 			strerror(errno));
 		return EOF;
 	}
-	return 0;
-}
-
-/* ***********************************************************
- * Conversion functions
- *************************************************************/
-
-/* ***********************************************************
- * IP address conversion functions
- * There exist several types of address representations:
- * - eua: End User Address. (29.060, 7.7.27, message type 128)
- *   Used for signalling address to mobile station. Supports IPv4
- *   IPv6 x.25 etc. etc.
- * - gsna: GSN Address. (29.060, 7.7.32, message type 133): IP address
- *   of GSN. If length is 4 it is IPv4. If length is 16 it is IPv6.
- * - in_addr: IPv4 address struct.
- * - sockaddr_in: Socket API representation of IP address and
- *   port number.
- *************************************************************/
-
-int gsna2in_addr(struct in_addr *dst, struct ul16_t *gsna)
-{
-	memset(dst, 0, sizeof(struct in_addr));
-	if (gsna->l != 4)
-		return EOF;	/* Return if not IPv4 */
-	memcpy(dst, gsna->v, gsna->l);
-	return 0;
-}
-
-int in_addr2gsna(struct ul16_t *gsna, struct in_addr *src)
-{
-	memset(gsna, 0, sizeof(struct ul16_t));
-	gsna->l = 4;
-	memcpy(gsna->v, src, gsna->l);
 	return 0;
 }
 
