@@ -3069,27 +3069,6 @@ int gtp_data_req(struct gsn_t *gsn, struct pdp_t *pdp, void *pack, unsigned len)
  *   port number.
  *************************************************************/
 
-int ipv42eua(struct ul66_t *eua, struct in_addr *src)
-{
-	eua->v[0] = PDP_EUA_ORG_IETF;
-	eua->v[1] = PDP_EUA_TYPE_v4;
-	if (src) {
-		eua->l = 6;
-		memcpy(&eua->v[2], src, 4);
-	} else {
-		eua->l = 2;
-	}
-	return 0;
-}
-
-int eua2ipv4(struct in_addr *dst, struct ul66_t *eua)
-{
-	if ((eua->l != 6) || (eua->v[0] != PDP_EUA_ORG_IETF) || (eua->v[1] != PDP_EUA_TYPE_v4))
-		return -1;	/* Not IPv4 address */
-	memcpy(dst, &eua->v[2], 4);
-	return 0;
-}
-
 int gsna2in_addr(struct in_addr *dst, struct ul16_t *gsna)
 {
 	memset(dst, 0, sizeof(struct in_addr));
