@@ -22,6 +22,8 @@
 #include <inttypes.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/utils.h>
@@ -223,6 +225,11 @@ DEFUN(cfg_ggsn_state_dir, cfg_ggsn_state_dir_cmd,
 	"Local Directory\n")
 {
 	struct ggsn_ctx *ggsn = (struct ggsn_ctx *) vty->index;
+
+	if (mkdir(argv[0], 0755) == -1 && errno != EEXIST) {
+		vty_out(vty, "%% Failed to create state-dir: %s%s", argv[0], VTY_NEWLINE);
+		return CMD_WARNING;
+	}
 
 	osmo_talloc_replace_string(ggsn, &ggsn->cfg.state_dir, argv[0]);
 
