@@ -46,6 +46,11 @@ struct ul_t {
 	unsigned char *v;
 };
 
+struct ul1_t {
+	unsigned int l;
+	unsigned char v[1];
+};
+
 struct ul16_t {
 	unsigned int l;
 	unsigned char v[16];
@@ -244,6 +249,8 @@ struct pdp_t {
 	bool tx_gpdu_seq;		/* Transmit (true) or suppress G-PDU sequence numbers */
 
 	struct llist_head qmsg_list_req; /* list of req qmsg_t in retrans queue belonging this pdp ctx */
+
+	struct ul1_t dir_tun_flags; /* Direct Tunnel Flags, TS 29.060 7.7.81 */
 };
 
 /* functions related to pdp_t management */

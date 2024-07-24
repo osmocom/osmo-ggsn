@@ -7,3 +7,4 @@
 # If any interfaces have been added since the last public release: c:r:a + 1.
 # If any interfaces have been removed or changed since the last public release: c:r:0.
 #library	what			description / commit summary line
+libgtp    append new field  dir_tun_flags in struct pdp_t (older users not using the field should be fine since struct pdp_t is allocated internally)

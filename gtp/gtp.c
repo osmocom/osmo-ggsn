@@ -1686,6 +1686,11 @@ int gtp_update_context(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 		gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_OMC_ID,
 			  pdp->omcid.l, pdp->omcid.v);
 
+	/* Direct Tunnel Flags */
+	if ((pdp->version == 1) && pdp->dir_tun_flags.l)
+		gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_DIR_TUN_FLAGS,
+			  pdp->dir_tun_flags.l, pdp->dir_tun_flags.v);
+
 	gtp_req(gsn, pdp->version, pdp, &packet, length, inetaddr, cbp);
 
 	return 0;
@@ -1747,6 +1752,11 @@ static int gtp_update_pdp_resp(struct gsn_t *gsn, uint8_t version,
 				  pdp->qos_neg.l, pdp->qos_neg.v);
 
 		/* TODO: Charging gateway address */
+
+		/* Direct Tunnel Flags */
+		if ((gsn->mode == GTP_MODE_SGSN) && (version == 1) && pdp->dir_tun_flags.l)
+			gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_DIR_TUN_FLAGS,
+				pdp->dir_tun_flags.l, pdp->dir_tun_flags.v);
 	}
 
 	return gtp_resp(version, gsn, pdp, &packet, length, peer,
