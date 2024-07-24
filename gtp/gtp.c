@@ -1696,10 +1696,11 @@ int gtp_update_context(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 	return 0;
 }
 
+
 /* Send Update PDP Context Response */
 static int gtp_update_pdp_resp(struct gsn_t *gsn, uint8_t version,
 			struct sockaddr_in *peer, int fd,
-			void *pack, unsigned len,
+			uint16_t seq, uint64_t tid,
 			struct pdp_t *pdp, uint8_t cause)
 {
 
@@ -1760,7 +1761,22 @@ static int gtp_update_pdp_resp(struct gsn_t *gsn, uint8_t version,
 	}
 
 	return gtp_resp(version, gsn, pdp, &packet, length, peer,
-			fd, get_seq(pack), get_tid(pack));
+			fd, seq, tid);
+}
+
+
+/* API: Application response to context indication */
+int gtp_update_context_resp(struct gsn_t *gsn, struct pdp_t *pdp, int cause)
+{
+
+	/* Now send off a reply to the peer */
+	gtp_update_pdp_resp(gsn, pdp->version, &pdp->sa_peer,
+			pdp->fd, pdp->seq, pdp->tid, pdp, cause);
+
+	if (!gtp_cause_successful(cause))
+		gtp_freepdp(gsn, pdp);
+
+	return 0;
 }
 
 /* Handle Update PDP Context Request */
@@ -1768,13 +1784,15 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 		       struct sockaddr_in *peer, int fd,
 		       void *pack, unsigned len)
 {
-	struct pdp_t *pdp;
+	struct pdp_t *pdp = NULL;
 	struct pdp_t pdp_backup;
 	union gtpie_member *ie[GTPIE_SIZE];
 	uint8_t recovery;
+	int rc;
 
 	uint16_t seq = get_seq(pack);
 	int hlen = get_hlen(pack);
+	uint64_t tid = get_tid(pack);
 
 	uint64_t imsi;
 	uint8_t nsapi;
@@ -1792,8 +1810,8 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 		if (0 == version)
 			return EOF;
 		else
-			return gtp_update_pdp_resp(gsn, version, peer, fd, pack,
-						   len, NULL,
+			return gtp_update_pdp_resp(gsn, version, peer, fd, seq,
+						   tid, NULL,
 						   GTPCAUSE_INVALID_MESSAGE);
 	}
 
@@ -1808,8 +1826,8 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 			GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 				   "Unknown PDP context: TID=0x%" PRIx64 "\n",
 				   get_tid(pack));
-			return gtp_update_pdp_resp(gsn, version, peer, fd, pack,
-						   len, NULL,
+			return gtp_update_pdp_resp(gsn, version, peer, fd, seq,
+						   tid, NULL,
 						   GTPCAUSE_NON_EXIST);
 		}
 
@@ -1821,8 +1839,8 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
-			return gtp_update_pdp_resp(gsn, version, peer, fd, pack,
-						   len, NULL,
+			return gtp_update_pdp_resp(gsn, version, peer, fd, seq,
+						   tid, NULL,
 						   GTPCAUSE_MAN_IE_MISSING);
 		}
 
@@ -1835,7 +1853,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 					   "Unknown PDP context: TEI=0x%" PRIx32 "\n",
 					   get_tei(pack));
 				return gtp_update_pdp_resp(gsn, version, peer,
-							   fd, pack, len, NULL,
+							   fd, seq, tid, NULL,
 							   GTPCAUSE_NON_EXIST);
 			}
 		} else {
@@ -1846,7 +1864,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 					   "Unknown PDP context: IMSI=0x%" PRIx64
 					   " NSAPI=%" PRIu8 "\n", imsi, nsapi);
 				return gtp_update_pdp_resp(gsn, version, peer,
-							   fd, pack, len, NULL,
+							   fd, seq, tid, NULL,
 							   GTPCAUSE_NON_EXIST);
 			}
 		}
@@ -1854,6 +1872,12 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 		LOGP(DLGTP, LOGL_ERROR, "Unknown version: %d\n", version);
 		return EOF;
 	}
+
+	/* Update internal state to be used when user calls gtp_update_context_resp(): */
+	pdp->seq = seq;
+	pdp->sa_peer = *peer;
+	pdp->fd = fd;
+	pdp->version = version;
 
 	/* Make a backup copy in case anything is wrong */
 	memcpy(&pdp_backup, pdp, sizeof(pdp_backup));
@@ -1865,8 +1889,8 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			memcpy(pdp, &pdp_backup, sizeof(pdp_backup));
-			return gtp_update_pdp_resp(gsn, version, peer, fd, pack,
-						   len, pdp,
+			return gtp_update_pdp_resp(gsn, version, peer, fd, seq,
+						   tid, pdp,
 						   GTPCAUSE_MAN_IE_MISSING);
 		}
 	}
@@ -1882,8 +1906,8 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			memcpy(pdp, &pdp_backup, sizeof(pdp_backup));
-			return gtp_update_pdp_resp(gsn, version, peer, fd, pack,
-						   len, pdp,
+			return gtp_update_pdp_resp(gsn, version, peer, fd, seq,
+						   tid, pdp,
 						   GTPCAUSE_MAN_IE_MISSING);
 		}
 
@@ -1892,8 +1916,8 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			memcpy(pdp, &pdp_backup, sizeof(pdp_backup));
-			return gtp_update_pdp_resp(gsn, version, peer, fd, pack,
-						   len, pdp,
+			return gtp_update_pdp_resp(gsn, version, peer, fd, seq,
+						   tid, pdp,
 						   GTPCAUSE_MAN_IE_MISSING);
 		}
 	}
@@ -1906,8 +1930,8 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			memcpy(pdp, &pdp_backup, sizeof(pdp_backup));
-			return gtp_update_pdp_resp(gsn, version, peer, fd, pack,
-						   len, pdp,
+			return gtp_update_pdp_resp(gsn, version, peer, fd, seq,
+						   tid, pdp,
 						   GTPCAUSE_MAN_IE_MISSING);
 		}
 
@@ -1923,8 +1947,8 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			memcpy(pdp, &pdp_backup, sizeof(pdp_backup));
-			return gtp_update_pdp_resp(gsn, version, peer, fd, pack,
-						   len, pdp,
+			return gtp_update_pdp_resp(gsn, version, peer, fd, seq,
+						   tid, pdp,
 						   GTPCAUSE_MAN_IE_MISSING);
 		}
 	}
@@ -1951,7 +1975,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Missing mandatory information field\n");
 		memcpy(pdp, &pdp_backup, sizeof(pdp_backup));
-		return gtp_update_pdp_resp(gsn, version, peer, fd, pack, len,
+		return gtp_update_pdp_resp(gsn, version, peer, fd, seq, tid,
 					   pdp, GTPCAUSE_MAN_IE_MISSING);
 	}
 
@@ -1963,7 +1987,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Missing mandatory information field\n");
 		memcpy(pdp, &pdp_backup, sizeof(pdp_backup));
-		return gtp_update_pdp_resp(gsn, version, peer, fd, pack, len,
+		return gtp_update_pdp_resp(gsn, version, peer, fd, seq, tid,
 					   pdp, GTPCAUSE_MAN_IE_MISSING);
 	}
 
@@ -1976,8 +2000,8 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
 			memcpy(pdp, &pdp_backup, sizeof(pdp_backup));
-			return gtp_update_pdp_resp(gsn, version, peer, fd, pack,
-						   len, pdp,
+			return gtp_update_pdp_resp(gsn, version, peer, fd, seq,
+						   tid, pdp,
 						   GTPCAUSE_MAN_IE_MISSING);
 		}
 
@@ -1994,9 +2018,17 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 		}
 	}
 
+	/* Callback function to validate login */
+	if (gsn->cb_update_context_ind != 0)
+		rc = gsn->cb_update_context_ind(pdp);
+	else {
+		/* Confirm to peer that things were "successful" */
+		rc = gtp_update_pdp_resp(gsn, version, peer, fd, seq, tid, pdp,
+					 GTPCAUSE_ACC_REQ);
+	}
+
 	/* Confirm to peer that things were "successful" */
-	return gtp_update_pdp_resp(gsn, version, peer, fd, pack, len, pdp,
-				   GTPCAUSE_ACC_REQ);
+	return rc;
 }
 
 /* Handle Update PDP Context Response */

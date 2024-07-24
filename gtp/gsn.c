@@ -497,6 +497,7 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 
 	/* Initialise call back functions */
 	(*gsn)->cb_create_context_ind = 0;
+	(*gsn)->cb_update_context_ind = 0;
 	(*gsn)->cb_delete_context = 0;
 	(*gsn)->cb_unsup_ind = 0;
 	(*gsn)->cb_conf = 0;
@@ -560,6 +561,13 @@ int gtp_set_cb_create_context_ind(struct gsn_t *gsn,
 								pdp))
 {
 	gsn->cb_create_context_ind = cb_create_context_ind;
+	return 0;
+}
+
+int gtp_set_cb_update_context_ind(struct gsn_t *gsn,
+				  int (*cb_update_context_ind)(struct pdp_t *pdp))
+{
+	gsn->cb_update_context_ind = cb_update_context_ind;
 	return 0;
 }
 

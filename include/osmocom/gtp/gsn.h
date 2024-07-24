@@ -99,6 +99,7 @@ struct gsn_t {
 	/* Call back functions */
 	int (*cb_delete_context) (struct pdp_t *);
 	int (*cb_create_context_ind) (struct pdp_t *);
+	int (*cb_update_context_ind)(struct pdp_t *pdp);
 	int (*cb_unsup_ind) (struct sockaddr_in * peer);
 	int (*cb_extheader_ind) (struct sockaddr_in * peer);
 	int (*cb_ran_info_relay_ind) (struct sockaddr_in *peer, union gtpie_member **ie);
@@ -134,6 +135,8 @@ extern int gtp_set_cb_create_context_ind(struct gsn_t *gsn,
 					 int (*cb_create_context_ind) (struct
 								       pdp_t *
 								       pdp));
+extern int gtp_set_cb_update_context_ind(struct gsn_t *gsn,
+					 int (*cb_update_context_ind)(struct pdp_t *pdp));
 extern int gtp_set_cb_data_ind(struct gsn_t *gsn,
 			       int (*cb_data_ind) (struct pdp_t * pdp,
 						   void *pack, unsigned len));

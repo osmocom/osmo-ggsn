@@ -248,6 +248,9 @@ extern int gtp_create_context_resp(struct gsn_t *gsn, struct pdp_t *pdp,
 extern int gtp_update_context(struct gsn_t *gsn, struct pdp_t *pdp,
 			      void *cbp, struct in_addr *inetaddr);
 
+extern int gtp_update_context_resp(struct gsn_t *gsn, struct pdp_t *pdp,
+				   int cause);
+
 extern int gtp_delete_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
 				  void *cbp, int teardown)
 		OSMO_DEPRECATED("Use gtp_delete_context_req2() instead, to avoid freeing pdp ctx before reply");
