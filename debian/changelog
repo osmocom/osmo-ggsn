@@ -1,3 +1,48 @@
+osmo-ggsn (1.12.0) unstable; urgency=medium
+
+  [ Daniel Willmann ]
+  * libgtp: Remove defines for reserved causes in gtp.h
+
+  [ Pau Espin Pedrol ]
+  * pco: Improve IPCP spec reference documentation
+
+  [ Oliver Smith ]
+  * Fix a typo
+  * gtp_new: deduplicate create_and_bind_socket code
+  * kernel-gtp: support IPv6 on outer layer
+  * kernel-gtp: support IPv6 on inner layer
+  * Revert "kernel-gtp: support IPv6 on outer layer"
+  * Cosmetic: Makefile.am: make SUBDIRS diff friendly
+  * Cosmetic: AM_CFLAGS: make diff friendly
+  * Cosmetic: {lib,gtp}/Makefile.am: diff friendly
+  * lib/gtp-kernel.c: initialize ret with 0
+  * lib/gtp-kernel.c: check rc of in46a_from_eua
+  * doc: fix typo ndoe -> node
+  * Add clear error for kernel not supporting IPv6
+  * contrib: remove rpm spec file
+  * libgtp: move includes to osmocom/include/gtp
+  * gtp/gsn_internal.h: new file
+  * gtp/gtp.c: move gtp_create_context_resp down
+  * gtp: remove unused conversion functions
+  * gtp: move conversion functions up
+  * gtp/gtp_internal.h: new file
+  * ggsn/ggsn_vty: create state-dir
+  * doc: set state-dir to /var/lib/osmocom/osmo-ggsn
+  * contrib/systemd: run as osmocom user
+  * Use uniform log format for default config files
+  * {contrib,debian}/osmo-ggsn.init: remove
+
+  [ Harald Welte ]
+  * Add funding link to github mirror
+  * README.md: Improve markdown formatting
+  * README.md: Add Forum + Issue Tracker sections
+  * README.md: Major overhaul
+
+  [ Vadim Yanitskiy ]
+  * README.md: cosmetic: fix a typo
+
+ -- Oliver Smith <osmith@sysmocom.de>  Wed, 24 Jul 2024 15:13:31 +0200
+
 osmo-ggsn (1.11.0) unstable; urgency=medium
 
   [ Daniel Willmann ]
