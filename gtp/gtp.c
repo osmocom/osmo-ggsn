@@ -1984,6 +1984,11 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 		}
 
 		/* OMC identity */
+
+		/* Direct Tunnel Flags */
+		if (gtpie_gettlv(ie, GTPIE_DIR_TUN_FLAGS, 0, &pdp->dir_tun_flags.l,
+				 &pdp->dir_tun_flags.v, sizeof(pdp->dir_tun_flags.v))) {
+		}
 	}
 
 	/* Confirm to peer that things were "successful" */
@@ -2092,6 +2097,12 @@ static int gtp_update_pdp_conf(struct gsn_t *gsn, uint8_t version,
 			    (ie, GTPIE_QOS_PROFILE, 0, &pdp->qos_neg.l,
 			     &pdp->qos_neg.v, sizeof(pdp->qos_neg.v))) {
 				goto err_missing;
+			}
+
+			/* Direct Tunnel Flags */
+			if (gsn->mode == GTP_MODE_GGSN &&
+			    gtpie_gettlv(ie, GTPIE_DIR_TUN_FLAGS, 0, &pdp->dir_tun_flags.l,
+					&pdp->dir_tun_flags.v, sizeof(pdp->dir_tun_flags.v))) {
 			}
 		}
 	}
