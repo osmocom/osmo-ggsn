@@ -1899,8 +1899,9 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 	}
 
 	if (version == 1) {
-		/* TEID (mandatory) */
-		if (gtpie_gettv4(ie, GTPIE_TEI_DI, 0, &pdp->teid_gn)) {
+		/* TEID (mandatory SGSN->GGSN, Optional SGSN<-GGSN) */
+		if (gtpie_gettv4(ie, GTPIE_TEI_DI, 0, &pdp->teid_gn) &&
+		    gsn->mode == GTP_MODE_GGSN) {
 			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
@@ -1954,9 +1955,10 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 					   pdp, GTPCAUSE_MAN_IE_MISSING);
 	}
 
-	/* SGSN address for user traffic (mandatory) */
+	/* SGSN address for user traffic (mandatory SGSN->GGSN, optional SGSN<-GGSN) */
 	if (gtpie_gettlv(ie, GTPIE_GSN_ADDR, 1, &pdp->gsnru.l,
-			 &pdp->gsnru.v, sizeof(pdp->gsnru.v))) {
+			 &pdp->gsnru.v, sizeof(pdp->gsnru.v)) &&
+	    gsn->mode == GTP_MODE_GGSN) {
 		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
 			    "Missing mandatory information field\n");
@@ -1966,9 +1968,10 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 	}
 
 	if (version == 1) {
-		/* QoS (mandatory) */
+		/* QoS (mandatory SGSN->GGSN, optional SGSN<-GGSN) */
 		if (gtpie_gettlv(ie, GTPIE_QOS_PROFILE, 0, &pdp->qos_req.l,
-				 &pdp->qos_req.v, sizeof(pdp->qos_req.v))) {
+				 &pdp->qos_req.v, sizeof(pdp->qos_req.v)) &&
+		    gsn->mode == GTP_MODE_GGSN) {
 			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
 			GTP_LOGPKG(LOGL_ERROR, peer, pack,
 				    len, "Missing mandatory information field\n");
@@ -1978,7 +1981,7 @@ static int gtp_update_pdp_ind(struct gsn_t *gsn, uint8_t version,
 						   GTPCAUSE_MAN_IE_MISSING);
 		}
 
-		/* TFT (conditional) */
+		/* TFT (conditional SGSN->GGSN, optional SGSN<-GGSN) */
 		if (gtpie_gettlv(ie, GTPIE_TFT, 0, &pdp->tft.l,
 				 &pdp->tft.v, sizeof(pdp->tft.v))) {
 		}
@@ -2100,8 +2103,7 @@ static int gtp_update_pdp_conf(struct gsn_t *gsn, uint8_t version,
 			}
 
 			/* Direct Tunnel Flags */
-			if (gsn->mode == GTP_MODE_GGSN &&
-			    gtpie_gettlv(ie, GTPIE_DIR_TUN_FLAGS, 0, &pdp->dir_tun_flags.l,
+			if (gtpie_gettlv(ie, GTPIE_DIR_TUN_FLAGS, 0, &pdp->dir_tun_flags.l,
 					&pdp->dir_tun_flags.v, sizeof(pdp->dir_tun_flags.v))) {
 			}
 		}
@@ -2820,8 +2822,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 		}
 
 		if ((gsn->mode == GTP_MODE_GGSN) &&
-		    ((pheader->type == GTP_CREATE_PDP_RSP) ||
-		     (pheader->type == GTP_UPDATE_PDP_RSP))) {
+		    (pheader->type == GTP_CREATE_PDP_RSP)) {
 			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_UNEXPECT);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status,
@@ -2831,8 +2832,7 @@ int gtp_decaps1c(struct gsn_t *gsn)
 		}
 
 		if ((gsn->mode == GTP_MODE_SGSN) &&
-		    ((pheader->type == GTP_CREATE_PDP_REQ) ||
-		     (pheader->type == GTP_UPDATE_PDP_REQ))) {
+		    (pheader->type == GTP_CREATE_PDP_REQ)) {
 			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_UNEXPECT);
 			GTP_LOGPKG(LOGL_ERROR, &peer, buffer,
 				    status,
