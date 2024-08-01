@@ -582,6 +582,41 @@ err_wrong_af:
 	return 0;
 }
 
+static int update_context_ind(struct pdp_t *pdp)
+{
+	char apn_name[256];
+	struct gsn_t *gsn = pdp->gsn;
+	struct ggsn_ctx *ggsn = gsn->priv;
+	struct apn_ctx *apn;
+	bool apn_found = false;
+	int rc;
+
+	if (!osmo_apn_to_str(apn_name, pdp->apn_use.v, pdp->apn_use.l)) {
+		LOGPPDP(LOGL_ERROR, pdp, "Unable to decode associated APN len=%d buf: %s\n",
+			pdp->apn_use.l, osmo_hexdump(pdp->apn_use.v, pdp->apn_use.l));
+		return gtp_update_context_resp(ggsn->gsn, pdp, GTPCAUSE_MISSING_APN);
+	}
+
+	llist_for_each_entry (apn, &ggsn->apn_list, list) {
+		if (strncmp(apn_name, apn->cfg.name, sizeof(apn_name)) != 0)
+			continue;
+		apn_found = true;
+		break;
+	}
+	if (!apn_found) {
+		LOGPPDP(LOGL_ERROR, pdp, "Unable to find associated APN %s\n", apn_name);
+		return gtp_update_context_resp(ggsn->gsn, pdp, GTPCAUSE_MISSING_APN);
+	}
+
+	if (apn->cfg.gtpu_mode == APN_GTPU_MODE_KERNEL_GTP) {
+		/* Update the kernel with the potentially new remote data IP address + TEID */
+		gtp_kernel_tunnel_del(pdp, apn->tun.cfg.dev_name);
+		gtp_kernel_tunnel_add(pdp, apn->tun.cfg.dev_name);
+	}
+	rc = gtp_update_context_resp(ggsn->gsn, pdp, GTPCAUSE_ACC_REQ);
+	return rc;
+}
+
 /* Internet-originated IP packet, needs to be sent via GTP towards MS */
 static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 {
@@ -848,8 +883,9 @@ int ggsn_start(struct ggsn_ctx *ggsn)
 	OSMO_ASSERT(rc == 0);
 
 	gtp_set_cb_data_ind(ggsn->gsn, encaps_tun);
-	gtp_set_cb_delete_context(ggsn->gsn, delete_context);
 	gtp_set_cb_create_context_ind(ggsn->gsn, create_context_ind);
+	gtp_set_cb_update_context_ind(ggsn->gsn, update_context_ind);
+	gtp_set_cb_delete_context(ggsn->gsn, delete_context);
 	gtp_set_cb_conf(ggsn->gsn, cb_conf);
 	gtp_set_cb_recovery3(ggsn->gsn, cb_recovery3);
 
