@@ -425,7 +425,7 @@ static struct sgsn_peer* ggsn_find_or_create_sgsn(struct ggsn_ctx *ggsn, struct 
 	return sgsn;
 }
 
-int create_context_ind(struct pdp_t *pdp)
+static int create_context_ind(struct pdp_t *pdp)
 {
 	static char name_buf[256];
 	struct gsn_t *gsn = pdp->gsn;
