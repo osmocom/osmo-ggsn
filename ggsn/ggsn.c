@@ -879,6 +879,42 @@ static int cb_recovery3(struct gsn_t *gsn, struct sockaddr_in *peer, struct pdp_
 	return sgsn_peer_handle_recovery(sgsn, pdp, recovery);
 }
 
+static struct ggsn_ctx *ggsn_alloc(void *ctx, const char *name)
+{
+	struct ggsn_ctx *ggsn;
+
+	ggsn = talloc_zero(ctx, struct ggsn_ctx);
+	OSMO_ASSERT(ggsn);
+
+	ggsn->cfg.name = talloc_strdup(ggsn, name);
+	ggsn->cfg.state_dir = talloc_strdup(ggsn, "/tmp");
+	ggsn->cfg.shutdown = true;
+	INIT_LLIST_HEAD(&ggsn->apn_list);
+	INIT_LLIST_HEAD(&ggsn->sgsn_list);
+
+	llist_add_tail(&ggsn->list, &g_ggsn_list);
+	return ggsn;
+}
+
+struct ggsn_ctx *ggsn_find(const char *name)
+{
+	struct ggsn_ctx *ggsn;
+
+	llist_for_each_entry(ggsn, &g_ggsn_list, list) {
+		if (!strcmp(ggsn->cfg.name, name))
+			return ggsn;
+	}
+	return NULL;
+}
+
+struct ggsn_ctx *ggsn_find_or_create(void *ctx, const char *name)
+{
+	struct ggsn_ctx *ggsn = ggsn_find(name);
+	if (!ggsn)
+		ggsn = ggsn_alloc(ctx, name);
+	return ggsn;
+}
+
 /* Start a given GGSN */
 int ggsn_start(struct ggsn_ctx *ggsn)
 {

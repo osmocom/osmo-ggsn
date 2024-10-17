@@ -57,39 +57,6 @@ enum ggsn_vty_node {
 	APN_NODE,
 };
 
-struct ggsn_ctx *ggsn_find(const char *name)
-{
-	struct ggsn_ctx *ggsn;
-
-	llist_for_each_entry(ggsn, &g_ggsn_list, list) {
-		if (!strcmp(ggsn->cfg.name, name))
-			return ggsn;
-	}
-	return NULL;
-}
-
-struct ggsn_ctx *ggsn_find_or_create(void *ctx, const char *name)
-{
-	struct ggsn_ctx *ggsn;
-
-	ggsn = ggsn_find(name);
-	if (ggsn)
-		return ggsn;
-
-	ggsn = talloc_zero(ctx, struct ggsn_ctx);
-	if (!ggsn)
-		return NULL;
-
-	ggsn->cfg.name = talloc_strdup(ggsn, name);
-	ggsn->cfg.state_dir = talloc_strdup(ggsn, "/tmp");
-	ggsn->cfg.shutdown = true;
-	INIT_LLIST_HEAD(&ggsn->apn_list);
-	INIT_LLIST_HEAD(&ggsn->sgsn_list);
-
-	llist_add_tail(&ggsn->list, &g_ggsn_list);
-	return ggsn;
-}
-
 /* GGSN Node */
 
 static struct cmd_node ggsn_node = {
