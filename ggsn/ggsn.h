@@ -21,6 +21,19 @@
 #define APN_TYPE_IPv6	0x02	/* v6-only */
 #define APN_TYPE_IPv4v6	0x04	/* v4v6 dual-stack */
 
+/* The maximum sane MTU over GTP-U somebody may wish to configure:
+ * 9000 bytes aka jumbo frames. */
+#define MAX_POSSIBLE_APN_MTU 9000
+
+/* See 3GPP TS 23.060 Annex C: */
+#define ETHERNET_MTU      1500
+#define IPV4_HDR_MAX_SIZE 60
+#define IPV6_HDR_MAX_SIZE 40 /* Assume no extension headers in general... */
+#define UDP_HDR_MAX_SIZE  8
+#define GTPU_HDR_MAX_SIZE 12 /* Assume no extension headers in general... */
+#define MAX_DESIRED_APN_MTU ((ETHERNET_MTU) - (GTPU_HDR_MAX_SIZE) - (UDP_HDR_MAX_SIZE) - (IPV4_HDR_MAX_SIZE))
+/* MAX_DESIRED_APN_MTU = 1500 - 60 - 8 - 12 = 1500 - 80 = 1420 */
+
 struct ggsn_ctx;
 
 struct apn_ctx_ip {
@@ -70,6 +83,8 @@ struct apn_ctx {
 		bool shutdown;
 		/* transmit G-PDU sequence numbers (true) or not (false) */
 		bool tx_gpdu_seq;
+		/* MTU announced to the UE */
+		uint16_t mtu;
 	} cfg;
 
 	/* corresponding tun device */

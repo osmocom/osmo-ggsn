@@ -107,6 +107,7 @@ static struct apn_ctx *apn_alloc(struct ggsn_ctx *ggsn, const char *name)
 	apn->cfg.name = talloc_strdup(apn, name);
 	apn->cfg.shutdown = true;
 	apn->cfg.tx_gpdu_seq = true;
+	apn->cfg.mtu = MAX_DESIRED_APN_MTU;
 	INIT_LLIST_HEAD(&apn->cfg.name_list);
 
 	llist_add_tail(&apn->list, &ggsn->apn_list);

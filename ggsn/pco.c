@@ -198,6 +198,13 @@ static void process_pco_element_dns_ipv4(const struct pco_element *pco_elem, str
 		LOGPPDP(LOGL_NOTICE, pdp, "MS requested IPv4 DNS, but APN has none configured\n");
 }
 
+static void process_pco_element_link_mtu_ipv4(const struct pco_element *pco_elem, struct msgb *resp,
+					      const struct apn_ctx *apn, struct pdp_t *pdp)
+{
+	const uint16_t val_be = osmo_htons(apn->cfg.mtu);
+	msgb_t16lv_put(resp, PCO_P_IPv4_LINK_MTU, 2, (const uint8_t *)&val_be);
+}
+
 static void process_pco_element(const struct pco_element *pco_elem, struct msgb *resp,
 				const struct apn_ctx *apn, struct pdp_t *pdp)
 {
@@ -216,6 +223,9 @@ static void process_pco_element(const struct pco_element *pco_elem, struct msgb 
 		break;
 	case PCO_P_DNS_IPv4_ADDR:
 		process_pco_element_dns_ipv4(pco_elem, resp, apn, pdp);
+		break;
+	case PCO_P_IPv4_LINK_MTU:
+		process_pco_element_link_mtu_ipv4(pco_elem, resp, apn, pdp);
 		break;
 	default:
 		LOGPPDP(LOGL_INFO, pdp, "Unknown/Unimplemented PCO Protocol 0x%04x: %s\n",

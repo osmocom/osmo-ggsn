@@ -419,6 +419,22 @@ DEFUN(cfg_apn_tun_dev_name, cfg_apn_tun_dev_name_cmd,
 	return CMD_SUCCESS;
 }
 
+/* MAX_POSSIBLE_APN_MTU = 9000
+ * MAX_DESIRED_APN_MTU = 1420 */
+DEFUN(cfg_apn_mtu, cfg_apn_mtu_cmd,
+	"mtu (<0-" OSMO_STRINGIFY_VAL(MAX_POSSIBLE_APN_MTU) ">|default)",
+	"Configure announced MTU\n"
+	"MTU of the APN, announced to the UE\n"
+	"Default value of the MTU of the APN (1420)\n")
+{
+	struct apn_ctx *apn = (struct apn_ctx *) vty->index;
+	if (strcmp(argv[0], "default") == 0)
+		apn->cfg.mtu = MAX_DESIRED_APN_MTU;
+	else
+		apn->cfg.mtu = atoi(argv[0]);
+	return CMD_SUCCESS;
+}
+
 DEFUN(cfg_apn_ipup_script, cfg_apn_ipup_script_cmd,
 	"ipup-script PATH",
 	"Configure name/path of ip-up script\n"
@@ -688,6 +704,8 @@ static void config_write_apn(struct vty *vty, struct apn_ctx *apn)
 		vty_out(vty, "  type-support %s%s", get_value_string(pdp_type_names, (UINT32_C(1) << i)),
 			VTY_NEWLINE);
 	}
+
+	vty_out(vty, "  mtu %" PRIu16 "%s", apn->cfg.mtu, VTY_NEWLINE);
 
 	if (!apn->cfg.tx_gpdu_seq)
 		vty_out(vty, "  no g-pdu tx-sequence-numbers%s", VTY_NEWLINE);
@@ -1066,6 +1084,7 @@ int ggsn_vty_init(void)
 	install_element(APN_NODE, &cfg_apn_type_support_cmd);
 	install_element(APN_NODE, &cfg_apn_no_type_support_cmd);
 	install_element(APN_NODE, &cfg_apn_tun_dev_name_cmd);
+	install_element(APN_NODE, &cfg_apn_mtu_cmd);
 	install_element(APN_NODE, &cfg_apn_ipup_script_cmd);
 	install_element(APN_NODE, &cfg_apn_no_ipup_script_cmd);
 	install_element(APN_NODE, &cfg_apn_ipdown_script_cmd);
