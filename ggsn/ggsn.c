@@ -60,6 +60,8 @@
 #include "ggsn.h"
 #include "../gtp/gtp_internal.h"
 
+LLIST_HEAD(g_ggsn_list);
+
 static int ggsn_tun_fd_cb(struct osmo_fd *fd, unsigned int what);
 static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len);
 

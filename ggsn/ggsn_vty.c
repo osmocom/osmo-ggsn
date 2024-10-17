@@ -50,8 +50,6 @@
 #define IFCONFIG_STR	"GGSN-based interface configuration\n"
 #define GGSN_STR	"Gateway GPRS Support NODE (GGSN)\n"
 
-LLIST_HEAD(g_ggsn_list);
-
 enum ggsn_vty_node {
 	GGSN_NODE = _LAST_OSMOVTY_NODE + 1,
 	APN_NODE,
