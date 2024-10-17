@@ -94,6 +94,42 @@ static void pool_close_all_pdp(struct ippool_t *pool)
 	}
 }
 
+static struct apn_ctx *apn_alloc(struct ggsn_ctx *ggsn, const char *name)
+{
+	struct apn_ctx *apn;
+
+	apn = talloc_zero(ggsn, struct apn_ctx);
+	OSMO_ASSERT(apn);
+
+	apn->ggsn = ggsn;
+	apn->cfg.name = talloc_strdup(apn, name);
+	apn->cfg.shutdown = true;
+	apn->cfg.tx_gpdu_seq = true;
+	INIT_LLIST_HEAD(&apn->cfg.name_list);
+
+	llist_add_tail(&apn->list, &ggsn->apn_list);
+	return apn;
+}
+
+struct apn_ctx *ggsn_find_apn(struct ggsn_ctx *ggsn, const char *name)
+{
+	struct apn_ctx *apn;
+
+	llist_for_each_entry(apn, &ggsn->apn_list, list) {
+		if (!strcmp(apn->cfg.name, name))
+			return apn;
+	}
+	return NULL;
+}
+
+struct apn_ctx *ggsn_find_or_create_apn(struct ggsn_ctx *ggsn, const char *name)
+{
+	struct apn_ctx *apn = ggsn_find_apn(ggsn, name);
+	if (!apn)
+		apn = apn_alloc(ggsn, name);
+	return apn;
+}
+
 int apn_stop(struct apn_ctx *apn)
 {
 	LOGPAPN(LOGL_NOTICE, apn, "Stopping\n");
