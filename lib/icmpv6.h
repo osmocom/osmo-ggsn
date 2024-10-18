@@ -81,6 +81,13 @@ struct icmpv6_opt_prefix {
 	uint8_t prefix[16];
 } __attribute__ ((packed));
 
+/* RFC4861 Section 4.6.4 */
+struct icmpv6_opt_mtu {
+	struct icmpv6_opt_hdr hdr;
+	uint16_t reserved;
+	uint32_t mtu;
+} __attribute__ ((packed));
+
 uint16_t icmpv6_prepend_ip6hdr(struct msgb *msg, const struct in6_addr *saddr,
 				  const struct in6_addr *daddr);
 
@@ -89,6 +96,7 @@ struct msgb *icmpv6_construct_rs(const struct in6_addr *saddr);
 int handle_router_mcast(struct gsn_t *gsn, struct pdp_t *pdp,
 			const struct in6_addr *pdp_prefix,
 			const struct in6_addr *own_ll_addr,
+			uint32_t mtu,
 			const uint8_t *pack, unsigned len);
 
 struct icmpv6_radv_hdr *icmpv6_validate_router_adv(const uint8_t *pack, unsigned len);

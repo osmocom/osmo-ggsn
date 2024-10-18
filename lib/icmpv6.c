@@ -94,11 +94,13 @@ struct msgb *icmpv6_construct_rs(const struct in6_addr *saddr)
  *  \returns callee-allocated message buffer containing router advertisement */
 static struct msgb *icmpv6_construct_ra(const struct in6_addr *saddr,
 				 const struct in6_addr *daddr,
-				 const struct in6_addr *prefix)
+				 const struct in6_addr *prefix,
+				 uint32_t mtu)
 {
 	struct msgb *msg = msgb_alloc_headroom(512,128, "IPv6 RA");
 	struct icmpv6_radv_hdr *ra;
 	struct icmpv6_opt_prefix *ra_opt_pref;
+	struct icmpv6_opt_mtu *ra_opt_mtu;
 
 	OSMO_ASSERT(msg);
 
@@ -123,6 +125,25 @@ static struct msgb *icmpv6_construct_ra(const struct in6_addr *saddr,
 	ra_opt_pref->hdr.type = 3;	/* RFC4861 4.6.2 */
 	ra_opt_pref->hdr.len = 4;	/* RFC4861 4.6.2 */
 	ra_opt_pref->prefix_len = 64;	/* only prefix length as per 3GPP */
+	/* The Prefix is contained in the Prefix Information Option of
+	 * the Router Advertisements and shall have the A-flag set
+	 * and the L-flag cleared */
+	ra_opt_pref->a = 1;
+	ra_opt_pref->l = 0;
+	ra_opt_pref->res = 0;
+	/*  The lifetime of the prefix shall be set to infinity */
+	ra_opt_pref->valid_lifetime = htonl(GGSN_AdvValidLifetime);
+	ra_opt_pref->preferred_lifetime = htonl(GGSN_AdvPreferredLifetime);
+	ra_opt_pref->res2 = 0;
+	memcpy(ra_opt_pref->prefix, prefix, sizeof(ra_opt_pref->prefix));
+
+	/* RFC4861 Section 4.6.4, MTU */
+	ra_opt_mtu = (struct icmpv6_opt_mtu *) msgb_put(msg, sizeof(*ra_opt_mtu));
+	ra_opt_mtu->hdr.type = 5;	/* RFC4861 4.6.4 */
+	ra_opt_mtu->hdr.len = 1;	/* RFC4861 4.6.4 */
+	ra_opt_mtu->reserved = 0;
+	ra_opt_mtu->mtu = htonl(mtu);
+
 	/* The Prefix is contained in the Prefix Information Option of
 	 * the Router Advertisements and shall have the A-flag set
 	 * and the L-flag cleared */
@@ -194,6 +215,7 @@ struct icmpv6_radv_hdr *icmpv6_validate_router_adv(const uint8_t *pack, unsigned
 int handle_router_mcast(struct gsn_t *gsn, struct pdp_t *pdp,
 			const struct in6_addr *pdp_prefix,
 			const struct in6_addr *own_ll_addr,
+			uint32_t mtu,
 			const uint8_t *pack, unsigned len)
 {
 	const struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
@@ -230,7 +252,7 @@ int handle_router_mcast(struct gsn_t *gsn, struct pdp_t *pdp,
 		/* Send router advertisement from GGSN link-local
 		 * address to MS link-local address, including prefix
 		 * allocated to this PDP context */
-		msg = icmpv6_construct_ra(own_ll_addr, &ip6h->ip6_src, pdp_prefix);
+		msg = icmpv6_construct_ra(own_ll_addr, &ip6h->ip6_src, pdp_prefix, mtu);
 		/* Send the constructed RA to the MS */
 		gtp_data_req(gsn, pdp, msgb_data(msg), msgb_length(msg));
 		msgb_free(msg);

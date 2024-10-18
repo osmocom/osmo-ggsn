@@ -774,7 +774,7 @@ static int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
 		/* daddr: all-routers multicast addr */
 		if (IN6_ARE_ADDR_EQUAL(&ip6h->ip6_dst, &all_router_mcast_addr))
 			return handle_router_mcast(pdp->gsn, pdp, &peer->addr.v6,
-						&apn->v6_lladdr, pack, len);
+						&apn->v6_lladdr, apn->cfg.mtu, pack, len);
 		break;
 	case 4:
 		peer = pdp_get_peer_ipv(pdp, false);
