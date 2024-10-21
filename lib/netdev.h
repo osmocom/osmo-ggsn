@@ -53,18 +53,6 @@ struct iphdr
   };
 #endif /* !HAVE_IPHDR */
 
-extern int netdev_setaddr4(const char *devname, struct in_addr *addr,
-			   struct in_addr *dstaddr, struct in_addr *netmask);
-
-extern int netdev_setaddr6(const char *devname, struct in6_addr *addr, struct in6_addr *dstaddr,
-			   size_t prefixlen);
-
-extern int netdev_addaddr4(const char *devname, struct in_addr *addr,
-			   struct in_addr *dstaddr, struct in_addr *netmask);
-
-extern int netdev_addaddr6(const char *devname, struct in6_addr *addr,
-			   struct in6_addr *dstaddr, int prefixlen);
-
 extern int netdev_addroute4(struct in_addr *dst, struct in_addr *gateway, struct in_addr *mask);
 extern int netdev_delroute4(struct in_addr *dst, struct in_addr *gateway, struct in_addr *mask);
 extern int netdev_addroute6(struct in6_addr *dst, struct in6_addr *gateway, int prefixlen, const char *gw_iface);

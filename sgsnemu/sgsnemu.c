@@ -1649,7 +1649,7 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 			if (addr[i].len == 16)
 				prefixlen = 64;
 			/* printf("Setting up interface and routing\n"); */
-			tun_addaddr(tun, &addr[i], NULL, prefixlen);
+			tun_addaddr(tun, &addr[i], prefixlen);
 			if (options.defaultroute) {
 				if (in46a_is_v4(&addr[i])) {
 					struct in_addr rm;
@@ -1786,7 +1786,7 @@ static void handle_router_adv(struct pdp_t *pdp, struct ip6_hdr *ip6h, struct ic
 					}
 				}
 #endif
-				rc = tun_addaddr(tun, &addr, NULL, opt_prefix->prefix_len);
+				rc = tun_addaddr(tun, &addr, opt_prefix->prefix_len);
 				if (rc < 0) {
 					SYS_ERR(DSGSN, LOGL_ERROR, 0, "Failed to add addr %s to tun %s",
 						in46a_ntoa(&addr), tun->devname);
@@ -1936,7 +1936,7 @@ int main(int argc, char **argv)
 	}
 
 	if ((options.createif) && (options.netaddr.len)) {
-		tun_addaddr(tun, &options.netaddr, NULL, options.prefixlen);
+		tun_addaddr(tun, &options.netaddr, options.prefixlen);
 		if (options.defaultroute) {
 			if (in46a_is_v4(&options.netaddr)) {
 				struct in_addr rm;

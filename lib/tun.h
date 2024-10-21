@@ -37,10 +37,8 @@ struct tun_t {
 	struct osmo_netdev *netdev;
 	int fd;			/* File descriptor to tun interface */
 	struct in46_addr addr;
-	struct in46_addr dstaddr;
 	struct in_addr netmask;
 	int addrs;		/* Number of allocated IP addresses */
-	int routes;		/* One if we allocated an automatic route */
 	char devname[IFNAMSIZ];	/* Name of the tun device */
 	int (*cb_ind) (struct tun_t * tun, void *pack, unsigned len);
 	/* to be used by libgtp callers/users (to attach their own private state) */
@@ -52,8 +50,7 @@ extern int tun_free(struct tun_t *tun);
 extern int tun_decaps(struct tun_t *this);
 extern int tun_encaps(struct tun_t *tun, void *pack, unsigned len);
 
-extern int tun_addaddr(struct tun_t *this, struct in46_addr *addr,
-		       struct in46_addr *dstaddr, size_t prefixlen);
+extern int tun_addaddr(struct tun_t *this, struct in46_addr *addr, size_t prefixlen);
 
 extern int tun_set_cb_ind(struct tun_t *this,
 			  int (*cb_ind) (struct tun_t * tun, void *pack,

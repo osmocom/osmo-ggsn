@@ -49,99 +49,38 @@
 #include "syserr.h"
 #include "gtp-kernel.h"
 
-static int tun_setaddr4(struct tun_t *this, struct in_addr *addr,
-			struct in_addr *dstaddr, struct in_addr *netmask)
+int tun_addaddr(struct tun_t *this, struct in46_addr *addr, size_t prefixlen)
 {
+	struct osmo_sockaddr osa = {0};
 	int rc;
-	rc = netdev_setaddr4(this->devname, addr, dstaddr, netmask);
-	if (rc < 0)
-		return rc;
+	OSMO_ASSERT(this->netdev);
+	OSMO_ASSERT(addr);
 
-	if (addr) {
-		this->addr.len = sizeof(struct in_addr);
-		this->addr.v4.s_addr = addr->s_addr;
-	}
-	if (dstaddr) {
-		this->dstaddr.len = sizeof(struct in_addr);
-		this->dstaddr.v4.s_addr = dstaddr->s_addr;
-	}
-	if (netmask)
-		this->netmask.s_addr = netmask->s_addr;
-	this->addrs++;
-#if defined(__FreeBSD__) || defined (__APPLE__)
-	this->routes = 1;
-#endif
-
-	return rc;
-}
-
-static int tun_setaddr6(struct tun_t *this, struct in6_addr *addr, struct in6_addr *dstaddr,
-			size_t prefixlen)
-{
-	int rc;
-	rc = netdev_setaddr6(this->devname, addr, dstaddr, prefixlen);
-	if (rc < 0)
-		return rc;
-	if (dstaddr) {
-		this->dstaddr.len = sizeof(*dstaddr);
-		memcpy(&this->dstaddr.v6, dstaddr, sizeof(*dstaddr));
-	}
-	this->addrs++;
-#if defined(__FreeBSD__) || defined (__APPLE__)
-	this->routes = 1;
-#endif
-
-	return rc;
-}
-
-static int tun_addaddr4(struct tun_t *this, struct in_addr *addr,
-			struct in_addr *dstaddr, struct in_addr *netmask)
-{
-	int rc;
-
-	/* TODO: Is this needed on FreeBSD? */
-	if (!this->addrs)	/* Use ioctl for first addr to make ping work */
-		return tun_setaddr4(this, addr, dstaddr, netmask);	/* TODO dstaddr */
-
-	rc = netdev_addaddr4(this->devname, addr, dstaddr, netmask);
-	if (rc < 0)
-		return rc;
-
-	this->addrs++;
-
-	return rc;
-}
-
-static int tun_addaddr6(struct tun_t *this,
-		struct in6_addr *addr,
-		struct in6_addr *dstaddr, int prefixlen)
-{
-	int rc;
-
-	if (!this->addrs)	/* Use ioctl for first addr to make ping work */
-		return tun_setaddr6(this, addr, dstaddr, prefixlen);
-
-	rc = netdev_addaddr6(this->devname, addr, dstaddr, prefixlen);
-	if (rc < 0)
-		return rc;
-
-	this->addrs++;
-
-	return rc;
-}
-
-int tun_addaddr(struct tun_t *this, struct in46_addr *addr, struct in46_addr *dstaddr, size_t prefixlen)
-{
-	struct in_addr netmask;
 	switch (addr->len) {
 	case 4:
-		netmask.s_addr = htonl(0xffffffff << (32 - prefixlen));
-		return tun_addaddr4(this, &addr->v4, dstaddr ? &dstaddr->v4 : NULL, &netmask);
+		osa.u.sin.sin_family = AF_INET;
+		memcpy(&osa.u.sin.sin_addr, &addr->v4, sizeof(struct in_addr));
+		/* Store first IPv4 IP address to be used in ipup script: */
+		if (this->addrs == 0) {
+			this->addr.len = sizeof(struct in_addr);
+			this->addr.v4.s_addr = addr->v4.s_addr;
+			this->netmask.s_addr = htonl(0xffffffff << (32 - prefixlen));
+		}
+		break;
 	case 16:
-		return tun_addaddr6(this, &addr->v6, dstaddr ? &dstaddr->v6 : NULL, prefixlen);
+		osa.u.sin.sin_family = AF_INET6;
+		memcpy(&osa.u.sin6.sin6_addr, &addr->v6, sizeof(struct in6_addr));
+		break;
 	default:
 		return -1;
 	}
+
+	rc = osmo_netdev_add_addr(this->netdev, &osa, prefixlen);
+	if (rc < 0)
+		return rc;
+
+	this->addrs++;
+	return rc;
 }
 
 static int tun_tundev_data_ind_cb(struct osmo_tundev *tundev, struct msgb *msg)
@@ -168,7 +107,6 @@ int tun_new(struct tun_t **tun, const char *dev_name, bool use_kernel, int fd0, 
 
 	t->cb_ind = NULL;
 	t->addrs = 0;
-	t->routes = 0;
 	t->fd = -1;
 
 	if (!use_kernel) {
@@ -235,11 +173,6 @@ err_kernel_create:
 
 int tun_free(struct tun_t *tun)
 {
-
-	if (tun->routes) {
-		netdev_delroute4(&tun->dstaddr.v4, &tun->addr.v4, &tun->netmask);
-	}
-
 	if (tun->tundev) {
 		if (osmo_tundev_close(tun->tundev) < 0) {
 			SYS_ERR(DTUN, LOGL_ERROR, errno, "close() failed");

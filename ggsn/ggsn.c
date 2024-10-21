@@ -264,7 +264,7 @@ int apn_start(struct apn_ctx *apn)
 	if (apn->v4.cfg.ifconfig_prefix.addr.len) {
 		LOGPAPN(LOGL_INFO, apn, "Setting tun IP address %s\n",
 			in46p_ntoa(&apn->v4.cfg.ifconfig_prefix));
-		if (tun_addaddr(apn->tun.tun, &apn->v4.cfg.ifconfig_prefix.addr, NULL,
+		if (tun_addaddr(apn->tun.tun, &apn->v4.cfg.ifconfig_prefix.addr,
 				apn->v4.cfg.ifconfig_prefix.prefixlen)) {
 			LOGPAPN(LOGL_ERROR, apn, "Failed to set tun IPv4 address %s: %s\n",
 				in46p_ntoa(&apn->v4.cfg.ifconfig_prefix), strerror(errno));
@@ -276,7 +276,7 @@ int apn_start(struct apn_ctx *apn)
 	if (apn->v6.cfg.ifconfig_prefix.addr.len) {
 		LOGPAPN(LOGL_INFO, apn, "Setting tun IPv6 address %s\n",
 			in46p_ntoa(&apn->v6.cfg.ifconfig_prefix));
-		if (tun_addaddr(apn->tun.tun, &apn->v6.cfg.ifconfig_prefix.addr, NULL,
+		if (tun_addaddr(apn->tun.tun, &apn->v6.cfg.ifconfig_prefix.addr,
 				apn->v6.cfg.ifconfig_prefix.prefixlen)) {
 			LOGPAPN(LOGL_ERROR, apn, "Failed to set tun IPv6 address %s: %s. "
 				"Ensure you have ipv6 support and not used the disable_ipv6 sysctl?\n",
@@ -289,7 +289,7 @@ int apn_start(struct apn_ctx *apn)
 	if (apn->v6.cfg.ll_prefix.addr.len) {
 		LOGPAPN(LOGL_INFO, apn, "Setting tun IPv6 link-local address %s\n",
 			in46p_ntoa(&apn->v6.cfg.ll_prefix));
-		if (tun_addaddr(apn->tun.tun, &apn->v6.cfg.ll_prefix.addr, NULL,
+		if (tun_addaddr(apn->tun.tun, &apn->v6.cfg.ll_prefix.addr,
 				apn->v6.cfg.ll_prefix.prefixlen)) {
 			LOGPAPN(LOGL_ERROR, apn, "Failed to set tun IPv6 link-local address %s: %s. "
 				"Ensure you have ipv6 support and not used the disable_ipv6 sysctl?\n",
@@ -298,6 +298,13 @@ int apn_start(struct apn_ctx *apn)
 			return -1;
 		}
 		apn->v6_lladdr = apn->v6.cfg.ll_prefix.addr.v6;
+	}
+
+	rc = osmo_netdev_ifupdown(apn->tun.tun->netdev, true);
+	if (rc < 0) {
+		LOGPAPN(LOGL_ERROR, apn, "Failed to set tun interface UP: %s\n", strerror(errno));
+		apn_stop(apn);
+		return -1;
 	}
 
 	if (apn->tun.cfg.ipup_script) {
