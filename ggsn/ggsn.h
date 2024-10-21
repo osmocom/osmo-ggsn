@@ -95,6 +95,8 @@ struct apn_ctx {
 			/* ip-up and ip-down script names/paths */
 			char *ipup_script;
 			char *ipdown_script;
+			/* Whether to apply the MTU (apn->cfg.mtu) on the tun device: */
+			bool mtu_apply;
 		} cfg;
 		struct tun_t *tun;
 	} tun;

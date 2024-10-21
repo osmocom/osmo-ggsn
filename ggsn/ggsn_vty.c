@@ -422,16 +422,33 @@ DEFUN(cfg_apn_tun_dev_name, cfg_apn_tun_dev_name_cmd,
 /* MAX_POSSIBLE_APN_MTU = 9000
  * MAX_DESIRED_APN_MTU = 1420 */
 DEFUN(cfg_apn_mtu, cfg_apn_mtu_cmd,
-	"mtu (<0-" OSMO_STRINGIFY_VAL(MAX_POSSIBLE_APN_MTU) ">|default)",
+	"mtu (<0-" OSMO_STRINGIFY_VAL(MAX_POSSIBLE_APN_MTU) ">|default) [apply]",
 	"Configure announced MTU\n"
 	"MTU of the APN, announced to the UE\n"
-	"Default value of the MTU of the APN (1420)\n")
+	"Default value of the MTU of the APN (1420)\n"
+	"Apply the MTU on the tun-device of the APN\n")
 {
 	struct apn_ctx *apn = (struct apn_ctx *) vty->index;
+	int rc;
+
 	if (strcmp(argv[0], "default") == 0)
 		apn->cfg.mtu = MAX_DESIRED_APN_MTU;
 	else
 		apn->cfg.mtu = atoi(argv[0]);
+	apn->tun.cfg.mtu_apply = (argc > 1);
+
+	if (apn->tun.cfg.mtu_apply && apn->tun.tun) {
+		rc = osmo_netdev_set_mtu(apn->tun.tun->netdev, apn->cfg.mtu);
+		if (rc < 0) {
+			char buf_err[128];
+			strerror_r(errno, buf_err, sizeof(buf_err));
+			LOGPAPN(LOGL_ERROR, apn, "Failed to set tun interface MTU %u: %s (%d)\n",
+				apn->cfg.mtu, buf_err, rc);
+			vty_out(vty, "%% Failed to set tun interface MTU %u: %s (%d)%s",
+				apn->cfg.mtu, buf_err, rc, VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+	}
 	return CMD_SUCCESS;
 }
 
@@ -705,7 +722,8 @@ static void config_write_apn(struct vty *vty, struct apn_ctx *apn)
 			VTY_NEWLINE);
 	}
 
-	vty_out(vty, "  mtu %" PRIu16 "%s", apn->cfg.mtu, VTY_NEWLINE);
+	vty_out(vty, "  mtu %" PRIu16 "%s%s", apn->cfg.mtu,
+		apn->tun.cfg.mtu_apply ? " apply" : "", VTY_NEWLINE);
 
 	if (!apn->cfg.tx_gpdu_seq)
 		vty_out(vty, "  no g-pdu tx-sequence-numbers%s", VTY_NEWLINE);

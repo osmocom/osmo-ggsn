@@ -307,6 +307,16 @@ int apn_start(struct apn_ctx *apn)
 		return -1;
 	}
 
+	if (apn->tun.cfg.mtu_apply) {
+		rc = osmo_netdev_set_mtu(apn->tun.tun->netdev, apn->cfg.mtu);
+		if (rc < 0) {
+			LOGPAPN(LOGL_ERROR, apn, "Failed to set tun interface MTU %u: %s\n",
+				apn->cfg.mtu, strerror(errno));
+			apn_stop(apn);
+			return -1;
+		}
+	}
+
 	if (apn->tun.cfg.ipup_script) {
 		LOGPAPN(LOGL_INFO, apn, "Running ip-up script %s\n",
 			apn->tun.cfg.ipup_script);
