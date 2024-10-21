@@ -23,6 +23,7 @@
 
 #include <osmocom/core/application.h>
 #include <osmocom/core/msgb.h>
+#include <osmocom/core/select.h>
 
 #include <ctype.h>
 #include <netdb.h>
@@ -2186,9 +2187,8 @@ int main(int argc, char **argv)
 
 		if (!signal_received) {
 
-			if ((tun) && FD_ISSET(tun->fd, &fds) && tun_decaps(tun) < 0) {
-				SYS_ERR(DSGSN, LOGL_ERROR, 0,
-					"TUN decaps failed");
+			if ((tun) && FD_ISSET(tun->fd, &fds)) {
+				osmo_select_main(1);
 			}
 
 			if (FD_ISSET(gsn->fd0, &fds))

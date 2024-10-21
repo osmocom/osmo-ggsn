@@ -10,3 +10,4 @@
 libgtp    append new field  dir_tun_flags in struct pdp_t (older users not using the field should be fine since struct pdp_t is allocated internally)
 libgtp    ABI break  new field cb_create_context_ind in struct gsn_t
 libgtp    new API    gtp_set_cb_update_context_ind(), gtp_update_context_resp()
+libosmocore >1.10.0   osmo_tundev_get_fd()

@@ -41,20 +41,9 @@
 #include <net/route.h>
 #include <net/if.h>
 
-#if defined(__linux__)
 #include <linux/if_tun.h>
 
-#elif defined (__FreeBSD__)
-#include <net/if_tun.h>
-#include <net/if_var.h>
-#include <netinet/in_var.h>
-
-#elif defined (__APPLE__)
-#include <net/if.h>
-
-#else
-#error  "Unknown platform!"
-#endif
+#include <osmocom/core/msgb.h>
 
 #include "tun.h"
 #include "syserr.h"
@@ -155,121 +144,93 @@ int tun_addaddr(struct tun_t *this, struct in46_addr *addr, struct in46_addr *ds
 	}
 }
 
+static int tun_tundev_data_ind_cb(struct osmo_tundev *tundev, struct msgb *msg)
+{
+	struct tun_t *tun = osmo_tundev_get_priv_data(tundev);
+	int rc = 0;
+	if (tun->cb_ind)
+		rc = tun->cb_ind(tun, msgb_data(msg), msgb_length(msg));
+	msgb_free(msg);
+	return rc;
+}
+
 int tun_new(struct tun_t **tun, const char *dev_name, bool use_kernel, int fd0, int fd1u)
 {
+	struct tun_t *t;
+	int rc;
 
-#if defined(__linux__)
-	struct ifreq ifr;
-
-#elif defined(__FreeBSD__) || defined (__APPLE__)
-	char devname[IFNAMSIZ + 5];	/* "/dev/" + ifname */
-	int devnum;
-	struct ifaliasreq areq;
-	int fd;
-#endif
-
-	if (!(*tun = calloc(1, sizeof(struct tun_t)))) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno, "calloc() failed");
+	t = talloc_zero(NULL, struct tun_t);
+	if (!t) {
+		SYS_ERR(DTUN, LOGL_ERROR, errno, "talloc_zero() failed");
 		return EOF;
 	}
+	*tun = t;
 
-	(*tun)->cb_ind = NULL;
-	(*tun)->addrs = 0;
-	(*tun)->routes = 0;
+	t->cb_ind = NULL;
+	t->addrs = 0;
+	t->routes = 0;
+	t->fd = -1;
 
-#if defined(__linux__)
 	if (!use_kernel) {
-		/* Open the actual tun device */
-		if (((*tun)->fd = open("/dev/net/tun", O_RDWR)) < 0) {
-			SYS_ERR(DTUN, LOGL_ERROR, errno, "open() failed");
+		osmo_strlcpy(t->devname, dev_name, IFNAMSIZ);
+		t->devname[IFNAMSIZ - 1] = 0;
+
+		t->tundev = osmo_tundev_alloc(t, dev_name);
+		if (!t->tundev)
 			goto err_free;
-		}
+		osmo_tundev_set_priv_data(t->tundev, t);
+		osmo_tundev_set_data_ind_cb(t->tundev, tun_tundev_data_ind_cb);
+		rc = osmo_tundev_set_dev_name(t->tundev, dev_name);
+		if (rc < 0)
+			goto err_free_tundev;
 
-		/* Set device flags. For some weird reason this is also the method
-		   used to obtain the network interface name */
-		memset(&ifr, 0, sizeof(ifr));
-		if (dev_name)
-			strcpy(ifr.ifr_name, dev_name);
-		ifr.ifr_flags = IFF_TUN | IFF_NO_PI;	/* Tun device, no packet info */
-		if (ioctl((*tun)->fd, TUNSETIFF, (void *)&ifr) < 0) {
-			SYS_ERR(DTUN, LOGL_ERROR, errno, "ioctl() failed");
-			goto err_close;
-		}
-
-		strncpy((*tun)->devname, ifr.ifr_name, IFNAMSIZ);
-		(*tun)->devname[IFNAMSIZ - 1] = 0;
+		/* Open the actual tun device */
+		rc = osmo_tundev_open(t->tundev);
+		if (rc < 0)
+			goto err_free;
+		t->fd = osmo_tundev_get_fd(t->tundev);
+		t->netdev = osmo_tundev_get_netdev(t->tundev);
 
 		/* Disable checksums */
-		if (ioctl((*tun)->fd, TUNSETNOCSUM, 1) < 0) {
-			SYS_ERR(DTUN, LOGL_NOTICE, errno, "could not disable checksum on %s", (*tun)->devname);
+		if (ioctl(t->fd, TUNSETNOCSUM, 1) < 0) {
+			SYS_ERR(DTUN, LOGL_NOTICE, errno, "could not disable checksum on %s", t->devname);
 		}
+
+		LOGP(DTUN, LOGL_NOTICE, "tun %s configured\n", t->devname);
 		return 0;
+err_free_tundev:
+	osmo_tundev_free(t->tundev);
+err_free:
+	talloc_free(t);
+	*tun = NULL;
+	return -1;
+
 	} else {
-		strncpy((*tun)->devname, dev_name, IFNAMSIZ);
-		(*tun)->devname[IFNAMSIZ - 1] = 0;
-		(*tun)->fd = -1;
+		osmo_strlcpy(t->devname, dev_name, IFNAMSIZ);
+		t->devname[IFNAMSIZ - 1] = 0;
 
 		if (gtp_kernel_create(-1, dev_name, fd0, fd1u) < 0) {
 			LOGP(DTUN, LOGL_ERROR, "cannot create GTP tunnel device: %s\n",
 				strerror(errno));
 			return -1;
 		}
+		t->netdev = osmo_netdev_alloc(t, dev_name);
+		if (!t->netdev)
+			goto err_kernel_create;
+		rc = osmo_netdev_set_ifindex(t->netdev, if_nametoindex(dev_name));
+		if (rc < 0)
+			goto err_netdev_free;
+		rc = osmo_netdev_register(t->netdev);
+		if (rc < 0)
+			goto err_netdev_free;
 		LOGP(DTUN, LOGL_NOTICE, "GTP kernel configured\n");
 		return 0;
-	}
-
-#elif defined(__FreeBSD__) || defined (__APPLE__)
-
-	if (use_kernel) {
-		LOGP(DTUN, LOGL_ERROR, "No kernel GTP-U support in FreeBSD!\n");
-		return -1;
-	}
-
-	/* Find suitable device */
-	for (devnum = 0; devnum < 255; devnum++) {	/* TODO 255 */
-		snprintf(devname, sizeof(devname), "/dev/tun%d", devnum);
-		if (((*tun)->fd = open(devname, O_RDWR)) >= 0)
-			break;
-		if (errno != EBUSY)
-			break;
-	}
-	if ((*tun)->fd < 0) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno,
-			"Can't find tunnel device");
-		goto err_free;
-	}
-
-	snprintf((*tun)->devname, sizeof((*tun)->devname), "tun%d", devnum);
-	(*tun)->devname[sizeof((*tun)->devname)-1] = 0;
-
-	/* The tun device we found might have "old" IP addresses allocated */
-	/* We need to delete those. This problem is not present on Linux */
-
-	memset(&areq, 0, sizeof(areq));
-
-	/* Set up interface name */
-	strncpy(areq.ifra_name, (*tun)->devname, IFNAMSIZ);
-	areq.ifra_name[IFNAMSIZ - 1] = 0;	/* Make sure to terminate */
-
-	/* Create a channel to the NET kernel. */
-	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno, "socket() failed");
-		goto err_close;
-	}
-
-	/* Delete any IP addresses until SIOCDIFADDR fails */
-	while (ioctl(fd, SIOCDIFADDR, (void *)&areq) != -1) ;
-
-	close(fd);
-	return 0;
-#endif
-
-err_close:
-	close((*tun)->fd);
-err_free:
-	free(*tun);
-	*tun = NULL;
+err_netdev_free:
+	osmo_netdev_free(t->netdev);
+err_kernel_create:
+	gtp_kernel_stop(t->devname);
 	return -1;
+	}
 }
 
 int tun_free(struct tun_t *tun)
@@ -279,17 +240,23 @@ int tun_free(struct tun_t *tun)
 		netdev_delroute4(&tun->dstaddr.v4, &tun->addr.v4, &tun->netmask);
 	}
 
-	if (tun->fd >= 0) {
-		if (close(tun->fd)) {
+	if (tun->tundev) {
+		if (osmo_tundev_close(tun->tundev) < 0) {
 			SYS_ERR(DTUN, LOGL_ERROR, errno, "close() failed");
 		}
+		osmo_tundev_free(tun->tundev);
+		tun->tundev = NULL;
+		/* netdev is owned by tundev: */
+		tun->netdev = NULL;
+	} else {
+		/* netdev was allocated directly, free it: */
+		osmo_netdev_free(tun->netdev);
+		tun->netdev = NULL;
 	}
 
 	gtp_kernel_stop(tun->devname);
 
-	/* TODO: For solaris we need to unlink streams */
-
-	free(tun);
+	talloc_free(tun);
 	return 0;
 }
 
@@ -300,30 +267,16 @@ int tun_set_cb_ind(struct tun_t *this,
 	return 0;
 }
 
-int tun_decaps(struct tun_t *this)
-{
-	unsigned char buffer[PACKET_MAX];
-	int status;
-
-	if ((status = read(this->fd, buffer, sizeof(buffer))) <= 0) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno, "read() failed");
-		return -1;
-	}
-
-	if (this->cb_ind)
-		return this->cb_ind(this, buffer, status);
-
-	return 0;
-}
-
 int tun_encaps(struct tun_t *tun, void *pack, unsigned len)
 {
+	struct msgb *msg = msgb_alloc(PACKET_MAX, "tun_tx");
 	int rc;
-	rc = write(tun->fd, pack, len);
+
+	OSMO_ASSERT(msg);
+	memcpy(msgb_put(msg, len), pack, len);
+	rc = osmo_tundev_send(tun->tundev, msg);
 	if (rc < 0) {
 		SYS_ERR(DTUN, LOGL_ERROR, errno, "TUN(%s): write() failed", tun->devname);
-	} else if (rc < len) {
-		LOGTUN(LOGL_ERROR, tun, "short write() %d < %u\n", rc, len);
 	}
 	return rc;
 }

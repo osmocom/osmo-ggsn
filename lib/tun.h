@@ -16,6 +16,9 @@
 #include <stdbool.h>
 #include <net/if.h>
 
+#include <osmocom/core/netdev.h>
+#include <osmocom/core/tun.h>
+
 #include "../lib/in46_addr.h"
 
 #define PACKET_MAX      8196	/* Maximum packet size we receive */
@@ -30,6 +33,8 @@
  *************************************************************/
 
 struct tun_t {
+	struct osmo_tundev *tundev;
+	struct osmo_netdev *netdev;
 	int fd;			/* File descriptor to tun interface */
 	struct in46_addr addr;
 	struct in46_addr dstaddr;

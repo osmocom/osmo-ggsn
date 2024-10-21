@@ -62,7 +62,6 @@
 
 LLIST_HEAD(g_ggsn_list);
 
-static int ggsn_tun_fd_cb(struct osmo_fd *fd, unsigned int what);
 static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len);
 
 void ggsn_close_one_pdp(struct pdp_t *pdp)
@@ -150,7 +149,6 @@ int apn_stop(struct apn_ctx *apn)
 		if (apn->cfg.gtpu_mode == APN_GTPU_MODE_TUN) {
 			/* release tun device */
 			LOGPAPN(LOGL_INFO, apn, "Closing TUN device %s\n", apn->tun.tun->devname);
-			osmo_fd_unregister(&apn->tun.fd);
 		}
 		tun_free(apn->tun.tun);
 		apn->tun.tun = NULL;
@@ -233,10 +231,6 @@ int apn_start(struct apn_ctx *apn)
 			return -1;
 		}
 		LOGPAPN(LOGL_INFO, apn, "Opened TUN device %s\n", apn->tun.tun->devname);
-
-		/* Register with libosmocore */
-		osmo_fd_setup(&apn->tun.fd, apn->tun.tun->fd, OSMO_FD_READ, ggsn_tun_fd_cb, apn, 0);
-		osmo_fd_register(&apn->tun.fd);
 
 		/* Set TUN library callback */
 		tun_set_cb_ind(apn->tun.tun, cb_tun_ind);
@@ -797,16 +791,6 @@ static int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
 		return -1;
 	}
 	return tun_encaps((struct tun_t *)pdp->ipif, pack, len);
-}
-
-/* callback for tun device osmocom select loop integration */
-static int ggsn_tun_fd_cb(struct osmo_fd *fd, unsigned int what)
-{
-	struct apn_ctx *apn = fd->data;
-
-	OSMO_ASSERT(what & OSMO_FD_READ);
-
-	return tun_decaps(apn->tun.tun);
 }
 
 /* callback for libgtp osmocom select loop integration */

@@ -97,7 +97,6 @@ struct apn_ctx {
 			char *ipdown_script;
 		} cfg;
 		struct tun_t *tun;
-		struct osmo_fd fd;
 	} tun;
 
 	/* ipv6 link-local address */
