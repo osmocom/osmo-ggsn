@@ -412,7 +412,7 @@ DEFUN(cfg_apn_gtpu_mode, cfg_apn_gtpu_mode_cmd,
 DEFUN(cfg_apn_tun_dev_name, cfg_apn_tun_dev_name_cmd,
 	"tun-device NAME",
 	"Configure tun device name\n"
-	"TUN device name")
+	"TUN device name\n")
 {
 	struct apn_ctx *apn = (struct apn_ctx *) vty->index;
 	osmo_talloc_replace_string(apn, &apn->tun.cfg.dev_name, argv[0]);
