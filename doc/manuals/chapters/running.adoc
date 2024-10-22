@@ -52,6 +52,8 @@ There are various ways to enable these settings persistently, please refer to
 your distribution's documentation -- e.g. look for @net.ipv4.ip_forward=1@ in
 @/etc/sysctl.d/@, and https://wiki.debian.org/iptables for masquerading.
 
+include::{srcdir}/chapters/mtu.adoc[]
+
 === Multiple instances
 
 Running multiple instances of `osmo-ggsn` is possible if all GGSN instances

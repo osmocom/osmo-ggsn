@@ -1,3 +1,4 @@
+[[osmoggsn_configuring]]
 == Configuring OsmoGGSN
 
 All configuration of OsmoGGSN is performed using the VTY. For more
@@ -22,6 +23,7 @@ ggsn ggsn0
   gtpu-mode tun
   tun-device tun4
   type-support v4
+  mtu default apply
   ip prefix dynamic 176.16.222.0/24
   ip dns 0 192.168.100.1
   ip dns 1 8.8.8.8
@@ -162,18 +164,20 @@ out of shutdown.
 ----
 OsmoGGSN(config-ggsn-apn)# gtpu-mode tun <1>
 OsmoGGSN(config-ggsn-apn)# type-support v4 <2>
-OsmoGGSN(config-ggsn-apn)# ip prefix dynamic 176.16.222.0/24 <3>
-OsmoGGSN(config-ggsn-apn)# ip dns 0 192.168.100.1 <4>
-OsmoGGSN(config-ggsn-apn)# ip dns 1 8.8.8.8 <5>
-OsmoGGSN(config-ggsn-apn)# ip ifconfig 176.16.222.0/24 <6>
+OsmoGGSN(config-ggsn-apn)# mtu 1420 apply <3>
+OsmoGGSN(config-ggsn-apn)# ip prefix dynamic 176.16.222.0/24 <4>
+OsmoGGSN(config-ggsn-apn)# ip dns 0 192.168.100.1 <5>
+OsmoGGSN(config-ggsn-apn)# ip dns 1 8.8.8.8 <6>
+OsmoGGSN(config-ggsn-apn)# ip ifconfig 176.16.222.0/24 <7>
 ----
 <1> Use the userspace GTP-U handling using a TUN device
 <2> Support (only) IPv4 Addresses
-<3> Specify the pool of dynamic IPv4 addresses to be allocated to PDP
+<3> Specify MTU to announce to MS. Apply the MTU on the tunnel interface.
+<4> Specify the pool of dynamic IPv4 addresses to be allocated to PDP
     contexts
-<4> Specify the primary DNS server to be provided using IPCP/PCO
-<5> Specify the secondary DNS server to be provided using IPCP/PCO
-<6> Request OsmoGGSN to configure the `tun4` device network/netmask
+<5> Specify the primary DNS server to be provided using IPCP/PCO
+<6> Specify the secondary DNS server to be provided using IPCP/PCO
+<7> Request OsmoGGSN to configure the `tun4` device network/netmask
 
 NOTE:: If you use the optional `ip ifconfig` command to set the network
 device address/mask, OsmoGGSN must run with root or `CAP_NET_ADMIN`
@@ -271,6 +275,7 @@ to match the `ip prefix dynamic` config item, and activate the link, for example
 
 ----
 # ip addr add 192.168.7.1/24 dev apn0
+# ip link set mtu 1420 dev apn0
 # ip link set apn0 up
 ----
 
@@ -298,13 +303,18 @@ Group=username <3>
 [Match]
 Name=apn0 <1>
 
+[Link]
+MTUBytes=1420 <2>
+
 [Network]
-Address=192.168.7.1/24 <2>
-IPMasquerade=yes <3>
+Address=192.168.7.1/24 <3>
+IPMasquerade=yes <4>
 ----
 <1> The network device name, which must match the one in the apn0.netdev unit file above
-<2> The local IP address configured on the device
-<3> Requesting systemd to configure IP masquerading for this interface.  Depending on your needs,
+<2> Requesting systemd to set the MTU for this interface. The MTU of the tun
+    interface should be lower than regular, since it must accommodate the extra IP/UDP/GTPv1U headers.
+<3> The local IP address configured on the device
+<4> Requesting systemd to configure IP masquerading for this interface.  Depending on your needs,
     You may not want this if you have proper end-to-end routing set up, and want to have transparent
     inbound IP access to your GPRS-attached devices.
 
@@ -326,6 +336,7 @@ ggsn ggsn0
   gtpu-mode tun
   tun-device apn0
   type-support v4
+  mtu 1420
   ip prefix dynamic 192.168.7.0/24
   ip dns 0 192.168.100.1
   ip dns 1 8.8.8.8

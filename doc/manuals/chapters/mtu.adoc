@@ -1,0 +1,171 @@
+=== MTU considerations
+
+When running OsmoGGSN, the user may want to take network Maximum Transmission
+Unit (MTU) into consideration, and configure it based on network specific setup.
+
+Applying and announcing a proper MTU provides, for the MS employing it, reduced
+transmission overhead (ie. due to IP fragmentation) and avoids potential
+problems due to misconfigured nodes in the path (e.g. ICMP packet filtering).
+
+In OsmoGGSN, the MTU can be configured per APN through the VTY, see
+<<osmoggsn_configuring>>. If told so by the config, osmo-ggsn will apply the MTU
+on the APN network interface.
+
+==== MTU announced to MS
+
+The configured MTU is also announced to the MS through:
+
+* IPv4 APN: GTPv1C Create PDP Context Response, PCO IE "IPv4 Link MTU", 3GPP TS
+  24.008 Table 10.5.154.
+* IPv6 APN: ICMPv6 Routing Advertisement during IPv6 SLAAC procedure, RFC 4861.
+
+NOTE: It is up to the MS to request and use the link MTU size provided by the
+network. Hence, providing an MTU size does not guarantee that there will be no
+packets larger than the provided value.
+
+==== GTP-U tunnel overhead
+
+OsmoGGSN is encapsulating traffic over GTP-U, it means the packets being received,
+encapsulated and transmitted over the tunnel get their size increased by the sum of
+IP/UDP/GTPv1U headers being prepended:
+
+* IP: IPv4 headers can take up to 60 bytes (due to IPv4 options). IPv6 headers
+  can take up to 40 bytes (assuming no extension headers for IPv6 in general,
+  since they are uncommon). Hence, the 60 bytes of IPv4 are picked since that's
+  greater than the IPv4.
+* UDP: The UDP header takes 8 bytes.
+* GTPv1U: The GTPv1U header takes 12 bytes, assuming here no extensions headers
+  are used (OsmoGGSN doesn't use them).
+
+Hence, these headers add an overhead of up to `80`` bytes, as per the below formula:
+
+----
+GTPv1U_OVERHEAD = 60 + 8 + 12 = 80 bytes
+----
+
+==== Figuring out optimal MTU value
+
+There is no golden MTU value, since it really depends on the local (and remote)
+networks where traffic is routed. The idea is finding out a value that:
+
+* Is as big as possible, to avoid need to split big chunks of data into lots of
+  small packets, hence affecting performance due to processing overhead: extra
+  headers being trnasmitted, plus processing of extra packets.
+* Is small enough so that it can be transported over the lower layers of the
+  links involving the communication, avoiding IP fragmentation, which again hurts
+  performance.
+
+OsmoGGSN, by default, assumes that traffic is transported over an Ethernet
+network, which has a standarized maximum MTU of 1500 bytes. Hence, by default it
+announces an MTU of of `1420` bytes as per the following formula:
+
+----
+TUNNEL_MTU = ETH_MTU - GTPv1U_OVERHEAD = 1500 - 80 = 1420 bytes
+----
+
+Under certain networks, the base MTU may already be smaller than Ethernet's MTU
+(1500 bytes), due to, for instance, existence of some sort of extra tunneling
+protocol in the path, such as a VPN, ipsec, extra VLAN levels, etc. Under this
+scenario, the user must take care of figuring out the new base MTU value to use
+for the calculations presented above. This can be accomplished by packet
+inspection (eg. `wireshark`) or with tools such as `ping`, running it with a
+certain packet size and the IPv4 DF bit set, and see up to which packet size the
+networks is able to forward the message.
+
+.Example: Test if packets of 1420 bytes can reach peer host 176.16.222.4
+----
+$ ping -M probe 176.16.222.4 -s 1420
+----
+
+=== Increasing outer MTU
+
+Specifications at IEEE 802.3 establish that standard Ethernet has a maximum MTU
+of `1500` bytes.
+However, many Ethernet controllers can nowadays overcome this limit and allow
+the use of so called _jumbo frames_. The _jumbo frames_ maximum MTU varies
+depending on the implementation, with `9000` bytes being a commonly used limit.
+
+Note that using MTUs over the standarized `1500` bytes by means of _jumbo frames_
+can create interoperability problems with networks not supporting such frames
+(eg. forcing of IP packet fragmentation), plus the fact that larger frames
+consume more Ethernet link transmission time, causing greater delays and
+increasing latency.
+
+Nevertheless, if the operator:
+
+* is in control of the whole GTP-U path between OsmoGGSN and the MS, and
+* has Ethernet NICs supporting MTUs bigger than 1500 or uses any other link
+  layer supporting as well bigger MTUs.
+
+Then, it may be wise for the operator to configure such links with an increased
+outer MTU so that they can end up transporting GTP-U inner payload of 1500 bytes
+without fragmentation ocurring.
+
+Hence, following the examples presented on the above sections, one could
+configure *all the links* which are part of the GTP-U path to use an outer MTU
+of `1580` bytes, as per the following formula:
+
+----
+TUNNEL_MTU = ETH_MTU + GTPv1U_OVERHEAD = 1500 + 80 = 1580 bytes
+----
+
+.Example: Setting an MTU of `1580` to network interface `eth0` under Linux
+----
+ip link set mtu 1580 dev eth0
+----
+
+==== TCP MSS Clamping
+
+Usually endpoints use Path MTU Discovery (PMTUD) to determine the maximum MTU to
+reach the peer. However, this technique may sometimes not be optimal for all
+users of OsmoGGSN:
+
+* MS may not support requesting and/or configuring the MTU OsmoGGSN announced.
+* MS may not support PMTUD on its network stack, or may not have it enabled or
+  may be buggy.
+* Network may be misconfigured or some middlebox may be buggy (eg. not
+  forwarding ICMP `Packet Too Big` packets).
+
+Furthermore, PMTUD takes time to figure out the maximum MTU to use, since it
+relies on sending data and checking if it got lost, and adapting to the fact,
+reducing efficiency (throughput) of connections or even stalling them completely
+when big packets are generated.
+
+Hence, it may become useful for the operator of OsmoGGSN to, on top of MTU
+configuration, also configure its network to tune TCP Maximum Segment Size (MSS)
+option of TCP connections being established over the GTPv1U tunnel. This will
+make sure at least TCP connections can use the full capacity of the path MTU
+without passing its imit.
+
+The MSS TCP option is an optional parameter in the TCP header sent during TCP
+initial handshake (`SYN,SYN/ACK`) that specifies the maximum amount of bytes of
+TCP payload a TCP chunk may transport. The MSS value doesn't count the
+underlaying IP/TCP headers.
+
+Hence, following up on MTU size calculations from previous section, with a
+sample GTPv1U MTU of 1420 bytes and IP header of 60 bytes, plus taking into
+account that TCP header can span up to 56 bytes, we'd get to an MSS value of:
+
+----
+MSS = TUNNEL_MTU - IP_HDR - TCP_HDR = 1420 - 60 - 56 = 1304
+----
+
+In linux, the MSS of TCP connections can be clamped using iptables:
+
+----
+iptables -t nat -A PREROUTING -p tcp --tcp-flags SYN,RST SYN -i apn0 -j TCPMSS --set-mss 1304
+iptables -t nat -I POSTROUTING -p tcp --tcp-flags SYN,RST SYN -o apn0 -j TCPMSS --set-mss 1304
+ip6tables -t nat -A PREROUTING -p tcp --tcp-flags SYN,RST SYN -i apn0 -j TCPMSS --set-mss 1304
+ip6tables -t nat -I POSTROUTING -p tcp --tcp-flags SYN,RST SYN -o apn0 -j TCPMSS --set-mss 1304
+----
+
+==== Further Reading
+
+Check the following specs regarding MTU in 3GPP mobile networks:
+
+* 3GPP TS 29.061 section 11.2.1.5
+* 3GPP TS 290.060 section 13.2 IP Fragmentation
+* 3GPP TS 25.414 section 6.1.3.3
+* 3GPP TS 23.060 section 9.3, Annex C
+* 3GPP TS 24.008 (PCO IPv4 MTU)
+* RFC 4861 (IPv6 Router Advertisement)
