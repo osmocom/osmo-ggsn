@@ -9,7 +9,7 @@ GGSN (Gateway GPRS support node) element in side the packet switched
 core network of 2G and 3G cellular networks.
 
 The GGSN function is the tunnel endpoint on the core network side,
-from where the external (IP) packet data network 
+from where the external (IP) packet data network
 
 === Software Components
 
@@ -42,11 +42,6 @@ configuration file, by default located in *./osmo-ggsn.cfg*
 
 In *contrib/osmo-ggsn.service* you can find a sample service file for
 OsmoGGSN which can be used with systemd.
-
-==== init script
-
-In *contrib/osmo-ggsn.init* you can find a sample init script to be used
-on systems with classic init process.
 
 === Limitations
 
