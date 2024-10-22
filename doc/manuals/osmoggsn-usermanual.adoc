@@ -11,12 +11,11 @@ include::{srcdir}/chapters/running.adoc[]
 
 //include::{srcdir}/chapters/control.adoc[]
 
+include::{srcdir}/chapters/configuration.adoc[]
+
 include::./common/chapters/vty.adoc[]
 
 include::./common/chapters/logging.adoc[]
-
-
-include::{srcdir}/chapters/configuration.adoc[]
 
 include::./common/chapters/control_if.adoc[]
 
