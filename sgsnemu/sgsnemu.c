@@ -1196,7 +1196,7 @@ static int ping_finish()
 	return 0;
 }
 
-static int encaps_ping4(struct pdp_t *pdp, void *pack, unsigned len)
+static int cb_gtpu_data_ind_ping4(struct pdp_t *pdp, void *pack, unsigned len)
 {
 	struct timeval tv;
 	struct timeval *tp;
@@ -1258,7 +1258,7 @@ static int encaps_ping4(struct pdp_t *pdp, void *pack, unsigned len)
 	return 0;
 }
 
-static int encaps_ping6(struct pdp_t *pdp, struct ip6_hdr *ip6h, unsigned len)
+static int cb_gtpu_data_ind_ping6(struct pdp_t *pdp, struct ip6_hdr *ip6h, unsigned len)
 {
 	const struct icmpv6_echo_hdr *ic6h = (struct icmpv6_echo_hdr *) ((uint8_t*)ip6h + sizeof(*ip6h));
 	struct timeval tv;
@@ -1325,7 +1325,7 @@ static int encaps_ping6(struct pdp_t *pdp, struct ip6_hdr *ip6h, unsigned len)
 }
 
 /* Handle a received ping packet. Print out line and update statistics. */
-static int encaps_ping(struct pdp_t *pdp, void *pack, unsigned len)
+static int cb_gtpu_data_ind_ping(struct pdp_t *pdp, void *pack, unsigned len)
 {
 	struct iphdr *iph = (struct iphdr *)pack;
 	struct timeval tv;
@@ -1343,9 +1343,9 @@ static int encaps_ping(struct pdp_t *pdp, void *pack, unsigned len)
 	}
 	switch(iph->version) {
 	case 4:
-		return encaps_ping4(pdp, pack, len);
+		return cb_gtpu_data_ind_ping4(pdp, pack, len);
 	case 6:
-		return encaps_ping6(pdp, (struct ip6_hdr *)pack, len);
+		return cb_gtpu_data_ind_ping6(pdp, (struct ip6_hdr *)pack, len);
 	default:
 		SYS_ERR(DSGSN, LOGL_ERROR, 0, "Unknown ip header version %d", iph->version);
 		return -1;
@@ -1812,7 +1812,7 @@ static void handle_router_adv(struct pdp_t *pdp, struct ip6_hdr *ip6h, struct ic
 	}
 }
 
-static int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
+static int cb_gtpu_data_ind(struct pdp_t *pdp, void *pack, unsigned len)
 {
 	struct iphdr *iph = (struct iphdr *)pack;
 	struct icmpv6_radv_hdr *ra;
@@ -1826,7 +1826,7 @@ static int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
 	break;
 	}
 
-	/*  printf("encaps_tun. Packet received: forwarding to tun\n"); */
+	/*  printf("cb_gtpu_data_ind. Packet received: forwarding to tun\n"); */
 	return tun_encaps((struct tun_t *)pdp->ipif, pack, len);
 }
 
@@ -1883,9 +1883,9 @@ int main(int argc, char **argv)
 	gtp_set_cb_delete_context(gsn, delete_context);
 	gtp_set_cb_conf(gsn, _gtp_cb_conf);
 	if (options.createif)
-		gtp_set_cb_data_ind(gsn, encaps_tun);
+		gtp_set_cb_data_ind(gsn, cb_gtpu_data_ind);
 	else
-		gtp_set_cb_data_ind(gsn, encaps_ping);
+		gtp_set_cb_data_ind(gsn, cb_gtpu_data_ind_ping);
 
 #if defined(__linux__)
 	if ((options.createif) && (options.netns)) {

@@ -667,7 +667,8 @@ static int update_context_ind(struct pdp_t *pdp)
 	return rc;
 }
 
-/* Internet-originated IP packet, needs to be sent via GTP towards MS */
+/* Rx Internet-originated IP packet from our tun iface, needs to be sent via
+ * GTPU towards MS. */
 static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 {
 	struct apn_ctx *apn = tun->priv;
@@ -747,8 +748,10 @@ static int cb_tun_ind(struct tun_t *tun, void *pack, unsigned len)
 	return 0;
 }
 
-/* MS-originated GTP1-U packet, needs to be sent via TUN device */
-static int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
+/* Rx MS-originated GTP-U packet, needs to be sent via TUN device.
+ * "pack" contains the GTP-U payload once decapsulated from GTP-U by libgtp.
+ * Hence, "pack" should contain an IP packet. */
+static int cb_gtpu_data_ind(struct pdp_t *pdp, void *pack, unsigned len)
 {
 	struct iphdr *iph = (struct iphdr *)pack;
 	struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
@@ -963,7 +966,7 @@ int ggsn_start(struct ggsn_ctx *ggsn)
 	rc = osmo_fd_register(&ggsn->gtp_fd1u);
 	OSMO_ASSERT(rc == 0);
 
-	gtp_set_cb_data_ind(ggsn->gsn, encaps_tun);
+	gtp_set_cb_data_ind(ggsn->gsn, cb_gtpu_data_ind);
 	gtp_set_cb_create_context_ind(ggsn->gsn, create_context_ind);
 	gtp_set_cb_update_context_ind(ggsn->gsn, update_context_ind);
 	gtp_set_cb_delete_context(ggsn->gsn, delete_context);
