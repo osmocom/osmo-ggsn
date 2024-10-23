@@ -42,6 +42,14 @@ const struct in6_addr all_router_mcast_addr = {
 	.s6_addr = { 0xff,0x02,0,0,  0,0,0,0, 0,0,0,0,  0,0,0,2 }
 };
 
+/* RFC4291  link-local solicited-node multicast address, FF02:0:0:0:0:1:FF, 104 bits = 13 bytes */
+const uint8_t solicited_node_mcast_addr_prefix[13] = {
+	0xff, 0x02, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x01,
+	0xFF
+};
+
 /* Prepends the ipv6 header and returns checksum content */
 uint16_t icmpv6_prepend_ip6hdr(struct msgb *msg, const struct in6_addr *saddr,
 				  const struct in6_addr *daddr)
@@ -180,6 +188,25 @@ static bool icmpv6_validate_router_solicit(const uint8_t *pack, unsigned len)
 	return true;
 }
 
+/* Validate an ICMPv6 neighbor solicitation according to RFC4861 7.1.1 */
+static bool icmpv6_validate_neigh_solicit(const uint8_t *pack, unsigned len)
+{
+	const struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
+
+	/* Hop limit field must have 255 */
+	if (ip6h->ip6_ctlun.ip6_un1.ip6_un1_hlim != 255)
+		return false;
+	/* FIXME: ICMP checksum is valid */
+	/* ICMP length (derived from IP length) is 24 or more octets */
+	if (ip6h->ip6_ctlun.ip6_un1.ip6_un1_plen < 24)
+		return false;
+	/* FIXME: All included options have a length > 0 */
+	/* FIXME: If the IP source address is the unspecified address, the IP
+	 * destination address is a solicited-node multicast address. */
+	/* FIXME: If IP source is unspecified, no source link-layer addr option */
+	return true;
+}
+
 /* Validate an ICMPv6 router advertisement according to RFC4861 6.1.2.
    Returns pointer packet header on success, NULL otherwise. */
 struct icmpv6_radv_hdr *icmpv6_validate_router_adv(const uint8_t *pack, unsigned len)
@@ -256,6 +283,49 @@ int handle_router_mcast(struct gsn_t *gsn, struct pdp_t *pdp,
 		/* Send the constructed RA to the MS */
 		gtp_data_req(gsn, pdp, msgb_data(msg), msgb_length(msg));
 		msgb_free(msg);
+		break;
+	default:
+		LOGP(DICMP6, LOGL_DEBUG, "Unknown ICMPv6 type %u\n", ic6h->type);
+		break;
+	}
+	return 0;
+}
+
+/* handle incoming packets to the solicited-node multicast address */
+int handle_solicited_node_mcast(const uint8_t *pack, unsigned len)
+{
+	const struct ip6_hdr *ip6h = (struct ip6_hdr *)pack;
+	const struct icmpv6_hdr *ic6h = (struct icmpv6_hdr *) (pack + sizeof(*ip6h));
+
+	if (len < sizeof(*ip6h)) {
+		LOGP(DICMP6, LOGL_NOTICE, "Packet too short: %u bytes\n", len);
+		return -1;
+	}
+
+	/* we only treat ICMPv6 here */
+	if (ip6h->ip6_ctlun.ip6_un1.ip6_un1_nxt != IPPROTO_ICMPV6) {
+		LOGP(DICMP6, LOGL_DEBUG, "Ignoring non-ICMP solicited-node mcast\n");
+		return 0;
+	}
+
+	if (len < sizeof(*ip6h) + sizeof(*ic6h)) {
+		LOGP(DICMP6, LOGL_NOTICE, "Short ICMPv6 packet: %s\n", osmo_hexdump(pack, len));
+		return -1;
+	}
+
+	switch (ic6h->type) {
+	case 135: /* Neighbor Solicitation. RFC2461, RFC2462 */
+		if (ic6h->code != 0) {
+			LOGP(DICMP6, LOGL_NOTICE, "ICMPv6 type 135 but code %d\n", ic6h->code);
+			return -1;
+		}
+		if (!icmpv6_validate_neigh_solicit(pack, len)) {
+			LOGP(DICMP6, LOGL_NOTICE, "Invalid Neighbor Solicitation: %s\n",
+				osmo_hexdump(pack, len));
+			return -1;
+		}
+		/* RFC 2462: Ignore Neighbor (Duplicate Address Detection) */
+		LOGP(DICMP6, LOGL_DEBUG, "Ignoring Rx ICMPv6 Neighbor Soliciation: %s\n", osmo_hexdump(pack, len));
 		break;
 	default:
 		LOGP(DICMP6, LOGL_DEBUG, "Unknown ICMPv6 type %u\n", ic6h->type);

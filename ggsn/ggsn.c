@@ -782,10 +782,15 @@ static int encaps_tun(struct pdp_t *pdp, void *pack, unsigned len)
 			return -1;
 		}
 
-		/* daddr: all-routers multicast addr */
-		if (IN6_ARE_ADDR_EQUAL(&ip6h->ip6_dst, &all_router_mcast_addr))
-			return handle_router_mcast(pdp->gsn, pdp, &peer->addr.v6,
-						&apn->v6_lladdr, apn->cfg.mtu, pack, len);
+		if (IN6_IS_ADDR_MULTICAST(&ip6h->ip6_dst)) {
+			/* daddr: all-routers multicast addr */
+			if (IN6_ARE_ADDR_EQUAL(&ip6h->ip6_dst, &all_router_mcast_addr))
+				return handle_router_mcast(pdp->gsn, pdp, &peer->addr.v6,
+							   &apn->v6_lladdr, apn->cfg.mtu, pack, len);
+			/* daddr: solicited-node multicast addr */
+			if (memcmp(&ip6h->ip6_dst.s6_addr, solicited_node_mcast_addr_prefix, sizeof(solicited_node_mcast_addr_prefix)) == 0)
+				return handle_solicited_node_mcast(pack, len);
+		}
 		break;
 	case 4:
 		peer = pdp_get_peer_ipv(pdp, false);

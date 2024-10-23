@@ -98,9 +98,12 @@ int handle_router_mcast(struct gsn_t *gsn, struct pdp_t *pdp,
 			const struct in6_addr *own_ll_addr,
 			uint32_t mtu,
 			const uint8_t *pack, unsigned len);
+int handle_solicited_node_mcast(const uint8_t *pack, unsigned len);
 
 struct icmpv6_radv_hdr *icmpv6_validate_router_adv(const uint8_t *pack, unsigned len);
 
 
 /* RFC3307 link-local scope multicast address */
 extern const struct in6_addr all_router_mcast_addr;
+
+extern const uint8_t solicited_node_mcast_addr_prefix[13];
