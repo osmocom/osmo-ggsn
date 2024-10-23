@@ -1827,7 +1827,7 @@ static int cb_gtpu_data_ind(struct pdp_t *pdp, void *pack, unsigned len)
 	}
 
 	/*  printf("cb_gtpu_data_ind. Packet received: forwarding to tun\n"); */
-	return tun_encaps((struct tun_t *)pdp->ipif, pack, len);
+	return tun_inject_pkt((struct tun_t *)pdp->ipif, pack, len);
 }
 
 int main(int argc, char **argv)

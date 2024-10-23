@@ -200,7 +200,7 @@ int tun_set_cb_ind(struct tun_t *this,
 	return 0;
 }
 
-int tun_encaps(struct tun_t *tun, void *pack, unsigned len)
+int tun_inject_pkt(struct tun_t *tun, void *pack, unsigned len)
 {
 	struct msgb *msg;
 	int rc;

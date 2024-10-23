@@ -47,7 +47,7 @@ struct tun_t {
 
 extern int tun_new(struct tun_t **tun, const char *dev_name, bool use_kernel, int fd0, int fd1u);
 extern int tun_free(struct tun_t *tun);
-extern int tun_encaps(struct tun_t *tun, void *pack, unsigned len);
+extern int tun_inject_pkt(struct tun_t *tun, void *pack, unsigned len);
 
 extern int tun_addaddr(struct tun_t *this, struct in46_addr *addr, size_t prefixlen);
 

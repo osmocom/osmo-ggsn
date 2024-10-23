@@ -815,7 +815,7 @@ static int cb_gtpu_data_ind(struct pdp_t *pdp, void *pack, unsigned len)
 			osmo_hexdump(pack, len));
 		return -1;
 	}
-	return tun_encaps((struct tun_t *)pdp->ipif, pack, len);
+	return tun_inject_pkt((struct tun_t *)pdp->ipif, pack, len);
 }
 
 /* callback for libgtp osmocom select loop integration */
