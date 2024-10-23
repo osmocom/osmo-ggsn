@@ -202,9 +202,17 @@ int tun_set_cb_ind(struct tun_t *this,
 
 int tun_encaps(struct tun_t *tun, void *pack, unsigned len)
 {
-	struct msgb *msg = msgb_alloc(PACKET_MAX, "tun_tx");
+	struct msgb *msg;
 	int rc;
 
+	if (!tun->tundev) {
+		LOGTUN(LOGL_ERROR, tun,
+		       "Injecting decapsulated packet not supported in kernel gtp mode: %s\n",
+		       osmo_hexdump(pack, len));
+		return -ENOTSUP;
+	}
+
+	msg = msgb_alloc(PACKET_MAX, "tun_tx");
 	OSMO_ASSERT(msg);
 	memcpy(msgb_put(msg, len), pack, len);
 	rc = osmo_tundev_send(tun->tundev, msg);
