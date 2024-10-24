@@ -226,7 +226,8 @@ int apn_start(struct apn_ctx *apn)
 	switch (apn->cfg.gtpu_mode) {
 	case APN_GTPU_MODE_TUN:
 		LOGPAPN(LOGL_INFO, apn, "Opening TUN device %s\n", apn->tun.cfg.dev_name);
-		if (tun_new(&apn->tun.tun, apn->tun.cfg.dev_name, false, -1, -1)) {
+		apn->tun.tun = tun_alloc_tundev(apn->tun.cfg.dev_name);
+		if (!apn->tun.tun) {
 			LOGPAPN(LOGL_ERROR, apn, "Failed to configure tun device\n");
 			return -1;
 		}
@@ -246,7 +247,8 @@ int apn_start(struct apn_ctx *apn)
 			return 0;
 		}
 		/* use GTP kernel module for data packet encapsulation */
-		if (tun_new(&apn->tun.tun, apn->tun.cfg.dev_name, true, gsn->fd0, gsn->fd1u)) {
+		apn->tun.tun = tun_alloc_gtpdev(apn->tun.cfg.dev_name, gsn->fd0, gsn->fd1u);
+		if (!apn->tun.tun) {
 			LOGPAPN(LOGL_ERROR, apn, "Failed to configure Kernel GTP device\n");
 			return -1;
 		}

@@ -33,9 +33,9 @@
  *************************************************************/
 
 struct tun_t {
-	struct osmo_tundev *tundev;
+	/* In tun device mode: operates on the tun interface, owned by tun.tundev below.
+	 * In gtp kernel mode: operates on the gtp device, allocated explicitly */
 	struct osmo_netdev *netdev;
-	int fd;			/* File descriptor to tun interface */
 	struct in46_addr addr;
 	struct in_addr netmask;
 	int addrs;		/* Number of allocated IP addresses */
@@ -43,9 +43,15 @@ struct tun_t {
 	int (*cb_ind) (struct tun_t * tun, void *pack, unsigned len);
 	/* to be used by libgtp callers/users (to attach their own private state) */
 	void *priv;
+	/* Fields only in use when using the tun device mode: */
+	struct {
+		struct osmo_tundev *tundev; /* Manages the tun interface; NULL on gtp kernel mode */
+		int fd; /* File descriptor to tun interface; -1 on gtp kernel mode */
+	} tundev;
 };
 
-extern int tun_new(struct tun_t **tun, const char *dev_name, bool use_kernel, int fd0, int fd1u);
+extern struct tun_t *tun_alloc_tundev(const char *devname);
+extern struct tun_t *tun_alloc_gtpdev(const char *devname, int fd0, int fd1u);
 extern int tun_free(struct tun_t *tun);
 extern int tun_inject_pkt(struct tun_t *tun, void *pack, unsigned len);
 

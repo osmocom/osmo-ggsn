@@ -93,101 +93,117 @@ static int tun_tundev_data_ind_cb(struct osmo_tundev *tundev, struct msgb *msg)
 	return rc;
 }
 
-int tun_new(struct tun_t **tun, const char *dev_name, bool use_kernel, int fd0, int fd1u)
+static struct tun_t *tun_alloc_common(const char *devname)
 {
-	struct tun_t *t;
+	struct tun_t *tun;
+
+	tun = talloc_zero(NULL, struct tun_t);
+	if (!tun) {
+		LOGP(DTUN, LOGL_ERROR, "tun_alloc_common() failed\n");
+		return NULL;
+	}
+
+	tun->cb_ind = NULL;
+	tun->addrs = 0;
+	tun->tundev.fd = -1;
+
+	osmo_strlcpy(tun->devname, devname, IFNAMSIZ);
+	tun->devname[IFNAMSIZ - 1] = 0;
+
+	return tun;
+}
+
+struct tun_t *tun_alloc_tundev(const char *devname)
+{
+	struct tun_t *tun;
 	int rc;
 
-	t = talloc_zero(NULL, struct tun_t);
-	if (!t) {
-		SYS_ERR(DTUN, LOGL_ERROR, errno, "talloc_zero() failed");
-		return EOF;
+	tun = tun_alloc_common(devname);
+	if (!tun)
+		return NULL;
+
+	tun->tundev.tundev = osmo_tundev_alloc(tun, tun->devname);
+	if (!tun->tundev.tundev)
+		goto err_free;
+	osmo_tundev_set_priv_data(tun->tundev.tundev, tun);
+	osmo_tundev_set_data_ind_cb(tun->tundev.tundev, tun_tundev_data_ind_cb);
+	rc = osmo_tundev_set_dev_name(tun->tundev.tundev, tun->devname);
+	if (rc < 0)
+		goto err_free_tundev;
+
+	/* Open the actual tun device */
+	rc = osmo_tundev_open(tun->tundev.tundev);
+	if (rc < 0)
+		goto err_free_tundev;
+	tun->tundev.fd = osmo_tundev_get_fd(tun->tundev.tundev);
+	tun->netdev = osmo_tundev_get_netdev(tun->tundev.tundev);
+
+	/* Disable checksums */
+	if (ioctl(tun->tundev.fd, TUNSETNOCSUM, 1) < 0) {
+		SYS_ERR(DTUN, LOGL_NOTICE, errno, "could not disable checksum on %s", tun->devname);
 	}
-	*tun = t;
 
-	t->cb_ind = NULL;
-	t->addrs = 0;
-	t->fd = -1;
+	LOGP(DTUN, LOGL_NOTICE, "tun %s configured\n", tun->devname);
+	return tun;
 
-	if (!use_kernel) {
-		osmo_strlcpy(t->devname, dev_name, IFNAMSIZ);
-		t->devname[IFNAMSIZ - 1] = 0;
-
-		t->tundev = osmo_tundev_alloc(t, dev_name);
-		if (!t->tundev)
-			goto err_free;
-		osmo_tundev_set_priv_data(t->tundev, t);
-		osmo_tundev_set_data_ind_cb(t->tundev, tun_tundev_data_ind_cb);
-		rc = osmo_tundev_set_dev_name(t->tundev, dev_name);
-		if (rc < 0)
-			goto err_free_tundev;
-
-		/* Open the actual tun device */
-		rc = osmo_tundev_open(t->tundev);
-		if (rc < 0)
-			goto err_free;
-		t->fd = osmo_tundev_get_fd(t->tundev);
-		t->netdev = osmo_tundev_get_netdev(t->tundev);
-
-		/* Disable checksums */
-		if (ioctl(t->fd, TUNSETNOCSUM, 1) < 0) {
-			SYS_ERR(DTUN, LOGL_NOTICE, errno, "could not disable checksum on %s", t->devname);
-		}
-
-		LOGP(DTUN, LOGL_NOTICE, "tun %s configured\n", t->devname);
-		return 0;
 err_free_tundev:
-	osmo_tundev_free(t->tundev);
+	osmo_tundev_free(tun->tundev.tundev);
 err_free:
-	talloc_free(t);
-	*tun = NULL;
-	return -1;
+	talloc_free(tun);
+	return NULL;
+}
 
-	} else {
-		osmo_strlcpy(t->devname, dev_name, IFNAMSIZ);
-		t->devname[IFNAMSIZ - 1] = 0;
+struct tun_t *tun_alloc_gtpdev(const char *devname, int fd0, int fd1u)
+{
+	struct tun_t *tun;
+	int rc;
 
-		if (gtp_kernel_create(-1, dev_name, fd0, fd1u) < 0) {
-			LOGP(DTUN, LOGL_ERROR, "cannot create GTP tunnel device: %s\n",
-				strerror(errno));
-			return -1;
-		}
-		t->netdev = osmo_netdev_alloc(t, dev_name);
-		if (!t->netdev)
-			goto err_kernel_create;
-		rc = osmo_netdev_set_ifindex(t->netdev, if_nametoindex(dev_name));
-		if (rc < 0)
-			goto err_netdev_free;
-		rc = osmo_netdev_register(t->netdev);
-		if (rc < 0)
-			goto err_netdev_free;
-		LOGP(DTUN, LOGL_NOTICE, "GTP kernel configured\n");
-		return 0;
-err_netdev_free:
-	osmo_netdev_free(t->netdev);
-err_kernel_create:
-	gtp_kernel_stop(t->devname);
-	return -1;
+	tun = tun_alloc_common(devname);
+	if (!tun)
+		return NULL;
+
+	if (gtp_kernel_create(-1, tun->devname, fd0, fd1u) < 0) {
+		LOGP(DTUN, LOGL_ERROR, "cannot create GTP tunnel device: %s\n",
+			strerror(errno));
+		goto err_free;
 	}
+	tun->netdev = osmo_netdev_alloc(tun, tun->devname);
+	if (!tun->netdev)
+		goto err_kernel_create;
+	rc = osmo_netdev_set_ifindex(tun->netdev, if_nametoindex(tun->devname));
+	if (rc < 0)
+		goto err_netdev_free;
+	rc = osmo_netdev_register(tun->netdev);
+	if (rc < 0)
+		goto err_netdev_free;
+	LOGP(DTUN, LOGL_NOTICE, "GTP kernel configured\n");
+	return tun;
+
+err_netdev_free:
+	osmo_netdev_free(tun->netdev);
+err_kernel_create:
+	gtp_kernel_stop(tun->devname);
+err_free:
+	talloc_free(tun);
+	return NULL;
 }
 
 int tun_free(struct tun_t *tun)
 {
-	if (tun->tundev) {
-		if (osmo_tundev_close(tun->tundev) < 0) {
-			SYS_ERR(DTUN, LOGL_ERROR, errno, "close() failed");
+	if (tun->tundev.tundev) {
+		if (osmo_tundev_close(tun->tundev.tundev) < 0) {
+			SYS_ERR(DTUN, LOGL_ERROR, errno, "osmo_tundev_close() failed");
 		}
-		osmo_tundev_free(tun->tundev);
-		tun->tundev = NULL;
+		osmo_tundev_free(tun->tundev.tundev);
+		tun->tundev.tundev = NULL;
 		/* netdev is owned by tundev: */
 		tun->netdev = NULL;
 	} else {
+		gtp_kernel_stop(tun->devname);
 		/* netdev was allocated directly, free it: */
 		osmo_netdev_free(tun->netdev);
 		tun->netdev = NULL;
 	}
-
-	gtp_kernel_stop(tun->devname);
 
 	talloc_free(tun);
 	return 0;
@@ -205,7 +221,7 @@ int tun_inject_pkt(struct tun_t *tun, void *pack, unsigned len)
 	struct msgb *msg;
 	int rc;
 
-	if (!tun->tundev) {
+	if (!tun->tundev.tundev) {
 		LOGTUN(LOGL_ERROR, tun,
 		       "Injecting decapsulated packet not supported in kernel gtp mode: %s\n",
 		       osmo_hexdump(pack, len));
@@ -215,7 +231,7 @@ int tun_inject_pkt(struct tun_t *tun, void *pack, unsigned len)
 	msg = msgb_alloc(PACKET_MAX, "tun_tx");
 	OSMO_ASSERT(msg);
 	memcpy(msgb_put(msg, len), pack, len);
-	rc = osmo_tundev_send(tun->tundev, msg);
+	rc = osmo_tundev_send(tun->tundev.tundev, msg);
 	if (rc < 0) {
 		SYS_ERR(DTUN, LOGL_ERROR, errno, "TUN(%s): write() failed", tun->devname);
 	}

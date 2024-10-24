@@ -1905,7 +1905,8 @@ int main(int argc, char **argv)
 	if (options.createif) {
 		printf("Setting up interface\n");
 		/* Create a tunnel interface */
-		if (tun_new((struct tun_t **)&tun, options.tun_dev_name, false, -1, -1)) {
+		tun = tun_alloc_tundev(options.tun_dev_name);
+		if (!tun) {
 			SYS_ERR(DSGSN, LOGL_ERROR, 0,
 				"Failed to create tun");
 			exit(1);
@@ -1925,8 +1926,8 @@ int main(int argc, char **argv)
 #endif
 
 		tun_set_cb_ind(tun, cb_tun_ind);
-		if (tun->fd > maxfd)
-			maxfd = tun->fd;
+		if (tun->tundev.fd > maxfd)
+			maxfd = tun->tundev.fd;
 
 		if (proc_ipv6_conf_write(tun->devname, "accept_ra", "0") < 0) {
 			SYS_ERR(DSGSN, LOGL_ERROR, 0,
@@ -2159,7 +2160,7 @@ int main(int argc, char **argv)
 
 		FD_ZERO(&fds);
 		if (tun)
-			FD_SET(tun->fd, &fds);
+			FD_SET(tun->tundev.fd, &fds);
 		FD_SET(gsn->fd0, &fds);
 		FD_SET(gsn->fd1c, &fds);
 		FD_SET(gsn->fd1u, &fds);
@@ -2187,7 +2188,7 @@ int main(int argc, char **argv)
 
 		if (!signal_received) {
 
-			if ((tun) && FD_ISSET(tun->fd, &fds)) {
+			if ((tun) && FD_ISSET(tun->tundev.fd, &fds)) {
 				osmo_select_main(1);
 			}
 
