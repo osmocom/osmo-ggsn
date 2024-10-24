@@ -150,13 +150,13 @@ account that TCP header can span up to 56 bytes, we'd get to an MSS value of:
 MSS = TUNNEL_MTU - IP_HDR - TCP_HDR = 1420 - 60 - 56 = 1304
 ----
 
-In linux, the MSS of TCP connections can be clamped using iptables:
+In linux, the MSS of TCP connections can be clamped using nftables:
 
 ----
-iptables -t nat -A PREROUTING -p tcp --tcp-flags SYN,RST SYN -i apn0 -j TCPMSS --set-mss 1304
-iptables -t nat -I POSTROUTING -p tcp --tcp-flags SYN,RST SYN -o apn0 -j TCPMSS --set-mss 1304
-ip6tables -t nat -A PREROUTING -p tcp --tcp-flags SYN,RST SYN -i apn0 -j TCPMSS --set-mss 1304
-ip6tables -t nat -I POSTROUTING -p tcp --tcp-flags SYN,RST SYN -o apn0 -j TCPMSS --set-mss 1304
+nft 'add rule ip nat prerouting iifname "apn0" tcp flags syn / syn,rst counter tcp option maxseg size set 1304'
+nft 'insert rule ip nat postrouting oifname "apn0" tcp flags syn / syn,rst counter tcp option maxseg size set 1304'
+nft 'add rule ip6 nat prerouting iifname "apn0" tcp flags syn / syn,rst counter tcp option maxseg size set 1304'
+nft 'insert rule ip6 nat postrouting oifname "apn0" tcp flags syn / syn,rst counter tcp option maxseg size set 1304'
 ----
 
 ==== Further Reading
