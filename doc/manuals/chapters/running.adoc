@@ -43,14 +43,14 @@ To manually enable IPv4 forwarding and masquerading ad-hoc, you can do:
 
 ----
 sh -c "echo 1 > /proc/sys/net/ipv4/ip_forward"
-iptables -t nat -A POSTROUTING -o '*' -j MASQUERADE
+nft 'add rule ip nat postrouting oifname "\*" counter masquerade'
 ----
 
 (You may want to replace `*` with the network device name, like `-o eth0`)
 
 There are various ways to enable these settings persistently, please refer to
 your distribution's documentation -- e.g. look for @net.ipv4.ip_forward=1@ in
-@/etc/sysctl.d/@, and https://wiki.debian.org/iptables for masquerading.
+@/etc/sysctl.d/@, and https://wiki.debian.org/nftables for masquerading.
 
 include::{srcdir}/chapters/mtu.adoc[]
 
