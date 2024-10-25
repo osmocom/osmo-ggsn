@@ -44,6 +44,7 @@
 #include <linux/if_tun.h>
 
 #include <osmocom/core/msgb.h>
+#include <osmocom/core/utils.h>
 
 #include "tun.h"
 #include "syserr.h"
@@ -107,8 +108,7 @@ static struct tun_t *tun_alloc_common(const char *devname)
 	tun->addrs = 0;
 	tun->tundev.fd = -1;
 
-	osmo_strlcpy(tun->devname, devname, IFNAMSIZ);
-	tun->devname[IFNAMSIZ - 1] = 0;
+	OSMO_STRLCPY_ARRAY(tun->devname, devname);
 
 	return tun;
 }
