@@ -77,6 +77,8 @@
 		     inet_ntoa((addr).sin_addr), htons((addr).sin_port), \
 		     ##args);
 
+TALLOC_CTX *tall_libgtp_ctx = NULL;
+
 /* API Functions */
 
 const char *gtp_version()
@@ -3189,4 +3191,9 @@ uint64_t gtp_imsi_str2gtp(const char *str)
 		imsi64 |= (val << (n*4));
 	}
 	return imsi64;
+}
+
+void gtp_set_talloc_ctx(void *ctx)
+{
+	tall_libgtp_ctx = ctx;
 }

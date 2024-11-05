@@ -63,6 +63,7 @@
 
 #include "queue.h"
 #include "gsn_internal.h"
+#include "gtp_internal.h"
 
 /* Error reporting functions */
 
@@ -466,7 +467,7 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 {
 	LOGP(DLGTP, LOGL_NOTICE, "GTP: gtp_newgsn() started at %s\n", inet_ntoa(*listen));
 
-	*gsn = calloc(sizeof(struct gsn_t), 1);	/* TODO */
+	*gsn = talloc_zero(tall_libgtp_ctx, struct gsn_t);
 
 	(*gsn)->statedir = statedir;
 	log_restart(*gsn);
@@ -551,7 +552,7 @@ int gtp_free(struct gsn_t *gsn)
 
 	rate_ctr_group_free(gsn->ctrg);
 
-	free(gsn);
+	talloc_free(gsn);
 	return 0;
 }
 

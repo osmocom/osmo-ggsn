@@ -281,4 +281,7 @@ extern int gsna2in_addr(struct in_addr *dst, struct ul16_t *gsna);
 
 extern const char *imsi_gtp2str(const uint64_t *imsi);
 
+/*! Set the talloc context for internal objects */
+void gtp_set_talloc_ctx(void *ctx);
+
 #endif /* !_GTP_H */
