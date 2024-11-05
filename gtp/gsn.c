@@ -116,6 +116,8 @@ struct osmo_tdef gtp_T_defs[] = {
 	{}
 };
 
+static TALLOC_CTX *tall_gsn_ctx = NULL;
+
 
 /* API Functions */
 
@@ -466,7 +468,7 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 {
 	LOGP(DLGTP, LOGL_NOTICE, "GTP: gtp_newgsn() started at %s\n", inet_ntoa(*listen));
 
-	*gsn = calloc(sizeof(struct gsn_t), 1);	/* TODO */
+	*gsn = talloc_zero(tall_gsn_ctx, struct gsn_t);
 
 	(*gsn)->statedir = statedir;
 	log_restart(*gsn);
@@ -551,7 +553,7 @@ int gtp_free(struct gsn_t *gsn)
 
 	rate_ctr_group_free(gsn->ctrg);
 
-	free(gsn);
+	talloc_free(gsn);
 	return 0;
 }
 
@@ -583,4 +585,9 @@ int gtp_retranstimeout(struct gsn_t *gsn, struct timeval *timeout)
 	timeout->tv_usec = 0;
 	/* dummy API, deprecated. Return a huge timer to do nothing */
 	return 0;
+}
+
+void gtp_set_talloc_ctx(void *ctx)
+{
+	tall_gsn_ctx = ctx;
 }
