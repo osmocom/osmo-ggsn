@@ -25,6 +25,8 @@
 
 #include <osmocom/core/logging.h>
 #include <osmocom/core/utils.h>
+#include <osmocom/gsm/gsm48.h>
+#include <osmocom/gsm/gsm23003.h>
 
 #if defined(__FreeBSD__)
 #include <sys/endian.h>
@@ -61,6 +63,7 @@
 
 #include "queue.h"
 #include "gsn_internal.h"
+#include "gtp_sgsn_ctx.h"
 #include "gtp_internal.h"
 
 /* Error reporting functions */
@@ -888,6 +891,590 @@ int gtp_ran_info_relay_req(struct gsn_t *gsn, const struct sockaddr_in *peer,
 	}
 
 	return gtp_notification(gsn, 1, &packet, length, peer, gsn->fd1c, 0);
+}
+
+#define GSM_MI_TYPE_TLLI 0x05
+
+/* Send an SGSN Context Request */
+int gtp_sgsn_context_req(struct gsn_t *gsn, uint32_t *local_ref,
+		     struct sockaddr_in *peer, union gtpie_member **ie, unsigned int ie_size)
+{
+	union gtp_packet packet = {};
+	unsigned int packet_len;
+	int rc;
+	uint32_t local_teic;
+	union gtpie_member resp_ie_elem[2] = {};
+	void *pack;
+	unsigned encoded_len;
+
+	rc = sgsn_ctx_req_fsm_tx_req(gsn, peer, ie, ie_size, &local_teic, gsn->seq_next);
+	if (rc)
+		return rc;
+
+	packet_len = get_default_gtp(1, GTP_SGSN_CONTEXT_REQ, &packet);
+	resp_ie_elem[0].tv4.t = GTPIE_TEI_C;
+	resp_ie_elem[0].tv4.v = htonl(local_teic);
+	ie[GTPIE_TEI_C] = &resp_ie_elem[0];
+
+	resp_ie_elem[1].tlv.t = GTPIE_GSN_ADDR;
+	resp_ie_elem[1].tlv.l = htons(sizeof(gsn->gsnc));
+	memcpy(&resp_ie_elem[1].tlv.v[0], &gsn->gsnc, sizeof(gsn->gsnc));
+	ie[GTPIE_GSN_ADDR] = &resp_ie_elem[1];
+
+	pack = &packet;
+	pack += packet_len;
+	rc = gtpie_encaps3(ie, ie_size, pack, GTP_MAX - packet_len, &encoded_len);
+	if (rc)
+		return -EINVAL;
+
+	packet_len += encoded_len;
+	*local_ref = local_teic;
+	return gtp_reqv1c(gsn, 0, &packet, packet_len, &peer->sin_addr, NULL);
+}
+
+/* Send an SGSN Context Request */
+int gtp_sgsn_context_resp(struct gsn_t *gsn, uint32_t local_ref,
+			  union gtpie_member **ie, unsigned int ie_size)
+{
+	uint32_t local_teic = local_ref;
+	uint32_t remote_teic;
+	uint16_t seq;
+
+	union gtpie_member resp_ie_elem[2] = {};
+	union gtp_packet packet = {};
+	unsigned int packet_len;
+	int rc;
+	void *pack;
+	unsigned encoded_len;
+	struct sockaddr_in peer;
+
+	rc = sgsn_ctx_req_fsm_tx_resp(gsn, &peer, &seq, local_teic, &remote_teic, ie, ie_size);
+	if (rc)
+		return rc;
+
+	packet_len = get_default_gtp(1, GTP_SGSN_CONTEXT_RSP, &packet);
+
+	resp_ie_elem[0].tv4.t = GTPIE_TEI_C;
+	resp_ie_elem[0].tv4.v = htonl(local_teic);
+	ie[GTPIE_TEI_C] = &resp_ie_elem[0];
+
+	resp_ie_elem[1].tlv.t = GTPIE_GSN_ADDR;
+	resp_ie_elem[1].tlv.l = htons(sizeof(gsn->gsnc));
+	memcpy(&resp_ie_elem[1].tlv.v[0], &gsn->gsnc, sizeof(gsn->gsnc));
+	ie[GTPIE_GSN_ADDR] = &resp_ie_elem[1];
+
+	pack = &packet;
+	pack += packet_len;
+	rc = gtpie_encaps3(ie, ie_size, pack, GTP_MAX - packet_len, &encoded_len);
+	if (rc)
+		return -EINVAL;
+
+	packet_len += encoded_len;
+	return gtp_respv1c(gsn, seq, remote_teic, &packet, packet_len, &peer.sin_addr);
+}
+
+int gtp_sgsn_context_resp_error(struct gsn_t *gsn, uint32_t local_ref,
+				uint8_t cause)
+{
+	union gtpie_member *ie[GTP_MAX];
+	union gtpie_member causetlv = {};
+	causetlv.tv1.t = GTPIE_CAUSE;
+	causetlv.tv1.v = cause;
+	ie[0] = &causetlv;
+
+	return gtp_sgsn_context_resp(gsn, local_ref, ie, GTP_MAX);
+}
+
+/* Send an SGSN Context Ack/Nack */
+int gtp_sgsn_context_ack(struct gsn_t *gsn, uint32_t local_ref,
+			  union gtpie_member **ie, unsigned int ie_size)
+{
+	uint32_t local_teic = local_ref;
+	uint32_t remote_teic;
+	uint16_t seq;
+	union gtp_packet packet = {};
+	unsigned int packet_len;
+	int rc;
+	void *pack;
+	unsigned encoded_len;
+	struct sockaddr_in peer;
+
+	rc = sgsn_ctx_req_fsm_tx_ack(gsn, &peer, &seq, local_teic, &remote_teic, ie, ie_size);
+	if (rc)
+		return rc;
+
+	packet_len = get_default_gtp(1, GTP_SGSN_CONTEXT_ACK, &packet);
+	pack = &packet;
+	pack += packet_len;
+
+	rc = gtpie_encaps3(ie, ie_size, pack, GTP_MAX - packet_len, &encoded_len);
+	if (rc)
+		return -EINVAL;
+
+	packet_len += encoded_len;
+	return gtp_respv1c(gsn, seq, remote_teic, &packet, packet_len, &peer.sin_addr);
+}
+
+int gtp_sgsn_context_ack_error(struct gsn_t *gsn, uint32_t local_ref,
+			       uint8_t cause)
+{
+	union gtpie_member *ie[GTPIE_SIZE] = {};
+	union gtpie_member causetlv = {};
+	causetlv.tv1.t = GTPIE_CAUSE;
+	causetlv.tv1.v = cause;
+	ie[GTPIE_CAUSE] = &causetlv;
+
+	return gtp_sgsn_context_ack(gsn, local_ref, ie, GTPIE_SIZE);
+}
+
+/* Handle an SGSN Context Request */
+static int gtp_sgsn_context_req_ind(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
+			void *pack, unsigned len)
+{
+	union gtpie_member *ie[GTPIE_SIZE] = {};
+	uint16_t seq;
+
+	if (version != 1) {
+		LOGP(DLGTP, LOGL_NOTICE,
+			"SGSN Context Request expected only on GTPCv1: %u\n", version);
+		return -EINVAL;
+	}
+
+	int hlen = get_hlen(pack);
+
+	/* Decode information elements */
+	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_INVALID);
+		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
+			    "Invalid message format\n");
+		return -EINVAL;
+	}
+
+	seq = get_seq(pack);
+
+	return sgsn_ctx_req_fsm_rx_req(gsn, peer, seq, ie, GTPIE_SIZE);
+}
+
+static bool is_ext_ua(const struct pdp_t *pdp)
+{
+	return pdp->eua.l > 0 && pdp->eua.v[0] == PDP_EUA_TYPE_v4v6;
+}
+
+/* Check if length of the PDP */
+int decode_pdp_ctx_len_check(const uint8_t *buf, unsigned int size)
+{
+#define CHECK_SIZE() if (ptr >= end) return -EINVAL
+	uint8_t tmp1;
+	const uint8_t *ptr = buf;
+	const uint8_t *end = ptr + size;
+	bool ext_ua = false;
+
+	/* FIXME what is the minimal length ? */
+	if (size < 20)
+		return -EINVAL;
+
+	ext_ua = !!((*ptr) & 0x80);
+
+	ptr += 2;
+	/* Qos Sub Length */
+	CHECK_SIZE();
+	tmp1 = *ptr;
+	ptr += tmp1 + 1;
+
+	/* Qos Req Length */
+	CHECK_SIZE();
+	tmp1 = *ptr;
+	ptr += tmp1 + 1;
+
+	/* Qos Neg Length */
+	CHECK_SIZE();
+	tmp1 = *ptr;
+	ptr += tmp1 + 1;
+
+	ptr += 17;
+
+	/* PDP Address length */
+	CHECK_SIZE();
+	tmp1 = *ptr;
+	ptr += tmp1 + 1;
+
+	/* GGSN Address for control plane length */
+	CHECK_SIZE();
+	tmp1 = *ptr;
+	ptr += tmp1 + 1;
+
+	/* GGSN Address for User traffic plane length */
+	CHECK_SIZE();
+	tmp1 = *ptr;
+	ptr += tmp1 + 1;
+
+	/* APN length */
+	CHECK_SIZE();
+	tmp1 = *ptr;
+	ptr += tmp1 + 1;
+
+	/* Transaction Id */
+	ptr += 2;
+
+	/* Second PDP Address is only present in IPv4v6 PDP Context */
+	if (ext_ua) {
+		ptr++;
+		/* PDP Address Length */
+		CHECK_SIZE();
+		tmp1 = *ptr;
+		ptr += tmp1 + 1;
+	}
+
+	if (ptr == end)
+		return 0;
+
+#undef CHECK_SIZE
+	return 1;
+}
+
+int gtp_decode_pdp_ctx(const uint8_t *buf, unsigned int size, struct pdp_t *pdp, uint16_t *sapi)
+{
+	uint8_t tmp8, pdp_type, pdp_len;
+	const uint8_t *ptr = buf;
+	const uint8_t *end = ptr + size;
+
+	if (decode_pdp_ctx_len_check(buf, size))
+		return -EINVAL;
+
+	memset(pdp, 0, sizeof(*pdp));
+	bool ext_ua = (*ptr & (1 << 7));
+
+	pdp->version = 1;
+	pdp->vplmn_allow = (*ptr) & (1 << 6);
+	pdp->reorder = (*ptr) & (1 << 4);
+	pdp->nsapi = (*ptr) & 0x0f;
+	ptr++;
+
+	// SAPI
+	*sapi = *ptr & 0x0f;
+	ptr++;
+
+	// QoS Sub
+	pdp->qos_sub.l = *ptr;
+	ptr++;
+	memcpy(pdp->qos_sub.v, ptr, pdp->qos_sub.l);
+	ptr += pdp->qos_sub.l;
+
+	// QoS Req
+	pdp->qos_req.l = *ptr;
+	ptr++;
+	memcpy(pdp->qos_req.v, ptr, pdp->qos_req.l);
+	ptr += pdp->qos_req.l;
+
+	// QoS Neg
+	pdp->qos_neg.l = *ptr;
+	ptr++;
+	memcpy(pdp->qos_neg.v, ptr, pdp->qos_neg.l);
+	ptr += pdp->qos_neg.l;
+
+	// SND
+	pdp->pdcpsndd = osmo_load16be(ptr);
+	ptr += 2;
+
+	// SNU
+	pdp->pdcpsndu = osmo_load16be(ptr);
+	ptr += 2;
+
+	// Send N-PDU
+	pdp->gtpsntx = *ptr;
+	ptr++;
+
+	// Recv N-PDU
+	pdp->gtpsnrx = *ptr;
+	ptr++;
+
+	// Uplink TEIC
+	pdp->teic_gn = osmo_load32be(ptr);
+	ptr += 4;
+
+	// Uplink TEIDI
+	pdp->teid_gn = osmo_load32be(ptr);
+	ptr += 4;
+
+	// PDP Ctx Id
+	pdp->pdp_id = *ptr;
+	ptr++;
+
+	/* FIXME: parse PDP Address */
+	// PDP Type Org
+	pdp->eua.v[0] = (*ptr) & 0x0f;
+	ptr++;
+
+	// PDP Type Number
+	pdp_type = *ptr;
+	ptr++;
+
+	/* PDP Type length */
+	pdp_len = *ptr;
+	ptr++;
+
+	// PDP Address
+	/* FIXME: check for correct type and length */
+	switch (pdp_type) {
+	case PDP_EUA_TYPE_v4:
+		/* v4v6 expects an IPv4 addr first followed by an IPv6 addr*/
+		pdp->eua.v[1] = ext_ua ? PDP_EUA_TYPE_v4v6 : PDP_EUA_TYPE_v4;
+		pdp->eua.l = pdp_len + 2;
+		memcpy(&pdp->eua.v[2], ptr, pdp_len);
+		break;
+	case PDP_EUA_TYPE_v6:
+		pdp->eua.v[1] = PDP_EUA_TYPE_v6;
+		pdp->eua.l = pdp_len + 2;
+		memcpy(&pdp->eua.v[2], ptr, pdp_len);
+		break;
+	default:
+		return -EINVAL;
+	}
+	ptr += pdp_len;
+
+	// GGSN Address Ctrl
+	pdp->gsnrc.l = *ptr;
+	ptr++;
+	memcpy(pdp->gsnrc.v, ptr, pdp->gsnrc.l);
+	ptr += pdp->gsnrc.l;
+
+	// GGSN Address User
+	pdp->gsnru.l = *ptr;
+	ptr++;
+	memcpy(pdp->gsnru.v, ptr, pdp->gsnru.l);
+	ptr += pdp->gsnru.l;
+
+	// APN FIXME: update apn_use as well
+	pdp->apn_use.l = *ptr;
+	ptr++;
+	memcpy(pdp->apn_use.v, ptr, pdp->apn_use.l);
+	ptr += pdp->apn_use.l;
+
+	/* TransId 4 or 12 bit, if the second octet is 0x0, it is a 4 bit transaction id */
+	if (*(ptr + 1) == 0x00) {
+		pdp->ti = (*ptr) & 0x0f;
+	} else {
+		pdp->ti = osmo_load16be(ptr) & 0x0fff;
+	}
+	ptr += 2;
+
+	if (is_ext_ua(pdp)) {
+		tmp8 = *ptr;
+		pdp->eua.l += tmp8;
+		memcpy(&pdp->eua.v[6], ptr, tmp8);
+		ptr += tmp8;
+	}
+
+	if (ptr == end)
+		return 0;
+
+	return 1;
+#undef CHECK_SPACE_ERR
+#undef MEMCPY_CHK
+}
+
+int gtp_encode_pdp_ctx(uint8_t *buf, unsigned int size, const struct pdp_t *pdp, uint16_t sapi)
+{
+	uint32_t tmp32;
+	uint16_t tmp16;
+	uint8_t *ptr = buf;
+#define CHECK_SPACE_ERR(bytes) \
+	if ((ptr - buf) + (bytes) > size) { \
+		printf("Failed size check: %lu + %lu > %lu\n", (ptr - buf),  (unsigned long) (bytes), (unsigned long) size); \
+		return -1; \
+	}
+#define MEMCPY_CHK(dst, src, len) \
+	CHECK_SPACE_ERR((len)) \
+	memcpy((dst), (uint8_t *)(src), (len)); \
+	(dst) += (len);
+
+	// Flags - FIXME: No ASI
+	*ptr++ = (is_ext_ua(pdp) << 7) | ((!!pdp->vplmn_allow) << 6) | ((!!pdp->reorder) << 4) | (pdp->nsapi & 0x0f);
+	// SAPI
+	*ptr++ = sapi & 0x0f;
+
+	// QoS Sub
+	if (pdp->qos_sub.l < 4) {
+		/* Work around qos_sub never being set */
+		*ptr++ = 4;
+		*ptr++ = 0;
+		*ptr++ = 0x23;
+		*ptr++ = 0x02;
+		*ptr++ = 0x00;
+	} else {
+		*ptr++ = pdp->qos_sub.l;
+		MEMCPY_CHK(ptr, pdp->qos_sub.v, pdp->qos_sub.l);
+	}
+	// QoS Req
+	*ptr++ = pdp->qos_req.l;
+	MEMCPY_CHK(ptr, pdp->qos_req.v, pdp->qos_req.l);
+	// QoS Neg
+	*ptr++ = pdp->qos_neg.l;
+	MEMCPY_CHK(ptr, pdp->qos_neg.v, pdp->qos_neg.l);
+
+	// SND
+	tmp16 = osmo_htons(pdp->pdcpsndd);
+	MEMCPY_CHK(ptr, &tmp16, sizeof(tmp16));
+	// SNU
+	tmp16 = osmo_htons(pdp->pdcpsndu);
+	MEMCPY_CHK(ptr, &tmp16, sizeof(tmp16));
+	// Send N-PDU
+	*ptr++ = pdp->gtpsntx;
+	// Recv N-PDU
+	*ptr++ = pdp->gtpsnrx;
+	// Uplink TEIC
+	tmp32 = osmo_htonl(pdp->teic_gn);
+	MEMCPY_CHK(ptr, &tmp32, sizeof(tmp32));
+	// Uplink TEIDI
+	tmp32 = osmo_htonl(pdp->teid_gn);
+	MEMCPY_CHK(ptr, &tmp32, sizeof(tmp32));
+	// PDP Ctx Id
+	*ptr++ = pdp->pdp_id;
+	// PDP Type Org
+	*ptr++ = PDP_EUA_ORG_IETF;
+
+	// PDP Type No.
+	// PDP Address
+	switch (pdp->eua.v[1]) {
+	case PDP_EUA_TYPE_v4:
+	case PDP_EUA_TYPE_v4v6:
+		/* v4v6 expects an IPv4 addr first followed by an IPv6 addr*/
+		*ptr++ = PDP_EUA_TYPE_v4;
+		if (pdp->eua.l < 6)
+			return -1;
+		*ptr++ = 4;
+		MEMCPY_CHK(ptr, &pdp->eua.v[2], 4);
+		break;
+	case PDP_EUA_TYPE_v6:
+		*ptr++ = PDP_EUA_TYPE_v6;
+		if (pdp->eua.l < 18)
+			return -1;
+		*ptr++ = 16;
+		MEMCPY_CHK(ptr, &pdp->eua.v[2], 16);
+		break;
+	default:
+		return -EINVAL;
+		//Panic
+	}
+	// GGSN Address Ctrl
+	*ptr++ = pdp->gsnrc.l;
+	MEMCPY_CHK(ptr, pdp->gsnrc.v, pdp->gsnrc.l);
+	// GGSN Address User
+	*ptr++ = pdp->gsnru.l;
+	MEMCPY_CHK(ptr, pdp->gsnru.v, pdp->gsnru.l);
+	// APN
+	*ptr++ = pdp->apn_use.l;
+	MEMCPY_CHK(ptr, pdp->apn_use.v, pdp->apn_use.l);
+	// TransId
+	*ptr++ = (pdp->ti >> 8) & 0x0f;
+	*ptr++ = pdp->ti & 0xff;
+
+	if (is_ext_ua(pdp)) {
+		*ptr++ = PDP_EUA_TYPE_v6;
+		if (pdp->eua.l < 22)
+			return -1;
+		*ptr++ = 16;
+		MEMCPY_CHK(ptr, &pdp->eua.v[6], 16);
+	}
+	return ptr - buf;
+#undef CHECK_SPACE_ERR
+#undef MEMCPY_CHK
+}
+
+/* Handle an SGSN Context Response */
+static int gtp_sgsn_context_resp_ind(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
+			void *pack, unsigned len)
+{
+	/** If cause is "Request accepted": Send ACK,
+	    else: Log and handle error */
+
+	/* Check if we have a context with TLLI/P-TMSI/IMSI in the RAI */
+
+	void *cbp = NULL;
+	uint8_t type = 0;
+	uint8_t cause;
+	uint16_t seq;
+	uint32_t local_teic;
+	int hlen;
+	union gtpie_member *ie[GTPIE_SIZE] = {};
+	union gtp_packet *packet = (union gtp_packet *)pack;
+
+	if (version != 1) {
+		LOGP(DLGTP, LOGL_NOTICE,
+			"SGSN Context Response  expected only on GTPCv1: %u\n", version);
+		return -EINVAL;
+	}
+
+	if (!(packet->flags & GTP1HDR_F_SEQ)) {
+		LOGP(DLGTP, LOGL_NOTICE,
+		     "SGSN Context Response expected Sequence flag set. Flags %d\n", packet->flags);
+		return -EINVAL;
+	}
+	seq = get_seq(pack);
+	hlen = get_hlen(pack);
+	local_teic = get_tei(pack);
+
+	/* FIXME: retransmission need to be implemented:
+	 * - Check if an Ack has been already transmitted (if so re-transmit) and return early
+	 * - Check if a Req is in re-transmit queue, if, confirm it
+	 */
+	/* Remove packet from queue */
+	if (gtp_conf(gsn, version, peer, pack, len, &type, &cbp))
+		return EOF;
+
+	/* Extract information elements into a pointer array */
+	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_INVALID);
+		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
+			    "Invalid message format\n");
+		/* FIXME: Error Indication */
+		return EOF;
+	}
+
+	/* Extract cause value (mandatory) */
+	if (gtpie_gettv1(ie, GTPIE_CAUSE, 0, &cause)) {
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_MISSING);
+		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
+			    "Missing mandatory information field\n");
+		/* FIXME: Error Indication */
+		return EOF;
+	}
+
+	return sgsn_ctx_req_fsm_rx_resp(gsn, peer,
+					seq, local_teic,
+					ie, GTPIE_SIZE);
+}
+
+/* Handle an SGSN Context Acknowledge */
+static int gtp_sgsn_context_ack_ind(struct gsn_t *gsn, int version, struct sockaddr_in *peer,
+			void *pack, unsigned len)
+{
+	union gtpie_member *ie[GTPIE_SIZE] = {};
+	uint16_t seq;
+	uint32_t local_teic;
+
+	if (version != 1) {
+		LOGP(DLGTP, LOGL_NOTICE,
+		     "SGSN Context Request expected only on GTPCv1: %u\n", version);
+		return -EINVAL;
+	}
+
+	int hlen = get_hlen(pack);
+
+	/* Decode information elements */
+	if (gtpie_decaps(ie, version, pack + hlen, len - hlen)) {
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_INVALID);
+		GTP_LOGPKG(LOGL_ERROR, peer, pack, len,
+			   "Invalid message format\n");
+		return -EINVAL;
+	}
+
+	seq = get_seq(pack);
+	local_teic = get_tei(pack);
+
+	return sgsn_ctx_req_fsm_rx_ack(gsn, peer,
+					seq, local_teic,
+					ie, GTPIE_SIZE);
 }
 
 /* ***********************************************************
@@ -2982,6 +3569,15 @@ int gtp_decaps1c(struct gsn_t *gsn)
 			break;
 		case GTP_RAN_INFO_RELAY:
 			gtp_ran_info_relay_ind(gsn, version, &peer, buffer, status);
+			break;
+		case GTP_SGSN_CONTEXT_REQ:
+			gtp_sgsn_context_req_ind(gsn, version, &peer, buffer, status);
+			break;
+		case GTP_SGSN_CONTEXT_RSP:
+			gtp_sgsn_context_resp_ind(gsn, version, &peer, buffer, status);
+			break;
+		case GTP_SGSN_CONTEXT_ACK:
+			gtp_sgsn_context_ack_ind(gsn, version, &peer, buffer, status);
 			break;
 		default:
 			rate_ctr_inc2(gsn->ctrg, GSN_CTR_PKT_UNKNOWN);

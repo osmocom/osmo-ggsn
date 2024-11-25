@@ -270,6 +270,27 @@ extern int gtp_ran_info_relay_req(struct gsn_t *gsn, const struct sockaddr_in *p
 				  const uint8_t *rim_route_addr, size_t rim_route_addr_len,
 				  uint8_t rim_route_addr_discr);
 
+/* Tx a SGSN Context Request */
+extern int gtp_sgsn_context_req(struct gsn_t *gsn, uint32_t *local_ref,
+				struct sockaddr_in *peer, union gtpie_member **ie, unsigned int ie_size);
+
+/* Tx a SGSN Context Response */
+extern int gtp_sgsn_context_resp(struct gsn_t *gsn, uint32_t local_ref,
+				 union gtpie_member **ie, unsigned int ie_size);
+
+/* Tx a SGSN Context Response, simplified when returning an error */
+int gtp_sgsn_context_resp_error(struct gsn_t *gsn, uint32_t local_ref,
+				uint8_t cause);
+
+/* Tx a SGSN Context Ack */
+extern int gtp_sgsn_context_ack(struct gsn_t *gsn, uint32_t local_ref,
+				union gtpie_member **ie, unsigned int ie_size);
+
+/* Tx a SGSN Context Ack, simplified when returning an error */
+int gtp_sgsn_context_ack_error(struct gsn_t *gsn, uint32_t local_ref,
+				uint8_t cause);
+
+
 extern int gtp_decaps0(struct gsn_t *gsn);
 extern int gtp_decaps1c(struct gsn_t *gsn);
 extern int gtp_decaps1u(struct gsn_t *gsn);
@@ -278,6 +299,9 @@ extern int gtp_echo_req(struct gsn_t *gsn, int version, void *cbp,
 			struct in_addr *inetaddrs);
 
 extern int gsna2in_addr(struct in_addr *dst, struct ul16_t *gsna);
+
+extern int gtp_encode_pdp_ctx(uint8_t *buf, unsigned int size, const struct pdp_t *pdp, uint16_t sapi);
+extern int gtp_decode_pdp_ctx(const uint8_t *buf, unsigned int size, struct pdp_t *pdp, uint16_t *sapi);
 
 extern const char *imsi_gtp2str(const uint64_t *imsi);
 

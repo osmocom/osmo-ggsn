@@ -63,6 +63,7 @@
 
 #include "queue.h"
 #include "gsn_internal.h"
+#include "gtp_sgsn_ctx.h"
 
 /* Error reporting functions */
 
@@ -246,6 +247,30 @@ int gtp_set_cb_data_ind(struct gsn_t *gsn,
 						   void *pack, unsigned len))
 {
 	gsn->cb_data_ind = cb_data_ind;
+	return 0;
+}
+
+int gtp_set_cb_sgsn_context_request_ind(struct gsn_t *gsn,
+					int (*cb) (struct gsn_t *gsn, struct sockaddr_in *peer,
+						  uint32_t local_ref, union gtpie_member **ie, unsigned int ie_size))
+{
+	gsn->cb_sgsn_context_request_ind = cb;
+	return 0;
+}
+
+int gtp_set_cb_sgsn_context_response_ind(struct gsn_t *gsn,
+					 int (*cb) (struct gsn_t *gsn, struct sockaddr_in *peer,
+						   uint32_t local_ref, union gtpie_member **ie, unsigned int ie_size))
+{
+	gsn->cb_sgsn_context_response_ind = cb;
+	return 0;
+}
+
+int gtp_set_cb_sgsn_context_ack_ind(struct gsn_t *gsn,
+				    int (*cb) (struct gsn_t *gsn, struct sockaddr_in *peer,
+					      uint32_t local_ref, union gtpie_member **ie, unsigned int ie_size))
+{
+	gsn->cb_sgsn_context_ack_ind = cb;
 	return 0;
 }
 
@@ -529,6 +554,10 @@ int gtp_new(struct gsn_t **gsn, char *statedir, struct in_addr *listen,
 
 	/* Start internal queue timer */
 	gtp_queue_timer_start(*gsn);
+
+	(*gsn)->sgsn_ctx = sgsn_ctx_reqs_init(*gsn, 2048, 4095);
+	if (!(*gsn)->sgsn_ctx)
+		goto error;
 
 	return 0;
 error:
