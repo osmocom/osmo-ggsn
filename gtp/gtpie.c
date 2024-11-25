@@ -770,7 +770,7 @@ int gtpie_encaps(union gtpie_member *ie[], void *pack, unsigned *len)
 
 /*! Encode GTP packet payload from Array of Information Elements.
  *  \param[out] ie Input Array of GTPIE
- *  \param[in] size Size of ?
+ *  \param[in] size Size of ie
  *  \param[out] pack Pointer to caller-allocated buffer for raw GTP packet (GTPIE_MAX length)
  *  \param[out] len Encoded length of \a pack in bytes
  *  \returns 0 on sucess; 2 for out-of-space */
