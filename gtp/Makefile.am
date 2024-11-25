@@ -12,6 +12,7 @@ AM_CFLAGS = \
 	    -DSBINDIR='"$(sbindir)"' \
 	    -I$(top_srcdir)/include \
 	    $(LIBOSMOCORE_CFLAGS) \
+	    $(LIBOSMOGSM_CFLAGS) \
 	    $(NULL)
 
 libgtp_la_SOURCES = \
@@ -19,6 +20,8 @@ libgtp_la_SOURCES = \
 		    gsn_internal.h \
 		    gtp.c \
 		    gtp_internal.h \
+		    gtp_sgsn_ctx.c \
+		    gtp_sgsn_ctx.h \
 		    gtpie.c \
 		    lookupa.c \
 		    lookupa.h \
@@ -28,4 +31,4 @@ libgtp_la_SOURCES = \
 		    $(NULL)
 
 libgtp_la_LDFLAGS = -version-info $(LIBVERSION) -no-undefined
-libgtp_la_LIBADD = $(LIBOSMOCORE_LIBS)
+libgtp_la_LIBADD = $(LIBOSMOCORE_LIBS) $(LIBOSMOGSM_LIBS)
