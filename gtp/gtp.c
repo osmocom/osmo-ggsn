@@ -503,6 +503,72 @@ static int gtp_conf(struct gsn_t *gsn, uint8_t version, struct sockaddr_in *peer
 	return 0;
 }
 
+/* Respond, to a request, but expect the other side to.
+ * E.g. Send a SGSN Context Request */
+static int gtp_3way_resp(struct gsn_t *gsn, union gtp_packet *packet, int len,
+			 struct sockaddr_in *peer, int fd,
+			 uint16_t seq, uint64_t tid, uint16_t flow, uint32_t tei,
+			 const struct in_addr *inetaddr, void *cbp)
+{
+	uint8_t ver = GTPHDR_F_GET_VER(packet->flags);
+	struct qmsg_t *qmsg;
+
+	if (ver == 0) {	/* Version 0 */
+		packet->gtp0.h.length = hton16(len - GTP0_HEADER_SIZE);
+		packet->gtp0.h.seq = hton16(seq);
+		packet->gtp0.h.tid = htobe64(tid);
+		packet->gtp0.h.flow = hton16(flow);
+	} else if (ver == 1 && (packet->flags & GTP1HDR_F_SEQ)) {	/* Version 1 with seq */
+		packet->gtp1l.h.length = hton16(len - GTP1_HEADER_SIZE_SHORT);
+		packet->gtp1l.h.seq = hton16(seq);
+		packet->gtp1l.h.tei = hton32(tei);
+	} else {
+		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flags: 0x%02x\n", packet->flags);
+		return -1;
+	}
+
+	if (fcntl(fd, F_SETFL, 0)) {
+		LOGP(DLGTP, LOGL_ERROR, "fnctl()\n");
+		return -1;
+	}
+
+	if (sendto(fd, packet, len, 0,
+		   (const struct sockaddr *)peer, sizeof(struct sockaddr_in)) < 0) {
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_SENDTO);
+		LOGP(DLGTP, LOGL_ERROR,
+		     "Sendto(fd=%d, msg=%lx, len=%d) failed: Error = %s\n", fd,
+		     (unsigned long)&packet, len, strerror(errno));
+		return -1;
+	}
+
+	/* Use new queue structure */
+	if (queue_newmsg(gsn->queue_resp, &qmsg, peer, seq)) {
+		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_QUEUEFULL);
+		LOGP(DLGTP, LOGL_ERROR, "Retransmit resp queue is full (seq=%" PRIu16 ")\n",
+		     seq);
+	} else {
+		unsigned int t3_hold_resp;
+		LOGP(DLGTP, LOGL_DEBUG, "Registering seq=%" PRIu16
+					" in restransmit resp queue\n", seq);
+		t3_hold_resp = osmo_tdef_get(gsn->tdef, GTP_GSN_TIMER_T3_HOLD_RESPONSE, OSMO_TDEF_S, -1);
+		memcpy(&qmsg->p, packet, sizeof(union gtp_packet));
+		qmsg->l = len;
+		qmsg->timeout = time(NULL) + t3_hold_resp; /* When to timeout */
+		qmsg->retrans = 0;	/* No retransmissions so far */
+		qmsg->cbp = cbp;
+		qmsg->type = 0;
+		qmsg->fd = fd;
+		/* No need to add to pdp list here, because even on pdp ctx free
+		   we want to leave messages in queue_resp until timeout to
+		   detect duplicates */
+
+		/* Rearm timer: Retrans time for qmsg just queued may be required
+		   before an existing one (for instance a gtp echo req) */
+		gtp_queue_timer_start(gsn);
+	}
+	return 0;
+}
+
 /* Send a GTP Response (generic call) */
 static int gtp_resp(struct gsn_t *gsn, union gtp_packet *packet, int len, struct sockaddr_in *peer, int fd,
 		     uint16_t seq, uint64_t tid, uint16_t flow, uint32_t teidc)
