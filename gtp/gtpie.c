@@ -944,3 +944,189 @@ int gtpie_encaps2(union gtpie_member ie[], unsigned int size,
 			}
 	return 0;
 }
+
+/*! Encode GTP packet payload from Array of Information Elements.
+ *  \param[in] ie Input Array of GTPIE
+ *  \param[in] ie_len Length of \a ie array
+ *  \param[in] pack Pointer to caller-allocated buffer for raw GTP packet (GTPIE_MAX length)
+ *  \param[in] pack_len Length of \a pack buffer
+ *  \param[out] encoded_len Encoded length of \a pack in bytes
+ *  \returns 0 on success; 2 for out-of-space
+ *  GTP requires a certain order, the call must follow those which are defined for every message */
+int gtpie_encaps3(union gtpie_member *ies[], unsigned int ie_len,
+		  void *pack, unsigned pack_len, unsigned *encoded_len)
+{
+	unsigned int i;
+	unsigned char *p;
+	unsigned char *end;
+	int iesize;
+	union gtpie_member *ie;
+
+	*encoded_len = 0;
+	p = pack;
+
+	memset(pack, 0, pack_len);
+	end = p + pack_len;
+	for (i = 0; i < ie_len; i++) {
+		if (!ies[i])
+			continue;
+		ie = ies[i];
+
+		if (GTPIE_DEBUG)
+			printf
+			    ("gtpie_encaps. Number %d, Type %d\n",
+			     i, ie->t);
+		switch (ie->t) {
+		case GTPIE_CAUSE:	/* TV GTPIE types with value length 1 */
+		case GTPIE_REORDER:
+		case GTPIE_MAP_CAUSE:
+		case GTPIE_MS_VALIDATED:
+		case GTPIE_RECOVERY:
+		case GTPIE_SELECTION_MODE:
+		case GTPIE_TEARDOWN:
+		case GTPIE_NSAPI:
+		case GTPIE_RANAP_CAUSE:
+		case GTPIE_RP_SMS:
+		case GTPIE_RP:
+		case GTPIE_MS_NOT_REACH:
+		case GTPIE_BCM:
+			iesize = 2;
+			break;
+		case GTPIE_PFI:	/* TV GTPIE types with value length 2 */
+		case GTPIE_CHARGING_C:
+		case GTPIE_TRACE_REF:
+		case GTPIE_TRACE_TYPE:
+			iesize = 3;
+			break;
+		case GTPIE_QOS_PROFILE0:	/* TV GTPIE types with value length 3 */
+		case GTPIE_P_TMSI_S:
+			iesize = 4;
+			break;
+		case GTPIE_TLLI:	/* TV GTPIE types with value length 4 */
+		case GTPIE_P_TMSI:
+		case GTPIE_TEI_DI:
+		case GTPIE_TEI_C:
+		case GTPIE_CHARGING_ID:
+			iesize = 5;
+			break;
+		case GTPIE_TEI_DII:	/* TV GTPIE types with value length 5 */
+			iesize = 6;
+			break;
+		case GTPIE_RAI:		/* TV GTPIE types with value length 6 */
+			iesize = 7;
+			break;
+		case GTPIE_RAB_CONTEXT:	/* TV GTPIE types with value length 7 */
+			iesize = 8;
+			break;
+		case GTPIE_IMSI:	/* TV GTPIE types with value length 8 */
+			iesize = 9;
+			break;
+		case GTPIE_AUTH_TRIPLET:	/* TV GTPIE types with value length 28 */
+			iesize = 29;
+			break;
+		case GTPIE_EXT_HEADER_T:	/* GTP extension header */
+			iesize = 2 + hton8(ie->ext.l);
+			break;
+		case GTPIE_EUA:	/* TLV GTPIE types with length length 2 */
+		case GTPIE_MM_CONTEXT:
+		case GTPIE_PDP_CONTEXT:
+		case GTPIE_APN:
+		case GTPIE_PCO:
+		case GTPIE_GSN_ADDR:
+		case GTPIE_MSISDN:
+		case GTPIE_QOS_PROFILE:
+		case GTPIE_AUTH_QUINTUP:
+		case GTPIE_TFT:
+		case GTPIE_TARGET_INF:
+		case GTPIE_UTRAN_TRANS:
+		case GTPIE_RAB_SETUP:
+		case GTPIE_TRIGGER_ID:
+		case GTPIE_OMC_ID:
+		case GTPIE_RAN_T_CONTAIN:
+		case GTPIE_PDP_CTX_PRIO:
+		case GTPIE_ADDL_RAB_S_I:
+		case GTPIE_SGSN_NUMBER:
+		case GTPIE_COMMON_FLAGS:
+		case GTPIE_APN_RESTR:
+		case GTPIE_R_PRIO_LCS:
+		case GTPIE_RAT_TYPE:
+		case GTPIE_USER_LOC:
+		case GTPIE_MS_TZ:
+		case GTPIE_IMEI_SV:
+		case GTPIE_CML_CHG_I_CT:
+		case GTPIE_MBMS_UE_CTX:
+		case GTPIE_TMGI:
+		case GTPIE_RIM_ROUT_ADDR:
+		case GTPIE_MBMS_PCO:
+		case GTPIE_MBMS_SA:
+		case GTPIE_SRNC_PDCP_CTX:
+		case GTPIE_ADDL_TRACE:
+		case GTPIE_HOP_CTR:
+		case GTPIE_SEL_PLMN_ID:
+		case GTPIE_MBMS_SESS_ID:
+		case GTPIE_MBMS_2_3G_IND:
+		case GTPIE_ENH_NSAPI:
+		case GTPIE_MBMS_SESS_DUR:
+		case GTPIE_A_MBMS_TRAC_I:
+		case GTPIE_MBMS_S_REP_N:
+		case GTPIE_MBMS_TTDT:
+		case GTPIE_PS_HO_REQ_CTX:
+		case GTPIE_BSS_CONTAINER:
+		case GTPIE_CELL_ID:
+		case GTPIE_PDU_NUMBERS:
+		case GTPIE_BSSGP_CAUSE:
+		case GTPIE_RQD_MBMS_BCAP:
+		case GTPIE_RIM_RA_DISCR:
+		case GTPIE_L_SETUP_PFCS:
+		case GTPIE_PS_HO_XID_PAR:
+		case GTPIE_MS_CHG_REP_A:
+		case GTPIE_DIR_TUN_FLAGS:
+		case GTPIE_CORREL_ID:
+		case GTPIE_MBMS_FLOWI:
+		case GTPIE_MBMS_MC_DIST:
+		case GTPIE_MBMS_DIST_ACK:
+		case GTPIE_R_IRAT_HO_INF:
+		case GTPIE_RFSP_IDX:
+		case GTPIE_FQDN:
+		case GTPIE_E_ALL_PRIO_1:
+		case GTPIE_E_ALL_PRIO_2:
+		case GTPIE_E_CMN_FLAGS:
+		case GTPIE_U_CSG_INFO:
+		case GTPIE_CSG_I_REP_ACT:
+		case GTPIE_CSG_ID:
+		case GTPIE_CSG_MEMB_IND:
+		case GTPIE_AMBR:
+		case GTPIE_UE_NET_CAPA:
+		case GTPIE_UE_AMBR:
+		case GTPIE_APN_AMBR_NS:
+		case GTPIE_GGSN_BACKOFF:
+		case GTPIE_S_PRIO_IND:
+		case GTPIE_S_PRIO_IND_NS:
+		case GTPIE_H_BR_16MBPS_F:
+		case GTPIE_A_MMCTX_SRVCC:
+		case GTPIE_A_FLAGS_SRVCC:
+		case GTPIE_STN_SR:
+		case GTPIE_C_MSISDN:
+		case GTPIE_E_RANAP_CAUSE:
+		case GTPIE_ENODEB_ID:
+		case GTPIE_SEL_MODE_NS:
+		case GTPIE_ULI_TIMESTAMP:
+		case GTPIE_CHARGING_ADDR:
+		case GTPIE_PRIVATE:
+			iesize = 3 + hton16(ie->tlv.l);
+			break;
+		default:
+			return 2;	/* We received something unknown */
+		}
+
+		if (p + iesize < end) {
+			memcpy(p, ie, iesize);
+			p += iesize;
+			*encoded_len += iesize;
+		} else
+			return 2;	/* Out of space */
+	}
+
+	return 0;
+}
+
