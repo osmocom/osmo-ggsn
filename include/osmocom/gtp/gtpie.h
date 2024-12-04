@@ -321,5 +321,7 @@ extern int gtpie_decaps(union gtpie_member *ie[], int version,
 extern int gtpie_encaps(union gtpie_member *ie[], void *pack, unsigned *len);
 extern int gtpie_encaps2(union gtpie_member ie[], unsigned int size,
 			 void *pack, unsigned *len);
+extern int gtpie_encaps3(union gtpie_member *ie[], unsigned int ie_len,
+		  void *pack, unsigned pack_len, unsigned *encoded_len);
 
 #endif /* !_GTPIE_H */
