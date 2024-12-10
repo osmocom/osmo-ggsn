@@ -27,7 +27,7 @@ mkdir "$deps" || true
 if [ "x$GTP" == "x--enable-gtp-linux" ]; then
 	osmo-build-dep.sh libgtpnl
 fi
-osmo-build-dep.sh libosmocore "" ac_cv_path_DOXYGEN=false
+osmo-build-dep.sh libosmocore "" --disable-doxygen
 
 verify_value_string_arrays_are_terminated.py $(find . -name "*.[hc]")
 
