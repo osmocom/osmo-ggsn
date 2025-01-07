@@ -17,13 +17,18 @@
 #include <osmocom/core/timer.h>
 #include <osmocom/core/tdef.h>
 #include <osmocom/core/rate_ctr.h>
+#include <osmocom/gsm/gsm23003.h>
+#include <osmocom/gsm/gsm48.h>
 
+#include "gtpie.h"
 #include "pdp.h"
 
 #define GTP_MODE_GGSN 1
 #define GTP_MODE_SGSN 2
 
 #define RESTART_FILE "gsn_restart"
+
+struct sgsn_ctx_reqs;
 
 extern struct osmo_tdef gtp_T_defs[];
 
@@ -108,12 +113,17 @@ struct gsn_t {
 	int (*cb_recovery)(struct sockaddr_in *peer, uint8_t recovery);
 	int (*cb_recovery2)(struct sockaddr_in *peer, struct pdp_t *pdp, uint8_t recovery);
 	int (*cb_recovery3)(struct gsn_t *gsn, struct sockaddr_in *peer, struct pdp_t *pdp, uint8_t recovery);
+	int (*cb_sgsn_context_request_ind)(struct gsn_t *gsn, const struct sockaddr_in *peer, uint32_t local_ref, union gtpie_member * const *ie, unsigned int ie_size);
+	int (*cb_sgsn_context_response_ind)(struct gsn_t *gsn, const struct sockaddr_in *peer, uint32_t local_ref, union gtpie_member * const *ie, unsigned int ie_size);
+	int (*cb_sgsn_context_ack_ind)(struct gsn_t *gsn, const struct sockaddr_in *peer, uint32_t local_ref, union gtpie_member * const *ie, unsigned int ie_size);
 
 	/* Counters */
 	struct rate_ctr_group *ctrg;
 
 	/* Timers: */
 	struct osmo_tdef *tdef;
+
+	struct sgsn_ctx_reqs *sgsn_ctx;
 };
 
 /* External API functions */
@@ -151,6 +161,15 @@ extern int gtp_set_cb_extheader_ind(struct gsn_t *gsn,
 
 extern int gtp_set_cb_ran_info_relay_ind(struct gsn_t *gsn,
 				    int (*cb)(struct sockaddr_in *peer, union gtpie_member **ie));
+
+extern int gtp_set_cb_sgsn_context_request_ind(struct gsn_t *gsn,
+	int (*cb)(struct gsn_t *gsn, const struct sockaddr_in *peer, uint32_t local_ref, union gtpie_member * const *ie, unsigned int ie_size));
+
+extern int gtp_set_cb_sgsn_context_response_ind(struct gsn_t *gsn,
+	int (*cb)(struct gsn_t *gsn, const struct sockaddr_in *peer, uint32_t local_ref, union gtpie_member * const *ie, unsigned int ie_size));
+
+extern int gtp_set_cb_sgsn_context_ack_ind(struct gsn_t *gsn,
+	int (*cb)(struct gsn_t *gsn, const struct sockaddr_in *peer, uint32_t local_ref, union gtpie_member * const *ie, unsigned int ie_size));
 
 extern int gtp_set_cb_conf(struct gsn_t *gsn,
 			   int (*cb)(int type, int cause, struct pdp_t *pdp,
