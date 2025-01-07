@@ -339,13 +339,12 @@ static uint32_t get_tei(void *pack)
  *   a predefined timeout.
  *************************************************************/
 
-static int gtp_req(struct gsn_t *gsn, uint8_t version, struct pdp_t *pdp,
-	    union gtp_packet *packet, int len,
-	    const struct in_addr *inetaddr, void *cbp)
+static int gtp_req_transmit(struct gsn_t *gsn, uint8_t version, const struct in_addr *inetaddr,
+			  union gtp_packet *packet, int len,
+			  struct pdp_t *pdp, void *cbp)
 {
-	uint8_t ver = GTPHDR_F_GET_VER(packet->flags);
-	struct sockaddr_in addr;
 	struct qmsg_t *qmsg;
+	struct sockaddr_in addr;
 	int fd;
 
 	memset(&addr, 0, sizeof(addr));
@@ -355,33 +354,18 @@ static int gtp_req(struct gsn_t *gsn, uint8_t version, struct pdp_t *pdp,
 	addr.sin_len = sizeof(addr);
 #endif
 
-	if (ver == 0) {	/* Version 0 */
-		addr.sin_port = htons(GTP0_PORT);
-		packet->gtp0.h.length = hton16(len - GTP0_HEADER_SIZE);
-		packet->gtp0.h.seq = hton16(gsn->seq_next);
-		if (pdp) {
-			packet->gtp0.h.tid =
-				htobe64(pdp_gettid(pdp->imsi, pdp->nsapi));
-		}
-		if (pdp && ((packet->gtp0.h.type == GTP_GPDU)
-			    || (packet->gtp0.h.type == GTP_ERROR)))
-			packet->gtp0.h.flow = hton16(pdp->flru);
-		else if (pdp)
-			packet->gtp0.h.flow = hton16(pdp->flrc);
+	switch (version) {
+	case 0:
 		fd = gsn->fd0;
-	} else if (ver == 1 && (packet->flags & GTP1HDR_F_SEQ)) {	/* Version 1 with seq */
+		addr.sin_port = htons(GTP0_PORT);
+		break;
+	case 1:
 		addr.sin_port = htons(GTP1C_PORT);
-		packet->gtp1l.h.length = hton16(len - GTP1_HEADER_SIZE_SHORT);
-		packet->gtp1l.h.seq = hton16(gsn->seq_next);
-		if (pdp && ((packet->gtp1l.h.type == GTP_GPDU) ||
-			    (packet->gtp1l.h.type == GTP_ERROR)))
-			packet->gtp1l.h.tei = hton32(pdp->teid_gn);
-		else if (pdp)
-			packet->gtp1l.h.tei = hton32(pdp->teic_gn);
 		fd = gsn->fd1c;
-	} else {
-		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flags: 0x%02x\n", packet->flags);
-		return -1;
+		break;
+	default:
+		LOGP(DLGTP, LOGL_ERROR, "Invalid GTP version %d\n", version);
+		return -EINVAL;
 	}
 
 	if (sendto(fd, packet, len, 0,
@@ -418,6 +402,40 @@ static int gtp_req(struct gsn_t *gsn, uint8_t version, struct pdp_t *pdp,
 	}
 	gsn->seq_next++;	/* Count up this time */
 	return 0;
+}
+
+static int gtp_req(struct gsn_t *gsn, uint8_t version, struct pdp_t *pdp,
+	    union gtp_packet *packet, int len,
+	    const struct in_addr *inetaddr, void *cbp)
+{
+	uint8_t ver = GTPHDR_F_GET_VER(packet->flags);
+
+	if (ver == 0) {	/* Version 0 */
+		packet->gtp0.h.length = hton16(len - GTP0_HEADER_SIZE);
+		packet->gtp0.h.seq = hton16(gsn->seq_next);
+		if (pdp) {
+			packet->gtp0.h.tid =
+				htobe64(pdp_gettid(pdp->imsi, pdp->nsapi));
+		}
+		if (pdp && ((packet->gtp0.h.type == GTP_GPDU)
+			    || (packet->gtp0.h.type == GTP_ERROR)))
+			packet->gtp0.h.flow = hton16(pdp->flru);
+		else if (pdp)
+			packet->gtp0.h.flow = hton16(pdp->flrc);
+	} else if (ver == 1 && (packet->flags & GTP1HDR_F_SEQ)) {	/* Version 1 with seq */
+		packet->gtp1l.h.length = hton16(len - GTP1_HEADER_SIZE_SHORT);
+		packet->gtp1l.h.seq = hton16(gsn->seq_next);
+		if (pdp && ((packet->gtp1l.h.type == GTP_GPDU) ||
+			    (packet->gtp1l.h.type == GTP_ERROR)))
+			packet->gtp1l.h.tei = hton32(pdp->teid_gn);
+		else if (pdp)
+			packet->gtp1l.h.tei = hton32(pdp->teic_gn);
+	} else {
+		LOGP(DLGTP, LOGL_ERROR, "Unknown packet flags: 0x%02x\n", packet->flags);
+		return -1;
+	}
+
+	return gtp_req_transmit(gsn, version, inetaddr, packet, len, pdp, cbp);
 }
 
 /* gtp_conf
