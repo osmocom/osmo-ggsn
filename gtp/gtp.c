@@ -1730,6 +1730,11 @@ int gtp_update_context(struct gsn_t *gsn, struct pdp_t *pdp, void *cbp,
 		gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_DIR_TUN_FLAGS,
 			  pdp->dir_tun_flags.l, pdp->dir_tun_flags.v);
 
+	/* new R7 fields */
+	if ((pdp->version == 1) && (pdp->rattype_given == 1))
+		gtpie_tlv(&packet, &length, GTP_MAX, GTPIE_RAT_TYPE,
+			  pdp->rattype.l, pdp->rattype.v);
+
 	gtp_req(gsn, pdp->version, pdp, &packet, length, inetaddr, cbp);
 
 	return 0;
