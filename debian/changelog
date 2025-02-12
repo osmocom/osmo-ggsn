@@ -1,3 +1,50 @@
+osmo-ggsn (1.13.0) unstable; urgency=medium
+
+  [ Pau Espin Pedrol ]
+  * gtp: Allow tx Direct Tunnel Flags in UpdatePDPCtx{Req,Resp}
+  * gtp: Store rx Direct Tunnel Flags in UpdatePDPCtx{Req,Resp}
+  * gtp: Allow UpdatePDPContext initiated by GGSN
+  * gtp: Allow setting callback to receive update_context_ind
+  * ggsn: Mark internal cb function static
+  * ggsn: kernel gtpu: Support updating pdp ctx remote IP address and TEID
+  * Move apn allocation code out of vty file
+  * Move ggsn allocation code out of vty file
+  * Move g_ggsn_list declaration to ggsn.c
+  * vty: Fix missing newline in description of 'apn tun-device' cmd
+  * ggsn: Support announcing APN MTU over PCO
+  * ggsn: Support announcing APN MTU over ICMPv6 RA
+  * ggsn: use libosmocore tundev API to create apn tun device
+  * ggsn: Use osmo_netdev_addaddr() libosmocore API
+  * ggsn: apply configured APN MTU to tun
+  * doc: Fix typo in user manual
+  * doc: Remove reference to non longer existing osmo-ggsn.init
+  * doc: Fix typo: wrong interface named
+  * doc: Reorder some chapters
+  * tun: Fix null pointer derefence when in kernel gtp mode
+  * ggsn: Avoid forwarding IPv6 solicited-node multicast addr to tun device
+  * ggsn: Rename confusing functions
+  * tun.h: Remove non-existent tun_decaps()
+  * Rename tun_encaps -> tun_inject_pkt
+  * Refactor tun_t fields and alloc APIs
+  * tun: Use OSMO_STRLCPY_ARRAY
+  * doc: Document MTU features in User Manual and example config files
+  * doc: Update all iptables references with nftables
+  * jenkins.sh: Use --disable-doxygen configure param
+
+  [ Alexander Couzens ]
+  * gtp_internal.h: add missing include to <stdint.h>
+  * gtpie: fix comment
+  * gtp.h: add more GTP cause code from 29.060 v15.3.30
+  * gtp_new(): use talloc instead of calloc/free
+  * gtpie: add gtp_encaps a modern encapsulation method
+  * gtp: split gtp_req into 2 parts: transmit and fill header
+
+  [ Daniel Willmann ]
+  * gtp: Make peer addr const in gtp_req/gtp_resp
+  * gtp: Rework gtp_resp() into gtp_resp_pdp()
+
+ -- Oliver Smith <osmith@sysmocom.de>  Wed, 12 Feb 2025 12:09:58 +0100
+
 osmo-ggsn (1.12.0) unstable; urgency=medium
 
   [ Daniel Willmann ]

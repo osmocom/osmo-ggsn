@@ -1,2 +1,2 @@
 # Most recent version of the package that added new symbols (OS#5318)
-libgtp 6 libgtp6 (>= 1.8.0)
+libgtp 11 libgtp11 (>= 1.13.0)
