@@ -1124,17 +1124,6 @@ int ggsn_vty_init(void)
 	return 0;
 }
 
-static int ggsn_vty_is_config_node(struct vty *vty, int node)
-{
-	switch (node) {
-	case GGSN_NODE:
-	case APN_NODE:
-		return 1;
-	default:
-		return 0;
-	}
-}
-
 static int ggsn_vty_go_parent(struct vty *vty)
 {
 	switch (vty->node) {
@@ -1174,5 +1163,4 @@ struct vty_app_info g_vty_info = {
 	.version	= PACKAGE_VERSION,
 	.copyright	= ggsn_copyright,
 	.go_parent_cb	= ggsn_vty_go_parent,
-	.is_config_node	= ggsn_vty_is_config_node,
 };
