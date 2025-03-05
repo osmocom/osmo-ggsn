@@ -515,7 +515,7 @@ static int gtp_resp(struct gsn_t *gsn, union gtp_packet *packet, int len, struct
 	} else {
 		unsigned int t3_hold_resp;
 		LOGP(DLGTP, LOGL_DEBUG, "Registering seq=%" PRIu16
-		     " in restransmit resp queue\n", seq);
+		     " in retransmit resp queue\n", seq);
 		t3_hold_resp = osmo_tdef_get(gsn->tdef, GTP_GSN_TIMER_T3_HOLD_RESPONSE, OSMO_TDEF_S, -1);
 		memcpy(&qmsg->p, packet, sizeof(union gtp_packet));
 		qmsg->l = len;
