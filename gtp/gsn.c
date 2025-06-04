@@ -69,7 +69,7 @@
 
 #define LOGP_WITH_ADDR(ss, level, addr, fmt, args...)                    \
 		LOGP(ss, level, "addr(%s:%d) " fmt,                      \
-		     inet_ntoa((addr).sin_addr), ntohs((addr).sin_port), \
+		     inet_ntoa((addr)->sin_addr), ntohs((addr)->sin_port), \
 		     ##args)
 
 static const struct rate_ctr_desc gsn_ctr_description[] = {
@@ -453,7 +453,7 @@ static int create_and_bind_socket(const char *name, struct gsn_t *gsn, int *fd, 
 
 	if (bind(*fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_SOCKET);
-		LOGP_WITH_ADDR(DLGTP, LOGL_ERROR, addr,
+		LOGP_WITH_ADDR(DLGTP, LOGL_ERROR, &addr,
 			       "%s bind(fd=%d) failed: Error = %s\n",
 			       name, *fd, strerror(errno));
 		return -errno;

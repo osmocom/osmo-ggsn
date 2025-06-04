@@ -74,7 +74,7 @@
 
 #define LOGP_WITH_ADDR(ss, level, addr, fmt, args...)                    \
 		LOGP(ss, level, "addr(%s:%d) " fmt,                      \
-		     inet_ntoa((addr).sin_addr), htons((addr).sin_port), \
+		     inet_ntoa((addr)->sin_addr), htons((addr)->sin_port), \
 		     ##args);
 
 TALLOC_CTX *tall_libgtp_ctx = NULL;
