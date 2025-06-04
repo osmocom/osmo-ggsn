@@ -97,17 +97,17 @@ struct gsn_t {
 	struct osmo_timer_list queue_timer; /* internal queue_{req,resp} timer */
 
 	/* Call back functions */
-	int (*cb_delete_context) (struct pdp_t *);
-	int (*cb_create_context_ind) (struct pdp_t *);
+	int (*cb_delete_context)(struct pdp_t *pdp);
+	int (*cb_create_context_ind)(struct pdp_t *pdp);
 	int (*cb_update_context_ind)(struct pdp_t *pdp);
-	int (*cb_unsup_ind) (struct sockaddr_in * peer);
-	int (*cb_extheader_ind) (struct sockaddr_in * peer);
-	int (*cb_ran_info_relay_ind) (struct sockaddr_in *peer, union gtpie_member **ie);
-	int (*cb_conf) (int type, int cause, struct pdp_t * pdp, void *cbp);
-	int (*cb_data_ind) (struct pdp_t * pdp, void *pack, unsigned len);
-	int (*cb_recovery) (struct sockaddr_in * peer, uint8_t recovery);
-	int (*cb_recovery2) (struct sockaddr_in * peer, struct pdp_t * pdp, uint8_t recovery);
-	int (*cb_recovery3) (struct gsn_t *gsn, struct sockaddr_in *peer, struct pdp_t *pdp, uint8_t recovery);
+	int (*cb_unsup_ind)(struct sockaddr_in *peer);
+	int (*cb_extheader_ind)(struct sockaddr_in *peer);
+	int (*cb_ran_info_relay_ind)(struct sockaddr_in *peer, union gtpie_member **ie);
+	int (*cb_conf)(int type, int cause, struct pdp_t *pdp, void *cbp);
+	int (*cb_data_ind)(struct pdp_t *pdp, void *pack, unsigned len);
+	int (*cb_recovery)(struct sockaddr_in *peer, uint8_t recovery);
+	int (*cb_recovery2)(struct sockaddr_in *peer, struct pdp_t *pdp, uint8_t recovery);
+	int (*cb_recovery3)(struct gsn_t *gsn, struct sockaddr_in *peer, struct pdp_t *pdp, uint8_t recovery);
 
 	/* Counters */
 	struct rate_ctr_group *ctrg;
@@ -132,45 +132,42 @@ extern int gtp_create_context_req(struct gsn_t *gsn, struct pdp_t *pdp,
 				  void *cbp);
 
 extern int gtp_set_cb_create_context_ind(struct gsn_t *gsn,
-					 int (*cb_create_context_ind) (struct
-								       pdp_t *
-								       pdp));
+					 int (*cb_create_context_ind)(struct pdp_t *pdp));
 extern int gtp_set_cb_update_context_ind(struct gsn_t *gsn,
 					 int (*cb_update_context_ind)(struct pdp_t *pdp));
 extern int gtp_set_cb_data_ind(struct gsn_t *gsn,
-			       int (*cb_data_ind) (struct pdp_t * pdp,
+			       int (*cb_data_ind)(struct pdp_t *pdp,
 						   void *pack, unsigned len));
 extern int gtp_set_cb_delete_context(struct gsn_t *gsn,
-				     int (*cb_delete_context) (struct pdp_t *
-							       pdp));
+				     int (*cb_delete_context)(struct pdp_t *pdp));
 /*extern int gtp_set_cb_create_context(struct gsn_t *gsn,
-  int (*cb_create_context) (struct pdp_t* pdp)); */
+  int (*cb_create_context) (struct pdp_t *pdp)); */
 
 extern int gtp_set_cb_unsup_ind(struct gsn_t *gsn,
-				int (*cb) (struct sockaddr_in * peer));
+				int (*cb)(struct sockaddr_in *peer));
 
 extern int gtp_set_cb_extheader_ind(struct gsn_t *gsn,
-				    int (*cb) (struct sockaddr_in * peer));
+				    int (*cb)(struct sockaddr_in *peer));
 
 extern int gtp_set_cb_ran_info_relay_ind(struct gsn_t *gsn,
-				    int (*cb) (struct sockaddr_in * peer, union gtpie_member **ie));
+				    int (*cb)(struct sockaddr_in *peer, union gtpie_member **ie));
 
 extern int gtp_set_cb_conf(struct gsn_t *gsn,
-			   int (*cb) (int type, int cause, struct pdp_t * pdp,
+			   int (*cb)(int type, int cause, struct pdp_t *pdp,
 				      void *cbp));
 
 int gtp_set_cb_recovery(struct gsn_t *gsn,
-			int (*cb) (struct sockaddr_in * peer,
+			int (*cb)(struct sockaddr_in *peer,
 				   uint8_t recovery))
 	OSMO_DEPRECATED("Use gtp_set_cb_recovery2() instead, to obtain pdp ctx originating the recovery");
 int gtp_set_cb_recovery2(struct gsn_t *gsn,
-			int (*cb) (struct sockaddr_in * peer,
-				   struct pdp_t * pdp,
+			int (*cb)(struct sockaddr_in *peer,
+				   struct pdp_t *pdp,
 				   uint8_t recovery))
 	OSMO_DEPRECATED("Use gtp_set_cb_recovery3() instead, to obtain gsn handling the recovery");
 int gtp_set_cb_recovery3(struct gsn_t *gsn,
-			int (*cb) (struct gsn_t * gsn, struct sockaddr_in * peer,
-				   struct pdp_t * pdp,
+			int (*cb)(struct gsn_t *gsn, struct sockaddr_in *peer,
+				   struct pdp_t *pdp,
 				   uint8_t recovery));
 void gtp_clear_queues(struct gsn_t *gsn);
 extern int gtp_fd(struct gsn_t *gsn);

@@ -163,21 +163,21 @@ extern int gtp_fd(struct gsn_t *gsn)
 }
 
 int gtp_set_cb_unsup_ind(struct gsn_t *gsn,
-			 int (*cb) (struct sockaddr_in * peer))
+			 int (*cb)(struct sockaddr_in *peer))
 {
 	gsn->cb_unsup_ind = cb;
 	return 0;
 }
 
 int gtp_set_cb_extheader_ind(struct gsn_t *gsn,
-			     int (*cb) (struct sockaddr_in * peer))
+			     int (*cb)(struct sockaddr_in *peer))
 {
 	gsn->cb_extheader_ind = cb;
 	return 0;
 }
 
 int gtp_set_cb_ran_info_relay_ind(struct gsn_t *gsn,
-			     int (*cb) (struct sockaddr_in * peer, union gtpie_member **ie))
+			     int (*cb)(struct sockaddr_in *peer, union gtpie_member **ie))
 {
 	gsn->cb_ran_info_relay_ind = cb;
 	return 0;
@@ -185,22 +185,22 @@ int gtp_set_cb_ran_info_relay_ind(struct gsn_t *gsn,
 
 /* API: Initialise delete context callback */
 /* Called whenever a pdp context is deleted for any reason */
-int gtp_set_cb_delete_context(struct gsn_t *gsn, int (*cb) (struct pdp_t * pdp))
+int gtp_set_cb_delete_context(struct gsn_t *gsn, int (*cb)(struct pdp_t *pdp))
 {
 	gsn->cb_delete_context = cb;
 	return 0;
 }
 
 int gtp_set_cb_conf(struct gsn_t *gsn,
-		    int (*cb) (int type, int cause,
-			       struct pdp_t * pdp, void *cbp))
+		    int (*cb)(int type, int cause,
+			      struct pdp_t *pdp, void *cbp))
 {
 	gsn->cb_conf = cb;
 	return 0;
 }
 
 int gtp_set_cb_recovery(struct gsn_t *gsn,
-			int (*cb) (struct sockaddr_in * peer, uint8_t recovery))
+			int (*cb)(struct sockaddr_in *peer, uint8_t recovery))
 {
 	gsn->cb_recovery = cb;
 	return 0;
@@ -214,7 +214,8 @@ int gtp_set_cb_recovery(struct gsn_t *gsn,
  * specs.
  */
 int gtp_set_cb_recovery2(struct gsn_t *gsn,
-			int (*cb_recovery2) (struct sockaddr_in * peer, struct pdp_t * pdp, uint8_t recovery))
+			int (*cb_recovery2)(struct sockaddr_in *peer,
+					    struct pdp_t *pdp, uint8_t recovery))
 {
 	gsn->cb_recovery2 = cb_recovery2;
 	return 0;
@@ -228,16 +229,16 @@ int gtp_set_cb_recovery2(struct gsn_t *gsn,
  * specs.
  */
 int gtp_set_cb_recovery3(struct gsn_t *gsn,
-			 int (*cb_recovery3) (struct gsn_t *gsn, struct sockaddr_in *peer,
-					      struct pdp_t *pdp, uint8_t recovery))
+			 int (*cb_recovery3)(struct gsn_t *gsn, struct sockaddr_in *peer,
+					     struct pdp_t *pdp, uint8_t recovery))
 {
 	gsn->cb_recovery3 = cb_recovery3;
 	return 0;
 }
 
 int gtp_set_cb_data_ind(struct gsn_t *gsn,
-			       int (*cb_data_ind) (struct pdp_t * pdp,
-						   void *pack, unsigned len))
+			int (*cb_data_ind)(struct pdp_t *pdp,
+					   void *pack, unsigned len))
 {
 	gsn->cb_data_ind = cb_data_ind;
 	return 0;
