@@ -301,27 +301,27 @@ extern int gtpie_tv4(void *p, unsigned int *length, unsigned int size,
 		     uint8_t t, uint32_t v);
 extern int gtpie_tv8(void *p, unsigned int *length, unsigned int size,
 		     uint8_t t, uint64_t v);
-extern int gtpie_getie(union gtpie_member *ie[], int type, int instance);
-extern int gtpie_exist(union gtpie_member *ie[], int type, int instance);
-extern int gtpie_gettlv(union gtpie_member *ie[], int type, int instance,
+extern int gtpie_getie(union gtpie_member * const ie[], int type, int instance);
+extern int gtpie_exist(union gtpie_member * const ie[], int type, int instance);
+extern int gtpie_gettlv(union gtpie_member * const ie[], int type, int instance,
 			unsigned int *length, void *dst, unsigned int size);
-extern int gtpie_gettv0(union gtpie_member *ie[], int type, int instance,
+extern int gtpie_gettv0(union gtpie_member * const ie[], int type, int instance,
 			void *dst, unsigned int size);
-extern int gtpie_gettv1(union gtpie_member *ie[], int type, int instance,
+extern int gtpie_gettv1(union gtpie_member * const ie[], int type, int instance,
 			uint8_t * dst);
-extern int gtpie_gettv2(union gtpie_member *ie[], int type, int instance,
+extern int gtpie_gettv2(union gtpie_member * const ie[], int type, int instance,
 			uint16_t * dst);
-extern int gtpie_gettv4(union gtpie_member *ie[], int type, int instance,
+extern int gtpie_gettv4(union gtpie_member * const ie[], int type, int instance,
 			uint32_t * dst);
-extern int gtpie_gettv8(union gtpie_member *ie[], int type, int instance,
+extern int gtpie_gettv8(union gtpie_member * const ie[], int type, int instance,
 			uint64_t * dst);
 
 extern int gtpie_decaps(union gtpie_member *ie[], int version,
 			const void *pack, unsigned len);
-extern int gtpie_encaps(union gtpie_member *ie[], void *pack, unsigned *len);
-extern int gtpie_encaps2(union gtpie_member ie[], unsigned int size,
+extern int gtpie_encaps(union gtpie_member * const ie[], void *pack, unsigned *len);
+extern int gtpie_encaps2(const union gtpie_member ie[], unsigned int size,
 			 void *pack, unsigned *len);
-extern int gtpie_encaps3(union gtpie_member *ie[], unsigned int ie_len,
+extern int gtpie_encaps3(union gtpie_member * const ie[], unsigned int ie_len,
 		  void *pack, unsigned pack_len, unsigned *encoded_len);
 
 #endif /* !_GTPIE_H */

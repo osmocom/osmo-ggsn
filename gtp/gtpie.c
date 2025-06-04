@@ -155,7 +155,7 @@ int gtpie_tv8(void *p, unsigned int *length, unsigned int size, uint8_t t,
  *  \param[in] type Tag/IEI for which we're looking
  *  \param[in] instance Instance (number of occurence) of this IEI
  *  \returns index into \a ie on success; -1 if not found */
-int gtpie_getie(union gtpie_member *ie[], int type, int instance)
+int gtpie_getie(union gtpie_member * const ie[], int type, int instance)
 {
 	int j;
 	for (j = 0; j < GTPIE_SIZE; j++) {
@@ -172,7 +172,7 @@ int gtpie_getie(union gtpie_member *ie[], int type, int instance)
  *  \param[in] type Tag/IEI for which we're looking
  *  \param[in] instance Instance (number of occurence) of this IEI
  *  \returns 1 if IEI instance present in \a ie; 0 if not */
-int gtpie_exist(union gtpie_member *ie[], int type, int instance)
+int gtpie_exist(union gtpie_member * const ie[], int type, int instance)
 {
 	int j;
 	for (j = 0; j < GTPIE_SIZE; j++) {
@@ -192,7 +192,7 @@ int gtpie_exist(union gtpie_member *ie[], int type, int instance)
  *  \param[inout] dst Caller-allocated buffer where to store value
  *  \param[in] size Size of \a dst in bytes
  *  \returns 0 on sucess; EOF in case value is larger than \a size */
-int gtpie_gettlv(union gtpie_member *ie[], int type, int instance,
+int gtpie_gettlv(union gtpie_member * const ie[], int type, int instance,
 		 unsigned int *length, void *dst, unsigned int size)
 {
 	int ien;
@@ -214,7 +214,7 @@ int gtpie_gettlv(union gtpie_member *ie[], int type, int instance,
  *  \param[inout] dst Caller-allocated buffer where to store value
  *  \param[in] size Size of value in bytes
  *  \returns 0 on sucess; EOF in case IE not found */
-int gtpie_gettv0(union gtpie_member *ie[], int type, int instance,
+int gtpie_gettv0(union gtpie_member * const ie[], int type, int instance,
 		 void *dst, unsigned int size)
 {
 	int ien;
@@ -232,7 +232,7 @@ int gtpie_gettv0(union gtpie_member *ie[], int type, int instance,
  *  \param[in] instance Instance (number of occurence) of this IEI
  *  \param[inout] dst Caller-allocated buffer where to store value
  *  \returns 0 on sucess; EOF in case IE not found */
-int gtpie_gettv1(union gtpie_member *ie[], int type, int instance,
+int gtpie_gettv1(union gtpie_member * const ie[], int type, int instance,
 		 uint8_t * dst)
 {
 	int ien;
@@ -250,7 +250,7 @@ int gtpie_gettv1(union gtpie_member *ie[], int type, int instance,
  *  \param[in] instance Instance (number of occurence) of this IEI
  *  \param[inout] dst Caller-allocated buffer where to store value
  *  \returns 0 on sucess; EOF in case IE not found */
-int gtpie_gettv2(union gtpie_member *ie[], int type, int instance,
+int gtpie_gettv2(union gtpie_member * const ie[], int type, int instance,
 		 uint16_t * dst)
 {
 	int ien;
@@ -268,7 +268,7 @@ int gtpie_gettv2(union gtpie_member *ie[], int type, int instance,
  *  \param[in] instance Instance (number of occurence) of this IEI
  *  \param[inout] dst Caller-allocated buffer where to store value
  *  \returns 0 on sucess; EOF in case IE not found */
-int gtpie_gettv4(union gtpie_member *ie[], int type, int instance,
+int gtpie_gettv4(union gtpie_member * const ie[], int type, int instance,
 		 uint32_t * dst)
 {
 	int ien;
@@ -286,7 +286,7 @@ int gtpie_gettv4(union gtpie_member *ie[], int type, int instance,
  *  \param[in] instance Instance (number of occurence) of this IEI
  *  \param[inout] dst Caller-allocated buffer where to store value
  *  \returns 0 on sucess; EOF in case IE not found */
-int gtpie_gettv8(union gtpie_member *ie[], int type, int instance,
+int gtpie_gettv8(union gtpie_member * const ie[], int type, int instance,
 		 uint64_t * dst)
 {
 	int ien;
@@ -599,7 +599,7 @@ int gtpie_decaps(union gtpie_member *ie[], int version, const void *pack,
  *  \param[out] pack Pointer to caller-allocated buffer for raw GTP packet (GTPIE_MAX length)
  *  \param[out] len Encoded length of \a pack in bytes
  *  \returns 0 on sucess; 2 for out-of-space */
-int gtpie_encaps(union gtpie_member *ie[], void *pack, unsigned *len)
+int gtpie_encaps(union gtpie_member * const ie[], void *pack, unsigned *len)
 {
 	int i;
 	unsigned char *p;
@@ -774,7 +774,7 @@ int gtpie_encaps(union gtpie_member *ie[], void *pack, unsigned *len)
  *  \param[out] pack Pointer to caller-allocated buffer for raw GTP packet (GTPIE_MAX length)
  *  \param[out] len Encoded length of \a pack in bytes
  *  \returns 0 on sucess; 2 for out-of-space */
-int gtpie_encaps2(union gtpie_member ie[], unsigned int size,
+int gtpie_encaps2(const union gtpie_member ie[], unsigned int size,
 		  void *pack, unsigned *len)
 {
 	unsigned int i, j;
@@ -953,7 +953,7 @@ int gtpie_encaps2(union gtpie_member ie[], unsigned int size,
  *  \param[out] encoded_len Encoded length of \a pack in bytes
  *  \returns 0 on success; 2 for out-of-space
  *  GTP requires a certain order, the call must follow those which are defined for every message */
-int gtpie_encaps3(union gtpie_member *ies[], unsigned int ie_len,
+int gtpie_encaps3(union gtpie_member * const ies[], unsigned int ie_len,
 		  void *pack, unsigned pack_len, unsigned *encoded_len)
 {
 	unsigned int i;
