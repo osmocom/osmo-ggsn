@@ -69,7 +69,7 @@
 
 #define LOGP_WITH_ADDR(ss, level, addr, fmt, args...)                    \
 		LOGP(ss, level, "addr(%s:%d) " fmt,                      \
-		     inet_ntoa((addr).sin_addr), htons((addr).sin_port), \
+		     inet_ntoa((addr).sin_addr), ntohs((addr).sin_port), \
 		     ##args)
 
 static const struct rate_ctr_desc gsn_ctr_description[] = {

@@ -68,7 +68,7 @@
 #define GTP_LOGPKG(pri, peer, pack, len, fmt, args...)			\
 	logp2(DLGTP, pri, __FILE__, __LINE__, 0,			\
 		"Packet from %s:%u, length: %d content: %s: " fmt,	\
-		inet_ntoa((peer)->sin_addr), htons((peer)->sin_port),	\
+		inet_ntoa((peer)->sin_addr), ntohs((peer)->sin_port),	\
 		len, osmo_hexdump((const uint8_t *) pack, len),		\
 		##args);
 
