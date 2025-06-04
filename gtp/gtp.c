@@ -65,17 +65,6 @@
 
 /* Error reporting functions */
 
-#define GTP_LOGPKG(pri, peer, pack, len, fmt, args...)			\
-	logp2(DLGTP, pri, __FILE__, __LINE__, 0,			\
-		"Packet from %s:%u, length: %d content: %s: " fmt,	\
-		inet_ntoa((peer)->sin_addr), ntohs((peer)->sin_port),	\
-		len, osmo_hexdump((const uint8_t *) pack, len),		\
-		##args);
-
-#define LOGP_WITH_ADDR(ss, level, addr, fmt, args...)                    \
-		LOGP(ss, level, "addr(%s:%d) " fmt,                      \
-		     inet_ntoa((addr)->sin_addr), htons((addr)->sin_port), \
-		     ##args);
 
 TALLOC_CTX *tall_libgtp_ctx = NULL;
 
