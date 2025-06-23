@@ -86,3 +86,5 @@ contrib/osmo-ggsn.spec
 /debian/gtp-echo-responder/
 /debian/osmo-ggsn-doc/
 /utils/gtp-echo-responder
+
+include/osmocom/gtp/version.h

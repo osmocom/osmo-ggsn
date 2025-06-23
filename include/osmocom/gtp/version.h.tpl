@@ -1,0 +1,16 @@
+#pragma once
+
+#define LIBGTP_VERSION {{VERSION}}
+#define LIBGTP_VERSION_STR "{{VERSION}}"
+
+#define LIBGTP_VERSION_MAJOR {{VERSION_MAJOR}}
+#define LIBGTP_VERSION_MINOR {{VERSION_MINOR}}
+#define LIBGTP_VERSION_PATCH {{VERSION_PATCH}}
+
+#define LIBGTP_VERSION_GREATER_EQUAL(major, minor, patch) \
+	(LIBGTP_VERSION_MAJOR > (major) || \
+	 (LIBGTP_VERSION_MAJOR == (major) && \
+	  LIBGTP_VERSION_MINOR > (minor)) || \
+	 (LIBGTP_VERSION_MAJOR == (major) && \
+	  LIBGTP_VERSION_MINOR == (minor) && \
+	  LIBGTP_VERSION_PATCH >= (patch)))
