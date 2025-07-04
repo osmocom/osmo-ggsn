@@ -108,6 +108,46 @@ static void test_gtpie_tv8()
 	OSMO_ASSERT(osmo_load32be(&buf[5]) == 0x04050607);
 }
 
+static void test_gtpie_getie(void)
+{
+	union gtpie_member *ie[GTPIE_SIZE] = {};
+	union gtpie_member ie_elem[3] = {};
+
+	printf("Testing gtpie_getie()\n");
+
+	/* Empty ie should always return -1 */
+	OSMO_ASSERT(gtpie_getie(ie, 0, 0) == -1);
+	OSMO_ASSERT(gtpie_getie(ie, 0, 1) == -1);
+
+	OSMO_ASSERT(gtpie_getie(ie, GTPIE_ENODEB_ID, 0) == -1);
+	OSMO_ASSERT(gtpie_getie(ie, GTPIE_ENODEB_ID, 1) == -1);
+
+	ie_elem[0].tv1.t = GTPIE_CAUSE;
+	ie_elem[0].tv1.v = GTPIE_CAUSE;
+	ie[0] = &ie_elem[0];
+
+	OSMO_ASSERT(gtpie_getie(ie, GTPIE_CAUSE, 0) == 0);
+	OSMO_ASSERT(gtpie_getie(ie, GTPIE_CAUSE, 1) == -1);
+
+
+	ie_elem[1].tv1.t = GTPIE_CAUSE;
+	ie_elem[1].tv1.v = GTPIE_CAUSE;
+	ie[2] = &ie_elem[0];
+
+	OSMO_ASSERT(gtpie_getie(ie, GTPIE_CAUSE, 0) == 0);
+	OSMO_ASSERT(gtpie_getie(ie, GTPIE_CAUSE, 1) == 2);
+
+
+	ie_elem[2].tv1.t = GTPIE_CAUSE;
+	ie_elem[2].tv1.v = GTPIE_CAUSE;
+	ie[GTPIE_SIZE - 1] = &ie_elem[0];
+
+	OSMO_ASSERT(gtpie_getie(ie, GTPIE_CAUSE, 0) == 0);
+	OSMO_ASSERT(gtpie_getie(ie, GTPIE_CAUSE, 1) == 2);
+	OSMO_ASSERT(gtpie_getie(ie, GTPIE_CAUSE, 2) == GTPIE_SIZE - 1);
+}
+
+
 int main(int argc, char **argv)
 {
 	void *tall_ctx = talloc_named_const(NULL, 1, "Root context");
@@ -125,9 +165,11 @@ int main(int argc, char **argv)
 	test_gtpie_tv4();
 	test_gtpie_tv8();
 
+	test_gtpie_getie();
+
 	/* TODO: gtpie_decaps() */
 	/* TODO: gtpie_encaps() */
 	/* TODO: gtpie_encaps2() */
-	/* TODO: gtpie_getie(), gtpie_exist(), gtpie_get*() */
+	/* TODO: gtpie_exist(), gtpie_get*() */
 	return 0;
 }
