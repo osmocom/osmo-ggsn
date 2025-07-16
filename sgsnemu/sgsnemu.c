@@ -925,6 +925,8 @@ static int process_options(int argc, char **argv)
 		options.pdp_type = PDP_EUA_TYPE_v6;
 	else if (!strcmp(args_info.pdp_type_arg, "v4"))
 		options.pdp_type = PDP_EUA_TYPE_v4;
+	else if (!strcmp(args_info.pdp_type_arg, "v4v6"))
+		options.pdp_type = PDP_EUA_TYPE_v4v6;
 	else {
 		SYS_ERR(DSGSN, LOGL_ERROR, 0, "Unsupported/unknown PDP Type '%s'\n",
 			args_info.pdp_type_arg);
@@ -943,6 +945,9 @@ static int process_options(int argc, char **argv)
 			break;
 		case PDP_EUA_TYPE_v6:
 			hints.ai_family = AF_INET6;
+			break;
+		case PDP_EUA_TYPE_v4v6:
+			hints.ai_family = AF_UNSPEC;
 			break;
 		default:
 			SYS_ERR(DSGSN, LOGL_ERROR, 0, "lookup(AF_UNSPEC) %d", options.pdp_type);
@@ -1664,7 +1669,8 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 		}
 	}
 
-	if (options.createif && options.pdp_type == PDP_EUA_TYPE_v6) {
+	if (options.createif && (options.pdp_type == PDP_EUA_TYPE_v6 ||
+				 options.pdp_type == PDP_EUA_TYPE_v4v6)) {
 		struct in6_addr *saddr6;
 		struct msgb *msg;
 		if (in46a_is_v6(&addr[0])) {
