@@ -46,6 +46,8 @@
 #include <osmocom/ctrl/control_if.h>
 #include <osmocom/gsm/apn.h>
 
+#include <osmocom/netif/icmpv6.h>
+
 #include <osmocom/gtp/pdp.h>
 #include <osmocom/gtp/gtp.h>
 
@@ -789,11 +791,13 @@ static int cb_gtpu_data_ind(struct pdp_t *pdp, void *pack, unsigned len)
 
 		if (IN6_IS_ADDR_MULTICAST(&ip6h->ip6_dst)) {
 			/* daddr: all-routers multicast addr */
-			if (IN6_ARE_ADDR_EQUAL(&ip6h->ip6_dst, &all_router_mcast_addr))
+			if (IN6_ARE_ADDR_EQUAL(&ip6h->ip6_dst, &osmo_icmpv6_all_router_mcast_addr))
 				return handle_router_mcast(pdp->gsn, pdp, &peer->addr.v6,
 							   &apn->v6_lladdr, apn->cfg.mtu, pack, len);
 			/* daddr: solicited-node multicast addr */
-			if (memcmp(&ip6h->ip6_dst.s6_addr, solicited_node_mcast_addr_prefix, sizeof(solicited_node_mcast_addr_prefix)) == 0)
+			if (memcmp(&ip6h->ip6_dst.s6_addr,
+				   osmo_icmpv6_solicited_node_mcast_addr_prefix,
+				   sizeof(osmo_icmpv6_solicited_node_mcast_addr_prefix)) == 0)
 				return handle_solicited_node_mcast(pack, len);
 		}
 		break;

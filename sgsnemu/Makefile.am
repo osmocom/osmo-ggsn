@@ -9,9 +9,15 @@ AM_CFLAGS = \
 	    -DSBINDIR='"$(sbindir)"' \
 	    -I$(top_srcdir)/include \
 	    $(LIBOSMOCORE_CFLAGS) \
+	    $(LIBOSMONETIF_CFLAGS) \
 	    $(NULL)
 
-sgsnemu_LDADD = @EXEC_LDADD@ -lgtp -L../gtp ../lib/libmisc.a $(LIBOSMOCORE_LIBS)
+sgsnemu_LDADD = \
+	@EXEC_LDADD@ \
+	-lgtp -L../gtp ../lib/libmisc.a \
+	$(LIBOSMOCORE_LIBS) \
+	$(LIBOSMONETIF_LIBS) \
+	$(NULL)
 
 if ENABLE_GTP_KERNEL
 AM_CFLAGS += \

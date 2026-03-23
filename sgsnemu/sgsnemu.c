@@ -25,6 +25,8 @@
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/select.h>
 
+#include <osmocom/netif/icmpv6.h>
+
 #include <ctype.h>
 #include <netdb.h>
 #include <signal.h>
@@ -178,7 +180,7 @@ struct ip_ping {
 } __attribute__ ((packed));
 
 struct ip6_ping {
-	struct icmpv6_echo_hdr hdr;
+	struct osmo_icmpv6_echo_hdr hdr;
 	uint8_t data[CREATEPING_MAX];	/* Data */
 } __attribute__ ((packed));
 
@@ -1265,7 +1267,7 @@ static int cb_gtpu_data_ind_ping4(struct pdp_t *pdp, void *pack, unsigned len)
 
 static int cb_gtpu_data_ind_ping6(struct pdp_t *pdp, struct ip6_hdr *ip6h, unsigned len)
 {
-	const struct icmpv6_echo_hdr *ic6h = (struct icmpv6_echo_hdr *) ((uint8_t*)ip6h + sizeof(*ip6h));
+	const struct osmo_icmpv6_echo_hdr *ic6h = (struct osmo_icmpv6_echo_hdr *) ((uint8_t *)ip6h + sizeof(*ip6h));
 	struct timeval tv;
 	struct timeval tp;
 	int triptime;
@@ -1285,7 +1287,7 @@ static int cb_gtpu_data_ind_ping6(struct pdp_t *pdp, struct ip6_hdr *ip6h, unsig
 		return 0;
 	}
 
-	if (len < sizeof(struct ip6_hdr) + sizeof(struct icmpv6_echo_hdr)) {
+	if (len < sizeof(struct ip6_hdr) + sizeof(struct osmo_icmpv6_echo_hdr)) {
 		LOGP(DSGSN, LOGL_ERROR, "Packet len too small to contain ICMPv6 echo header (%d)\n", len);
 		return 0;
 	}
@@ -1305,7 +1307,7 @@ static int cb_gtpu_data_ind_ping6(struct pdp_t *pdp, struct ip6_hdr *ip6h, unsig
 		       inet_ntop(AF_INET6, &ip6h->ip6_src, straddr, sizeof(straddr)),
 		       ntohs(ic6h->seq));
 
-	if (len >= sizeof(struct ip6_hdr) + sizeof(struct icmpv6_echo_hdr) + sizeof(struct timeval)) {
+	if (len >= sizeof(struct ip6_hdr) + sizeof(struct osmo_icmpv6_echo_hdr) + sizeof(struct timeval)) {
 		gettimeofday(&tv, NULL);
 		memcpy(&tp, ic6h->data, sizeof(struct timeval));
 		if ((tv.tv_usec -= tp.tv_usec) < 0) {
@@ -1441,7 +1443,7 @@ static int create_ping6(void *gsn, struct pdp_t *pdp, struct in46_addr *src,
 
 	struct msgb *msg = msgb_alloc_headroom(sizeof(struct ip6_ping) + 128,128, "ICMPv6 echo");
 	OSMO_ASSERT(msg);
-	pack = (struct ip6_ping *) msgb_put(msg, sizeof(struct icmpv6_echo_hdr) + datasize);
+	pack = (struct ip6_ping *) msgb_put(msg, sizeof(struct osmo_icmpv6_echo_hdr) + datasize);
 	pack->hdr.hdr.type = 128;
 	pack->hdr.hdr.code = 0;
 	pack->hdr.hdr.csum = 0;  /* updated below */
@@ -1457,7 +1459,7 @@ static int create_ping6(void *gsn, struct pdp_t *pdp, struct in46_addr *src,
 		gettimeofday(tp, &tz);
 	}
 
-	pack->hdr.hdr.csum = icmpv6_prepend_ip6hdr(msg, &src->v6, &dst->v6);
+	pack->hdr.hdr.csum = osmo_icmpv6_prepend_ip6hdr(msg, &src->v6, &dst->v6);
 
 	ntransmitted++;
 	return gtp_data_req(gsn, pdp, msgb_data(msg), msgb_length(msg));
@@ -1682,7 +1684,7 @@ static int create_pdp_conf(struct pdp_t *pdp, void *cbp, int cause)
 			return EOF;	/* Not a valid IP address */
 		}
 		SYS_ERR(DSGSN, LOGL_INFO, 0, "Sending ICMPv6 Router Soliciation to GGSN...");
-		msg = icmpv6_construct_rs(saddr6);
+		msg = osmo_icmpv6_construct_rs(saddr6);
 		gtp_data_req(gsn, ctx->pdp, msgb_data(msg), msgb_length(msg));
 		msgb_free(msg);
 	}
@@ -1748,11 +1750,12 @@ static int _gtp_cb_conf(int type, int cause, struct pdp_t *pdp, void *cbp)
 	}
 }
 
-static void handle_router_adv(struct pdp_t *pdp, struct ip6_hdr *ip6h, struct icmpv6_radv_hdr *ra, size_t ra_len)
+static void handle_router_adv(struct pdp_t *pdp, struct ip6_hdr *ip6h,
+			      struct osmo_icmpv6_radv_hdr *ra, size_t ra_len)
 {
 	struct pdp_peer_sgsnemu_ctx* ctx = (struct pdp_peer_sgsnemu_ctx*)pdp->peer[0];
-	struct icmpv6_opt_hdr *opt_hdr;
-	struct icmpv6_opt_prefix *opt_prefix;
+	struct osmo_icmpv6_opt_hdr *opt_hdr;
+	struct osmo_icmpv6_opt_prefix *opt_prefix;
 	int rc;
 	sigset_t oldmask;
 	struct in6_addr rm;
@@ -1763,7 +1766,7 @@ static void handle_router_adv(struct pdp_t *pdp, struct ip6_hdr *ip6h, struct ic
 
 	foreach_icmpv6_opt(ra, ra_len, opt_hdr) {
 		if (opt_hdr->type == ICMPv6_OPT_TYPE_PREFIX_INFO) {
-			opt_prefix = (struct icmpv6_opt_prefix *)opt_hdr;
+			opt_prefix = (struct osmo_icmpv6_opt_prefix *)opt_hdr;
 			size_t prefix_len_bytes = (opt_prefix->prefix_len + 7)/8;
 			SYS_ERR(DSGSN, LOGL_INFO, 0, "Parsing OPT Prefix info (prefix_len=%u): %s",
 				opt_prefix->prefix_len,
@@ -1821,10 +1824,10 @@ static void handle_router_adv(struct pdp_t *pdp, struct ip6_hdr *ip6h, struct ic
 static int cb_gtpu_data_ind(struct pdp_t *pdp, void *pack, unsigned len)
 {
 	struct iphdr *iph = (struct iphdr *)pack;
-	struct icmpv6_radv_hdr *ra;
+	struct osmo_icmpv6_radv_hdr *ra;
 	switch (iph->version) {
 	case 6:
-		if ((ra = icmpv6_validate_router_adv(pack, len))) {
+		if ((ra = osmo_icmpv6_validate_router_adv(pack, len))) {
 			size_t ra_len = (uint8_t*)ra - (uint8_t*)pack;
 			handle_router_adv(pdp, (struct ip6_hdr *)pack, ra, ra_len);
 			return 0;

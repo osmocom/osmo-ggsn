@@ -24,16 +24,17 @@ osmo-clean-workspace.sh
 
 mkdir "$deps" || true
 
-if [ "x$GTP" == "x--enable-gtp-linux" ]; then
-	osmo-build-dep.sh libgtpnl
-fi
-osmo-build-dep.sh libosmocore "" --disable-doxygen
-
 verify_value_string_arrays_are_terminated.py $(find . -name "*.[hc]")
 
 export PKG_CONFIG_PATH="$inst/lib/pkgconfig:$PKG_CONFIG_PATH"
 export LD_LIBRARY_PATH="$inst/lib"
 export PATH="$inst/bin:$PATH"
+
+if [ "x$GTP" == "x--enable-gtp-linux" ]; then
+	osmo-build-dep.sh libgtpnl
+fi
+osmo-build-dep.sh libosmocore "" --disable-doxygen
+osmo-build-dep.sh libosmo-netif "" --disable-doxygen
 
 # Additional configure options and depends
 CONFIG=""
