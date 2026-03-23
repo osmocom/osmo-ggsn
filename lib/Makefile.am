@@ -1,7 +1,6 @@
 noinst_LIBRARIES = libmisc.a
 
 noinst_HEADERS = \
-		 checksum.h \
 		 gnugetopt.h \
 		 gtp-kernel.h \
 		 icmpv6.h \
@@ -21,10 +20,10 @@ AM_CFLAGS = \
 	    -DSBINDIR='"$(sbindir)"' \
 	    -I$(top_srcdir)/include \
 	    $(LIBOSMOCORE_CFLAGS) \
+	    $(LIBOSMONETIF_CFLAGS) \
 	    $(NULL)
 
 libmisc_a_SOURCES = \
-		    checksum.c \
 		    debug.c \
 		    getopt.c \
 		    getopt1.c \
