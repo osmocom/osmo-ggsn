@@ -1245,12 +1245,24 @@ int gtp_decode_pdp_ctx(const uint8_t *buf, unsigned int size, struct pdp_t *pdp,
 	/* GGSN Address Ctrl */
 	pdp->gsnrc.l = *ptr;
 	ptr++;
+	if (pdp->gsnrc.l > sizeof(pdp->gsnrc.v)) {
+		LOGP(DLGTP, LOGL_ERROR,
+			"PDP Context Decode: GSN Address (Ctrl) length %u exceeds %zu\n",
+			pdp->gsnrc.l, sizeof(pdp->gsnrc.v));
+		return -EINVAL;
+	}
 	memcpy(pdp->gsnrc.v, ptr, pdp->gsnrc.l);
 	ptr += pdp->gsnrc.l;
 
 	/* GGSN Address User */
 	pdp->gsnru.l = *ptr;
 	ptr++;
+	if (pdp->gsnru.l > sizeof(pdp->gsnru.v)) {
+		LOGP(DLGTP, LOGL_ERROR,
+			"PDP Context Decode: GSN Address (User) length %u exceeds %zu\n",
+			pdp->gsnru.l, sizeof(pdp->gsnru.v));
+		return -EINVAL;
+	}
 	memcpy(pdp->gsnru.v, ptr, pdp->gsnru.l);
 	ptr += pdp->gsnru.l;
 
