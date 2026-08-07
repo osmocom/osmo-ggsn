@@ -3280,7 +3280,10 @@ static int gtp_gpdu_ind(struct gsn_t *gsn, uint8_t version,
 	}
 
 	/* If the GPDU was not from the peer GSN tell him to delete context */
-	if (memcmp(&peer->sin_addr, pdp->gsnru.v, pdp->gsnru.l)) {	/* TODO Range? */
+	/* Compare only the IPv4 address bytes; peer->sin_addr is 4 bytes, so
+	 * bound the compare to sizeof(sin_addr) rather than the (attacker-influenced)
+	 * gsnru length to avoid reading past sin_addr. */
+	if (memcmp(&peer->sin_addr, pdp->gsnru.v, sizeof(peer->sin_addr))) {
 		rate_ctr_inc2(gsn->ctrg, GSN_CTR_ERR_UNKNOWN_PDP);
 		GTP_LOGPKG(LOGL_ERROR, peer, pack, len, "Unknown GSN peer %s\n", inet_ntoa(peer->sin_addr));
 		return gtp_error_ind_resp(gsn, version, peer, fd, pack, len);
@@ -3778,7 +3781,10 @@ int gtp_data_req(struct gsn_t *gsn, struct pdp_t *pdp, void *pack, unsigned len)
 #if defined(__FreeBSD__) || defined(__APPLE__)
 	addr.sin_len = sizeof(addr);
 #endif
-	memcpy(&addr.sin_addr, pdp->gsnru.v, pdp->gsnru.l);	/* TODO range check */
+	/* gsnru is the IPv4 GSN user-plane address for this AF_INET path; copy
+	 * exactly sizeof(sin_addr) bytes so an over-long (e.g. 16-byte IPv6)
+	 * address cannot write past addr on the stack. */
+	memcpy(&addr.sin_addr, pdp->gsnru.v, sizeof(addr.sin_addr));
 
 	/* prepare msghdr */
 	memset(&msgh, 0, sizeof(msgh));
