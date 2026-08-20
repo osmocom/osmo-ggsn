@@ -1,3 +1,14 @@
+osmo-ggsn (1.15.0) unstable; urgency=medium
+
+  [ Pau Espin Pedrol ]
+  * Depend on libosmo-netif for icmpv6 APIs
+
+  [ n0k0 ]
+  * gtp: clamp GSN-Address copy to sockaddr_in size
+  * gtp: fix OOB write in PDP ctx GSN-Address decode
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Thu, 20 Aug 2026 12:29:58 +0200
+
 osmo-ggsn (1.14.0) unstable; urgency=medium
 
   [ Daniel Willmann ]
