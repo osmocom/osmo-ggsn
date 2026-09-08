@@ -152,6 +152,10 @@ AC_CHECK_FUNCS(inet_aton inet_addr, break)
 # check for getopt in standard library
 adl_FUNC_GETOPT_LONG
 
+# sgsnemu sets the resolver state (_res) from <resolv.h>. glibc keeps it in
+# libc; Darwin exports it from libresolv under BIND 9 names (res_9_*).
+AC_SEARCH_LIBS([res_9_init], [resolv])
+
 AM_INIT_AUTOMAKE([foreign])
 
 PKG_CHECK_MODULES(LIBOSMOCORE, libosmocore >= 1.14.2)
