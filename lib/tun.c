@@ -279,5 +279,11 @@ int tun_runscript(struct tun_t *tun, char *script)
  */
 int tun_ip_local_get(const struct tun_t *tun, struct in46_prefix *prefix_list, size_t prefix_size, int flags)
 {
-	return netdev_ip_local_get(tun->devname, prefix_list, prefix_size, flags);
+	/* Ask the tun device for the name the kernel gave the interface; it can
+	 * differ from the configured one (Darwin utun) and getifaddrs() only
+	 * knows the real one. */
+	const char *devname = tun->devname;
+	if (tun->tundev.tundev)
+		devname = osmo_tundev_get_dev_name(tun->tundev.tundev);
+	return netdev_ip_local_get(devname, prefix_list, prefix_size, flags);
 }

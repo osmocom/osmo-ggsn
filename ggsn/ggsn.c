@@ -174,10 +174,18 @@ int apn_stop(struct apn_ctx *apn)
 
 static int alloc_ippool_blacklist(struct apn_ctx *apn, struct in46_prefix **blacklist, bool ipv6)
 {
-
+	const char *dev_name = apn->tun.cfg.dev_name;
 	int flags, len, len2, i;
 
 	*blacklist = NULL;
+
+	/* The kernel may give the interface another name than the one that
+	 * was configured (a Darwin utun: "tun4" requested, "utun6" assigned).
+	 * getifaddrs() lists the addresses under the real name, so ask the
+	 * open tun device for it; otherwise the blacklist stays empty and the
+	 * pool hands the tun's own address to the first PDP context. */
+	if (apn->tun.tun && apn->tun.tun->tundev.tundev)
+		dev_name = osmo_tundev_get_dev_name(apn->tun.tun->tundev.tundev);
 
 	if (ipv6)
 		flags = IP_TYPE_IPv6_NONLINK;
@@ -185,12 +193,12 @@ static int alloc_ippool_blacklist(struct apn_ctx *apn, struct in46_prefix **blac
 		flags = IP_TYPE_IPv4;
 
 	while (1) {
-		len = netdev_ip_local_get(apn->tun.cfg.dev_name, NULL, 0, flags);
+		len = netdev_ip_local_get(dev_name, NULL, 0, flags);
 		if (len < 1)
 			return len;
 
 		*blacklist = talloc_zero_size(apn, len * sizeof(struct in46_prefix));
-		len2 = netdev_ip_local_get(apn->tun.cfg.dev_name, *blacklist, len, flags);
+		len2 = netdev_ip_local_get(dev_name, *blacklist, len, flags);
 		if (len2 < 1) {
 			talloc_free(*blacklist);
 			*blacklist = NULL;
