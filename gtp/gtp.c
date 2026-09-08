@@ -30,6 +30,12 @@
 
 #if defined(__FreeBSD__)
 #include <sys/endian.h>
+#elif defined(__APPLE__)
+/* Darwin has neither <endian.h> nor <sys/endian.h>; the 64 bit swaps
+ * used for the GTPv0 TID come from libkern. */
+#include <libkern/OSByteOrder.h>
+#define htobe64(x) OSSwapHostToBigInt64(x)
+#define be64toh(x) OSSwapBigToHostInt64(x)
 #endif
 
 #include "../config.h"
