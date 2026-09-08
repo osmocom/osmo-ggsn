@@ -52,6 +52,11 @@
 
 #ifndef ELIDE_CODE
 
+/* getopt.c defines this in K&R style; clang 16 and later refuse the
+ * implicit declaration that the non-glibc branch of gnugetopt.h leaves. */
+extern int _getopt_internal(int argc, char *const *argv, const char *shortopts,
+			    const struct option *longopts, int *longind, int long_only);
+
 /* This needs to come after some library #include
    to get __GNU_LIBRARY__ defined.  */
 #ifdef __GNU_LIBRARY__
